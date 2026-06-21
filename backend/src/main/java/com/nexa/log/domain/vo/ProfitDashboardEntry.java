@@ -19,13 +19,15 @@ package com.nexa.log.domain.vo;
  * @param sumQuotaCost     该维度成本 quota 总和
  * @param sumQuotaProfit   该维度利润 quota 总和（= sell − cost，可为负=亏损告警）
  * @param costMissingCount 该维度内成本缺失（quota_cost=0 且 quota_sell&gt;0）的记录条数（利润虚高告警量）
+ * @param requestCount     该维度内消费记录条数（Type=2 请求数，看板量级度量）
  */
 public record ProfitDashboardEntry(
         String dimensionKey,
         long sumQuotaSell,
         long sumQuotaCost,
         long sumQuotaProfit,
-        long costMissingCount) {
+        long costMissingCount,
+        long requestCount) {
 
     /**
      * 派生利润率 {@code profit / sell}（sell=0 → 0，避免除零；保留原始符号，亏损为负）。

@@ -18,6 +18,7 @@ import com.nexa.log.domain.vo.ProfitDashboardEntry;
  * @param sumQuotaProfit   利润 quota 总和（= sell − cost，可为负）
  * @param profitRate       利润率（profit / sell，sell=0→0）
  * @param costMissingCount 成本缺失记录条数（利润虚高告警量）
+ * @param requestCount     消费记录条数（Type=2 请求数，看板量级度量）
  */
 public record ProfitDashboardItemView(
         String dimensionKey,
@@ -25,7 +26,8 @@ public record ProfitDashboardItemView(
         long sumQuotaCost,
         long sumQuotaProfit,
         double profitRate,
-        long costMissingCount) {
+        long costMissingCount,
+        long requestCount) {
 
     /**
      * 从领域利润聚合项构造视图（利润率派生量取领域计算结果）。
@@ -40,6 +42,7 @@ public record ProfitDashboardItemView(
                 entry.sumQuotaCost(),
                 entry.sumQuotaProfit(),
                 entry.profitRate(),
-                entry.costMissingCount());
+                entry.costMissingCount(),
+                entry.requestCount());
     }
 }

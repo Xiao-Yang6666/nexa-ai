@@ -23,7 +23,9 @@ import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.service.DualPriceBilling;
+import com.nexa.relay.domain.service.MaskSensitiveError;
 import com.nexa.relay.domain.service.RelayPathResolver;
+import com.nexa.relay.domain.service.RetryPolicy;
 import com.nexa.relay.domain.service.TwoLayerModelResolver;
 import com.nexa.relay.domain.vo.AliasScope;
 import com.nexa.relay.domain.vo.BillingResult;
@@ -149,19 +151,67 @@ public class RelayForwardUseCase {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
 
-        // ④ 选渠（group×B → Ability 加权随机 + CH-4 亲和 + CH-5 重试）。
-        // REQ-03: 经 SelectRelayChannelUseCase 按 Ability 表 group×B 加权随机选中完整 Channel 聚合；
-        //         无候选抛 NoAvailableChannelException。CH-4 亲和 / CH-5 重试循环由 REQ-09/10 接入。
-        Channel channel = selectRelayChannelUseCase.selectChannel(authContext.group(), upstreamModel);
-
-        // ⑤ 协议转换 + 调上游（RL-6 头尾决策 + RL-7 第⑤步）。
+        // ④⑤ 选渠 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
+        // 计费⑥⑦/结算⑦'/消费 Log⑨ 仅在最终成功的渠道上执行（循环外成功路径），
+        // 错误 Log（Type=5）每次失败都记，AutoBan 命中即禁用——不破坏既有成功路径语义。
         // TODO REQ-04: 接入 ProtocolRegistry 做 inFmt==targetProto passthrough / 否则 IR 转换；
         //              本期仅 OpenAI 非流式 passthrough——仅改写 body 的 model 字段为 B 后透传。
         byte[] upstreamBody = rewriteModel(root, upstreamModel);
-        UpstreamRequest upstreamRequest = UpstreamRequest.of(
-                "POST", channel.baseUrl(), path, channel.key(), upstreamBody,
-                java.util.Map.of("Content-Type", "application/json"));
-        UpstreamResponse upstreamResponse = upstreamHttpPort.send(upstreamRequest);
+        java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
+        int retryCount = 0;
+        int lastFailureStatus = 502;
+        String lastFailureMaskedMessage = MaskSensitiveError.mask(lastFailureStatus, null);
+        Channel channel;
+        UpstreamResponse upstreamResponse;
+
+        while (true) {
+            // ④ 选渠（group×B 加权随机 + CH-5 排除已尝试渠道再选下一个，REQ-03 重载）。
+            //   首次选渠无候选 → 上抛 NoAvailableChannelException（503，对齐 RL-1 §4）。
+            //   重试中无更多候选（triedChannelIds 非空后耗尽）→ 终止重试，返回上游最后一次错误。
+            try {
+                channel = selectRelayChannelUseCase.selectChannel(
+                        authContext.group(), upstreamModel, triedChannelIds);
+            } catch (NoAvailableChannelException e) {
+                if (triedChannelIds.isEmpty()) {
+                    throw e; // 首次即无可用渠道：保持原 503 语义。
+                }
+                // 已尝试过渠道但候选耗尽（CH-5 全组耗尽）：返回最后一次上游错误（重试耗尽态）。
+                return buildErrorResult(dispatch, lastFailureStatus, lastFailureMaskedMessage);
+            }
+
+            // ⑤ 协议转换 + 调上游（RL-6 头尾决策 + RL-7 第⑤步）。
+            UpstreamRequest upstreamRequest = UpstreamRequest.of(
+                    "POST", channel.baseUrl(), path, channel.key(), upstreamBody,
+                    java.util.Map.of("Content-Type", "application/json"));
+            int failureStatus;
+            String failureDetail;
+            try {
+                upstreamResponse = upstreamHttpPort.send(upstreamRequest);
+                if (upstreamResponse.isSuccessful()) {
+                    break; // 2xx：跳出循环，按最终成功渠道走计费/落消费 Log。
+                }
+                failureStatus = upstreamResponse.statusCode();
+                failureDetail = extractErrorDetail(upstreamResponse);
+            } catch (UpstreamException e) {
+                // 上游传输层失败（连接/超时等）：纳入同一 RL-3 处置链，按其状态码驱动重试判定。
+                failureStatus = e.upstreamStatusCode();
+                failureDetail = e.getMessage();
+            }
+
+            // re_log + re_ban：脱敏落错误 Log（Type=5）+ AutoBan 命中则禁用渠道（CH-3）。
+            String masked = handleUpstreamFailure(
+                    dispatch, resolution, channel, authContext, failureStatus, failureDetail);
+            triedChannelIds.add(channel.id());
+            lastFailureStatus = failureStatus;
+            lastFailureMaskedMessage = masked;
+
+            // re_retry + re_count：可重试码且重试次数 < RetryTimes → 换渠道重试；否则终止返错。
+            if (RetryPolicy.shouldRetry(failureStatus) && retryCount < maxRetryTimes()) {
+                retryCount++;
+                continue;
+            }
+            return buildErrorResult(dispatch, failureStatus, masked);
+        }
 
         // ⑥⑦ 双价记账（quota_sell/quota_cost/quota_profit，REQ-05）。
         // 第15步：从上游响应体解析真实 usage（D5 prompt/completion tokens）。
@@ -252,8 +302,8 @@ public class RelayForwardUseCase {
      * 解析上游响应体的 usage（第15步，D5 token 口径）。
      *
      * <p>本期 OpenAI 非流式 passthrough：上游响应体即 OpenAI 格式，直接读 {@code usage.prompt_tokens}/
-     * {@code usage.completion_tokens}。解析失败 / 缺 usage / 非 2xx → 返回 {@link UsageIR#ZERO}
-     * （计费缺失兜底不阻断；非 2xx 上游错误本期仍按 0 token 落消费 Log，完整错误处置见 REQ-09）。</p>
+     * {@code usage.completion_tokens}。仅在上游 2xx 成功后调用（非 2xx 已在 RL-3 重试/错误链处置，
+     * 不进入计费）；解析失败 / 缺 usage → 返回 {@link UsageIR#ZERO}（计费缺失兜底不阻断）。</p>
      */
     private UsageIR parseUsage(UpstreamResponse response) {
         byte[] body = response.body();
@@ -356,5 +406,123 @@ public class RelayForwardUseCase {
         RelayLog log = RelayLog.consume(
                 info, usage, billing, System.currentTimeMillis() / 1000L, other);
         logRepo.save(log);
+    }
+
+    /**
+     * RL-3 单次上游失败处置（re_log + re_ban）：脱敏 → 落错误 Log（Type=5）→ AutoBan 命中则禁用渠道。
+     *
+     * <p>顺序遵循 PRD RL-3 §3：脱敏（MaskSensitiveErrorWithStatusCode）与禁用判定（AutoBan=1 且命中条件
+     * → DisableChannel 复用 CH-3）并行处置，两路汇到错误日志记录。禁用与否都不阻断重试判定（由调用方据
+     * {@link RetryPolicy#shouldRetry(int)} 决定换渠道还是终止）。</p>
+     *
+     * @return 脱敏后的错误描述（供重试耗尽/不可重试时构造对客户错误响应复用）
+     */
+    private String handleUpstreamFailure(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
+                                         RelayAuthContext authContext, int statusCode, String rawDetail) {
+        String masked = MaskSensitiveError.mask(statusCode, rawDetail);
+        // re_ban：仅 AutoBan=1 且命中禁用条件（401/403）才自动禁用，落 AUTO_DISABLED 并通知 root（CH-3）。
+        if (RetryPolicy.shouldAutoDisable(channel.autoBan(), statusCode) && channel.autoDisable()) {
+            channelRepo.save(channel);
+            notifyChannelAutoDisabled(channel, statusCode);
+        }
+        // re_log：脱敏后写 Log Type=5 Error（记 channel/model/status_code）。
+        recordErrorLog(dispatch, resolution, channel, authContext, masked, statusCode);
+        return masked;
+    }
+
+    /** 通知 root 渠道已自动禁用（CH-3 通知；本期 server log，告警分发接入见 observability BC）。 */
+    private void notifyChannelAutoDisabled(Channel channel, int statusCode) {
+        // TODO REQ-后续: 接入 observability AlertNotifierPort 推送 root 告警；本期仅诊断日志占位。
+    }
+
+    /**
+     * 从上游错误响应体提取原始错误片段（供脱敏输入，非 2xx 时调用）。
+     *
+     * <p>优先解析 OpenAI/Claude 风格 {@code error.message}；非 JSON / 无该字段则回落响应体文本（后续由
+     * {@link MaskSensitiveError} 统一脱敏 + 截断，故此处无需关心敏感性与长度）。</p>
+     */
+    private String extractErrorDetail(UpstreamResponse response) {
+        byte[] body = response.body();
+        if (body == null || body.length == 0) {
+            return null;
+        }
+        try {
+            JsonNode message = objectMapper.readTree(body).path("error").path("message");
+            if (message.isTextual() && !message.asText().isBlank()) {
+                return message.asText();
+            }
+        } catch (IOException ignored) {
+            // 非 JSON 上游错误页：回落原始文本（脱敏在 MaskSensitiveError 内统一处理）。
+        }
+        return new String(body, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    /** 落一条错误 Log（RL-3 re_log，Type=5 Error）：脱敏 content + channel/model/status_code。 */
+    private void recordErrorLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
+                                RelayAuthContext authContext, String maskedContent, int statusCode) {
+        RelayInfo info = new RelayInfo();
+        info.setUserId(authContext.userId());
+        info.setUsername(authContext.username());
+        info.setUsingGroup(authContext.group());
+        info.setRequestedModel(resolution.requested());
+        info.setResolvedPublicModel(resolution.resolvedPublic());
+        info.setUpstreamModelName(resolution.upstream());
+        info.setChannelId(channel.id());
+        info.setInboundFormat(dispatch.format());
+        if (info.ip() == null) {
+            info.setIp("");
+        }
+        RelayLog log = RelayLog.error(info, maskedContent, statusCode, System.currentTimeMillis() / 1000L);
+        logRepo.save(log);
+    }
+
+    /**
+     * 按 inFmt 构造对客户的错误响应（RL-3 re_fmt 终态）：脱敏 message + OpenAI/Claude 错误结构。
+     *
+     * <p>不可重试码直接返回、重试耗尽返回最后错误均经此构造。响应体绝不含上游凭证/URL（已脱敏），
+     * statusCode 透传上游错误码（4xx/5xx），让客户拿到与上游一致的语义。Gemini 等未支持协议回落
+     * OpenAI 结构。</p>
+     */
+    private RelayForwardResult buildErrorResult(RelayDispatch dispatch, int statusCode, String maskedMessage) {
+        byte[] body;
+        try {
+            ObjectNode errorBody = objectMapper.createObjectNode();
+            if (dispatch.format() == com.nexa.relay.domain.vo.ProtocolFormat.CLAUDE) {
+                // Claude 错误结构：{type:"error", error:{type, message}}。
+                errorBody.put("type", "error");
+                ObjectNode err = errorBody.putObject("error");
+                err.put("type", claudeErrorType(statusCode));
+                err.put("message", maskedMessage);
+            } else {
+                // OpenAI 错误结构（默认/回落）：{error:{message, type, code}}。
+                ObjectNode err = errorBody.putObject("error");
+                err.put("message", maskedMessage);
+                err.put("type", "upstream_error");
+                err.put("code", statusCode);
+            }
+            body = objectMapper.writeValueAsBytes(errorBody);
+        } catch (IOException e) {
+            body = ("{\"error\":{\"message\":\"" + maskedMessage + "\"}}")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
+        return new RelayForwardResult(
+                statusCode,
+                java.util.Map.of("Content-Type", java.util.List.of("application/json")),
+                body);
+    }
+
+    /** Claude 错误结构 error.type 取值（按状态码映射，对齐 Anthropic 错误类型语义）。 */
+    private String claudeErrorType(int statusCode) {
+        return switch (statusCode) {
+            case 401, 403 -> "authentication_error";
+            case 429 -> "rate_limit_error";
+            case 400 -> "invalid_request_error";
+            default -> "api_error";
+        };
+    }
+
+    /** 重试上限（common.RetryTimes，本期取 RetryPolicy 默认值；后续可由配置覆盖）。 */
+    private int maxRetryTimes() {
+        return RetryPolicy.DEFAULT_MAX_RETRIES;
     }
 }

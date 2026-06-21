@@ -1,5 +1,6 @@
 package com.nexa.relay.interfaces.api;
 
+import com.nexa.model.application.ListPublicModelsUseCase;
 import com.nexa.relay.application.RelayAuthContext;
 import com.nexa.relay.application.RelayForwardResult;
 import com.nexa.relay.application.RelayForwardUseCase;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,9 +46,11 @@ import java.util.Map;
 public class RelayController {
 
     private final RelayForwardUseCase useCase;
+    private final ListPublicModelsUseCase listPublicModelsUseCase;
 
-    public RelayController(RelayForwardUseCase useCase) {
+    public RelayController(RelayForwardUseCase useCase, ListPublicModelsUseCase listPublicModelsUseCase) {
         this.useCase = useCase;
+        this.listPublicModelsUseCase = listPublicModelsUseCase;
     }
 
     /**
@@ -79,13 +84,28 @@ public class RelayController {
     }
 
     /**
-     * 模型列表（F-3034，对外名 A，不含 B，TokenAuth）。
+     * 模型列表（F-3034 / ML-6，对外名 A 全集，绝不含 B，TokenAuth）。
+     *
+     * <p>返回 {@code PublicModel.enabled=true AND deleted_at IS NULL} 的 public_name(A) 全集，
+     * OpenAI {@code /v1/models} 列表信封格式。下架（enabled=false）或软删的模型不出现。</p>
+     *
+     * <p><b>零泄露</b>：数据仅经 {@link ListPublicModelsUseCase} 取公开名 A，全链不读
+     * upstream_name(B)，从源头杜绝 B 泄露（COMPAT §2 候选层 B 不可见闸）。</p>
+     *
+     * @return OpenAI models 列表信封 {@code {"object":"list","data":[{id,object,created,owned_by}, ...]}}
      */
     @RequireRole(AuthLevel.USER)
     @GetMapping("/v1/models")
     public ResponseEntity<?> models() {
-        // TODO(W3+): 返回 PlatformModelMapping.publicName ∪ PrefillGroup(type=model) 的 A 全集
-        return ResponseEntity.ok(Map.of("object", "list", "data", java.util.List.of()));
+        long created = Instant.now().getEpochSecond();
+        List<Map<String, Object>> data = listPublicModelsUseCase.listEnabledPublicNames().stream()
+                .map(publicName -> Map.<String, Object>of(
+                        "id", publicName,
+                        "object", "model",
+                        "created", created,
+                        "owned_by", "nexa"))
+                .toList();
+        return ResponseEntity.ok(Map.of("object", "list", "data", data));
     }
 
     /**

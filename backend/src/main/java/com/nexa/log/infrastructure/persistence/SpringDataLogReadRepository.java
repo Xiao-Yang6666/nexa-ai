@@ -178,14 +178,15 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
      * <p>按 {@code resolved_public_model}(A) 分组，SUM 售价/成本/利润，并统计成本缺失条数
      * （{@code quota_cost=0 AND quota_sell>0}）。绝不暴露上游模型 B/渠道明细（可见性铁律）。
      * 时间区间可空（{@code CAST(:p AS BIGINT) IS NULL OR ...}）。空键剔除。按利润降序。
-     * 返回列序：dimension_key(text), sum_sell, sum_cost, sum_profit, cost_missing_count（均 bigint）。</p>
+     * 返回列序：dimension_key(text), sum_sell, sum_cost, sum_profit, cost_missing_count, request_count（均 bigint）。</p>
      */
     @Query(value = """
             SELECT l.resolved_public_model AS dimension_key,
                    COALESCE(SUM(l.quota_sell), 0)   AS sum_sell,
                    COALESCE(SUM(l.quota_cost), 0)   AS sum_cost,
                    COALESCE(SUM(l.quota_profit), 0) AS sum_profit,
-                   COUNT(*) FILTER (WHERE l.quota_cost = 0 AND l.quota_sell > 0) AS cost_missing
+                   COUNT(*) FILTER (WHERE l.quota_cost = 0 AND l.quota_sell > 0) AS cost_missing,
+                   COUNT(*) AS request_count
             FROM logs l
             WHERE l.type = 2
               AND l.resolved_public_model <> ''
@@ -207,7 +208,8 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
                    COALESCE(SUM(l.quota_sell), 0)   AS sum_sell,
                    COALESCE(SUM(l.quota_cost), 0)   AS sum_cost,
                    COALESCE(SUM(l.quota_profit), 0) AS sum_profit,
-                   COUNT(*) FILTER (WHERE l.quota_cost = 0 AND l.quota_sell > 0) AS cost_missing
+                   COUNT(*) FILTER (WHERE l.quota_cost = 0 AND l.quota_sell > 0) AS cost_missing,
+                   COUNT(*) AS request_count
             FROM logs l
             WHERE l.type = 2
               AND (CAST(:startTs AS BIGINT) IS NULL OR l.created_at >= :startTs)
@@ -228,7 +230,8 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
                    COALESCE(SUM(l.quota_sell), 0)   AS sum_sell,
                    COALESCE(SUM(l.quota_cost), 0)   AS sum_cost,
                    COALESCE(SUM(l.quota_profit), 0) AS sum_profit,
-                   COUNT(*) FILTER (WHERE l.quota_cost = 0 AND l.quota_sell > 0) AS cost_missing
+                   COUNT(*) FILTER (WHERE l.quota_cost = 0 AND l.quota_sell > 0) AS cost_missing,
+                   COUNT(*) AS request_count
             FROM logs l
             WHERE l.type = 2
               AND (CAST(:startTs AS BIGINT) IS NULL OR l.created_at >= :startTs)
