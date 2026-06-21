@@ -342,6 +342,15 @@ public class RelayForwardUseCase {
         info.computePassthrough();
         info.setChannelId(channel.id());
         info.setChannelType(channel.type().code());
+        // 客户端 IP / User-Agent：本期 forward 链路未透传 HttpServletRequest，
+        // 落库用空串占位（对齐 logs.ip/user_agent NOT NULL DEFAULT ''，避免 null 违约）。
+        // TODO REQ-后续: 从 RelayController 经 RelayAuthContext 透传真实 remoteAddr/UA。
+        if (info.ip() == null) {
+            info.setIp("");
+        }
+        if (info.userAgent() == null) {
+            info.setUserAgent("");
+        }
         // 成本行缺失 → Other 写 cost_missing 诊断标记（看板可筛，不阻断；对齐 RL-7 §4）。
         String other = billing.costMissing() ? "{\"cost_missing\":true}" : null;
         RelayLog log = RelayLog.consume(
