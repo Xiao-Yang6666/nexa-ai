@@ -200,29 +200,28 @@ public class ChannelRepositoryImpl implements ChannelRepository {
      * @return 重建的领域聚合
      */
     private Channel toDomain(ChannelJpaEntity e) {
-        return Channel.builder()
-                .id(e.getId())
-                .type(e.getType())
-                .key(e.getKey())
-                .status(e.getStatus())
-                .name(e.getName())
-                .weight(e.getWeight())
-                .baseUrl(e.getBaseUrl())
-                .models(e.getModels())
-                .group(e.getGroup())
-                .priority(e.getPriority())
-                .autoBan(e.getAutoBan())
-                .balance(e.getBalance())
-                .usedQuota(e.getUsedQuota())
-                .responseTime(e.getResponseTime())
-                .testTime(e.getTestTime())
-                .modelMapping(e.getModelMapping())
-                .statusCodeMapping(e.getStatusCodeMapping())
-                .tag(e.getTag())
-                .setting(e.getSetting())
-                .channelInfo(deserializeChannelInfo(e.getChannelInfo()))
-                .createdTime(e.getCreatedTime())
-                .build();
+        return Channel.rehydrate(
+                e.getId(),
+                e.getType(),
+                e.getKey(),
+                e.getStatus(),
+                e.getName(),
+                e.getWeight(),
+                e.getBaseUrl(),
+                e.getModels(),
+                e.getGroup(),
+                e.getPriority(),
+                e.getAutoBan(),
+                e.getBalance(),
+                e.getUsedQuota(),
+                e.getResponseTime(),
+                e.getTestTime(),
+                e.getModelMapping(),
+                e.getStatusCodeMapping(),
+                e.getTag(),
+                e.getSetting(),
+                deserializeChannelInfo(e.getChannelInfo()),
+                e.getCreatedTime());
     }
 
     /**
