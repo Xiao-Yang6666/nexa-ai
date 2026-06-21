@@ -94,6 +94,16 @@
 .rowActs a.dang {
   color: var(--color-danger);
 }
+.dang {
+  color: var(--color-danger);
+}
+
+/* ── 空/加载/错误占位行 ── */
+.emptyCell {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
 
 /* ── 分页 ── */
 .pager {
@@ -107,7 +117,8 @@
 }
 .pg {
   display: flex;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--space-2);
 }
 .pg button {
   width: 30px;
@@ -119,10 +130,19 @@
   font-family: inherit;
   cursor: pointer;
 }
+.pg button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .pg button.on {
   background: var(--color-primary-500);
   color: var(--color-primary-fg);
   border-color: var(--color-primary-500);
+}
+.pgInfo {
+  min-width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── 抽屉 ── */

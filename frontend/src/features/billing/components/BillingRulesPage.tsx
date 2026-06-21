@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { AdminShell } from '@/features/admin';
-import { Button } from '@/shared/ui';
+import { ApiError } from '@/shared/api';
+import { useBillingRatios, type RatioKind, type RatioRowVM, type RatioBin } from '../model/ratio.model';
 import styles from './BillingRulesPage.module.css';
 
 /* ── 内联线性图标（参照 ConsoleShell Icon 写法） ── */
@@ -41,89 +42,29 @@ function Icon({ name, className }: { name: string; className?: string }) {
   );
 }
 
-/* ── Mock 数据（迁移自 S6 原型 script） ── */
-type RuleKind = 'model' | 'group' | 'cache' | '补全';
-
-interface RatioRow {
-  nm: string;
-  kind: RuleKind;
-  in: number;
-  out: number;
-  cache: number;
-  expose: boolean;
-}
-
-const DATA: RatioRow[] = [
-  { nm: 'gpt-4o', kind: 'model', in: 2.5, out: 7.5, cache: 0.25, expose: true },
-  { nm: 'gpt-4o-mini', kind: 'model', in: 0.15, out: 0.6, cache: 0.08, expose: true },
-  { nm: 'o1-preview', kind: 'model', in: 7.5, out: 30.0, cache: 0.5, expose: false },
-  { nm: 'claude-3-5-sonnet', kind: 'model', in: 1.5, out: 7.5, cache: 0.15, expose: true },
-  { nm: 'claude-3-opus', kind: 'model', in: 7.5, out: 37.5, cache: 0.3, expose: false },
-  { nm: 'gemini-1.5-pro', kind: 'model', in: 1.25, out: 5.0, cache: 0.2, expose: true },
-  { nm: 'gemini-1.5-flash', kind: 'model', in: 0.07, out: 0.3, cache: 0.05, expose: true },
-  { nm: 'deepseek-chat', kind: 'model', in: 0.14, out: 0.28, cache: 0.014, expose: true },
-  { nm: 'text-embedding-3', kind: 'model', in: 0.02, out: 0.0, cache: 0.0, expose: true },
-  { nm: 'default 分组', kind: 'group', in: 1.0, out: 1.0, cache: 1.0, expose: true },
-  { nm: 'vip 分组', kind: 'group', in: 0.8, out: 0.8, cache: 0.8, expose: false },
-  { nm: 'internal 分组', kind: 'group', in: 0.0, out: 0.0, cache: 0.0, expose: false },
-  { nm: 'trial 分组', kind: 'group', in: 1.5, out: 1.5, cache: 1.5, expose: true },
-  { nm: '全局缓存倍率', kind: 'cache', in: 0.25, out: 0.0, cache: 0.25, expose: true },
-  { nm: '补全惩罚倍率', kind: '补全', in: 1.0, out: 1.2, cache: 1.0, expose: false },
-];
-
-const KIND_MAP: Record<RuleKind, { cls: string; tone: string }> = {
-  model: { cls: 'b-info', tone: 'var(--color-info)' },
-  group: { cls: 'b-suc', tone: 'var(--color-success)' },
-  cache: { cls: 'b-warn', tone: 'var(--color-warning)' },
-  '补全': { cls: 'b-neutral', tone: 'var(--color-text-muted)' },
+const KIND_MAP: Record<RatioKind, { cls: string; tone: string; lab: string }> = {
+  model: { cls: 'b-info', tone: 'var(--color-info)', lab: 'model' },
+  group: { cls: 'b-suc', tone: 'var(--color-success)', lab: 'group' },
 };
 
-function KindBadge({ kind }: { kind: RuleKind }) {
+function KindBadge({ kind }: { kind: RatioKind }) {
   const m = KIND_MAP[kind];
   return (
     <span className={`badge ${m.cls}`}>
       <span className="dot" style={{ background: m.tone }} />
-      {kind}
+      {m.lab}
     </span>
   );
 }
 
-function NumIn({ value }: { value: number }) {
-  return <input className={styles.numIn} defaultValue={value.toFixed(2)} inputMode="decimal" />;
-}
-
-/* ── 阶梯计费静态数据 ── */
-const MONTH_TIERS = [
-  { rng: '$0 – $100', rate: '×1.00' },
-  { rng: '$100 – $500', rate: '×0.95' },
-  { rng: '$500 – $2000', rate: '×0.90' },
-  { rng: '$2000+', rate: '×0.85' },
-];
-
-const GROUP_TIERS = [
-  { rng: 'default', rate: '×1.00' },
-  { rng: 'vip', rate: '×0.80' },
-  { rng: 'internal', rate: '×0.00' },
-  { rng: 'trial', rate: '×1.50' },
-];
-
-/* ── 倍率档位分布柱状图数据 ── */
-const BINS = [
-  { lab: '0–0.5', val: 5 },
-  { lab: '0.5–1', val: 3 },
-  { lab: '1–2', val: 4 },
-  { lab: '2–5', val: 6 },
-  { lab: '5–10', val: 3 },
-  { lab: '10+', val: 2 },
-];
-
-function RatioDistChart() {
+/* ── 倍率档位分布柱状图（数据来自真实倍率分箱） ── */
+function RatioDistChart({ bins }: { bins: RatioBin[] }) {
   const W = 1080;
   const H = 280;
   const pad = { l: 40, r: 14, t: 16, b: 34 };
   const iw = W - pad.l - pad.r;
   const ih = H - pad.t - pad.b;
-  const max = 8;
+  const max = Math.max(8, ...bins.map((b) => b.val));
 
   const gridLines = [];
   for (let t = 0; t <= 4; t++) {
@@ -133,28 +74,22 @@ function RatioDistChart() {
       <g key={`g${t}`}>
         <line x1={pad.l} y1={y} x2={W - pad.r} y2={y} stroke="var(--chart-grid)" strokeWidth={1} />
         <text className={styles.axTxt} x={pad.l - 7} y={y + 3} textAnchor="end">
-          {v}
+          {Math.round(v)}
         </text>
       </g>,
     );
   }
 
-  const gw = iw / BINS.length;
+  const gw = iw / Math.max(1, bins.length);
   const bw = gw * 0.5;
-  const bars = BINS.map((b, i) => {
+  const bars = bins.map((b, i) => {
     const x = pad.l + gw * i + (gw - bw) / 2;
     const h = (b.val / max) * ih;
     const y = pad.t + ih - h;
     return (
       <g key={b.lab}>
         <rect x={x} y={y} width={bw} height={h} rx={4} fill="var(--chart-1)" />
-        <text
-          className={styles.axTxt}
-          x={x + bw / 2}
-          y={y - 6}
-          textAnchor="middle"
-          style={{ fill: 'var(--color-text)' }}
-        >
+        <text className={styles.axTxt} x={x + bw / 2} y={y - 6} textAnchor="middle" style={{ fill: 'var(--color-text)' }}>
           {b.val}
         </text>
         <text className={styles.axTxt} x={x + bw / 2} y={H - 10} textAnchor="middle">
@@ -175,45 +110,38 @@ function RatioDistChart() {
 export function BillingRulesPage() {
   const [fKind, setFKind] = useState('');
   const [search, setSearch] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
+
+  const { data, isLoading, isError, error } = useBillingRatios();
+  const rows: RatioRowVM[] = useMemo(() => data?.rows ?? [], [data]);
+  const bins: RatioBin[] = data?.bins ?? [];
 
   const filtered = useMemo(() => {
-    return DATA.filter((r) => {
+    return rows.filter((r) => {
       if (fKind && r.kind !== fKind) return false;
       if (search && !r.nm.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [fKind, search]);
+  }, [rows, fKind, search]);
+
+  /* 分组折扣阶梯（来自真实 GroupRatio 行） */
+  const groupTiers = useMemo(
+    () => rows.filter((r) => r.kind === 'group').map((r) => ({ rng: r.nm.replace(' 分组', ''), rate: `×${r.in.toFixed(2)}` })),
+    [rows],
+  );
 
   return (
     <AdminShell
       activeId="billing-rules"
       title="计费规则"
       crumb={['管理后台', '运营', '计费规则']}
-      actions={<Button>同步倍率</Button>}
     >
       {/* 说明 */}
       <section className={`${styles.notice} nx-fade`}>
         <Icon name="info" className={styles.nxIc} />
         <div className={styles.txt}>
-          本页配置<b>全站计费倍率</b>，包括模型倍率、分组倍率、缓存倍率与补全倍率。倍率变更将
-          <b>影响所有渠道的定价计算</b>
-          与用户实际扣费，请在合规确认后再点击「同步倍率」下发到生产环境。价格暴露开关（expose_ratio）控制是否向终端用户展示该模型的真实倍率。
+          本页展示<b>全站计费倍率</b>（模型倍率、分组折扣、缓存与补全倍率），数据来自系统选项（<code>ModelRatio</code>/<code>CompletionRatio</code>/<code>GroupRatio</code>/<code>CacheRatio</code>）。
+          倍率变更影响所有渠道的定价计算与用户扣费，修改请在系统设置中按键操作并经合规确认。
         </div>
-      </section>
-
-      {/* 合规闸门 */}
-      <section className={`${styles.gate} ${confirmed ? styles.confirmed : styles.pending}`}>
-        <Icon name={confirmed ? 'check' : 'warn'} className={styles.nxIc} />
-        <span className={styles.txt}>
-          {confirmed
-            ? '合规已确认：3 项倍率改动审核通过，可点击「同步倍率」下发到生产环境。'
-            : '合规未确认：倍率配置存在 3 项待审改动，须经合规确认后方可同步至生产。'}
-        </span>
-        <span className={styles.grow} />
-        <Button variant="sec" size="sm" onClick={() => setConfirmed((v) => !v)}>
-          {confirmed ? '撤销确认' : '合规确认'}
-        </Button>
       </section>
 
       {/* 工具条 */}
@@ -222,8 +150,6 @@ export function BillingRulesPage() {
           <option value="">全部类型</option>
           <option value="model">model</option>
           <option value="group">group</option>
-          <option value="cache">cache</option>
-          <option value="补全">补全</option>
         </select>
         <input
           className={styles.srch}
@@ -233,12 +159,6 @@ export function BillingRulesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className={styles.grow} />
-        <Button variant="sec" size="sm">
-          新增倍率项
-        </Button>
-        <Button variant="sec" size="sm">
-          从模板导入
-        </Button>
       </section>
 
       {/* 倍率配置表格 */}
@@ -250,63 +170,57 @@ export function BillingRulesPage() {
                 <th>模型 / 分组</th>
                 <th>类型</th>
                 <th>输入倍率</th>
-                <th>输出倍率</th>
+                <th>输出 / 补全倍率</th>
                 <th>缓存倍率</th>
-                <th>价格暴露</th>
-                <th>操作</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => (
-                <tr key={r.nm}>
-                  <td>{r.nm}</td>
-                  <td>
-                    <KindBadge kind={r.kind} />
-                  </td>
-                  <td>
-                    <NumIn value={r.in} />
-                  </td>
-                  <td>
-                    <NumIn value={r.out} />
-                  </td>
-                  <td>
-                    <NumIn value={r.cache} />
-                  </td>
-                  <td>
-                    <label className="switch">
-                      <input type="checkbox" defaultChecked={r.expose} />
-                      <span className="track" />
-                      <span className="thumb" />
-                    </label>
-                  </td>
-                  <td>
-                    <div className={styles.rowActs}>
-                      <a>编辑</a>
-                      <a>同步</a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {isLoading ? (
+                <tr><td colSpan={5} className={styles.emptyCell}>加载中…</td></tr>
+              ) : isError ? (
+                <tr><td colSpan={5} className={styles.emptyCell}>
+                  加载失败：{error instanceof ApiError ? error.message : '请稍后重试'}
+                  {error instanceof ApiError && error.status === 403 ? '（需 root 权限）' : ''}
+                </td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={5} className={styles.emptyCell}>
+                  {rows.length === 0 ? '未配置任何倍率' : '无匹配项'}
+                </td></tr>
+              ) : (
+                filtered.map((r) => (
+                  <tr key={`${r.kind}-${r.nm}`}>
+                    <td>{r.nm}</td>
+                    <td><KindBadge kind={r.kind} /></td>
+                    <td className={styles.cellmono}>{r.in.toFixed(2)}</td>
+                    <td className={styles.cellmono}>{r.kind === 'model' ? r.out.toFixed(2) : '—'}</td>
+                    <td className={styles.cellmono}>{r.kind === 'model' ? r.cache.toFixed(2) : '—'}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </section>
 
-      {/* 阶梯计费配置区块 */}
+      {/* 计费公式说明区块（BillingCalculator 语义，固定规则，非可配置数据） */}
       <h3 className={styles.chartTitle} style={{ marginBottom: 'var(--space-3)' }}>
-        阶梯计费规则
+        计费公式说明
       </h3>
       <section className={styles.tierGrid}>
         <div className={`${styles.tierCard} nx-fade`}>
-          <h4>按月用量阶梯</h4>
-          <div className={styles.desc}>按用户当月累计消费分档折扣</div>
+          <h4>分组折扣（实时）</h4>
+          <div className={styles.desc}>来自 GroupRatio，分组倍率与模型倍率相乘叠加</div>
           <div className={styles.tierRows}>
-            {MONTH_TIERS.map((t) => (
-              <div className={styles.tierRow} key={t.rng}>
-                <span className={styles.rng}>{t.rng}</span>
-                <span className={styles.rate}>{t.rate}</span>
-              </div>
-            ))}
+            {groupTiers.length === 0 ? (
+              <div className={styles.desc}>未配置分组倍率</div>
+            ) : (
+              groupTiers.map((t) => (
+                <div className={styles.tierRow} key={t.rng}>
+                  <span className={styles.rng}>{t.rng}</span>
+                  <span className={styles.rate}>{t.rate}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
         <div className={`${styles.tierCard} nx-fade`}>
@@ -318,20 +232,17 @@ export function BillingRulesPage() {
             &nbsp;&nbsp;× (hit ? cache_ratio : 1.0)
             <br />
             &nbsp;&nbsp;× group_ratio
-            <br />
-            cache_ratio ∈ [0.10, 0.50]
           </div>
         </div>
         <div className={`${styles.tierCard} nx-fade`}>
-          <h4>分组叠加规则</h4>
-          <div className={styles.desc}>分组倍率与模型倍率相乘叠加</div>
-          <div className={styles.tierRows}>
-            {GROUP_TIERS.map((t) => (
-              <div className={styles.tierRow} key={t.rng}>
-                <span className={styles.rng}>{t.rng}</span>
-                <span className={styles.rate}>{t.rate}</span>
-              </div>
-            ))}
+          <h4>等效输入计费</h4>
+          <div className={styles.desc}>补全 token 按补全倍率放大计入等效输入</div>
+          <div className={styles.tierExpr}>
+            eff_in = prompt
+            <br />
+            &nbsp;&nbsp;+ completion × completion_ratio
+            <br />
+            quota = eff_in × model_ratio × group_ratio
           </div>
         </div>
       </section>
@@ -344,7 +255,7 @@ export function BillingRulesPage() {
             <div className={styles.chartSub}>各输入倍率档位的模型数量</div>
           </div>
         </div>
-        <RatioDistChart />
+        <RatioDistChart bins={bins} />
       </section>
     </AdminShell>
   );

@@ -118,6 +118,15 @@
 .tableWrap table {
   min-width: 1080px;
 }
+.cellmono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.emptyCell {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
 .numIn {
   width: 78px;
   height: 30px;

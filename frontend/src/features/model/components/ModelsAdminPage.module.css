@@ -149,6 +149,11 @@
   font-size: var(--text-body-sm);
   color: var(--color-text-muted);
 }
+.emptyCell {
+  text-align: center;
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-muted);
+}
 .dispSub {
   font-family: var(--font-base);
   font-size: var(--text-overline);

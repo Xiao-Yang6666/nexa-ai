@@ -92,3 +92,57 @@ export type StatusAggregateView = Schemas['StatusAggregateView'];
 
 /** 按日配额聚合数据项（openapi QuotaDataItem，F-4007 GET /api/data/）。 */
 export type QuotaDataItem = Schemas['QuotaDataItem'];
+
+/** 兑换码管理视图（openapi RedemptionAdminView，F-2045 GET /api/redemption/）。含明文 key/核销人/核销时间。 */
+export type RedemptionAdminView = Schemas['RedemptionAdminView'];
+
+/** 生成兑换码请求（openapi RedemptionCreateRequest，F-2045 POST /api/redemption/）。 */
+export type RedemptionCreateRequest = Schemas['RedemptionCreateRequest'];
+
+/** 渠道管理视图（openapi ChannelAdminView，F-2016 GET /api/channel/）。key 已脱敏；balance 为渠道余额（管理端运维数据）。 */
+export type ChannelAdminView = Schemas['ChannelAdminView'];
+
+/** 创建渠道请求（openapi ChannelCreateRequest，F-2016 POST /api/channel/）。 */
+export type ChannelCreateRequest = Schemas['ChannelCreateRequest'];
+
+/** 编辑渠道请求（openapi ChannelUpdateRequest，F-2016 PUT /api/channel/）。 */
+export type ChannelUpdateRequest = Schemas['ChannelUpdateRequest'];
+
+/* ============ 模型/供应商管理端 DTO（admin-scope，F-3013~/F-6001~） ============ */
+
+/** 对外模型管理视图（openapi PublicModelAdminView，F-6001 GET /api/public_models）。 */
+export type PublicModelAdminView = Schemas['PublicModelAdminView'];
+/** 创建对外模型请求（openapi PublicModelCreateRequest）。 */
+export type PublicModelCreateRequest = Schemas['PublicModelCreateRequest'];
+/** 更新对外模型请求（openapi PublicModelUpdateRequest，A 不可改）。 */
+export type PublicModelUpdateRequest = Schemas['PublicModelUpdateRequest'];
+
+/** 模型元数据管理视图（openapi ModelMetaAdminView，F-3013 GET /api/models）。 */
+export type ModelMetaAdminView = Schemas['ModelMetaAdminView'];
+/** 创建模型元数据请求（openapi ModelMetaCreateRequest）。 */
+export type ModelMetaCreateRequest = Schemas['ModelMetaCreateRequest'];
+/** 更新模型元数据请求（openapi ModelMetaUpdateRequest，支持 status_only）。 */
+export type ModelMetaUpdateRequest = Schemas['ModelMetaUpdateRequest'];
+/** 上游模型同步差异（openapi ModelSyncDiff，F-3020 sync/preview）。 */
+export type ModelSyncDiff = Schemas['ModelSyncDiff'];
+/** 上游模型同步结果（openapi ModelSyncResult，F-3019 sync）。 */
+export type ModelSyncResult = Schemas['ModelSyncResult'];
+
+/** 供应商管理视图（openapi VendorAdminView，F-3018 GET /api/vendors）。 */
+export type VendorAdminView = Schemas['VendorAdminView'];
+/** 供应商写入请求（openapi VendorWriteRequest，创建/更新共用）。 */
+export type VendorWriteRequest = Schemas['VendorWriteRequest'];
+
+/** 渠道成本管理视图（openapi ChannelModelCostAdminView，F-6006 GET /api/channel_model_costs）。 */
+export type ChannelModelCostAdminView = Schemas['ChannelModelCostAdminView'];
+/** 渠道成本写入请求（openapi ChannelModelCostWriteRequest，upsert）。 */
+export type ChannelModelCostWriteRequest = Schemas['ChannelModelCostWriteRequest'];
+
+/** 渠道池成员（openapi ChannelPoolMember，F-6005 GET /api/channel/pool）。 */
+export type ChannelPoolMember = Schemas['ChannelPoolMember'];
+
+/** A→B 底仓映射管理视图（openapi PlatformModelMappingAdminView，F-6002）。含上游 B，仅 admin。 */
+export type PlatformModelMappingAdminView = Schemas['PlatformModelMappingAdminView'];
+
+/** 利润看板聚合项（openapi ProfitDashboardItem，F-6009 GET /api/profit/dashboard）。含成本/利润，仅 admin。 */
+export type ProfitDashboardItem = Schemas['ProfitDashboardItem'];

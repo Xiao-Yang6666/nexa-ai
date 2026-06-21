@@ -3,6 +3,15 @@
 import { useState, useMemo } from 'react';
 import { AdminShell } from '@/features/admin';
 import { Button } from '@/shared/ui';
+import { ApiError } from '@/shared/api';
+import {
+  useRedemptions,
+  useGenerateRedemptions,
+  usdToQuota,
+  daysToExpiry,
+  type RedeemStatus,
+  type RedeemRowVM,
+} from '../model/redeem.model';
 import styles from './RedeemPage.module.css';
 
 /* ── 内联线性图标（迁移自 S6 原型 SVG） ── */
@@ -60,41 +69,11 @@ function SortArrow() {
   );
 }
 
-/* ── Mock 数据（迁移自 S6 原型 script，14+ 行，状态多样） ── */
-type RedeemStatus = 'unused' | 'used' | 'expired';
-
-interface RedeemRow {
-  code: string;
-  amt: number;
-  st: RedeemStatus;
-  user: string;
-  ct: string;
-  exp: string;
-  batch: string;
-}
-
-const DATA: RedeemRow[] = [
-  { code: 'NEXA-A1B2-****-9X7K', amt: 20, st: 'unused', user: '—', ct: '06-15 09:00', exp: '09-13 09:00', batch: 'B-20260615' },
-  { code: 'NEXA-C3D4-****-8M2P', amt: 20, st: 'used', user: 'alice.chen', ct: '06-15 09:00', exp: '09-13 09:00', batch: 'B-20260615' },
-  { code: 'NEXA-E5F6-****-7N4Q', amt: 10, st: 'unused', user: '—', ct: '06-10 10:30', exp: '12-07 10:30', batch: 'B-20260610' },
-  { code: 'NEXA-G7H8-****-6R8S', amt: 10, st: 'used', user: 'bob.li', ct: '06-10 10:30', exp: '12-07 10:30', batch: 'B-20260610' },
-  { code: 'NEXA-I9J0-****-5T1U', amt: 50, st: 'unused', user: '—', ct: '06-01 08:00', exp: '08-30 08:00', batch: 'B-20260601' },
-  { code: 'NEXA-K1L2-****-4V3W', amt: 50, st: 'used', user: 'carol.wang', ct: '06-01 08:00', exp: '08-30 08:00', batch: 'B-20260601' },
-  { code: 'NEXA-M3N4-****-3X5Y', amt: 5, st: 'expired', user: '—', ct: '03-12 14:20', exp: '06-10 14:20', batch: 'B-20260601' },
-  { code: 'NEXA-O5P6-****-2Z7A', amt: 5, st: 'expired', user: '—', ct: '03-12 14:20', exp: '06-10 14:20', batch: 'B-20260601' },
-  { code: 'NEXA-Q7R8-****-1B9C', amt: 100, st: 'unused', user: '—', ct: '06-18 16:45', exp: '12-15 16:45', batch: '单个生成' },
-  { code: 'NEXA-S9T0-****-0D2E', amt: 100, st: 'used', user: 'dave.zhao', ct: '06-12 11:10', exp: '09-10 11:10', batch: '单个生成' },
-  { code: 'NEXA-U1V2-****-9F4G', amt: 10, st: 'unused', user: '—', ct: '06-10 10:30', exp: '12-07 10:30', batch: 'B-20260610' },
-  { code: 'NEXA-W3X4-****-8H6I', amt: 10, st: 'used', user: 'alice.chen', ct: '06-10 10:30', exp: '12-07 10:30', batch: 'B-20260610' },
-  { code: 'NEXA-Y5Z6-****-7J8K', amt: 20, st: 'expired', user: '—', ct: '02-28 09:00', exp: '05-29 09:00', batch: 'B-20260601' },
-  { code: 'NEXA-A7B8-****-6L0M', amt: 20, st: 'unused', user: '—', ct: '06-15 09:00', exp: '09-13 09:00', batch: 'B-20260615' },
-  { code: 'NEXA-C9D0-****-5N2O', amt: 50, st: 'used', user: 'bob.li', ct: '06-01 08:00', exp: '08-30 08:00', batch: 'B-20260601' },
-];
-
 const ST_MAP: Record<RedeemStatus, { cls: string; tone: string; lab: string }> = {
   unused: { cls: 'b-suc', tone: 'var(--color-success)', lab: '未使用' },
   used: { cls: 'b-neutral', tone: 'var(--color-text-muted)', lab: '已使用' },
   expired: { cls: 'b-dan', tone: 'var(--color-danger)', lab: '已过期' },
+  disabled: { cls: 'b-dan', tone: 'var(--color-danger)', lab: '已禁用' },
 };
 
 function StatusBadge({ st }: { st: RedeemStatus }) {
@@ -107,17 +86,6 @@ function StatusBadge({ st }: { st: RedeemStatus }) {
   );
 }
 
-/* ── 随机码生成（仅前端演示） ── */
-function rand(n: number): string {
-  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < n; i++) s += c[Math.floor(Math.random() * c.length)];
-  return s;
-}
-function newCode(): string {
-  return `NEXA-${rand(4)}-${rand(4)}-${rand(4)}`;
-}
-
 /* ── 复制工具（判空 clipboard） ── */
 function copyText(text: string): void {
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -125,78 +93,98 @@ function copyText(text: string): void {
   }
 }
 
-export function RedeemPage() {
-  /* 单个生成 */
-  const [singleCode, setSingleCode] = useState<string | null>(null);
+const PAGE_SIZE = 20;
 
-  /* 批量生成 */
+export function RedeemPage() {
+  /* 分页 */
+  const [page, setPage] = useState(1);
+
+  /* 列表数据（真实接口） */
+  const { data, isLoading, isError, error } = useRedemptions(page, PAGE_SIZE);
+  const rows: RedeemRowVM[] = useMemo(() => data?.rows ?? [], [data]);
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  /* 生成 mutation */
+  const genMutation = useGenerateRedemptions();
+
+  /* 单个生成表单 */
+  const [singleAmt, setSingleAmt] = useState('20');
+  const [singleDays, setSingleDays] = useState('90');
+  const [singleResult, setSingleResult] = useState<string | null>(null);
+
+  /* 批量生成表单 */
+  const [batchCount, setBatchCount] = useState('50');
+  const [batchAmt, setBatchAmt] = useState('10');
+  const [batchDays, setBatchDays] = useState('180');
   const [batchList, setBatchList] = useState<string[] | null>(null);
   const [batchExtra, setBatchExtra] = useState(0);
-  const [batchCount, setBatchCount] = useState('50');
-  const [batchNote, setBatchNote] = useState('单批最多 1000 个');
 
-  /* 筛选 */
+  /* 筛选（客户端过滤当前页；后端列表暂无状态/批次过滤参数） */
   const [fStatus, setFStatus] = useState('');
   const [fBatch, setFBatch] = useState('');
   const [search, setSearch] = useState('');
 
-  /* 批量选择 */
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
   /* 行复制态 */
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  /* 批次下拉选项从当前页数据动态提取 */
+  const batchOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      if (r.batch && r.batch !== '—') set.add(r.batch);
+    });
+    return Array.from(set);
+  }, [rows]);
+
   const filtered = useMemo(() => {
     const kw = search.trim().toLowerCase();
-    return DATA.filter((r) => {
+    return rows.filter((r) => {
       if (fStatus && r.st !== fStatus) return false;
       if (fBatch && r.batch !== fBatch) return false;
-      if (
-        kw &&
-        !r.code.toLowerCase().includes(kw) &&
-        !r.user.toLowerCase().includes(kw)
-      ) {
+      if (kw && !r.code.toLowerCase().includes(kw) && !r.user.toLowerCase().includes(kw)) {
         return false;
       }
       return true;
     });
-  }, [fStatus, fBatch, search]);
+  }, [rows, fStatus, fBatch, search]);
 
-  const allFilteredSelected =
-    filtered.length > 0 && filtered.every((r) => selected.has(r.code));
-
-  function toggleAll(checked: boolean) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) {
-        filtered.forEach((r) => next.add(r.code));
-      } else {
-        filtered.forEach((r) => next.delete(r.code));
-      }
-      return next;
+  async function handleGenSingle() {
+    setSingleResult(null);
+    const usd = parseFloat(singleAmt) || 0;
+    const days = parseInt(singleDays, 10) || 0;
+    if (usd <= 0) return;
+    const keys = await genMutation.mutateAsync({
+      name: '单个生成',
+      quota: usdToQuota(usd),
+      count: 1,
+      expired_time: daysToExpiry(days),
     });
+    setSingleResult(keys[0] ?? null);
   }
 
-  function toggleRow(code: string, checked: boolean) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(code);
-      else next.delete(code);
-      return next;
-    });
-  }
-
-  function handleGenSingle() {
-    setSingleCode(newCode());
-  }
-
-  function handleGenBatch() {
+  async function handleGenBatch() {
+    setBatchList(null);
+    setBatchExtra(0);
+    const usd = parseFloat(batchAmt) || 0;
+    const days = parseInt(batchDays, 10) || 0;
     const n = Math.max(1, Math.min(1000, parseInt(batchCount, 10) || 1));
-    const preview = Math.min(n, 30);
-    const list: string[] = [];
-    for (let i = 0; i < preview; i++) list.push(newCode());
-    setBatchList(list);
-    setBatchExtra(n > preview ? n - preview : 0);
+    if (usd <= 0) return;
+    const keys = await genMutation.mutateAsync({
+      name: `B-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`,
+      quota: usdToQuota(usd),
+      count: n,
+      expired_time: daysToExpiry(days),
+    });
+    const preview = keys.slice(0, 30);
+    setBatchList(preview);
+    setBatchExtra(keys.length > 30 ? keys.length - 30 : 0);
+  }
+
+  function handleExportBatch() {
+    if (!batchList) return;
+    const csv = batchList.join('\n');
+    copyText(csv);
   }
 
   function handleRowCopy(code: string) {
@@ -207,14 +195,10 @@ export function RedeemPage() {
     }, 1200);
   }
 
-  const selCount = selected.size;
+  const generating = genMutation.isPending;
 
   return (
-    <AdminShell
-      activeId="redeem"
-      title="兑换码管理"
-      crumb={['管理后台', '运营', '兑换码']}
-    >
+    <AdminShell activeId="redeem" title="兑换码管理" crumb={['管理后台', '运营', '兑换码']}>
       {/* 顶部生成卡 */}
       <section className={styles.genGrid}>
         {/* 单个生成 */}
@@ -226,22 +210,34 @@ export function RedeemPage() {
           <div className={styles.genFields}>
             <div>
               <label className="field-label">面额（美元）</label>
-              <input className={`input ${styles.cellmono}`} defaultValue="20" inputMode="decimal" />
+              <input
+                className={`input ${styles.cellmono}`}
+                value={singleAmt}
+                inputMode="decimal"
+                onChange={(e) => setSingleAmt(e.target.value)}
+              />
             </div>
             <div>
-              <label className="field-label">有效期（天）</label>
-              <input className={`input ${styles.cellmono}`} defaultValue="90" inputMode="numeric" />
+              <label className="field-label">有效期（天，0=永久）</label>
+              <input
+                className={`input ${styles.cellmono}`}
+                value={singleDays}
+                inputMode="numeric"
+                onChange={(e) => setSingleDays(e.target.value)}
+              />
             </div>
           </div>
           <div className={styles.genFoot}>
             <span className={styles.grow} />
-            <Button onClick={handleGenSingle}>生成</Button>
+            <Button onClick={handleGenSingle} disabled={generating}>
+              {generating ? '生成中…' : '生成'}
+            </Button>
           </div>
-          {singleCode && (
+          {singleResult && (
             <div className={styles.resultBox}>
               <div className={styles.code}>
-                <span>{singleCode}</span>
-                <a onClick={() => copyText(singleCode)}>复制</a>
+                <span>{singleResult}</span>
+                <a onClick={() => copyText(singleResult)}>复制</a>
               </div>
             </div>
           )}
@@ -266,21 +262,33 @@ export function RedeemPage() {
               </div>
               <div>
                 <label className="field-label">面额（美元）</label>
-                <input className={`input ${styles.cellmono}`} defaultValue="10" inputMode="decimal" />
+                <input
+                  className={`input ${styles.cellmono}`}
+                  value={batchAmt}
+                  inputMode="decimal"
+                  onChange={(e) => setBatchAmt(e.target.value)}
+                />
               </div>
             </div>
             <div>
-              <label className="field-label">有效期（天）</label>
-              <input className={`input ${styles.cellmono}`} defaultValue="180" inputMode="numeric" />
+              <label className="field-label">有效期（天，0=永久）</label>
+              <input
+                className={`input ${styles.cellmono}`}
+                value={batchDays}
+                inputMode="numeric"
+                onChange={(e) => setBatchDays(e.target.value)}
+              />
             </div>
           </div>
           <div className={styles.genFoot}>
-            <span className={styles.muted}>{batchNote}</span>
+            <span className={styles.muted}>单批最多 1000 个</span>
             <span className={styles.grow} />
-            <Button variant="sec" size="sm" onClick={() => setBatchNote('已导出 CSV')}>
-              导出
+            <Button variant="sec" size="sm" onClick={handleExportBatch} disabled={!batchList}>
+              复制全部
             </Button>
-            <Button onClick={handleGenBatch}>批量生成</Button>
+            <Button onClick={handleGenBatch} disabled={generating}>
+              {generating ? '生成中…' : '批量生成'}
+            </Button>
           </div>
           {batchList && (
             <div className={styles.resultBox}>
@@ -292,7 +300,7 @@ export function RedeemPage() {
                 ))}
                 {batchExtra > 0 && (
                   <div className={`${styles.ci} ${styles.ciMuted}`}>
-                    … 其余 {batchExtra} 个已生成，可导出查看
+                    … 其余 {batchExtra} 个已生成，「复制全部」获取
                   </div>
                 )}
               </div>
@@ -303,26 +311,20 @@ export function RedeemPage() {
 
       {/* FilterBar */}
       <section className={`${styles.filterbar} nx-fade`}>
-        <select
-          className={styles.sel}
-          value={fStatus}
-          onChange={(e) => setFStatus(e.target.value)}
-        >
+        <select className={styles.sel} value={fStatus} onChange={(e) => setFStatus(e.target.value)}>
           <option value="">全部状态</option>
           <option value="unused">未使用</option>
           <option value="used">已使用</option>
           <option value="expired">已过期</option>
+          <option value="disabled">已禁用</option>
         </select>
-        <select
-          className={styles.sel}
-          value={fBatch}
-          onChange={(e) => setFBatch(e.target.value)}
-        >
+        <select className={styles.sel} value={fBatch} onChange={(e) => setFBatch(e.target.value)}>
           <option value="">全部批次</option>
-          <option>B-20260601</option>
-          <option>B-20260610</option>
-          <option>B-20260615</option>
-          <option>单个生成</option>
+          {batchOptions.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
         </select>
         <input
           className={styles.srch}
@@ -334,31 +336,12 @@ export function RedeemPage() {
         <span className={styles.grow} />
       </section>
 
-      {/* BatchBar */}
-      {selCount > 0 && (
-        <section className={styles.batchbar}>
-          <span className={styles.cnt}>已选 {selCount} 项</span>
-          <span className={styles.grow} />
-          <Button variant="danger" size="sm">
-            批量作废
-          </Button>
-        </section>
-      )}
-
       {/* 兑换码列表 */}
       <section className={`${styles.tableCard} nx-fade`}>
         <div className={styles.tableWrap}>
           <table>
             <thead>
               <tr>
-                <th style={{ width: 34 }}>
-                  <input
-                    type="checkbox"
-                    aria-label="全选"
-                    checked={allFilteredSelected}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                  />
-                </th>
                 <th>兑换码</th>
                 <th className={styles.sortable}>
                   面额 <SortArrow />
@@ -375,10 +358,22 @@ export function RedeemPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {isLoading ? (
                 <tr>
-                  <td colSpan={8} className={styles.emptyCell}>
-                    无匹配兑换码
+                  <td colSpan={7} className={styles.emptyCell}>
+                    加载中…
+                  </td>
+                </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={7} className={styles.emptyCell}>
+                    加载失败：{error instanceof ApiError ? error.message : '请稍后重试'}
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className={styles.emptyCell}>
+                    {total === 0 ? '暂无兑换码' : '无匹配兑换码'}
                   </td>
                 </tr>
               ) : (
@@ -386,21 +381,13 @@ export function RedeemPage() {
                   const rowCls =
                     r.st === 'used'
                       ? styles.rowUsed
-                      : r.st === 'expired'
+                      : r.st === 'expired' || r.st === 'disabled'
                         ? styles.rowExpired
                         : '';
                   return (
-                    <tr className={rowCls} key={r.code}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          aria-label={`选择 ${r.code}`}
-                          checked={selected.has(r.code)}
-                          onChange={(e) => toggleRow(r.code, e.target.checked)}
-                        />
-                      </td>
+                    <tr className={rowCls} key={r.id}>
                       <td className={styles.cellmono}>{r.code}</td>
-                      <td className={styles.cellmono}>${r.amt}</td>
+                      <td className={styles.cellmono}>${r.amtUsd.toFixed(2)}</td>
                       <td>
                         <StatusBadge st={r.st} />
                       </td>
@@ -414,7 +401,6 @@ export function RedeemPage() {
                           <a onClick={() => handleRowCopy(r.code)}>
                             {copiedCode === r.code ? '已复制' : '复制'}
                           </a>
-                          {r.st === 'unused' && <a className="dang">作废</a>}
                         </div>
                       </td>
                     </tr>
@@ -425,7 +411,21 @@ export function RedeemPage() {
           </table>
         </div>
         <div className={styles.pager}>
-          <span>共 {filtered.length} 个兑换码</span>
+          <span>共 {total} 个兑换码</span>
+          <div className={styles.pg}>
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              ‹
+            </button>
+            <span className={styles.pgInfo}>
+              {page} / {totalPages}
+            </span>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              ›
+            </button>
+          </div>
         </div>
       </section>
     </AdminShell>
