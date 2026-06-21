@@ -5,6 +5,7 @@ import com.nexa.relay.application.RelayForwardResult;
 import com.nexa.relay.application.RelayForwardUseCase;
 import com.nexa.relay.domain.vo.RelayDispatch;
 import com.nexa.relay.domain.vo.RelayMode;
+import com.nexa.relay.infrastructure.auth.RelayApiKeyAuthentication;
 import com.nexa.relay.interfaces.api.dto.ErrorResponse;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
@@ -155,8 +156,11 @@ public class RelayController {
     /**
      * 统一 relay 转发入口：构造鉴权上下文 → 调主干编排 → 透传上游 status + headers + body。
      *
-     * <p>从 {@link AuthenticatedActor} 取 userId/username 构造 {@link RelayAuthContext}；
-     * group/tokenId/tokenName 依赖 TokenAuth 中间件（key 鉴权）落地——本期以缺省 group 占位。
+     * <p>身份来自 {@link RelayApiKeyAuthentication}（{@code RelayApiKeyAuthenticationFilter} 反查 tokens 表注入）：
+     * {@code userId/username} 取自 {@link AuthenticatedActor}，{@code group/tokenId/tokenName} 取自 token 上下文，
+     * 据此构造完整 {@link RelayAuthContext}——激活 REQ-03 选渠（真实 group）、REQ-05 计费（真实 group）、
+     * REQ-06 key 减法校验（tokenId 非空时 KeyLimitGuard 生效）。理论上 /v1 必经 API-Key 鉴权，
+     * 故 relay 上下文必存在；防御性缺失时回退缺省（group=default、tokenId=null）。
      * 业务/集成异常由 {@code RelayExceptionHandler} 统一翻译为错误信封，本方法不写 try/catch。</p>
      *
      * @param path  对外端点路径（RL-2 分发用）
@@ -165,9 +169,12 @@ public class RelayController {
      * @return 透传上游响应的 {@code ResponseEntity}
      */
     private ResponseEntity<?> forwardRelay(String path, byte[] body, AuthenticatedActor actor) {
-        // TODO REQ-06: group/tokenId/tokenName 暂以缺省占位，待 TokenAuth（key 鉴权）接线后由真实 token 注入。
+        RelayApiKeyAuthentication relayAuth = RelayApiKeyAuthentication.current().orElse(null);
+        Long tokenId = relayAuth == null ? null : relayAuth.tokenId();
+        String group = relayAuth == null ? null : relayAuth.group();
+        String tokenName = relayAuth == null ? null : relayAuth.tokenName();
         RelayAuthContext authContext = new RelayAuthContext(
-                actor.userId(), actor.username(), null, null, null);
+                actor.userId(), actor.username(), group, tokenId, tokenName);
         RelayForwardResult result = useCase.forward(path, body, authContext);
         return ResponseEntity.status(result.statusCode())
                 .body(result.body());

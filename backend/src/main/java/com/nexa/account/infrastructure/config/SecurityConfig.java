@@ -1,5 +1,6 @@
 package com.nexa.account.infrastructure.config;
 
+import com.nexa.relay.infrastructure.auth.RelayApiKeyAuthenticationFilter;
 import com.nexa.shared.security.infrastructure.auth.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,14 +41,19 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RelayApiKeyAuthenticationFilter relayApiKeyAuthenticationFilter;
     private final CorsProperties corsProperties;
 
     /**
-     * @param jwtAuthenticationFilter JWT 身份解析过滤器（com.nexa.shared.security 提供）
-     * @param corsProperties          CORS 跨域白名单配置（app.cors.*）
+     * @param jwtAuthenticationFilter         JWT 身份解析过滤器（com.nexa.shared.security 提供，作用 /api/**）
+     * @param relayApiKeyAuthenticationFilter Relay API-Key 鉴权过滤器（com.nexa.relay 提供，仅作用 /v1/**）
+     * @param corsProperties                  CORS 跨域白名单配置（app.cors.*）
      */
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CorsProperties corsProperties) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          RelayApiKeyAuthenticationFilter relayApiKeyAuthenticationFilter,
+                          CorsProperties corsProperties) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.relayApiKeyAuthenticationFilter = relayApiKeyAuthenticationFilter;
         this.corsProperties = corsProperties;
     }
 
@@ -127,10 +133,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/user/search").hasAnyRole("ADMIN", "ROOT") // F-1008 搜索
                         .requestMatchers(HttpMethod.POST, "/api/user/manage").hasAnyRole("ADMIN", "ROOT")// F-1010 状态管理
                         .requestMatchers("/api/user/*", "/api/user/*/**").hasAnyRole("ADMIN", "ROOT")    // F-1010/1012 /api/user/{id}/** 他人管理
+                        // ===== Relay 中继端点（/v1/**）：API-Key 鉴权（非 JWT），由 RelayApiKeyAuthenticationFilter
+                        // 反查 tokens 表注入 RelayApiKeyAuthentication（已认证 COMMON）；此处路径级只需「已认证」，
+                        // 细粒度 USER 门槛由各 relay handler 的方法级 @RequireRole(USER) 就近声明。=====
+                        .requestMatchers("/v1/**").authenticated()
                         // ===== 其余非公开端点：需认证（细粒度级别由方法级 @RequireRole 注解声明）=====
                         .anyRequest().authenticated())
-                // 在用户名密码过滤器之前接入 JWT 身份解析（用户名密码过滤器本身已禁用，仅作链路定位锚点）。
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // /v1/** 走 API-Key 鉴权，须在 JWT 过滤器之前接入：认证成功后置 RelayApiKeyAuthentication，
+                // JWT 过滤器见上下文已有认证即跳过；/api/** 因本过滤器 shouldNotFilter 跳过，仍走 JWT。
+                .addFilterBefore(relayApiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // JWT 身份解析显式接在 relay 过滤器之后（保证 /v1 先经 API-Key：否则 sk- key 会被 JWT 当令牌
+                // 解析失败误判 401）；用户名密码过滤器本身已禁用，仅作链路定位锚点。
+                .addFilterAfter(jwtAuthenticationFilter, RelayApiKeyAuthenticationFilter.class);
         return http.build();
     }
 
