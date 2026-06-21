@@ -3,8 +3,14 @@ package com.nexa.relay.application;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.nexa.billing.application.port.UserQuotaAccount;
+import com.nexa.billing.domain.vo.Quota;
 import com.nexa.channel.domain.model.Channel;
+import com.nexa.channel.domain.model.ChannelModelCost;
+import com.nexa.channel.domain.repository.ChannelModelCostRepository;
 import com.nexa.channel.domain.repository.ChannelRepository;
+import com.nexa.model.domain.model.PublicModel;
+import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.exception.InvalidRelayParameterException;
 import com.nexa.relay.domain.exception.NoAvailableChannelException;
 import com.nexa.relay.domain.exception.UpstreamException;
@@ -16,6 +22,7 @@ import com.nexa.relay.domain.port.UpstreamResponse;
 import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
+import com.nexa.relay.domain.service.DualPriceBilling;
 import com.nexa.relay.domain.service.RelayPathResolver;
 import com.nexa.relay.domain.service.TwoLayerModelResolver;
 import com.nexa.relay.domain.vo.AliasScope;
@@ -27,6 +34,7 @@ import com.nexa.relay.domain.vo.RelayInfo;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Arrays;
 
 /**
@@ -47,6 +55,9 @@ public class RelayForwardUseCase {
     private final ObjectMapper objectMapper;
     private final KeyLimitGuard keyLimitGuard;
     private final SelectRelayChannelUseCase selectRelayChannelUseCase;
+    private final PublicModelRepository publicModelRepo;
+    private final ChannelModelCostRepository channelModelCostRepo;
+    private final UserQuotaAccount userQuotaAccount;
 
     public RelayForwardUseCase(PlatformModelMappingRepository l2Repo,
                                UserModelAliasRepository l1Repo,
@@ -55,7 +66,10 @@ public class RelayForwardUseCase {
                                ChannelRepository channelRepo,
                                ObjectMapper objectMapper,
                                KeyLimitGuard keyLimitGuard,
-                               SelectRelayChannelUseCase selectRelayChannelUseCase) {
+                               SelectRelayChannelUseCase selectRelayChannelUseCase,
+                               PublicModelRepository publicModelRepo,
+                               ChannelModelCostRepository channelModelCostRepo,
+                               UserQuotaAccount userQuotaAccount) {
         this.l2Repo = l2Repo;
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
@@ -64,6 +78,9 @@ public class RelayForwardUseCase {
         this.objectMapper = objectMapper;
         this.keyLimitGuard = keyLimitGuard;
         this.selectRelayChannelUseCase = selectRelayChannelUseCase;
+        this.publicModelRepo = publicModelRepo;
+        this.channelModelCostRepo = channelModelCostRepo;
+        this.userQuotaAccount = userQuotaAccount;
     }
 
     /**
@@ -146,12 +163,25 @@ public class RelayForwardUseCase {
                 java.util.Map.of("Content-Type", "application/json"));
         UpstreamResponse upstreamResponse = upstreamHttpPort.send(upstreamRequest);
 
-        // ⑥⑦ 双价记账（quota_sell/quota_cost/quota_profit）。
-        // TODO REQ-05: 接入 DualPriceBilling（售价用 A×GroupRatio、成本用 ChannelModelCost(ChannelId,B)）+ 预扣/结算。
-        BillingResult billing = new BillingResult(0, 0, 0, true);
+        // ⑥⑦ 双价记账（quota_sell/quota_cost/quota_profit，REQ-05）。
+        // 第15步：从上游响应体解析真实 usage（D5 prompt/completion tokens）。
+        UsageIR usage = parseUsage(upstreamResponse);
+        // 第16步售价 / 第17-18步成本：调 DualPriceBilling 纯函数算三金额。
+        //   售价 quota_sell = BasePriceRatio(A) × GroupRatio(group) × tokens（用公开名 A + 分组折扣，恒定，不随渠道变）。
+        //   成本 quota_cost = CostRatio(实际 ChannelId, B) × tokens（用真实渠道 id + 上游名 B，不乘 GroupRatio，ADR-BILL-02）。
+        //   成本行 (ChannelId,B) 缺失 → quota_cost=0、quota_profit=quota_sell、costMissing=true（不阻断，落 Log Other 写 cost_missing）。
+        BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
+        BigDecimal groupRatio = resolveGroupRatio(authContext.group());
+        BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel); // null = 成本行缺失
+        BillingResult billing = DualPriceBilling.compute(
+                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
 
-        // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）。
-        recordConsumeLog(dispatch, resolution, channel, authContext, billing);
+        // ⑦' 结算扣减（响应后一次性扣售价，最小闭环）。
+        // TODO REQ-05 完整：补「选渠后预扣 + 响应后多退少补」分段结算（§6 第8-9/19步），本期仅响应后一次性扣 quota_sell。
+        settle(authContext.userId(), billing);
+
+        // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段 + channel_id + 三金额。
+        recordConsumeLog(dispatch, resolution, channel, authContext, usage, billing);
 
         // 透传上游 status + headers + body 回客户（非流式 passthrough）。
         return new RelayForwardResult(
@@ -218,9 +248,86 @@ public class RelayForwardUseCase {
                 .anyMatch(upstreamModel::equals);
     }
 
-    /** 落一条消费 Log（RL-7 第⑨步，最小填充能编译/落库即可；完整计费口径由 REQ-05 补全）。 */
+    /**
+     * 解析上游响应体的 usage（第15步，D5 token 口径）。
+     *
+     * <p>本期 OpenAI 非流式 passthrough：上游响应体即 OpenAI 格式，直接读 {@code usage.prompt_tokens}/
+     * {@code usage.completion_tokens}。解析失败 / 缺 usage / 非 2xx → 返回 {@link UsageIR#ZERO}
+     * （计费缺失兜底不阻断；非 2xx 上游错误本期仍按 0 token 落消费 Log，完整错误处置见 REQ-09）。</p>
+     */
+    private UsageIR parseUsage(UpstreamResponse response) {
+        byte[] body = response.body();
+        if (body == null || body.length == 0) {
+            return UsageIR.ZERO;
+        }
+        try {
+            JsonNode usageNode = objectMapper.readTree(body).path("usage");
+            if (usageNode.isMissingNode() || usageNode.isNull()) {
+                return UsageIR.ZERO;
+            }
+            return UsageIR.of(
+                    usageNode.path("prompt_tokens").asInt(0),
+                    usageNode.path("completion_tokens").asInt(0));
+        } catch (IOException e) {
+            // 上游响应非 JSON（错误页等）：计费 token 归零兜底，不阻断落 Log。
+            return UsageIR.ZERO;
+        }
+    }
+
+    /**
+     * 取对外模型 A 的基准售价倍率（BL-7 售价挂 A 恒定）。A 无 PublicModel 记录 → 回落倍率 1（不阻断）。
+     */
+    private BigDecimal resolveBasePriceRatio(String resolvedPublicModel) {
+        return publicModelRepo.findByPublicName(resolvedPublicModel)
+                .map(PublicModel::basePriceRatio)
+                .orElse(BigDecimal.ONE);
+    }
+
+    /**
+     * 取分组折扣系数（BL-8 纯折扣，GetGroupRatio(UsingGroup)）。
+     *
+     * <p>TODO REQ-05 完整：分组折扣应读 {@code group_ratio} KV（BILLING-MODEL-ARCHITECTURE §3，
+     * free=1.0/vip=0.85/svip=0.7，后台可配）。中央 GroupRatio 注册中心尚未在本服务落地（见 REQ-13），
+     * 本期统一回落 1.0（free 基础折扣口径），售价 = BasePriceRatio(A) × 1.0 × tokens。</p>
+     */
+    private BigDecimal resolveGroupRatio(String group) {
+        return BigDecimal.ONE;
+    }
+
+    /**
+     * 取实际选中渠道×B 的成本倍率（BL-7 成本挂渠道×B，ADR-BILL-02 不乘 GroupRatio）。
+     *
+     * <p>主键 {@code (实际 ChannelId, 真实模型 B)} 查 {@link ChannelModelCostRepository}：命中且启用 →
+     * 返回 cost_ratio；缺行 / 禁用 → 返回 {@code null}（成本缺失态，由 {@link DualPriceBilling} 兜底
+     * quota_cost=0 + costMissing 标记，不阻断）。{@code channelId} 为空（不应发生）亦按缺失处理。</p>
+     */
+    private BigDecimal resolveCostRatio(Long channelId, String upstreamModel) {
+        if (channelId == null) {
+            return null;
+        }
+        return channelModelCostRepo.findByChannelAndUpstream(channelId.intValue(), upstreamModel)
+                .filter(c -> Boolean.TRUE.equals(c.enabled()))
+                .map(ChannelModelCost::costRatio)
+                .orElse(null);
+    }
+
+    /**
+     * 响应后一次性结算扣减（最小闭环）：按真实 usage 算得的 {@code quota_sell} 扣用户余额。
+     *
+     * <p>TODO REQ-05 完整：本期无选渠预扣，直接响应后扣售价一次（不做余额下限/欠费保护）。完整的
+     * 「选渠后 PreConsume 预扣 + 响应后多退少补 SettleBilling」分段结算待后续接入（§6 第8-9/19步）。
+     * 成本/利润不参与扣减（仅落 Log 经营分析），客户只被扣 quota_sell（售价）。</p>
+     */
+    private void settle(long userId, BillingResult billing) {
+        if (billing.quotaSell() <= 0) {
+            return;
+        }
+        userQuotaAccount.debit(userId, Quota.of(billing.quotaSell()));
+    }
+
+    /** 落一条消费 Log（RL-7 第⑨步，Type=2 Consume）：三段模型 + 协议三字段 + channel_id + 三金额 + 真实 usage。 */
     private void recordConsumeLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                  RelayAuthContext authContext, BillingResult billing) {
+                                  RelayAuthContext authContext, UsageIR usage, BillingResult billing) {
         RelayInfo info = new RelayInfo();
         info.setUserId(authContext.userId());
         info.setUsername(authContext.username());
@@ -235,9 +342,10 @@ public class RelayForwardUseCase {
         info.computePassthrough();
         info.setChannelId(channel.id());
         info.setChannelType(channel.type().code());
-        // TODO REQ-05: usage 取自 IR（D5 解析上游 usage），billing 取 DualPriceBilling 真实结果。
+        // 成本行缺失 → Other 写 cost_missing 诊断标记（看板可筛，不阻断；对齐 RL-7 §4）。
+        String other = billing.costMissing() ? "{\"cost_missing\":true}" : null;
         RelayLog log = RelayLog.consume(
-                info, UsageIR.ZERO, billing, System.currentTimeMillis() / 1000L, null);
+                info, usage, billing, System.currentTimeMillis() / 1000L, other);
         logRepo.save(log);
     }
 }

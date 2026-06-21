@@ -28,6 +28,19 @@ public interface UserQuotaAccount {
     void credit(long userId, Quota amount);
 
     /**
+     * 从用户余额扣减额度（relay 转发结算扣售价，prd-relay RL-7 第19步 SettleBilling）。
+     *
+     * <p>语义：{@code users.quota -= amount}（原子自减，杜绝并发结算丢更新）。本期为「响应后一次性
+     * 结算扣减」最小闭环——无选渠预扣，直接按真实 usage 算得的 {@code quota_sell} 扣减一次。完整的
+     * 「选渠后预扣 + 响应后多退少补」分段结算（BILLING-MODEL-ARCHITECTURE §6 第8-9/19步）待后续接入。</p>
+     *
+     * @param userId 目标用户 id（&gt; 0）
+     * @param amount 扣减额度（quota 单位，&gt;= 0；0 为无副作用空操作）
+     * @throws com.nexa.billing.domain.exception.InvalidBillingParameterException 用户不存在时
+     */
+    void debit(long userId, Quota amount);
+
+    /**
      * 查询用户当前余额（用于回执展示，可选）。
      *
      * @param userId 目标用户 id
