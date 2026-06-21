@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>调用明细 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 调用明细（本人视图）—— 全 token 驱动，零裸色值 */
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-5)}
+  .stat{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-4) var(--space-5);box-shadow:var(--shadow-sm)}
+  .stat-label{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-bottom:var(--space-2)}
+  .stat-val{font-family:var(--font-brand);font-size:var(--text-h3);font-weight:var(--fw-bold);
+    color:var(--color-text);line-height:var(--lh-tight);letter-spacing:var(--tracking-tight)}
+  .stat-val.dang{color:var(--color-danger)}
+  .stat-val.ok{color:var(--color-success)}
+  .filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}
+  .filterbar .sel,.filterbar .srch,.filterbar .dt{height:36px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:inherit;font-size:var(--text-body-sm);padding:0 var(--space-3)}
+  .filterbar .srch{min-width:200px}
+  .filterbar .dt{font-family:var(--font-mono)}
+  .filterbar .sel:focus,.filterbar .srch:focus,.filterbar .dt:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+  .filterbar .grow{margin-left:auto}
+  .filterbar .sep{color:var(--color-text-muted);font-size:var(--text-body-sm)}
+  .scope-note{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);
+    padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);
+    background:var(--color-info-bg);border:1px solid var(--color-info-border)}
+  .scope-note svg{color:var(--color-info);flex:none}
+  .scope-note .t{font-size:var(--text-body-sm);color:var(--color-info-fg)}
+  .scope-note .t b{font-weight:var(--fw-semibold)}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  .table-wrap table{min-width:1240px}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable .arr{display:inline-flex;vertical-align:middle;color:var(--color-text-muted);margin-left:4px}
+  .cellmono{font-family:var(--font-mono)}
+  .type-badge{font-family:var(--font-mono);font-size:var(--text-overline)}
+  .row-acts{display:flex;gap:var(--space-3);white-space:nowrap}
+  .row-acts a{font-size:var(--text-body-sm);color:var(--color-primary-500);cursor:pointer}
+  .row-acts a:hover{color:var(--color-primary-600)}
+  /* 模型单元：客户请求的模型 / 实际调用的对外模型（一个值，绝不画多段链路） */
+  .modelcell{display:flex;flex-direction:column;gap:2px;line-height:1.35}
+  .modelcell .req{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text)}
+  .modelcell .land{font-family:var(--font-mono);font-size:var(--text-overline);color:var(--color-text-muted);
+    display:inline-flex;align-items:center;gap:4px}
+  .modelcell .land svg{color:var(--color-text-muted)}
+  /* 计费模式徽章 */
+  .bill-badge{font-family:var(--font-mono);font-size:var(--text-overline)}
+  /* 费用列 */
+  .money{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .fee-col{color:var(--color-text)}
+  /* IP / UA 列 */
+  .ipcell{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .uacell{font-size:var(--text-overline);color:var(--color-text-muted);max-width:200px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  /* 详情展开 */
+  .detail-row td{background:var(--color-surface-sunken);padding:var(--space-4) var(--space-5)}
+  .det-section{margin-bottom:var(--space-4)}
+  .det-section:last-child{margin-bottom:0}
+  .det-section h4{font-family:var(--font-brand);font-size:var(--text-body);font-weight:var(--fw-semibold);
+    color:var(--color-text);margin:0 0 var(--space-2)}
+  .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3) var(--space-5);font-size:var(--text-body-sm)}
+  .detail-grid dt{color:var(--color-text-muted);font-size:var(--text-caption);margin-bottom:2px}
+  .detail-grid dd{margin:0;font-family:var(--font-mono);color:var(--color-text-secondary);word-break:break-all}
+  .det-money{display:grid;grid-template-columns:repeat(2,auto);gap:var(--space-2) var(--space-6);
+    font-family:var(--font-mono);font-size:var(--text-body-sm);align-items:baseline;justify-content:start}
+  .det-money .k{color:var(--color-text-muted);font-size:var(--text-caption)}
+  .det-model{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-family:var(--font-mono);font-size:var(--text-body-sm)}
+  .det-model .node{padding:4px 10px;border:1px solid var(--color-border);border-radius:var(--radius-sm);
+    background:var(--color-bg-elevated);color:var(--color-text)}
+  .det-model .node .lbl{display:block;font-size:var(--text-overline);color:var(--color-text-muted);margin-bottom:1px}
+  .det-model .arr-x{color:var(--color-text-muted)}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .pager .pg{display:flex;gap:var(--space-1)}
+  .pager .pg button{min-width:30px;height:30px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text-secondary);font-family:inherit;cursor:pointer;padding:0 var(--space-2)}
+  .pager .pg button.on{background:var(--color-primary-500);color:var(--color-primary-fg);border-color:var(--color-primary-500)}
+  @media (max-width:1024px){.stat-row{grid-template-columns:1fr}}
+  @media (max-width:560px){.filterbar .srch{min-width:140px}.detail-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="usage" data-title="调用明细" data-crumb="控制台|调用明细"
+      data-actions='<button class="btn btn-sec btn-sm" id="exportBtn"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>导出 CSV</button>'>
+
+  <!-- 统计小卡片：仅本人维度 -->
+  <section class="stat-row">
+    <div class="stat nx-fade">
+      <div class="stat-label">今日调用数</div>
+      <div class="stat-val" data-count="186">0</div>
+    </div>
+    <div class="stat nx-fade">
+      <div class="stat-label">今日消耗费用</div>
+      <div class="stat-val ok" data-count="0.7142" data-dec="4" data-prefix="$">0</div>
+    </div>
+    <div class="stat nx-fade">
+      <div class="stat-label">本月消耗费用</div>
+      <div class="stat-val" data-count="18.6053" data-dec="4" data-prefix="$">0</div>
+    </div>
+  </section>
+
+  <!-- 本人范围说明条 -->
+  <section class="scope-note nx-fade">
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 5.5v3"/><path d="M8 11h.01"/></svg>
+    <span class="t">此页仅展示 <b>您本人</b> 的每一次调用明细，含您请求的模型、实际调用的模型、您的实付费用、Token、耗时与状态等。</span>
+  </section>
+
+  <!-- FilterBar：无「用户」筛选 -->
+  <section class="filterbar nx-fade">
+    <select class="sel" id="fModel">
+      <option value="">全部模型</option>
+      <option>gpt-4o</option><option>gpt-4o-mini</option><option>claude-3-5-sonnet</option>
+      <option>gemini-1.5-pro</option><option>gemini-1.5-flash</option><option>deepseek-chat</option><option>dall-e-3</option>
+    </select>
+    <select class="sel" id="fGroup">
+      <option value="">全部分组</option>
+      <option>free</option><option>vip</option><option>svip</option>
+    </select>
+    <select class="sel" id="fBill">
+      <option value="">全部计费模式</option>
+      <option value="token">按量(Token)</option>
+      <option value="times">按次</option>
+    </select>
+    <input class="dt" id="fFrom" type="date" value="2026-06-20" aria-label="开始日期">
+    <span class="sep">至</span>
+    <input class="dt" id="fTo" type="date" value="2026-06-20" aria-label="结束日期">
+    <select class="sel" id="fStatus">
+      <option value="">全部状态</option>
+      <option value="ok">成功</option>
+      <option value="fail">失败</option>
+    </select>
+    <input class="srch" id="fSearch" type="search" placeholder="搜索 request_id / IP / 模型">
+    <span class="grow"></span>
+    <button class="btn btn-ghost btn-sm" id="resetBtn">重置</button>
+  </section>
+
+  <!-- 调用明细表格（本人视图，无「用户」列） -->
+  <section class="table-card nx-fade">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable">时间 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th>类型</th>
+            <th>模型</th>
+            <th>分组</th>
+            <th>计费模式</th>
+            <th class="sortable">Tokens (入/出) <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th class="sortable">费用 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th>IP</th>
+            <th>User-Agent</th>
+            <th class="sortable">耗时 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th>状态</th>
+            <th>详情</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span id="pgInfo">共 0 条</span>
+      <div class="pg">
+        <button id="pgPrev">上一页</button>
+        <button class="on">1</button>
+        <button>2</button>
+        <button id="pgNext">下一页</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+    NexaShell.countAll('[data-count]');
+
+    // ════ 调用明细数据（仅当前登录用户本人） ════
+    // req=您请求的模型（您视角的名字）  land=实际调用的对外模型（平台对外名，一个值）
+    // grp=分组(折扣等级)  bill=计费模式(token按量 / times按次)  ua=User-Agent  ip=来源IP
+    // sell=您的实付费用（客户侧只有这一个金额）
+    var data=[
+      {t:'06-20 06:18:42', type:'consume', req:'gpt-4o',       land:'gpt-4o',            grp:'vip',  bill:'token', tin:1820, tout:642,  ms:1340, st:'ok',   rid:'req_8f2a91c4', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Python/1.54.3',        sell:0.0462},
+      {t:'06-20 06:17:55', type:'consume', req:'fast-cheap',   land:'deepseek-chat',     grp:'vip',  bill:'token', tin:3120, tout:880,  ms:1620, st:'ok',   rid:'req_9e2d77f0', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Python/1.54.3',        sell:0.0188},
+      {t:'06-20 06:17:08', type:'consume', req:'gpt-4o-mini',  land:'gpt-4o-mini',       grp:'vip',  bill:'token', tin:540,  tout:210,  ms:740,  st:'ok',   rid:'req_4f6a90cc', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Node/4.67.1',          sell:0.0028},
+      {t:'06-20 06:16:31', type:'consume', req:'claude-opus',  land:'claude-3-opus',     grp:'vip',  bill:'token', tin:2210, tout:1840, ms:3420, st:'ok',   rid:'req_6d3a55e2', code:'200', ip:'10.4.21.8',  ua:'anthropic-sdk-python/0.39.0', sell:0.2486},
+      {t:'06-20 06:15:48', type:'consume', req:'gemini-flash', land:'gemini-1.5-flash',  grp:'vip',  bill:'token', tin:760,  tout:320,  ms:512,  st:'ok',   rid:'req_8a1f02d7', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Node/4.67.1',          sell:0.0041},
+      {t:'06-20 06:15:02', type:'error',   req:'fast-cheap',   land:'deepseek-chat',     grp:'vip',  bill:'token', tin:0,    tout:0,    ms:201,  st:'fail', rid:'req_7c2b41f9', code:'429', ip:'10.4.21.8',  ua:'curl/8.4.0',                  sell:0},
+      {t:'06-20 06:14:39', type:'consume', req:'gpt-4o',       land:'gpt-4o',            grp:'vip',  bill:'token', tin:1480, tout:920,  ms:1980, st:'ok',   rid:'req_5b8d20ce', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Python/1.54.3',        sell:0.0501},
+      {t:'06-20 06:13:50', type:'consume', req:'gpt-4o-mini',  land:'gpt-4o-mini',       grp:'vip',  bill:'token', tin:420,  tout:160,  ms:480,  st:'ok',   rid:'req_2a7c90b3', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Python/1.54.3',        sell:0.0021},
+      {t:'06-20 06:13:22', type:'consume', req:'sonnet',       land:'claude-3-5-sonnet', grp:'vip',  bill:'token', tin:1640, tout:1120, ms:2540, st:'ok',   rid:'req_6e1d08f5', code:'200', ip:'10.4.21.8',  ua:'anthropic-sdk-python/0.39.0', sell:0.0728},
+      {t:'06-20 06:12:58', type:'consume', req:'生图-标准',     land:'dall-e-3',          grp:'vip',  bill:'times', tin:0,    tout:0,    ms:8200, st:'ok',   rid:'req_4d3a77c1', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Node/4.67.1',          sell:0.0800},
+      {t:'06-20 06:12:10', type:'consume', req:'my-pro',       land:'gemini-1.5-pro',    grp:'vip',  bill:'token', tin:2840, tout:760,  ms:1480, st:'ok',   rid:'req_8b2e44d0', code:'200', ip:'10.4.21.8',  ua:'node-fetch/3.3.2',            sell:0.0394},
+      {t:'06-20 06:11:33', type:'consume', req:'gpt-4o',       land:'gpt-4o',            grp:'vip',  bill:'token', tin:980,  tout:530,  ms:1120, st:'ok',   rid:'req_3c7a18ab', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Python/1.54.3',        sell:0.0288},
+      {t:'06-20 06:10:51', type:'error',   req:'claude-opus',  land:'claude-3-opus',     grp:'vip',  bill:'token', tin:1200, tout:0,    ms:5020, st:'fail', rid:'req_2c7e18bb', code:'500', ip:'10.4.21.8',  ua:'anthropic-sdk-python/0.39.0', sell:0},
+      {t:'06-20 06:10:12', type:'consume', req:'生图-标准',     land:'dall-e-3',          grp:'vip',  bill:'times', tin:0,    tout:0,    ms:7640, st:'ok',   rid:'req_9a4f23d8', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Node/4.67.1',          sell:0.0800},
+      {t:'06-20 06:09:40', type:'consume', req:'gemini-flash', land:'gemini-1.5-flash',  grp:'vip',  bill:'token', tin:610,  tout:280,  ms:498,  st:'ok',   rid:'req_7e2c90fa', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Node/4.67.1',          sell:0.0035},
+      {t:'06-20 06:08:58', type:'consume', req:'gpt-4o',       land:'gpt-4o',            grp:'vip',  bill:'token', tin:2110, tout:1340, ms:2260, st:'ok',   rid:'req_1f8b44c0', code:'200', ip:'10.4.21.8',  ua:'OpenAI-Python/1.54.3',        sell:0.0694}
+    ];
+    var typeMap={
+      consume:{cls:'b-info', lab:'消费'},
+      error:  {cls:'b-dan',  lab:'错误'}
+    };
+    var typeTone={consume:'--color-info',error:'--color-danger'};
+    var billMap={token:{cls:'b-info',lab:'按量'},times:{cls:'b-neutral',lab:'按次'}};
+    var ARR='<span class="arr-x"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg></span>';
+
+    function typeBadge(t){ var m=typeMap[t]; return '<span class="badge '+m.cls+' type-badge"><span class="dot" style="background:var('+typeTone[t]+')"></span>'+m.lab+'</span>'; }
+    function stBadge(s){ return s==='ok'
+      ? '<span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>成功</span>'
+      : '<span class="badge b-dan"><span class="dot" style="background:var(--color-danger)"></span>失败</span>'; }
+    function billBadge(b){ if(b==='—') return '<span class="muted cellmono">—</span>'; var m=billMap[b]; return '<span class="badge '+m.cls+' bill-badge">'+m.lab+'</span>'; }
+    function hasModel(r){ return r.land!=='—'; }
+    function tokCell(r){ if(!r.tin && !r.tout) return '<span class="muted cellmono">—</span>';
+      return '<span class="cellmono">'+r.tin.toLocaleString()+'</span> <span class="muted">/ '+r.tout.toLocaleString()+'</span>'; }
+    function money(v){ return '$'+v.toFixed(4); }
+    function feeCell(r){ if(!r.sell) return '<span class="muted cellmono">—</span>';
+      return '<span class="money fee-col">'+money(r.sell)+'</span>'; }
+    // 模型单元：您请求的模型 + （若不同名）实际调用的对外模型（一个值，不画多段链路）
+    function modelCell(r){
+      if(!hasModel(r)) return '<span class="muted cellmono">—</span>';
+      var sameName = r.req===r.land;
+      var land = sameName ? '' : '<span class="land"><svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>实际 '+r.land+'</span>';
+      return '<div class="modelcell"><span class="req">'+r.req+'</span>'+land+'</div>';
+    }
+
+    var tbody=document.getElementById('tbody'), pgInfo=document.getElementById('pgInfo');
+    var fModel=document.getElementById('fModel'), fGroup=document.getElementById('fGroup'),
+        fBill=document.getElementById('fBill'), fStatus=document.getElementById('fStatus'),
+        fSearch=document.getElementById('fSearch');
+
+    function pass(r){
+      var kw=fSearch.value.trim().toLowerCase();
+      if(fModel.value && r.land!==fModel.value) return false;
+      if(fGroup.value && r.grp!==fGroup.value) return false;
+      if(fBill.value && r.bill!==fBill.value) return false;
+      if(fStatus.value && r.st!==fStatus.value) return false;
+      if(kw && (r.rid.toLowerCase().indexOf(kw)<0 && r.code.indexOf(kw)<0
+                && r.ip.indexOf(kw)<0 && r.req.toLowerCase().indexOf(kw)<0
+                && r.land.toLowerCase().indexOf(kw)<0)) return false;
+      return true;
+    }
+
+    function render(){
+      var rows=data.filter(pass);
+      tbody.innerHTML=rows.map(function(r,i){
+        return '<tr>'+
+          '<td class="cellmono muted">'+r.t+'</td>'+
+          '<td>'+typeBadge(r.type)+'</td>'+
+          '<td>'+modelCell(r)+'</td>'+
+          '<td class="cellmono muted">'+r.grp+'</td>'+
+          '<td>'+billBadge(r.bill)+'</td>'+
+          '<td>'+tokCell(r)+'</td>'+
+          '<td>'+feeCell(r)+'</td>'+
+          '<td class="ipcell">'+r.ip+'</td>'+
+          '<td><div class="uacell" title="'+r.ua.replace(/"/g,'&quot;')+'">'+r.ua+'</div></td>'+
+          '<td class="cellmono muted">'+r.ms+' ms</td>'+
+          '<td>'+stBadge(r.st)+'</td>'+
+          '<td><div class="row-acts"><a class="doDetail" data-i="'+i+'">展开</a></div></td>'+
+        '</tr>';
+      }).join('') || '<tr><td colspan="12" class="muted" style="text-align:center;padding:var(--space-6)">无匹配记录</td></tr>';
+      pgInfo.textContent='共 '+rows.length+' 条';
+    }
+
+    [fModel,fGroup,fBill,fStatus].forEach(function(el){ el.addEventListener('change', render); });
+    fSearch.addEventListener('input', render);
+    document.getElementById('resetBtn').addEventListener('click', function(){
+      fModel.value=''; fGroup.value=''; fBill.value=''; fStatus.value=''; fSearch.value=''; render();
+    });
+    render();
+
+    // 详情展开：模型(请求 / 实际，两段一个值) + 计费(只有实付) + 请求元信息。客户侧仅展示实付金额。
+    tbody.addEventListener('click', function(e){
+      var a=e.target.closest('.doDetail'); if(!a) return;
+      var tr=a.closest('tr'), nxt=tr.nextElementSibling;
+      if(nxt && nxt.classList.contains('detail-row')){ nxt.remove(); a.textContent='展开'; return; }
+      var i=parseInt(a.getAttribute('data-i'),10);
+      var r=data.filter(pass)[i] || data[i];
+      var det=document.createElement('tr');
+      det.className='detail-row';
+      var moneyBlock = r.sell
+        ? '<div class="det-section"><h4>计费明细</h4>'+
+            '<div class="det-money">'+
+              '<span class="k">本笔实付</span><span class="k">计费模式</span>'+
+              '<span class="money">'+money(r.sell)+'</span>'+
+              '<span class="money">'+(r.bill==='token'?'按量(Token)':(r.bill==='times'?'按次':'—'))+'</span>'+
+            '</div>'+
+          '</div>'
+        : '<div class="det-section"><h4>计费明细</h4><div class="muted">本笔无计费（请求失败未产生费用）。</div></div>';
+      var modelBlock = hasModel(r)
+        ? '<div class="det-section"><h4>模型</h4>'+
+            '<div class="det-model">'+
+              '<span class="node"><span class="lbl">您请求</span>'+r.req+'</span>'+ARR+
+              '<span class="node"><span class="lbl">实际调用</span>'+r.land+'</span>'+
+            '</div>'+
+          '</div>'
+        : '<div class="det-section"><h4>模型</h4><div class="muted">本笔无模型调用。</div></div>';
+      det.innerHTML='<td colspan="12">'+
+        modelBlock+ moneyBlock+
+        '<div class="det-section"><h4>请求元信息</h4><dl class="detail-grid">'+
+          '<div><dt>request_id</dt><dd>'+r.rid+'</dd></div>'+
+          '<div><dt>HTTP 状态码</dt><dd>'+r.code+'</dd></div>'+
+          '<div><dt>来源 IP</dt><dd>'+r.ip+'</dd></div>'+
+          '<div><dt>User-Agent</dt><dd>'+r.ua+'</dd></div>'+
+          '<div><dt>分组（折扣等级）</dt><dd>'+r.grp+'</dd></div>'+
+          '<div><dt>计费模式</dt><dd>'+(r.bill==='token'?'按量(Token)':(r.bill==='times'?'按次':'—'))+'</dd></div>'+
+          '<div><dt>tokens 入 / 出</dt><dd>'+r.tin.toLocaleString()+' / '+r.tout.toLocaleString()+'</dd></div>'+
+          '<div><dt>耗时</dt><dd>'+r.ms+' ms</dd></div>'+
+        '</dl></div>'+
+      '</td>';
+      tr.parentNode.insertBefore(det, tr.nextSibling);
+      a.textContent='收起';
+    });
+  })();
+  </script>
+</body>
+</html>

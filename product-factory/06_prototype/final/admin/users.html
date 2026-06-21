@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户管理 · Nexa·AI 管理后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<script src="admin-shell.js"></script>
+<style>
+  /* 用户管理专属 —— 全 token 驱动，零裸色值 */
+  .filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}
+  .filterbar .sel,.filterbar .srch{height:36px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:inherit;font-size:var(--text-body-sm);padding:0 var(--space-3)}
+  .filterbar .srch{min-width:220px}
+  .filterbar .sel:focus,.filterbar .srch:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+  .filterbar .grow{margin-left:auto}
+  .batchbar{display:none;align-items:center;gap:var(--space-3);margin-bottom:var(--space-3);
+    padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);
+    background:color-mix(in oklch,var(--color-primary-500) 10%,transparent);
+    border:1px solid color-mix(in oklch,var(--color-primary-500) 30%,transparent)}
+  .batchbar.on{display:flex}
+  .batchbar .cnt{font-size:var(--text-body-sm);color:var(--color-primary-700);font-weight:var(--fw-medium)}
+  .batchbar .grow{margin-left:auto}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  .table-wrap table{min-width:1040px}
+  .cellmono{font-family:var(--font-mono)}
+  .b-root{background:color-mix(in oklch,var(--chart-4) 22%,transparent);color:var(--color-text)}
+  .b-admin{background:color-mix(in oklch,var(--color-info) 22%,transparent);color:var(--color-text)}
+  .quota{display:flex;align-items:center;gap:var(--space-2)}
+  .bar-mini{display:inline-block;width:84px;height:6px;border-radius:var(--radius-full);background:var(--color-surface-sunken);
+    overflow:hidden;vertical-align:middle}
+  .bar-mini i{display:block;height:100%;border-radius:var(--radius-full);background:var(--color-primary-500)}
+  .bar-mini i.warn{background:var(--color-warning)} .bar-mini i.dang{background:var(--color-danger)}
+  .quota-txt{font-family:var(--font-mono);font-size:var(--text-caption);color:var(--color-text-muted)}
+  .row-acts{display:flex;gap:var(--space-3);white-space:nowrap}
+  .row-acts a{font-size:var(--text-body-sm);color:var(--color-primary-500);cursor:pointer}
+  .row-acts a:hover{color:var(--color-primary-600)}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .pager .pg{display:flex;gap:var(--space-1)}
+  .pager .pg button{width:30px;height:30px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text-secondary);font-family:inherit;cursor:pointer}
+  .pager .pg button.on{background:var(--color-primary-500);color:var(--color-primary-fg);border-color:var(--color-primary-500)}
+  /* 抽屉 */
+  .drawer-scrim{display:none;position:fixed;inset:0;z-index:60;background:color-mix(in oklch,var(--color-surface-sunken) 72%,transparent)}
+  .drawer-scrim.on{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;z-index:61;transform:translateX(100%);
+    background:var(--color-bg-elevated);border-left:1px solid var(--color-border);box-shadow:var(--shadow-lg);
+    display:flex;flex-direction:column;transition:transform var(--dur-2) var(--ease-out)}
+  .drawer.on{transform:none}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .drawer-title{font-family:var(--font-brand);font-size:var(--text-h4);font-weight:var(--fw-bold);color:var(--color-text);margin:0}
+  .drawer-sub{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-top:2px}
+  .drawer-x{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:32px;height:32px;
+    border-radius:var(--radius-sm);font-size:var(--text-h5)}
+  .drawer-x:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .drawer-body{flex:1;overflow-y:auto;padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4)}
+  .drawer-foot{display:flex;justify-content:space-between;gap:var(--space-3);padding:var(--space-4) var(--space-5);
+    border-top:1px solid var(--color-border)}
+  .sw-row{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) 0;
+    border-top:1px solid var(--color-border)}
+  .sw-row .lab{font-size:var(--text-body-sm);color:var(--color-text)}
+  .sw-row .hint{font-size:var(--text-caption);color:var(--color-text-muted)}
+  @media (max-width:560px){.filterbar .srch{min-width:140px}}
+</style>
+</head>
+<body data-page="users" data-title="用户管理" data-crumb="管理后台|资源管理|用户管理"
+      data-actions='<button class="btn btn-primary" id="newUser">创建用户</button>'>
+
+  <!-- FilterBar -->
+  <section class="filterbar nx-fade">
+    <select class="sel" id="fRole">
+      <option value="">全部角色</option>
+      <option>root</option>
+      <option>admin</option>
+      <option>common</option>
+    </select>
+    <select class="sel" id="fStatus">
+      <option value="">全部状态</option>
+      <option>启用</option>
+      <option>封禁</option>
+    </select>
+    <select class="sel" id="fGroup">
+      <option value="">全部分组</option>
+      <option>default</option>
+      <option>vip</option>
+      <option>enterprise</option>
+      <option>internal</option>
+    </select>
+    <input class="srch" id="fSearch" type="search" placeholder="搜索用户名 / 邮箱 / ID">
+  </section>
+
+  <!-- BatchBar -->
+  <section class="batchbar" id="batchbar">
+    <span class="cnt" id="batchCnt">已选 0 项</span>
+    <span class="grow"></span>
+    <button class="btn btn-sec btn-sm">批量改分组</button>
+    <button class="btn btn-sec btn-sm">批量启用</button>
+    <button class="btn btn-danger btn-sm">批量封禁</button>
+  </section>
+
+  <!-- 密集表格 -->
+  <section class="table-card nx-fade">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:34px"><input type="checkbox" id="chkAll" aria-label="全选"></th>
+            <th>ID</th>
+            <th>用户名</th>
+            <th>角色</th>
+            <th>状态</th>
+            <th>分组</th>
+            <th>额度 / 已用</th>
+            <th>邀请数</th>
+            <th>注册时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span id="pgInfo">共 16 名用户</span>
+      <div class="pg">
+        <button>‹</button>
+        <button class="on">1</button>
+        <button>2</button>
+        <button>›</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 管理动作抽屉 -->
+  <div class="drawer-scrim" id="drawerScrim"></div>
+  <aside class="drawer" id="drawer" aria-label="用户管理">
+    <div class="drawer-head">
+      <div>
+        <h2 class="drawer-title" id="dName">用户管理</h2>
+        <div class="drawer-sub" id="dSub">调整额度 · 分组 · 角色 · 封禁</div>
+      </div>
+      <button class="drawer-x" id="drawerX" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body">
+      <div>
+        <label class="field-label">调整额度</label>
+        <input class="input cellmono" value="$500.00">
+        <div class="field-hint">当前余额 $312.40 · 已用 $187.60</div>
+      </div>
+      <div>
+        <label class="field-label">所属分组</label>
+        <select class="input">
+          <option>default</option>
+          <option>vip</option>
+          <option>enterprise</option>
+          <option>internal</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">角色</label>
+        <select class="input">
+          <option>common</option>
+          <option>admin</option>
+          <option>root</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">备注</label>
+        <textarea class="input" style="height:72px;padding:var(--space-2) var(--space-3)" placeholder="内部备注，仅管理员可见"></textarea>
+      </div>
+      <div class="sw-row">
+        <div>
+          <div class="lab">封禁此用户</div>
+          <div class="hint">封禁后该用户所有 Key 立即失效</div>
+        </div>
+        <label class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-ghost" id="drawerCancel">取消</button>
+      <button class="btn btn-primary">保存变更</button>
+    </div>
+  </aside>
+
+  <script src="admin-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // ════ 用户数据（14+ 行） ════
+    var data=[
+      {id:1,    name:'admin.root',  role:'root',   st:'on',  grp:'internal',   q:5000, used:1280, inv:0,  reg:'2024-01-08'},
+      {id:1024, name:'morgan.li',   role:'admin',  st:'on',  grp:'enterprise', q:2000, used:1640, inv:12, reg:'2024-03-21'},
+      {id:1187, name:'chen.wei',    role:'admin',  st:'on',  grp:'enterprise', q:2000, used:980,  inv:8,  reg:'2024-04-02'},
+      {id:1342, name:'sarah.wu',    role:'common', st:'on',  grp:'vip',        q:1000, used:920,  inv:5,  reg:'2024-05-15'},
+      {id:1488, name:'kenji.t',     role:'common', st:'on',  grp:'vip',        q:1000, used:430,  inv:3,  reg:'2024-06-09'},
+      {id:1603, name:'lisa.zhang',  role:'common', st:'on',  grp:'default',    q:500,  used:478,  inv:2,  reg:'2024-07-18'},
+      {id:1750, name:'omar.fa',     role:'common', st:'ban', grp:'default',    q:500,  used:500,  inv:0,  reg:'2024-08-03'},
+      {id:1892, name:'nina.k',      role:'common', st:'on',  grp:'default',    q:500,  used:212,  inv:1,  reg:'2024-09-12'},
+      {id:2011, name:'david.park',  role:'common', st:'on',  grp:'vip',        q:1000, used:760,  inv:6,  reg:'2024-10-01'},
+      {id:2154, name:'amira.s',     role:'common', st:'ban', grp:'default',    q:200,  used:195,  inv:0,  reg:'2024-10-22'},
+      {id:2298, name:'leo.martin',  role:'common', st:'on',  grp:'default',    q:500,  used:88,   inv:0,  reg:'2024-11-14'},
+      {id:2410, name:'yuki.sato',   role:'common', st:'on',  grp:'vip',        q:1000, used:1340, inv:9,  reg:'2024-12-03'},
+      {id:2533, name:'priya.n',     role:'admin',  st:'on',  grp:'internal',   q:3000, used:540,  inv:0,  reg:'2025-01-19'},
+      {id:2671, name:'carlos.r',    role:'common', st:'on',  grp:'default',    q:500,  used:36,   inv:0,  reg:'2025-02-28'},
+      {id:2799, name:'fatima.b',    role:'common', st:'on',  grp:'vip',        q:1000, used:612,  inv:4,  reg:'2025-04-07'},
+      {id:2912, name:'tom.evans',   role:'common', st:'ban', grp:'default',    q:500,  used:312,  inv:1,  reg:'2025-05-16'}
+    ];
+    var roleMap={
+      root:  {cls:'b-root',  lab:'root'},
+      admin: {cls:'b-admin', lab:'admin'},
+      common:{cls:'b-neutral',lab:'common'}
+    };
+
+    function roleBadge(r){ var m=roleMap[r]; return '<span class="badge '+m.cls+'">'+m.lab+'</span>'; }
+    function stBadge(st){
+      return st==='on'
+        ? '<span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>启用</span>'
+        : '<span class="badge b-dan"><span class="dot" style="background:var(--color-danger)"></span>封禁</span>';
+    }
+    function quotaCell(q,used){
+      var pct=Math.min(Math.round(used/q*100),100);
+      var cls=pct>=95?'dang':(pct>=80?'warn':'');
+      return '<div class="quota"><span class="bar-mini"><i class="'+cls+'" style="width:'+pct+'%"></i></span>'+
+        '<span class="quota-txt">$'+used+' / $'+q+'</span></div>';
+    }
+
+    var tbody=document.getElementById('tbody');
+    tbody.innerHTML=data.map(function(u){
+      return '<tr>'+
+        '<td><input type="checkbox" class="rowchk" aria-label="选择 '+u.name+'"></td>'+
+        '<td class="cellmono muted">'+u.id+'</td>'+
+        '<td>'+u.name+'</td>'+
+        '<td>'+roleBadge(u.role)+'</td>'+
+        '<td>'+stBadge(u.st)+'</td>'+
+        '<td class="muted">'+u.grp+'</td>'+
+        '<td>'+quotaCell(u.q,u.used)+'</td>'+
+        '<td class="cellmono">'+u.inv+'</td>'+
+        '<td class="cellmono muted">'+u.reg+'</td>'+
+        '<td><div class="row-acts">'+
+          '<a class="doEdit">编辑</a><a class="doManage" data-name="'+u.name+'">管理</a>'+
+          '<a>绑定</a><a>重置</a></div></td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('pgInfo').textContent='共 '+data.length+' 名用户';
+
+    // ════ 批量选择 ════
+    var chkAll=document.getElementById('chkAll');
+    var batchbar=document.getElementById('batchbar');
+    var batchCnt=document.getElementById('batchCnt');
+    function refreshBatch(){
+      var sel=tbody.querySelectorAll('.rowchk:checked').length;
+      batchbar.classList.toggle('on', sel>0);
+      batchCnt.textContent='已选 '+sel+' 项';
+    }
+    chkAll.addEventListener('change', function(){
+      tbody.querySelectorAll('.rowchk').forEach(function(c){ c.checked=chkAll.checked; });
+      refreshBatch();
+    });
+    tbody.addEventListener('change', function(e){
+      if(e.target.classList.contains('rowchk')) refreshBatch();
+    });
+
+    // ════ 管理抽屉 ════
+    var scrim=document.getElementById('drawerScrim');
+    var drawer=document.getElementById('drawer');
+    function openD(){ scrim.classList.add('on'); drawer.classList.add('on'); }
+    function closeD(){ scrim.classList.remove('on'); drawer.classList.remove('on'); }
+    document.getElementById('drawerX').addEventListener('click', closeD);
+    document.getElementById('drawerCancel').addEventListener('click', closeD);
+    scrim.addEventListener('click', closeD);
+    document.getElementById('newUser').addEventListener('click', function(){
+      document.getElementById('dName').textContent='创建用户';
+      document.getElementById('dSub').textContent='设置初始额度 · 分组 · 角色';
+      openD();
+    });
+    tbody.addEventListener('click', function(e){
+      if(e.target.classList.contains('doManage')){
+        document.getElementById('dName').textContent='管理 · '+e.target.getAttribute('data-name');
+        document.getElementById('dSub').textContent='调整额度 · 分组 · 角色 · 封禁';
+        openD();
+      } else if(e.target.classList.contains('doEdit')){
+        document.getElementById('dName').textContent='编辑用户';
+        document.getElementById('dSub').textContent='基础资料与联系方式';
+        openD();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

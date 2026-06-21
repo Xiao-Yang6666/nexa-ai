@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分销推广 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 分销推广页：邀请链接 / KPI / 返佣规则 / 邀请记录 / 趋势图 —— 零裸色值 */
+  .ref-top{display:grid;grid-template-columns:1.4fr 1fr;gap:var(--space-4);margin-bottom:var(--space-5)}
+  @media (max-width:860px){.ref-top{grid-template-columns:1fr}}
+  .ref-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm)}
+  .ref-card h3{margin:0 0 var(--space-4);font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .link-row{display:flex;gap:var(--space-3);align-items:center}
+  .link-box{flex:1;display:flex;align-items:center;height:44px;padding:0 var(--space-4);border-radius:var(--radius-sm);
+    border:1px solid var(--color-border);background:var(--color-surface-sunken);font-family:var(--font-mono);
+    font-size:var(--text-body-sm);color:var(--color-text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .ref-hint{margin-top:var(--space-3);font-size:var(--text-body-sm);color:var(--color-text-muted);line-height:var(--lh-normal)}
+  .ref-hint b{color:var(--color-primary-700)}
+  .qr-wrap{display:flex;align-items:center;gap:var(--space-5)}
+  .qr{width:120px;height:120px;flex:none;border-radius:var(--radius-sm);background:var(--color-surface-sunken);
+    border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)}
+  .qr svg{width:80px;height:80px}
+  .qr-meta p{margin:0 0 var(--space-2);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .qr-meta .code{font-family:var(--font-mono);color:var(--color-text);font-weight:var(--fw-semibold);font-size:var(--text-h6)}
+  /* KPI */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);margin-bottom:var(--space-5)}
+  @media (max-width:860px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:480px){.kpi-row{grid-template-columns:1fr}}
+  .kpi{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm)}
+  .kpi-label{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-bottom:var(--space-2)}
+  .kpi-val{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--color-text);
+    line-height:var(--lh-tight);letter-spacing:var(--tracking-tight)}
+  .kpi-sub{font-size:var(--text-body-sm);color:var(--color-text-secondary);margin-top:var(--space-2)}
+  .kpi-val.accent{color:var(--color-primary-700)}
+  /* 返佣规则 */
+  .rules{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-5)}
+  @media (max-width:860px){.rules{grid-template-columns:1fr}}
+  .rule{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:var(--space-5)}
+  .rule-tier{width:64px;height:64px;flex:none;border-radius:var(--radius-md);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:color-mix(in oklch,var(--color-primary-500) 14%,transparent);
+    color:var(--color-primary-700)}
+  .rule-tier b{font-family:var(--font-brand);font-size:var(--text-h3);font-weight:var(--fw-bold);line-height:1}
+  .rule-tier small{font-size:var(--text-caption)}
+  .rule-body h4{margin:0 0 var(--space-1);font-size:var(--text-h6);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .rule-body p{margin:0;font-size:var(--text-body-sm);color:var(--color-text-secondary);line-height:var(--lh-normal)}
+  .rule-pct{font-family:var(--font-mono);color:var(--color-primary-700);font-weight:var(--fw-semibold)}
+  /* 图表 + 表卡 */
+  .chart-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm);margin-bottom:var(--space-5)}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
+  .chart-title{font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text);margin:0}
+  .chart-sub{font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .ax-txt{font-family:var(--font-mono);font-size:var(--text-overline);fill:var(--color-text-muted)}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .th-bar{display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .th-bar h3{margin:0;font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .table-wrap{overflow-x:auto}
+  .table-wrap td,.table-wrap th{padding:var(--space-3) var(--space-5)}
+</style>
+</head>
+<body data-page="referral" data-title="分销推广" data-crumb="控制台|分销推广"
+      data-actions='<button class="btn btn-sec" id="btn-withdraw">申请结算</button>'>
+
+  <!-- 邀请链接 + 二维码 -->
+  <section class="ref-top">
+    <div class="ref-card nx-fade">
+      <h3>我的专属邀请链接</h3>
+      <div class="link-row">
+        <div class="link-box" id="ref-link">https://nexa.ai/r/MORGAN-7K2F</div>
+        <button class="btn btn-primary" id="btn-copy">
+          <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          复制链接
+        </button>
+      </div>
+      <div class="ref-hint">好友通过你的链接注册并完成首充，你将获得其消费的 <b>一级 15%</b> 持续返佣；其邀请的下级消费你再得 <b>二级 5%</b>。返佣实时累计，满 <b>$10</b> 可申请结算。</div>
+    </div>
+    <div class="ref-card nx-fade">
+      <h3>扫码邀请</h3>
+      <div class="qr-wrap">
+        <div class="qr" aria-label="邀请二维码占位">
+          <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <rect x="6" y="6" width="22" height="22" rx="2"/><rect x="52" y="6" width="22" height="22" rx="2"/>
+            <rect x="6" y="52" width="22" height="22" rx="2"/>
+            <path d="M40 6v14M40 34h14M52 52v22M68 52v8M52 68h8M40 52v22"/>
+          </svg>
+        </div>
+        <div class="qr-meta">
+          <p>邀请码</p>
+          <div class="code">MORGAN-7K2F</div>
+          <p style="margin-top:var(--space-3)">分享至社群或扫码即可邀请新用户。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KPI -->
+  <section class="kpi-row">
+    <div class="kpi nx-fade">
+      <div class="kpi-label">累计邀请人数</div>
+      <div class="kpi-val" data-count="48">0</div>
+      <div class="kpi-sub">本月新增 6 人</div>
+    </div>
+    <div class="kpi nx-fade">
+      <div class="kpi-label">已转化（已首充）</div>
+      <div class="kpi-val" data-count="31">0</div>
+      <div class="kpi-sub">转化率 64.6%</div>
+    </div>
+    <div class="kpi nx-fade">
+      <div class="kpi-label">累计返佣</div>
+      <div class="kpi-val accent" data-count="246.80" data-dec="2" data-prefix="$">0</div>
+      <div class="kpi-sub">含一级 + 二级</div>
+    </div>
+    <div class="kpi nx-fade">
+      <div class="kpi-label">待结算</div>
+      <div class="kpi-val" data-count="38.50" data-dec="2" data-prefix="$">0</div>
+      <div class="kpi-sub">满 $10 可申请结算</div>
+    </div>
+  </section>
+
+  <!-- 返佣规则 -->
+  <section class="rules">
+    <div class="rule nx-fade">
+      <div class="rule-tier"><b>15%</b><small>一级</small></div>
+      <div class="rule-body">
+        <h4>一级返佣</h4>
+        <p>直接邀请用户的每笔消费，你获得 <span class="rule-pct">15%</span> 返佣，长期有效，无次数上限。</p>
+      </div>
+    </div>
+    <div class="rule nx-fade">
+      <div class="rule-tier"><b>5%</b><small>二级</small></div>
+      <div class="rule-body">
+        <h4>二级返佣</h4>
+        <p>你邀请的用户再邀请的下级，其消费你额外获得 <span class="rule-pct">5%</span> 返佣，自动结算。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 返佣趋势 -->
+  <section class="chart-card nx-fade">
+    <div class="chart-head">
+      <div>
+        <h3 class="chart-title">近 12 个月返佣趋势</h3>
+        <div class="chart-sub">单位：美元 · 按月聚合</div>
+      </div>
+    </div>
+    <svg id="ref-trend" viewBox="0 0 720 240" width="100%" role="img" aria-label="返佣趋势折线图"></svg>
+  </section>
+
+  <!-- 邀请记录 -->
+  <section class="table-card nx-fade">
+    <div class="th-bar">
+      <h3>邀请记录</h3>
+      <span class="muted" style="font-size:var(--text-body-sm)">共 48 人</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>被邀请人</th><th>注册时间</th><th>状态</th><th>累计消费</th><th>我的返佣</th></tr></thead>
+        <tbody id="ref-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+    NexaShell.countAll('[data-count]');
+
+    function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+    // 返佣趋势折线
+    (function(){
+      var data=[6,9,8,12,15,14,19,23,21,28,32,30];
+      var labels=['7','8','9','10','11','12','1','2','3','4','5','6'];
+      var W=720,H=240,pad={l:46,r:18,t:16,b:30};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, max=36;
+      var xs=function(i){return pad.l+i*(iw/(data.length-1));};
+      var ys=function(v){return pad.t+ih-v/max*ih;};
+      var c1=cssvar('--chart-1'), grid=cssvar('--chart-grid');
+      var g='';
+      for(var t=0;t<=4;t++){
+        var v=max*t/4, y=ys(v);
+        g+='<line x1="'+pad.l+'" y1="'+y+'" x2="'+(W-pad.r)+'" y2="'+y+'" stroke="'+grid+'" stroke-width="1"/>';
+        g+='<text class="ax-txt" x="'+(pad.l-8)+'" y="'+(y+3)+'" text-anchor="end">$'+v+'</text>';
+      }
+      labels.forEach(function(l,i){
+        g+='<text class="ax-txt" x="'+xs(i)+'" y="'+(H-9)+'" text-anchor="middle">'+l+'月</text>';
+      });
+      var area='M'+pad.l+' '+ys(0);
+      data.forEach(function(v,i){ area+=' L'+xs(i)+' '+ys(v); });
+      area+=' L'+xs(data.length-1)+' '+ys(0)+' Z';
+      g+='<defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">'+
+         '<stop offset="0%" stop-color="'+c1+'" stop-opacity="0.30"/>'+
+         '<stop offset="100%" stop-color="'+c1+'" stop-opacity="0"/></linearGradient></defs>';
+      g+='<path d="'+area+'" fill="url(#rg)"/>';
+      g+='<polyline points="'+data.map(function(v,i){return xs(i)+','+ys(v);}).join(' ')+'" fill="none" stroke="'+c1+'" stroke-width="2.4" stroke-linejoin="round"/>';
+      g+='<circle cx="'+xs(data.length-1)+'" cy="'+ys(data[data.length-1])+'" r="4" fill="'+c1+'"/>';
+      document.getElementById('ref-trend').innerHTML=g;
+    })();
+
+    // 邀请记录
+    (function(){
+      var rows=[
+        ['li****@gmail.com','2026-06-15','active','$412.30','$61.85'],
+        ['wang****@163.com','2026-06-12','active','$286.00','$42.90'],
+        ['zhao****@outlook.com','2026-06-08','active','$158.40','$23.76'],
+        ['chen****@qq.com','2026-06-03','pending','$0.00','$0.00'],
+        ['liu****@gmail.com','2026-05-28','active','$94.20','$14.13'],
+        ['sun****@foxmail.com','2026-05-21','active','$203.50','$30.52'],
+        ['zhou****@163.com','2026-05-14','churned','$36.80','$5.52'],
+        ['wu****@gmail.com','2026-05-09','active','$77.00','$11.55'],
+        ['xu****@qq.com','2026-04-30','pending','$0.00','$0.00'],
+        ['he****@outlook.com','2026-04-22','active','$129.60','$19.44']
+      ];
+      var st={active:['b-suc','活跃','--color-success'],pending:['b-warn','待首充','--color-warning'],
+              churned:['b-neutral','已流失','--color-text-muted']};
+      document.getElementById('ref-rows').innerHTML=rows.map(function(r){
+        var s=st[r[2]];
+        return '<tr>'+
+          '<td class="mono-num">'+r[0]+'</td>'+
+          '<td class="mono-num">'+r[1]+'</td>'+
+          '<td><span class="badge '+s[0]+'"><span class="dot" style="background:var('+s[2]+')"></span>'+s[1]+'</span></td>'+
+          '<td class="mono-num">'+r[3]+'</td>'+
+          '<td class="mono-num" style="color:var(--color-primary-700);font-weight:var(--fw-medium)">'+r[4]+'</td>'+
+        '</tr>';
+      }).join('');
+    })();
+
+    // 复制
+    var btn=document.getElementById('btn-copy');
+    btn.addEventListener('click',function(){
+      var txt=document.getElementById('ref-link').textContent;
+      if(navigator.clipboard) navigator.clipboard.writeText(txt);
+      var old=btn.innerHTML;
+      btn.innerHTML='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg>已复制';
+      setTimeout(function(){ btn.innerHTML=old; },1600);
+    });
+  })();
+  </script>
+</body>
+</html>

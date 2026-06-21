@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="teal">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexa·AI</title>
+<!-- 字体：品牌巨字 Space Grotesk（几何 sans，高级、有性格），正文 Inter。生产环境用户浏览器直连，CDP 验证环境字体可能回退（已知限制）。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 非阻塞加载字体：media=print + onload 切换，避免字体请求阻塞首屏渲染 / 脚本执行。
+     生产环境用户浏览器直连 Google Fonts 正常应用；离线/受限环境优雅回退到字体栈，页面不卡。 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* ===================================================================
+     Nexa·AI 公开站首页 —— 极简一屏 + 一个克制但惊艳的主视觉
+     主效果：FLOWING THREADS（canvas 光束网络 + 沿线流动的光点）
+     一屏即一屏：玻璃导航 + 巨字品牌 Nexa·AI + 一句话 slogan + chat 输入 + 大留白
+     视觉 DNA v3：品牌字 Space Grotesk；巨字中点为「呼吸的 teal 光点」；AI 弱化降级
+     =================================================================== */
+
+  /* 本页字体本地别名（仅设置 family 名称，不写裸色值） */
+  :root{
+    --font-brand:'Space Grotesk','Inter',var(--font-sans);
+  }
+
+  html,body{height:100%}
+  body{
+    background:var(--hd-bg);
+    color:var(--hd-text);
+    overflow-x:hidden;
+    font-family:'Inter',var(--font-sans);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* ── 整屏 hero 容器：局部锁定深色场景的辉光变量（允许的局部 --hd-*/--glow-* 调整，全走 token） ── */
+  .stage{
+    --glow-a:color-mix(in oklch,var(--color-primary-500) 62%,transparent);
+    --glow-b:color-mix(in oklch,var(--hd-cyan) 48%,transparent);
+    --glow-c:color-mix(in oklch,var(--hd-blue) 32%,transparent);
+    position:relative;
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    isolation:isolate;
+    /* 背景透明：让身后固定的 canvas 光束透出（主底色由 body 提供）。
+       顶部深色径向渐变改为半透明叠加，仍保留"顶部更暗"的层次，但不挡 canvas。 */
+    background:
+      radial-gradient(120% 80% at 50% -12%, color-mix(in oklch,var(--hd-bg2) 55%,transparent), transparent 60%);
+  }
+
+  /* 主视觉 canvas：全屏固定背景，垫在所有内容最底层（不随 stage transform） */
+  #threads{
+    position:fixed; inset:0; width:100vw; height:100vh;
+    z-index:-1; pointer-events:none; display:block;
+  }
+  /* 顶部柔光团：给 canvas 网络叠一层 aurora 辉光，制造"光从屏后透出"的记忆点 */
+  .stage::before{
+    content:''; position:absolute; inset:-22% -10% auto -10%; height:92%;
+    z-index:0; pointer-events:none;
+    background:
+      radial-gradient(46% 52% at 26% 14%, var(--glow-a), transparent 70%),
+      radial-gradient(42% 46% at 80% 24%, var(--glow-b), transparent 72%),
+      radial-gradient(52% 60% at 54% 88%, var(--glow-c), transparent 70%);
+    filter:blur(22px);
+    animation:aurora 20s var(--ease-in-out) infinite alternate;
+  }
+  /* 细网格：极淡，被径向 mask 收口在中部，避免脏 */
+  .stage::after{
+    content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.45;
+    background-image:
+      linear-gradient(var(--hd-line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--hd-line) 1px,transparent 1px);
+    background-size:60px 60px;
+    -webkit-mask-image:radial-gradient(78% 70% at 50% 38%, var(--hd-text) 26%, transparent 78%);
+    mask-image:radial-gradient(78% 70% at 50% 38%, var(--hd-text) 26%, transparent 78%);
+  }
+  @keyframes aurora{
+    0%{transform:translate3d(-2%,0,0) scale(1)}
+    100%{transform:translate3d(3%,2%,0) scale(1.1)}
+  }
+
+  /* ─────────── 顶部导航（玻璃，贴顶） ─────────── */
+  .wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 var(--space-5)}
+  .nav-bar{position:relative;z-index:3}
+  .nav-in{display:flex;align-items:center;gap:var(--space-6);height:74px}
+  .brand-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);letter-spacing:-.01em}
+  .brand-logo .m{
+    width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));
+    color:var(--color-primary-fg);font-weight:var(--fw-bold);font-family:var(--font-brand);
+    box-shadow:0 0 0 1px color-mix(in oklch,var(--hd-mint) 40%,transparent),0 8px 26px -8px var(--color-primary-500);
+  }
+  .nav-links{display:flex;gap:var(--space-5);margin-left:var(--space-4)}
+  .nav-links a{color:color-mix(in oklch,var(--hd-text) 72%,transparent);font-weight:var(--fw-medium);font-size:var(--text-body);transition:color var(--dur-1)}
+  .nav-links a:hover{color:var(--hd-text)}
+  .nav-cta{margin-left:auto;display:flex;gap:var(--space-3);align-items:center}
+  .btn-glass{background:var(--hd-glass);color:var(--hd-text);border:1px solid var(--hd-line);backdrop-filter:blur(8px)}
+  .btn-glass:hover{background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--hd-text) 24%,transparent)}
+  .btn-glow{
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));
+    color:var(--color-primary-fg);
+    box-shadow:0 8px 24px -8px var(--color-primary-500);
+  }
+  .btn-glow:hover{transform:translateY(-1px);box-shadow:0 12px 30px -8px var(--color-primary-500)}
+  .btn{transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2),background var(--dur-2),border-color var(--dur-2)}
+
+  /* ─────────── hero 主体：垂直居中，一屏 ─────────── */
+  .hero{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--space-8) 0 var(--space-10)}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;padding:6px 15px;border-radius:var(--radius-full);
+    background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);
+    font-size:var(--text-body-sm);color:var(--hd-muted);margin-bottom:var(--space-7);
+    opacity:0;animation:fade-up var(--dur-4) .1s var(--ease-out) forwards;
+  }
+  .pill .live{width:7px;height:7px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 3px color-mix(in oklch,var(--color-success) 30%,transparent);animation:breath 2.4s var(--ease-in-out) infinite}
+  .pill b{color:color-mix(in oklch,var(--hd-text) 88%,transparent);font-weight:var(--fw-semibold)}
+
+  /* ═══════════ 巨字品牌 Nexa·AI —— v3 高级处理 ═══════════
+     · Nexa：主体，Space Grotesk 700，主色 → 文字主色实色
+     · 「·」中点：做成"会呼吸的 teal 光点"，是整个视觉焦点（发光 + 缩放呼吸）
+     · 「AI」：小一号、字重弱化、半透明，形成主次对比（次要、克制）
+  */
+  .mega{
+    font-family:var(--font-brand);
+    font-size:var(--text-mega);
+    line-height:.92;
+    font-weight:700;
+    letter-spacing:var(--tracking-tight);
+    margin:0 0 var(--space-5);
+    display:inline-flex;align-items:baseline;justify-content:center;
+    /* 整体不可框选复制 */
+    user-select:none;-webkit-user-select:none;-moz-user-select:none;
+    opacity:0;animation:fade-up var(--dur-4) .18s var(--ease-out) forwards;
+  }
+  /* Nexa 主体：极淡的 text glow，干净的实色 */
+  .mega .word{
+    color:var(--hd-text);
+    text-shadow:0 0 38px color-mix(in oklch,var(--color-primary-500) 30%,transparent);
+  }
+  /* 「·」中点：teal 呼吸光点 —— 克制的小点缀，与字体量协调，不抢戏 */
+  .mega .dot{
+    display:inline-block;
+    position:relative;
+    width:.13em;height:.13em;
+    margin:0 .14em;
+    border-radius:50%;
+    align-self:center;
+    background:radial-gradient(circle at 50% 42%,
+      color-mix(in oklch,var(--hd-mint) 96%,transparent) 0%,
+      var(--color-primary-500) 50%,
+      color-mix(in oklch,var(--color-primary-600) 82%,transparent) 100%);
+    box-shadow:
+      0 0 10px 1px color-mix(in oklch,var(--hd-mint) 55%,transparent),
+      0 0 24px 3px color-mix(in oklch,var(--color-primary-500) 48%,transparent);
+    animation:dot-breath 2.8s var(--ease-in-out) infinite;
+    transform:translateY(-.06em);
+  }
+  /* 中点外圈一圈扩散涟漪（同步收小，跟点匹配） */
+  .mega .dot::after{
+    content:'';position:absolute;inset:-22%;border-radius:50%;
+    border:1px solid color-mix(in oklch,var(--hd-mint) 45%,transparent);
+    animation:dot-ripple 2.8s var(--ease-in-out) infinite;
+  }
+  /* 「AI」：小一号 + 弱字重 + 半透明，主次分明 */
+  .mega .ai{
+    font-size:.62em;
+    font-weight:400;
+    letter-spacing:-.02em;
+    color:color-mix(in oklch,var(--hd-text) 52%,transparent);
+    align-self:center;
+    margin-left:.06em;
+  }
+  @keyframes dot-breath{
+    0%,100%{transform:translateY(-.06em) scale(1);
+      box-shadow:0 0 10px 1px color-mix(in oklch,var(--hd-mint) 52%,transparent),
+        0 0 22px 3px color-mix(in oklch,var(--color-primary-500) 44%,transparent);}
+    50%{transform:translateY(-.06em) scale(1.1);
+      box-shadow:0 0 14px 2px color-mix(in oklch,var(--hd-mint) 72%,transparent),
+        0 0 32px 5px color-mix(in oklch,var(--color-primary-500) 58%,transparent);}
+  }
+  @keyframes dot-ripple{
+    0%{transform:scale(.7);opacity:.7}
+    70%{transform:scale(1.5);opacity:0}
+    100%{transform:scale(1.5);opacity:0}
+  }
+
+  /* 一句话 slogan：短促有力，不可框选复制 */
+  .slogan{
+    font-size:clamp(1.15rem,2.4vw,1.62rem);
+    font-weight:var(--fw-medium);
+    color:color-mix(in oklch,var(--hd-text) 80%,transparent);
+    letter-spacing:.01em;
+    margin:0 0 var(--space-8);
+    user-select:none;-webkit-user-select:none;-moz-user-select:none;
+    opacity:0;animation:fade-up var(--dur-4) .5s var(--ease-out) forwards;
+  }
+  .slogan .accent{
+    background:linear-gradient(100deg,var(--color-primary-300),var(--hd-mint));
+    -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+    font-weight:var(--fw-bold);
+  }
+
+  /* chat 输入框：能聚焦、光标闪烁、focus 发光 */
+  .ask{width:100%;max-width:660px;opacity:0;animation:fade-up var(--dur-4) .66s var(--ease-out) forwards}
+  .ask-shell{
+    display:flex;align-items:center;gap:var(--space-3);
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-full);
+    padding:8px 8px 8px var(--space-5);backdrop-filter:blur(14px);
+    box-shadow:0 20px 60px -22px var(--glow-a);
+    cursor:pointer;
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),transform var(--dur-1) var(--ease-snap);
+  }
+  .ask-shell:hover{
+    border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);
+    box-shadow:0 22px 66px -16px var(--glow-a),0 0 0 4px color-mix(in oklch,var(--color-primary-500) 14%,transparent);
+  }
+  /* 只读输入框：展示打字机轮播文案，灰色像引导提示，不可输入、无光标、不可选中 */
+  .ask-shell input{
+    flex:1;min-width:0;background:transparent;border:none;outline:none;
+    color:var(--hd-muted);
+    font-family:'Inter',var(--font-sans);font-size:var(--text-body-lg);height:46px;
+    cursor:pointer;caret-color:transparent;
+    user-select:none;-webkit-user-select:none;pointer-events:none;
+  }
+  .ask-shell input::placeholder{color:var(--hd-muted)}
+  .send{
+    width:46px;height:46px;border-radius:50%;border:none;flex:none;cursor:pointer;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--color-primary-500),var(--color-primary-600));
+    color:var(--color-primary-fg);box-shadow:0 8px 20px -6px var(--color-primary-500);
+    transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2);
+  }
+  .send:hover{transform:translateY(-1px) scale(1.06)}
+  .send svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2}
+  @keyframes caret{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+  .chips{display:flex;gap:var(--space-2);justify-content:center;flex-wrap:wrap;margin-top:var(--space-4)}
+  .chip{
+    padding:6px 14px;border-radius:var(--radius-full);
+    background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);
+    color:var(--hd-muted);font-size:var(--text-body-sm);cursor:pointer;
+    user-select:none;-webkit-user-select:none;
+    transition:color var(--dur-1),border-color var(--dur-1),transform var(--dur-1) var(--ease-snap);
+  }
+  .chip:hover{color:var(--hd-text);border-color:color-mix(in oklch,var(--color-primary-300) 55%,transparent);transform:translateY(-1px)}
+
+  /* 底部极简信任行（仍一屏内）：上游 logo 文字 + 协议提示 */
+  .trust{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:center;gap:var(--space-5);flex-wrap:wrap;
+    padding:0 var(--space-5) var(--space-8);
+    color:var(--hd-muted);font-size:var(--text-body-sm);
+    opacity:0;animation:fade-up var(--dur-4) .82s var(--ease-out) forwards;
+  }
+  .trust .lbl{color:color-mix(in oklch,var(--hd-muted) 80%,transparent)}
+  .trust .vendors{display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center}
+  .trust .vendors span{color:color-mix(in oklch,var(--hd-text) 64%,transparent);font-weight:var(--fw-medium)}
+  .trust .vendors .d{width:3px;height:3px;border-radius:50%;background:var(--hd-line)}
+
+  @keyframes fade-up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+  @keyframes breath{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.65}}
+
+  /* 汉堡按钮：桌面隐藏，移动端显示 */
+  .nav-toggle{display:none;width:42px;height:42px;border-radius:11px;border:1px solid var(--hd-line);background:var(--hd-glass);backdrop-filter:blur(8px);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin-left:auto}
+  .nav-toggle span{display:block;width:18px;height:2px;border-radius:2px;background:var(--hd-text);transition:transform var(--dur-2) var(--ease-out),opacity var(--dur-1)}
+  body.nav-open .nav-toggle span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  body.nav-open .nav-toggle span:nth-child(2){opacity:0}
+  body.nav-open .nav-toggle span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  /* 移动端下拉面板 */
+  .nav-mobile{display:none;flex-direction:column;gap:2px;padding:0 var(--space-5);max-height:0;overflow:hidden;opacity:0;transition:max-height var(--dur-4) var(--ease-out),opacity var(--dur-3) var(--ease-out)}
+  .nav-mobile a{padding:14px 4px;color:color-mix(in oklch,var(--hd-text) 86%,transparent);font-weight:var(--fw-medium);font-size:var(--text-h6);border-bottom:1px solid color-mix(in oklch,var(--hd-line) 60%,transparent)}
+  .nav-mobile a:active{color:var(--color-primary-400)}
+  .nav-mobile-cta{display:flex;gap:var(--space-3);padding:16px 0 6px}
+  .nav-mobile-cta .btn{flex:1;text-align:center;justify-content:center}
+  body.nav-open .nav-mobile{max-height:380px;opacity:1;padding-bottom:18px;border-bottom:1px solid var(--hd-line);background:color-mix(in oklch,var(--hd-bg) 70%,transparent);backdrop-filter:blur(10px)}
+
+  /* 响应式：收纳导航次级链接，缩小巨字间距 */
+  @media(max-width:760px){
+    .nav-links{display:none}
+    .nav-cta{display:none}
+    .nav-toggle{display:flex}
+    .nav-mobile{display:flex}
+    .trust{gap:var(--space-3)}
+    .trust .lbl{width:100%;text-align:center}
+  }
+
+  /* prefers-reduced-motion：尊重无障碍——关掉"激进"动态（入场位移、缩放呼吸、涟漪），
+     但【背景光束网络保持缓慢流动】。主视觉的"活着感"是品牌核心，完全静止=体验崩塌，
+     故只温和降级而非彻底冻结。canvas 由 JS 端在 reduce 时降速续跑，不在此关停。 */
+  @media(prefers-reduced-motion:reduce){
+    .pill,.slogan,.ask,.trust,.mega{animation:none!important;opacity:1!important;transform:none!important}
+    .mega .ch{animation:none!important;opacity:1!important;transform:none!important}
+    .stage::before{animation-duration:36s!important}   /* aurora 仍动，仅减速 */
+    .mega .dot{animation-duration:5.6s!important}        /* 中点仍呼吸，仅减速 */
+    .mega .dot::after{animation:none!important}          /* 涟漪关掉，太抢眼 */
+  }
+  /* 任何情况下，巨字不出现焦点/选区描边（防截图里那种意外边框） */
+  .mega,.mega *{outline:none!important;border:none!important;-webkit-tap-highlight-color:transparent}
+  /* ═══════════ 认证抽屉：右侧滑出 + 首页内容左移让位（丝滑，不跳页） ═══════════ */
+  /* 主内容随抽屉打开整体左移 + 轻微缩小，被面板"推开"的感觉（不虚化） */
+  .stage{transition:transform var(--dur-4) var(--ease-out)}
+  body.auth-open .stage{transform:translateX(-7%) scale(.985)}
+
+  .auth-overlay{
+    position:fixed;inset:0;z-index:40;
+    background:color-mix(in oklch,var(--hd-bg) 64%,transparent);
+    backdrop-filter:blur(1.5px);
+    opacity:0;visibility:hidden;
+    transition:opacity var(--dur-3) var(--ease-out),visibility 0s linear var(--dur-3);
+  }
+  body.auth-open .auth-overlay{opacity:1;visibility:visible;transition:opacity var(--dur-3) var(--ease-out),visibility 0s}
+  .auth-drawer{
+    position:fixed;top:0;right:0;bottom:0;z-index:41;
+    width:min(468px,100vw);
+    background:color-mix(in oklch,var(--hd-bg) 86%,transparent);
+    backdrop-filter:blur(22px);
+    border-left:1px solid var(--hd-line);
+    box-shadow:-30px 0 80px -30px color-mix(in oklch,var(--hd-bg) 88%,transparent);
+    transform:translateX(100%);visibility:hidden;
+    transition:transform var(--dur-4) var(--ease-out),visibility 0s linear var(--dur-4);
+    overflow-y:auto;overscroll-behavior:contain;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:var(--space-8) var(--space-8) var(--space-6);
+  }
+  body.auth-open .auth-drawer{transform:translateX(0);visibility:visible;transition:transform var(--dur-4) var(--ease-out),visibility 0s}
+  .auth-close{
+    position:absolute;top:18px;right:18px;width:40px;height:40px;border:none;cursor:pointer;
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-full);
+    color:var(--hd-muted);display:grid;place-items:center;backdrop-filter:blur(8px);
+    transition:color var(--dur-1),background var(--dur-1),transform var(--dur-1) var(--ease-snap);
+  }
+  .auth-close:hover{color:var(--hd-text);background:var(--hd-glass-strong);transform:rotate(90deg)}
+  .auth-close svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+  /* 表单卡（登录/注册视图共用，切换时淡入上浮） */
+  .auth-card[hidden]{display:none}
+  .auth-card{animation:auth-in var(--dur-4) var(--ease-out)}
+  @keyframes auth-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .auth-brand{display:flex;align-items:center;gap:9px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);margin-bottom:var(--space-6)}
+  .auth-brand .m{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));color:var(--color-primary-fg);font-weight:var(--fw-bold);font-size:.9rem}
+  .auth-title{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);letter-spacing:-.02em;margin:0 0 var(--space-2);color:var(--hd-text)}
+  .auth-sub{color:var(--hd-muted);font-size:var(--text-body);margin:0 0 var(--space-6)}
+
+  /* 表单组件（与 login/register 页一致） */
+  .field{margin-bottom:var(--space-4)}
+  .field label{display:block;font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:color-mix(in oklch,var(--hd-text) 78%,transparent);margin-bottom:var(--space-2)}
+  .ctrl{position:relative;display:flex;align-items:center}
+  .inp{
+    width:100%;height:50px;
+    background:color-mix(in oklch,var(--hd-text) 4%,transparent);
+    border:1px solid var(--hd-line);border-radius:var(--radius-md);
+    color:var(--hd-text);font-family:'Inter',var(--font-sans);font-size:var(--text-body-lg);padding:0 var(--space-4);
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background var(--dur-2);
+  }
+  .inp::placeholder{color:color-mix(in oklch,var(--hd-muted) 80%,transparent)}
+  .inp:focus{outline:none;border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent);
+    background:color-mix(in oklch,var(--hd-text) 6%,transparent);
+    box-shadow:0 0 0 4px color-mix(in oklch,var(--color-primary-500) 16%,transparent),0 0 22px -4px color-mix(in oklch,var(--color-primary-500) 40%,transparent)}
+  .ctrl.has-eye .inp{padding-right:46px}
+  .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:transparent;cursor:pointer;display:grid;place-items:center;border-radius:var(--radius-sm);color:var(--hd-muted);transition:color var(--dur-1)}
+  .eye:hover{color:var(--hd-text)}
+  .eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .eye .off{display:none}
+  .eye.is-on .on{display:none}
+  .eye.is-on .off{display:block}
+  .inp.err{border-color:color-mix(in oklch,var(--color-danger) 80%,transparent);box-shadow:0 0 0 4px color-mix(in oklch,var(--color-danger) 16%,transparent)}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+  .shake{animation:shake .4s var(--ease-in-out)}
+
+  /* 密码强度条 */
+  .pw-strength{display:flex;align-items:center;gap:6px;margin-top:var(--space-2)}
+  .pw-strength i{flex:1;height:4px;border-radius:2px;background:color-mix(in oklch,var(--hd-text) 12%,transparent);transition:background var(--dur-2)}
+  .pw-strength.s1 i:nth-child(1){background:var(--color-danger)}
+  .pw-strength.s2 i:nth-child(-n+2){background:var(--color-warning)}
+  .pw-strength.s3 i{background:var(--color-success)}
+  .pw-strength .pw-label{margin-left:6px;font-size:var(--text-caption);color:var(--hd-muted);min-width:48px}
+
+  .row-between{display:flex;align-items:center;justify-content:space-between;margin:var(--space-2) 0 var(--space-5)}
+  .check{display:inline-flex;align-items:center;gap:var(--space-2);cursor:pointer;user-select:none;color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-sm)}
+  .check-agree{margin:var(--space-2) 0 var(--space-5);align-items:flex-start;line-height:1.5}
+  .check input{position:absolute;opacity:0;width:0;height:0}
+  .check .box{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid color-mix(in oklch,var(--hd-text) 28%,transparent);background:color-mix(in oklch,var(--hd-text) 4%,transparent);display:grid;place-items:center;transition:border-color var(--dur-1),background var(--dur-1);margin-top:1px}
+  .check .box svg{width:13px;height:13px;stroke:var(--color-primary-fg);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--dur-1)}
+  .check input:checked + .box{background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent)}
+  .check input:checked + .box svg{opacity:1}
+  .check a{color:var(--hd-mint)}
+  .link{color:var(--hd-mint);font-size:var(--text-body-sm);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .link:hover{color:var(--color-primary-300)}
+
+  .auth-card .btn{font-family:inherit;border:none;border-radius:var(--radius-md);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2)}
+  .auth-card .btn-glow{width:100%;height:52px;font-size:var(--text-body-lg);font-weight:var(--fw-semibold);background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));color:var(--color-primary-fg);box-shadow:0 10px 28px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:hover{transform:translateY(-1px);box-shadow:0 14px 34px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:active{transform:translateY(0)}
+
+  .divider{display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0 var(--space-5);color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--hd-line)}
+  .oauth{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+  .oauth a{height:48px;border-radius:var(--radius-md);display:grid;place-items:center;background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);color:color-mix(in oklch,var(--hd-text) 82%,transparent);transition:transform var(--dur-1) var(--ease-snap),border-color var(--dur-2),background var(--dur-2),color var(--dur-2)}
+  .oauth a:hover{transform:translateY(-2px);background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);color:var(--hd-text)}
+  .oauth a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .foot{text-align:center;margin-top:var(--space-6);color:var(--hd-muted);font-size:var(--text-body)}
+  .foot a{color:var(--hd-mint);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .foot a:hover{color:var(--color-primary-300)}
+
+  /* 移动端：抽屉占满宽，表单元素够大 */
+  @media(max-width:540px){
+    .auth-drawer{width:100vw;padding:var(--space-8) var(--space-5) var(--space-6)}
+    .inp{height:52px}
+    .auth-card .btn-glow{height:54px}
+    .oauth a{height:52px}
+  }
+  /* reduce-motion：抽屉直接出现，不滑（避免眩晕），背景光束仍走 JS 降速 */
+  @media(prefers-reduced-motion:reduce){
+    .auth-drawer,.auth-overlay{transition-duration:.01ms!important}
+    .auth-card{animation:none!important}
+  }
+</style>
+</head>
+<body>
+<!-- 主视觉：流动光束网络 canvas（独立全屏固定背景，不随 stage 位移/缩放，避免抽屉打开时被一起 transform） -->
+<canvas id="threads" aria-hidden="true"></canvas>
+<main class="stage">
+  <!-- 顶部导航 -->
+  <header class="nav-bar">
+    <div class="wrap nav-in">
+      <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa</a>
+      <nav class="nav-links">
+        <a href="models.html">模型广场</a>
+        <a href="pricing.html">价格</a>
+        <a href="ranking.html">排行榜</a>
+        <a href="../api-docs/quickstart.html">文档</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-glass" href="login.html" data-auth="login">登录</a>
+        <a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a>
+      </div>
+      <!-- 移动端汉堡按钮（仅 ≤760 显示） -->
+      <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <!-- 移动端下拉面板：收纳次级链接 + 登录/注册 -->
+    <div class="nav-mobile" id="navMobile" aria-hidden="true">
+      <a href="models.html">模型广场</a>
+      <a href="pricing.html">价格</a>
+      <a href="ranking.html">排行榜</a>
+      <a href="../api-docs/quickstart.html">文档</a>
+      <div class="nav-mobile-cta">
+        <a class="btn btn-glass" href="login.html" data-auth="login">登录</a>
+        <a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- hero -->
+  <section class="hero">
+    <div class="wrap" style="display:flex;flex-direction:column;align-items:center">
+      <div class="pill"><span class="live"></span>已聚合 <b>148</b> 个模型 · 实时在线</div>
+
+      <!-- 巨字品牌：Nexa + 呼吸 teal 光点 · + 弱化 AI -->
+      <h1 class="mega" aria-label="Nexa·AI">
+        <span class="word">Nexa</span><span class="dot" aria-hidden="true"></span><span class="ai">AI</span>
+      </h1>
+
+      <p class="slogan">满血直连，<span class="accent">只付零头</span></p>
+
+      <form class="ask" id="askForm">
+        <div class="ask-shell" id="askShell" role="button" tabindex="0" aria-label="登录后开始对话">
+          <input id="askInput" type="text" readonly aria-hidden="true" tabindex="-1">
+          <button class="send" type="submit" aria-label="开始">
+            <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div class="chips">
+          <span class="chip" data-q="帮我写一段调用 GPT-4o 的 Python 代码">写段调用 GPT-4o 的代码</span>
+          <span class="chip" data-q="对比 GPT-4o 与 Claude 3.5 Sonnet">对比 GPT-4o 与 Claude 3.5</span>
+          <span class="chip" data-q="如何用一个 base_url 接入所有模型？">一行接入所有模型</span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- 极简信任行（仍在一屏视觉范围内） -->
+  <div class="trust">
+    <span class="lbl">已直连</span>
+    <span class="vendors">
+      <span>OpenAI</span><i class="d"></i>
+      <span>Anthropic</span><i class="d"></i>
+      <span>Google</span><i class="d"></i>
+      <span>DeepSeek</span><i class="d"></i>
+      <span>xAI</span>
+    </span>
+  </div>
+</main>
+
+<!-- ═══════════ 认证抽屉：从右侧滑出，背景首页光束继续流动（不跳页） ═══════════ -->
+<div class="auth-overlay" id="authOverlay"></div>
+<aside class="auth-drawer" id="authDrawer" aria-modal="true" role="dialog" aria-label="登录或注册">
+  <button class="auth-close" id="authClose" type="button" aria-label="关闭">
+    <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+  </button>
+
+  <!-- 登录视图 -->
+  <form class="auth-card" id="loginForm" data-view="login" novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">欢迎回来</h2>
+    <p class="auth-sub">登录你的 Nexa 账号，继续直连全球大模型</p>
+
+    <div class="field">
+      <label for="lgAccount">邮箱 / 用户名</label>
+      <div class="ctrl"><input class="inp" id="lgAccount" type="text" autocomplete="username" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="lgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="lgPwd" type="password" autocomplete="current-password" placeholder="输入密码">
+        <button class="eye" type="button" data-eye="lgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="row-between">
+      <label class="check"><input type="checkbox" checked><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>记住我</label>
+      <a class="link" href="#">忘记密码？</a>
+    </div>
+    <button class="btn btn-glow" type="submit">登录</button>
+    <div class="divider">或使用以下方式登录</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">还没有账号？<a href="#" data-switch="register">去注册</a></p>
+  </form>
+
+  <!-- 注册视图 -->
+  <form class="auth-card" id="registerForm" data-view="register" hidden novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">开始用 Nexa</h2>
+    <p class="auth-sub">一个账号，直连 OpenAI / Anthropic / Google / DeepSeek</p>
+
+    <div class="field">
+      <label for="rgEmail">邮箱</label>
+      <div class="ctrl"><input class="inp" id="rgEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="rgPwd" type="password" autocomplete="new-password" placeholder="至少 8 位">
+        <button class="eye" type="button" data-eye="rgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+      <div class="pw-strength" id="pwStrength"><i></i><i></i><i></i><span class="pw-label">密码强度</span></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd2">确认密码</label>
+      <div class="ctrl"><input class="inp" id="rgPwd2" type="password" autocomplete="new-password" placeholder="再次输入密码"></div>
+    </div>
+    <label class="check check-agree"><input type="checkbox" id="rgAgree"><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>我已阅读并同意 <a href="agreement.html">《服务协议》</a> 和 <a href="agreement.html">《隐私政策》</a></label>
+    <button class="btn btn-glow" type="submit">创建账号</button>
+    <div class="divider">或使用以下方式注册</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">已有账号？<a href="#" data-switch="login">去登录</a></p>
+  </form>
+</aside>
+
+
+<script>
+/* ── 登录态模拟：未登录拦截 chat → 跳 login.html；已登录才允许在框内聊天 ── */
+var isLoggedIn = false;
+
+/* ── chat 输入框：只读、不可输入、无光标；打字机轮播多条引导文案。
+      整个框就是一个"去登录"的按钮——未登录点击跳 login.html，已登录才进聊天。 ── */
+(function(){
+  var input=document.getElementById('askInput'),
+      shell=document.getElementById('askShell'),
+      form=document.getElementById('askForm');
+  if(!input||!shell)return;
+
+  // 轮播文案池（一个字一个字蹦出来，停留片刻后删除，换下一句）
+  var PHRASES=[
+    '帮我写一段调用 GPT-4o 的 Python 代码',
+    '对比一下 GPT-4o 和 Claude 3.5 Sonnet',
+    '怎么用一个 base_url 接入所有模型？',
+    '把这段英文翻译成地道中文…',
+    '帮我把这个需求拆成开发任务',
+    '用 DeepSeek 写个爬虫脚本'
+  ];
+  var pi=0, ci=0, deleting=false;
+  function tick(){
+    var full=PHRASES[pi];
+    if(!deleting){
+      ci++;
+      input.value=full.slice(0,ci);
+      if(ci>=full.length){ deleting=true; return setTimeout(tick, 1600); }   // 打完停 1.6s
+      setTimeout(tick, 62 + Math.random()*46);                               // 逐字节奏（带微随机更自然）
+    }else{
+      ci--;
+      input.value=full.slice(0,ci);
+      if(ci<=0){ deleting=false; pi=(pi+1)%PHRASES.length; return setTimeout(tick, 360); } // 删完换下一句
+      setTimeout(tick, 26);                                                  // 删除快一点
+    }
+  }
+  setTimeout(tick, 700); // 入场动画后再开始打字
+
+  // 整个框 = 打开登录抽屉（未登录）；已登录才进聊天
+  function go(e){
+    if(e) e.preventDefault();
+    if(!isLoggedIn){ openAuth('login'); return; }
+    // TODO: 已登录态——进入 Playground / 在框内实际聊天；聊天后呈现暂留白，后续补。
+  }
+  shell.addEventListener('click', go);
+  shell.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' ') go(e); });
+  form.addEventListener('submit', go);
+
+  // chip 也走同一逻辑：未登录开登录抽屉，已登录带问题进聊天
+  document.querySelectorAll('.chip').forEach(function(ch){
+    ch.addEventListener('click', function(){
+      if(!isLoggedIn){ openAuth('login'); return; }
+      // 已登录：把示例问题带进聊天（呈现待补）
+    });
+  });
+})();
+
+/* ── 认证抽屉控制：右侧滑出、视图切换、眼睛、密码强度、空值抖动校验 ── */
+(function(){
+  var overlay=document.getElementById('authOverlay'),
+      drawer=document.getElementById('authDrawer'),
+      closeBtn=document.getElementById('authClose'),
+      loginView=document.getElementById('loginForm'),
+      registerView=document.getElementById('registerForm');
+  if(!drawer)return;
+  var lastFocus=null;
+
+  function showView(v){
+    var toLogin = v!=='register';
+    loginView.hidden = !toLogin;
+    registerView.hidden = toLogin;
+  }
+  window.openAuth=function(v){
+    lastFocus=document.activeElement;
+    showView(v||'login');
+    document.body.classList.add('auth-open');
+    document.body.style.overflow='hidden';
+    var first=(v==='register'?registerView:loginView).querySelector('input');
+    if(first) setTimeout(function(){first.focus();},460);
+  };
+  function closeAuth(){
+    document.body.classList.remove('auth-open');
+    document.body.style.overflow='';
+    if(lastFocus) lastFocus.focus();
+  }
+  // 导航栏 登录/免费开始 按钮 → 开抽屉（不跳页）
+  document.querySelectorAll('[data-auth]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); openAuth(this.getAttribute('data-auth')); });
+  });
+  // 视图切换链接（去注册/去登录）
+  drawer.querySelectorAll('[data-switch]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); showView(this.getAttribute('data-switch')); });
+  });
+  closeBtn.addEventListener('click', closeAuth);
+  overlay.addEventListener('click', closeAuth);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && document.body.classList.contains('auth-open')) closeAuth(); });
+
+  // 移动端汉堡菜单 toggle
+  var navToggle=document.getElementById('navToggle');
+  var navMobile=document.getElementById('navMobile');
+  if(navToggle){
+    navToggle.addEventListener('click', function(){
+      var open=document.body.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', open?'true':'false');
+      navToggle.setAttribute('aria-label', open?'关闭菜单':'打开菜单');
+      if(navMobile) navMobile.setAttribute('aria-hidden', open?'false':'true');
+    });
+    // 点面板内任何链接后收起汉堡（登录/注册因 data-auth 会另开抽屉，这里先收菜单）
+    if(navMobile) navMobile.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){
+        document.body.classList.remove('nav-open');
+        navToggle.setAttribute('aria-expanded','false');
+        navMobile.setAttribute('aria-hidden','true');
+      });
+    });
+    // Esc 关汉堡
+    document.addEventListener('keydown', function(e){
+      if(e.key==='Escape' && document.body.classList.contains('nav-open')){
+        document.body.classList.remove('nav-open');
+        navToggle.setAttribute('aria-expanded','false');
+        if(navMobile) navMobile.setAttribute('aria-hidden','true');
+      }
+    });
+  }
+
+  // 眼睛：切 password/text（两个表单共用，按 data-eye 找目标）
+  drawer.querySelectorAll('.eye').forEach(function(eye){
+    eye.addEventListener('click', function(){
+      var pwd=document.getElementById(eye.getAttribute('data-eye'));
+      if(!pwd)return;
+      var show=pwd.type==='password';
+      pwd.type=show?'text':'password';
+      eye.classList.toggle('is-on',show);
+      eye.setAttribute('aria-pressed',String(show));
+      eye.setAttribute('aria-label',show?'隐藏密码':'显示密码');
+    });
+  });
+
+  // 密码强度（注册）：按长度 + 字符种类 0~3 档
+  var rgPwd=document.getElementById('rgPwd'), bar=document.getElementById('pwStrength'),
+      lbl=bar?bar.querySelector('.pw-label'):null;
+  if(rgPwd&&bar){
+    rgPwd.addEventListener('input', function(){
+      var v=rgPwd.value, kinds=0;
+      if(/[a-z]/.test(v))kinds++; if(/[A-Z]/.test(v))kinds++;
+      if(/[0-9]/.test(v))kinds++; if(/[^a-zA-Z0-9]/.test(v))kinds++;
+      var s=0;
+      if(v.length>=8 && kinds>=3) s=3;
+      else if(v.length>=6 && kinds>=2) s=2;
+      else if(v.length>0) s=1;
+      bar.className='pw-strength'+(s?' s'+s:'');
+      if(lbl) lbl.textContent = s===0?'密码强度':(s===1?'弱':(s===2?'中':'强'));
+    });
+  }
+
+  function shake(el){ el.classList.add('err','shake'); setTimeout(function(){el.classList.remove('shake');},420); }
+  function clr(el){ el.classList.remove('err'); }
+
+  // 登录提交：空值抖动校验（纯前端演示）
+  loginView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var acc=document.getElementById('lgAccount'), pw=document.getElementById('lgPwd'), bad=false;
+    [acc,pw].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(bad)return;
+    // TODO: 调登录接口；演示态——直接当作登录成功
+  });
+  // 注册提交：空值 + 两次密码一致 + 同意协议
+  registerView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var em=document.getElementById('rgEmail'), p1=document.getElementById('rgPwd'),
+        p2=document.getElementById('rgPwd2'), agree=document.getElementById('rgAgree'), bad=false;
+    [em,p1,p2].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(!bad && p1.value!==p2.value){ shake(p2); bad=true; }
+    if(!agree.checked){ var box=agree.nextElementSibling; if(box){box.classList.add('shake');setTimeout(function(){box.classList.remove('shake');},420);} bad=true; }
+    if(bad)return;
+    // TODO: 调注册接口；演示态——直接当作注册成功
+  });
+})();
+
+/* ===================================================================
+   主视觉效果：FLOWING THREADS（光束网络）
+   深色 canvas 上若干发光锚点用细线连成网络，沿每条线有"流光"持续游走；
+   节点缓慢漂移 + 呼吸；鼠标靠近时节点被吸引、连线提亮。
+   纯 canvas 2D，零外部库；尊重 prefers-reduced-motion。
+   启动用 requestAnimationFrame 兜底重试拿宽度，不依赖 load 事件（修复"刷新才动"bug）。
+   =================================================================== */
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 减少动态时不冻结主视觉，只放慢——背景"活着"是品牌核心，全静止=体验崩塌
+  var SPEED = reduce ? 0.42 : 1.0;
+  var canvas=document.getElementById('threads');
+  if(!canvas) return;
+  var ctx=canvas.getContext('2d');
+
+  // 从 token 读主色，避免裸色值散落在 JS（保持色值纪律）
+  var cs=getComputedStyle(document.documentElement);
+  function tok(name,fallback){ var v=cs.getPropertyValue(name).trim(); return v||fallback; }
+  var C_PRIMARY=tok('--color-primary-500','#0E7C86');
+  var C_CYAN=tok('--hd-cyan','#2BB7C2');
+  var C_MINT=tok('--hd-mint','#5FD4DE');
+  var C_LAV=tok('--hd-lav','#7AA2F7');
+  var palette=[C_PRIMARY,C_CYAN,C_MINT,C_LAV];
+
+  var DPR=Math.min(window.devicePixelRatio||1, 2);
+  var W=0,H=0;
+  var nodes=[], links=[];
+  var mouse={x:-9999,y:-9999,active:false};
+
+  function rand(a,b){return a+Math.random()*(b-a);}
+
+  function build(){
+    var rect=canvas.getBoundingClientRect();
+    W=rect.width; H=rect.height;
+    canvas.width=Math.floor(W*DPR);
+    canvas.height=Math.floor(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    // 节点数随面积自适应，控制 motion budget（不超过 ~44 节点）
+    var count=Math.max(16, Math.min(44, Math.round(W*H/40000)));
+    nodes=[];
+    for(var i=0;i<count;i++){
+      nodes.push({
+        x:rand(0,W), y:rand(0,H),
+        vx:rand(-0.2,0.2), vy:rand(-0.2,0.2),
+        r:rand(1.1,2.5),
+        c:palette[i%palette.length],
+        phase:rand(0,Math.PI*2)
+      });
+    }
+    // 预生成连接：每个节点连最近 2~3 个，形成网络（不全连，保持克制）
+    links=[];
+    for(var a=0;a<nodes.length;a++){
+      var dists=[];
+      for(var b=0;b<nodes.length;b++){
+        if(a===b)continue;
+        var dx=nodes[a].x-nodes[b].x, dy=nodes[a].y-nodes[b].y;
+        dists.push({b:b,d:dx*dx+dy*dy});
+      }
+      dists.sort(function(p,q){return p.d-q.d;});
+      var k=2+(a%2); // 2 或 3 条
+      for(var j=0;j<k && j<dists.length;j++){
+        var bi=dists[j].b;
+        if(bi>a){ // 去重
+          links.push({a:a,b:bi,t:rand(0,1),speed:rand(0.0020,0.0050)});
+        }
+      }
+    }
+  }
+
+  function hexToRgb(h){
+    h=h.replace('#','');
+    if(h.length===3) h=h.split('').map(function(x){return x+x;}).join('');
+    var n=parseInt(h,16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  function rgba(hex,a){ var c=hexToRgb(hex); return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+
+  var t=0;
+  function frame(){
+    t+=1;
+    ctx.clearRect(0,0,W,H);
+
+    // 更新节点：缓慢漂移 + 边界回弹 + 鼠标轻微吸引
+    for(var i=0;i<nodes.length;i++){
+      var n=nodes[i];
+      n.x+=n.vx*SPEED; n.y+=n.vy*SPEED;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+      n.x=Math.max(0,Math.min(W,n.x));
+      n.y=Math.max(0,Math.min(H,n.y));
+      if(mouse.active){
+        var dx=mouse.x-n.x, dy=mouse.y-n.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<190 && d>0.01){
+          var f=(190-d)/190*0.07;
+          n.x+=dx/d*f; n.y+=dy/d*f;
+        }
+      }
+    }
+
+    // 画连线（细、淡）+ 沿线流动的流光（更明显的流光：拖尾 + 亮头）
+    for(var li=0;li<links.length;li++){
+      var L=links[li], A=nodes[L.a], B=nodes[L.b];
+      var dx=B.x-A.x, dy=B.y-A.y, dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>340) continue; // 拉太开就不连，避免长杂线
+
+      // 鼠标靠近的线更亮
+      var mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+      var near=0;
+      if(mouse.active){
+        var mdx=mouse.x-mx, mdy=mouse.y-my, md=Math.sqrt(mdx*mdx+mdy*mdy);
+        near=md<230 ? (230-md)/230 : 0;
+      }
+      var baseA=0.085 + near*0.30;
+      ctx.beginPath();
+      ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y);
+      ctx.strokeStyle=rgba(A.c, baseA);
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      // 流动光点 + 拖尾（沿线方向画一小段渐亮线段，制造"流光"质感）
+      L.t+=L.speed*SPEED; if(L.t>1) L.t-=1;
+      var px=A.x+dx*L.t, py=A.y+dy*L.t;
+      var ux=dx/(dist||1), uy=dy/(dist||1);
+      var tailLen=Math.min(34, dist*0.34);
+      var tx=px-ux*tailLen, ty=py-uy*tailLen;
+      var trail=ctx.createLinearGradient(tx,ty,px,py);
+      trail.addColorStop(0, rgba(B.c, 0));
+      trail.addColorStop(1, rgba(B.c, 0.55+near*0.3));
+      ctx.beginPath();
+      ctx.moveTo(tx,ty); ctx.lineTo(px,py);
+      ctx.strokeStyle=trail; ctx.lineWidth=1.6;
+      ctx.stroke();
+
+      var pulse=0.5+0.5*Math.sin(t*0.05+li);
+      var pr=1.7+pulse*1.3;
+      var grad=ctx.createRadialGradient(px,py,0,px,py,pr*4.4);
+      grad.addColorStop(0, rgba(B.c, 0.95));
+      grad.addColorStop(1, rgba(B.c, 0));
+      ctx.beginPath();
+      ctx.fillStyle=grad;
+      ctx.arc(px,py,pr*4.4,0,Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle=rgba(B.c,0.98);
+      ctx.arc(px,py,pr*0.62,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    // 画节点（带柔光晕，节点呼吸更灵动）
+    for(var k=0;k<nodes.length;k++){
+      var nd=nodes[k];
+      var glow=2.8+1.6*Math.sin(t*0.035+nd.phase);
+      var g=ctx.createRadialGradient(nd.x,nd.y,0,nd.x,nd.y,nd.r+glow*3);
+      g.addColorStop(0, rgba(nd.c,0.58));
+      g.addColorStop(1, rgba(nd.c,0));
+      ctx.beginPath();
+      ctx.fillStyle=g;
+      ctx.arc(nd.x,nd.y,nd.r+glow*3,0,Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle=rgba(nd.c,0.92);
+      ctx.arc(nd.x,nd.y,nd.r,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    raf=requestAnimationFrame(frame);
+  }
+
+  var raf=null;
+  function start(){ if(raf)cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); }
+  function stop(){ if(raf){cancelAnimationFrame(raf);raf=null;} }
+
+  // 静态降级（reduced-motion）：画一帧定格的网络即可
+  function staticFrame(){
+    ctx.clearRect(0,0,W,H);
+    for(var li=0;li<links.length;li++){
+      var L=links[li], A=nodes[L.a], B=nodes[L.b];
+      var dx=B.x-A.x, dy=B.y-A.y, dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>340) continue;
+      ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);
+      ctx.strokeStyle=rgba(A.c,0.14);ctx.lineWidth=1;ctx.stroke();
+    }
+    for(var k=0;k<nodes.length;k++){
+      var nd=nodes[k];
+      ctx.beginPath();ctx.fillStyle=rgba(nd.c,0.8);ctx.arc(nd.x,nd.y,nd.r,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  // reduce 时也跑实时循环（已用 SPEED 降速），不再画死帧——保证背景永远在动
+  function init(){ build(); start(); }
+
+  // 交互：鼠标位置（相对 canvas）
+  window.addEventListener('mousemove',function(e){
+    var r=canvas.getBoundingClientRect();
+    mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; mouse.active=true;
+  });
+  window.addEventListener('mouseout',function(){ mouse.active=false; mouse.x=-9999; mouse.y=-9999; });
+
+  // 标签页不可见时暂停，省电（motion budget）；切回时无条件恢复（含 reduce 用户）
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden) stop(); else start();
+  });
+
+  // resize 节流重建
+  var rt=null;
+  window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(init,200); });
+
+  /* ── 启动：用 requestAnimationFrame 兜底重试拿宽度，不依赖 load 事件 ──
+     根因：load 事件在脚本执行时可能已触发过，监听器永不执行 →「刷新才动」bug。
+     修法：宽度还没算出来就下一帧再试，直到拿到，进页面即持续流动。 */
+  function boot(){
+    if(canvas.getBoundingClientRect().width>0){ init(); }
+    else { requestAnimationFrame(boot); }
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

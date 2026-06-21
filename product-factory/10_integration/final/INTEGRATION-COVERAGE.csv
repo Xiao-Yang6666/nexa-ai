@@ -1,0 +1,22 @@
+link,endpoint,status,evidence_layer,db_verified,result
+P0-鉴权,register+login+self+dashboard,200,curl+cdp三层,PG users真落库,PASS
+P1-dashboard,user/self+log/self/stat,200,cdp,KPI真值,PASS
+P1-keys,token/,200,cdp,真渲染,PASS
+P1-usage,log/self,200,cdp,RPM/TPM真值,PASS
+P1-billing,user/self+log/self/stat,200,cdp,真渲染,PASS
+P1-recharge,静态,NA,cdp,真渲染,PASS
+P1-checkin,user/checkin,200,cdp,修复后通,PASS
+P1-referral,user/self/aff,200,cdp,真渲染,PASS
+P1-settings,user/self,200,cdp,真渲染,PASS
+P1-model-map,self/model_aliases,200,cdp,真渲染,PASS
+P1-tasks,task/self,200,cdp,真渲染,PASS
+P1-pricing,/api/pricing,200,curl+cdp,零泄露验过,PASS
+P2-admin-users,/api/user,200,cdp,PG真实7用户,PASS
+P2-admin-channels,/api/channel/,200,curl,真接口,PASS
+P2-admin-models,/api/models,200,curl,真接口,PASS
+P2-admin-vendors,/api/vendors,200,curl,真接口,PASS
+P2-admin-redemption,/api/redemption,200,curl,真接口,PASS
+P2-admin-option,/api/option/,200,curl,真接口,PASS
+P2-admin-logs,/api/log/,200,cdp,真空态,PASS
+P2-admin-profit,/api/profit/dashboard,200,curl,真接口,PASS
+P2-admin-ops,/api/status,200,cdp,真系统状态,PASS

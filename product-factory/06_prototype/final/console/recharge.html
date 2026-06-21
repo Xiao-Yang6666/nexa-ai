@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>余额充值 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 余额充值页：档位卡 / 赠送提示 / 支付方式 / 订单摘要 —— 零裸色值 */
+  .pay-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--space-5);align-items:start}
+  .panel{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm);margin-bottom:var(--space-5)}
+  .panel h3{margin:0 0 var(--space-4);font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text);
+    display:flex;align-items:center;gap:var(--space-2)}
+  .step-no{width:22px;height:22px;border-radius:var(--radius-full);background:color-mix(in oklch,var(--color-primary-500) 18%,transparent);
+    color:var(--color-primary-700);display:inline-flex;align-items:center;justify-content:center;
+    font-size:var(--text-caption);font-weight:var(--fw-bold);font-family:var(--font-mono)}
+  .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+  .tier{position:relative;border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4);
+    cursor:pointer;text-align:center;transition:border-color var(--dur-1),background var(--dur-1)}
+  .tier:hover{border-color:var(--color-border-strong)}
+  .tier.on{border-color:var(--color-primary-500);background:color-mix(in oklch,var(--color-primary-500) 10%,transparent)}
+  .tier .amt{font-family:var(--font-brand);font-size:var(--text-h3);font-weight:var(--fw-bold);color:var(--color-text)}
+  .tier .gift{font-size:var(--text-caption);color:var(--color-success);margin-top:var(--space-1)}
+  .tier .tick{position:absolute;top:8px;right:8px;width:18px;height:18px;color:var(--color-primary-500);opacity:0}
+  .tier.on .tick{opacity:1}
+  .custom{margin-top:var(--space-4)}
+  .amt-input{position:relative}
+  .amt-input span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--color-text-muted);
+    font-family:var(--font-mono)}
+  .amt-input input{height:48px;font-size:var(--text-h4);font-family:var(--font-mono);padding-left:32px;
+    color:var(--color-text)}
+  .gift-note{display:flex;gap:var(--space-2);margin-top:var(--space-4);padding:var(--space-3) var(--space-4);
+    border-radius:var(--radius-sm);background:var(--color-success-bg);color:var(--color-success-fg);font-size:var(--text-body-sm)}
+  .gift-note .nx-ic{flex:none;width:18px;height:18px;margin-top:1px}
+  .gift-note ul{margin:var(--space-2) 0 0;padding-left:var(--space-5)}
+  .gift-note li{margin-bottom:2px}
+  .pays{display:flex;flex-direction:column;gap:var(--space-3)}
+  .pay{display:flex;align-items:center;gap:var(--space-3);border:1.5px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-4);cursor:pointer;transition:border-color var(--dur-1),background var(--dur-1)}
+  .pay:hover{border-color:var(--color-border-strong)}
+  .pay.on{border-color:var(--color-primary-500);background:color-mix(in oklch,var(--color-primary-500) 8%,transparent)}
+  .pay-ic{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;
+    background:var(--color-surface-sunken);color:var(--color-text-secondary)}
+  .pay-ic .nx-ic{width:20px;height:20px}
+  .pay-name{font-weight:var(--fw-medium);color:var(--color-text)}
+  .pay-desc{font-size:var(--text-caption);color:var(--color-text-muted)}
+  .pay-radio{margin-left:auto;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--color-border-strong);
+    flex:none;position:relative}
+  .pay.on .pay-radio{border-color:var(--color-primary-500)}
+  .pay.on .pay-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--color-primary-500)}
+  /* 订单摘要（粘性右栏） */
+  .summary{position:sticky;top:72px}
+  .sum-row{display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) 0;
+    border-bottom:1px solid var(--color-border);font-size:var(--text-body)}
+  .sum-row:last-of-type{border-bottom:none}
+  .sum-row .k{color:var(--color-text-secondary)} .sum-row .v{font-family:var(--font-mono);color:var(--color-text)}
+  .sum-row.gift .v{color:var(--color-success)}
+  .sum-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:var(--space-4);
+    padding-top:var(--space-4);border-top:2px solid var(--color-border-strong)}
+  .sum-total .k{color:var(--color-text-secondary)}
+  .sum-total .v{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);color:var(--color-text)}
+  .sum-btn{width:100%;margin-top:var(--space-5);justify-content:center}
+  .sum-fine{font-size:var(--text-caption);color:var(--color-text-muted);text-align:center;margin-top:var(--space-3)}
+  @media (max-width:1024px){.pay-grid{grid-template-columns:1fr}.tiers{grid-template-columns:repeat(2,1fr)}.summary{position:static}}
+</style>
+</head>
+<body data-page="recharge" data-title="余额充值" data-crumb="控制台|账单与计费|余额充值">
+
+  <div class="pay-grid">
+    <div class="pay-left">
+      <!-- 步骤 1：金额 -->
+      <div class="panel nx-fade">
+        <h3><span class="step-no">1</span>选择充值金额</h3>
+        <div class="tiers" id="tiers">
+          <div class="tier" data-amt="10" data-gift="0"><svg class="tick nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l5 5 9-10"/></svg><div class="amt">$10</div><div class="gift">无赠送</div></div>
+          <div class="tier" data-amt="50" data-gift="2"><svg class="tick nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l5 5 9-10"/></svg><div class="amt">$50</div><div class="gift">赠 $2</div></div>
+          <div class="tier on" data-amt="100" data-gift="5"><svg class="tick nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l5 5 9-10"/></svg><div class="amt">$100</div><div class="gift">赠 $5</div></div>
+          <div class="tier" data-amt="500" data-gift="50"><svg class="tick nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12l5 5 9-10"/></svg><div class="amt">$500</div><div class="gift">赠 $50</div></div>
+        </div>
+        <div class="custom">
+          <label class="field-label">或自定义金额（USD）</label>
+          <div class="amt-input"><span>$</span><input class="input" id="custom-amt" placeholder="输入 1 - 10000"></div>
+        </div>
+        <div class="gift-note">
+          <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M3 12h18"/><path d="M12 8v13"/><path d="M12 8C9 8 7 4 9 4s3 4 3 4 1-4 3-4 0 4-3 4z"/></svg>
+          <div>充得多送得多，赠送额永久有效：
+            <ul>
+              <li>满 $50 赠 4%，满 $100 赠 5%</li>
+              <li>满 $500 赠 10%，满 $1000 赠 12%</li>
+              <li>对公转账单笔满 $2000 额外赠 2%</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 步骤 2：支付方式 -->
+      <div class="panel nx-fade">
+        <h3><span class="step-no">2</span>选择支付方式</h3>
+        <div class="pays" id="pays">
+          <label class="pay on" data-pay="支付宝">
+            <span class="pay-ic"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M5 14c4 2 9 2 13-2"/><path d="M11 11h5"/></svg></span>
+            <div><div class="pay-name">支付宝</div><div class="pay-desc">扫码支付 · 实时到账</div></div>
+            <span class="pay-radio"></span>
+          </label>
+          <label class="pay" data-pay="微信支付">
+            <span class="pay-ic"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="10" r="6"/><circle cx="16" cy="15" r="5"/><path d="M7 9h.01M11 9h.01M14 14h.01M18 14h.01"/></svg></span>
+            <div><div class="pay-name">微信支付</div><div class="pay-desc">扫码支付 · 实时到账</div></div>
+            <span class="pay-radio"></span>
+          </label>
+          <label class="pay" data-pay="对公转账">
+            <span class="pay-ic"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21h18"/><path d="M5 21V10M19 21V10M9 21V10M15 21V10"/><path d="M3 10l9-6 9 6z"/></svg></span>
+            <div><div class="pay-name">对公转账</div><div class="pay-desc">企业开票 · 1-2 个工作日到账</div></div>
+            <span class="pay-radio"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 订单摘要 -->
+    <aside class="panel summary nx-fade">
+      <h3 style="margin-bottom:var(--space-3)">订单摘要</h3>
+      <div class="sum-row"><span class="k">充值金额</span><span class="v" id="s-amt">$100.00</span></div>
+      <div class="sum-row gift"><span class="k">赠送额度</span><span class="v" id="s-gift">+$5.00</span></div>
+      <div class="sum-row"><span class="k">支付方式</span><span class="v" id="s-pay">支付宝</span></div>
+      <div class="sum-row"><span class="k">应付金额</span><span class="v" id="s-pay-amt">$100.00</span></div>
+      <div class="sum-total"><span class="k">到账余额</span><span class="v" id="s-total">$105.00</span></div>
+      <button class="btn btn-primary btn-lg sum-btn">确认充值</button>
+      <div class="sum-fine">点击即表示同意《充值服务协议》，余额不支持原路退款。</div>
+    </aside>
+  </div>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+    var amt=100, gift=5, pay='支付宝';
+
+    function giftFor(a){
+      if(a>=1000) return Math.round(a*0.12*100)/100;
+      if(a>=500) return Math.round(a*0.10*100)/100;
+      if(a>=100) return Math.round(a*0.05*100)/100;
+      if(a>=50) return Math.round(a*0.04*100)/100;
+      return 0;
+    }
+    function fmt(v){return '$'+v.toFixed(2);}
+    function render(){
+      document.getElementById('s-amt').textContent=fmt(amt);
+      document.getElementById('s-gift').textContent='+'+fmt(gift);
+      document.getElementById('s-pay').textContent=pay;
+      document.getElementById('s-pay-amt').textContent=fmt(amt);
+      document.getElementById('s-total').textContent=fmt(amt+gift);
+    }
+
+    var tiers=document.querySelectorAll('#tiers .tier');
+    tiers.forEach(function(t){
+      t.addEventListener('click',function(){
+        tiers.forEach(function(x){x.classList.remove('on');});
+        t.classList.add('on');
+        amt=parseFloat(t.getAttribute('data-amt'));
+        gift=giftFor(amt);
+        document.getElementById('custom-amt').value='';
+        render();
+      });
+    });
+
+    document.getElementById('custom-amt').addEventListener('input',function(e){
+      var v=parseFloat(e.target.value)||0;
+      tiers.forEach(function(x){x.classList.remove('on');});
+      amt=v; gift=giftFor(v); render();
+    });
+
+    var pays=document.querySelectorAll('#pays .pay');
+    pays.forEach(function(p){
+      p.addEventListener('click',function(){
+        pays.forEach(function(x){x.classList.remove('on');});
+        p.classList.add('on');
+        pay=p.getAttribute('data-pay');
+        render();
+      });
+    });
+
+    render();
+  })();
+  </script>
+</body>
+</html>

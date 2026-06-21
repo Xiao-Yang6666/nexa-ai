@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDK 下载 · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+<style>
+  /* SDK 卡片网格 + 语言筛选（全 var() token，零裸色值） */
+  .sdk-toolbar { display: flex; align-items: center; gap: var(--space-3);
+    margin: var(--space-5) 0; flex-wrap: wrap; }
+  .sdk-toolbar label { font-size: var(--text-body-sm); color: var(--hd-muted); }
+  .sdk-select {
+    appearance: none; font-family: inherit; font-size: var(--text-body-sm);
+    color: var(--hd-text); background: var(--hd-glass); border: 1px solid var(--hd-line);
+    border-radius: var(--radius-md); padding: 8px var(--space-4) 8px var(--space-3);
+    cursor: pointer;
+  }
+  .sdk-select:hover { border-color: color-mix(in oklch, var(--hd-text) 24%, transparent); }
+  .sdk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4); margin: var(--space-5) 0; }
+  .sdk-card {
+    background: var(--hd-bg2); border: 1px solid var(--hd-line);
+    border-radius: var(--radius-md); padding: var(--space-5);
+    display: flex; flex-direction: column; gap: var(--space-3);
+    transition: border-color var(--dur-2), transform var(--dur-2) var(--ease-snap);
+  }
+  .sdk-card:hover { border-color: color-mix(in oklch, var(--color-primary-300) 45%, transparent);
+    transform: translateY(-2px); }
+  .sdk-head { display: flex; align-items: center; gap: var(--space-3); }
+  .sdk-ic { width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0;
+    display: grid; place-items: center; background: var(--hd-glass);
+    border: 1px solid var(--hd-line); }
+  .sdk-ic svg { width: 20px; height: 20px; stroke: var(--color-primary-300);
+    stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .sdk-name { font-family: var(--font-brand); font-weight: var(--fw-semibold);
+    font-size: var(--text-h5); color: var(--hd-text); }
+  .sdk-pkg { font-family: var(--font-mono); font-size: var(--text-caption);
+    color: var(--hd-mint); }
+  .sdk-desc { font-size: var(--text-body-sm); color: var(--hd-muted);
+    line-height: var(--lh-relaxed); margin: 0; }
+  .sdk-foot { margin-top: auto; }
+  .sdk-doc { display: inline-flex; align-items: center; gap: 6px;
+    font-size: var(--text-body-sm); color: var(--color-primary-300); font-weight: var(--fw-medium); }
+  .sdk-doc svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2;
+    fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .sdk-card .codeblock { margin: 0; }
+  @media (max-width: 640px) { .sdk-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link" href="authentication.html">认证说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link" href="chat-completions.html">聊天补全 API</a>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link" href="images.html">图像 API</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link" href="errors.html">错误码参考</a>
+      <a class="nt-link" href="rate-limits.html">限流说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link is-current" href="sdks.html">SDK 下载</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#compat">兼容说明</a>
+        <a class="nt-anchor" href="#official">官方 SDK</a>
+        <a class="nt-anchor" href="#community">社区 SDK</a>
+      </div>
+      <a class="nt-link" href="changelog.html">更新日志</a>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>资源</span>
+        <span class="sep">/</span>
+        <span>SDK 下载</span>
+      </nav>
+
+      <h1 class="reveal" id="top">SDK 下载</h1>
+      <p class="lede reveal">Nexa·AI 完全兼容 OpenAI 的 HTTP 协议，因此<strong>无需任何专用 SDK</strong>——直接使用各语言的 OpenAI 官方客户端，只把 <code>base_url</code> 指向 Nexa 即可。下面汇总各语言的安装方式与文档入口。</p>
+
+      <section class="reveal">
+        <h2 id="compat">兼容说明</h2>
+        <p>所有官方 OpenAI SDK 都暴露 <code>base_url</code>（或 <code>baseURL</code> / <code>BaseURL</code>）配置项。把它改为 <code>https://api.nexa.ai/v1</code>，并填入你的 Nexa API Key，原有代码几乎无需改动即可跨厂商调用全部模型。</p>
+        <div class="callout info">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+          <div class="co-body"><strong>唯一要改的就是两行配置。</strong>把 <code>base_url</code> 设为 <code>https://api.nexa.ai/v1</code>、<code>api_key</code> 设为你的 <code>sk-nexa-...</code> Key，其余调用方式与官方完全一致。详见 <a class="inline" href="quickstart.html">快速开始</a>。</div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="official">官方 SDK</h2>
+        <div class="sdk-toolbar">
+          <label for="lang-filter">按语言筛选</label>
+          <select class="sdk-select" id="lang-filter" aria-label="按语言筛选 SDK">
+            <option value="all">全部语言</option>
+            <option value="python">Python</option>
+            <option value="node">Node.js</option>
+            <option value="go">Go</option>
+            <option value="java">Java</option>
+          </select>
+        </div>
+
+        <div class="sdk-grid">
+          <div class="sdk-card">
+            <div class="sdk-head">
+              <span class="sdk-ic"><svg viewBox="0 0 24 24"><path d="M8 3h4a3 3 0 0 1 3 3v3H9a3 3 0 0 0-3 3v2H5a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3Z"/><path d="M16 21h-4a3 3 0 0 1-3-3v-3h6a3 3 0 0 0 3-3v-2h1a2 2 0 0 1 2 2v6a3 3 0 0 1-3 3Z"/></svg></span>
+              <div>
+                <div class="sdk-name">Python</div>
+                <div class="sdk-pkg">openai</div>
+              </div>
+            </div>
+            <p class="sdk-desc">OpenAI 官方 Python 客户端，同步/异步均支持，自动重试与流式解析开箱即用。</p>
+            <div class="codeblock">
+              <div class="cb-bar">
+                <button class="cb-tab is-active" data-lang="sh" aria-selected="true">安装</button>
+                <button class="cb-copy" aria-label="复制代码">
+                  <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span class="cb-copy-label">复制</span>
+                </button>
+              </div>
+              <div class="cb-body">
+                <div class="cb-pane is-active" data-lang="sh"><pre><code><span class="t-fn">pip</span> install openai</code></pre></div>
+              </div>
+            </div>
+            <div class="sdk-foot">
+              <a class="sdk-doc" href="https://github.com/openai/openai-python">查看文档<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+            </div>
+          </div>
+
+          <div class="sdk-card">
+            <div class="sdk-head">
+              <span class="sdk-ic"><svg viewBox="0 0 24 24"><path d="m4 6 8 4 8-4M12 10v8M4 6v8l8 4 8-4V6l-8-4-8 4Z"/></svg></span>
+              <div>
+                <div class="sdk-name">Node.js</div>
+                <div class="sdk-pkg">openai</div>
+              </div>
+            </div>
+            <p class="sdk-desc">官方 TypeScript/JavaScript 客户端，类型完备，支持流式与浏览器/边缘运行时。</p>
+            <div class="codeblock">
+              <div class="cb-bar">
+                <button class="cb-tab is-active" data-lang="sh" aria-selected="true">安装</button>
+                <button class="cb-copy" aria-label="复制代码">
+                  <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span class="cb-copy-label">复制</span>
+                </button>
+              </div>
+              <div class="cb-body">
+                <div class="cb-pane is-active" data-lang="sh"><pre><code><span class="t-fn">npm</span> install openai</code></pre></div>
+              </div>
+            </div>
+            <div class="sdk-foot">
+              <a class="sdk-doc" href="https://github.com/openai/openai-node">查看文档<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+            </div>
+          </div>
+
+          <div class="sdk-card">
+            <div class="sdk-head">
+              <span class="sdk-ic"><svg viewBox="0 0 24 24"><path d="M4 12h6M14 12h6M8 9v6M16 9v6"/><circle cx="12" cy="12" r="9"/></svg></span>
+              <div>
+                <div class="sdk-name">Go</div>
+                <div class="sdk-pkg">sashabaranov/go-openai</div>
+              </div>
+            </div>
+            <p class="sdk-desc">社区维护、事实标准的 Go 客户端，通过 <code>DefaultConfig</code> 改 <code>BaseURL</code> 即可接入。</p>
+            <div class="codeblock">
+              <div class="cb-bar">
+                <button class="cb-tab is-active" data-lang="sh" aria-selected="true">安装</button>
+                <button class="cb-copy" aria-label="复制代码">
+                  <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span class="cb-copy-label">复制</span>
+                </button>
+              </div>
+              <div class="cb-body">
+                <div class="cb-pane is-active" data-lang="sh"><pre><code><span class="t-fn">go</span> get github.com/sashabaranov/go-openai</code></pre></div>
+              </div>
+            </div>
+            <div class="sdk-foot">
+              <a class="sdk-doc" href="https://github.com/sashabaranov/go-openai">查看文档<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+            </div>
+          </div>
+
+          <div class="sdk-card">
+            <div class="sdk-head">
+              <span class="sdk-ic"><svg viewBox="0 0 24 24"><path d="M8 18s-3 1-3 3h14c0-2-3-3-3-3M9 14c-2 2-1 4-1 4M15 14c2 2 1 4 1 4M12 2s3 3 0 7-3 5 0 5"/></svg></span>
+              <div>
+                <div class="sdk-name">Java</div>
+                <div class="sdk-pkg">com.openai:openai-java</div>
+              </div>
+            </div>
+            <p class="sdk-desc">OpenAI 官方 Java 客户端，支持 Maven / Gradle，可通过 builder 指定 <code>baseUrl</code>。</p>
+            <div class="codeblock">
+              <div class="cb-bar">
+                <button class="cb-tab is-active" data-lang="sh" aria-selected="true">Gradle</button>
+                <button class="cb-copy" aria-label="复制代码">
+                  <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span class="cb-copy-label">复制</span>
+                </button>
+              </div>
+              <div class="cb-body">
+                <div class="cb-pane is-active" data-lang="sh"><pre><code><span class="t-fn">implementation</span> <span class="t-str">"com.openai:openai-java:0.20.0"</span></code></pre></div>
+              </div>
+            </div>
+            <div class="sdk-foot">
+              <a class="sdk-doc" href="https://github.com/openai/openai-java">查看文档<svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="community">社区 SDK</h2>
+        <p>除官方客户端外，以下社区项目也已验证与 Nexa 兼容，适合更多语言与框架场景：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>语言 / 框架</th><th>包名</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">Rust</td><td><code>async-openai</code></td><td>异步优先，基于 tokio，支持流式与重试。</td></tr>
+              <tr><td class="pn">PHP</td><td><code>openai-php/client</code></td><td>Laravel 友好，链式 API。</td></tr>
+              <tr><td class="pn">Ruby</td><td><code>ruby-openai</code></td><td>简洁易用，含 Rails 集成示例。</td></tr>
+              <tr><td class="pn">.NET</td><td><code>OpenAI-DotNet</code></td><td>覆盖全部端点，支持 DI 注入。</td></tr>
+              <tr><td class="pn">Dart / Flutter</td><td><code>dart_openai</code></td><td>移动端可用，含流式封装。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <svg viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="co-body"><strong>社区 SDK 非官方维护。</strong>其兼容性与更新节奏由各自社区负责。生产环境建议优先选用官方客户端；使用社区 SDK 时请锁定版本并自行评估其错误处理是否覆盖 <a class="inline" href="errors.html">错误码参考</a> 中的各类情形。</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#compat">兼容说明</a>
+    <a href="#official">官方 SDK</a>
+    <a href="#community">社区 SDK</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

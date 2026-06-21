@@ -1,0 +1,12 @@
+{
+  "root_url": "https://routifyapi.com",
+  "captured_at": "2026-06-18 22:12:41 CST",
+  "cdp": "http://127.0.0.1:9222?fingerprint=240618&platform=windows&timezone=Asia/Shanghai&locale=zh-CN&proxy=http://172.17.0.1:7890",
+  "max_pages": 80,
+  "max_depth": 3,
+  "same_domain": true,
+  "screenshots": true,
+  "visited_count": 3,
+  "failed_count": 0,
+  "external_count": 6
+}

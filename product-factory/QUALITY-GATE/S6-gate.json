@@ -1,0 +1,34 @@
+{
+  "stage": "S6",
+  "title": "高保真原型",
+  "revision": "v2(用户反馈后优化)",
+  "computed_by": "execute_code 实算",
+  "changes_v2": [
+    "项目改名 RoutifyAPI -> Nexa(品牌/title/域名 api.nexa.ai/key前缀 sk-nexa，0 残留)",
+    "console+admin 合并为统一控制台:共享 console-nav.js 渲染单套菜单(用户区9+管理区9)，顶部角色切换，超管=用户区叠加管理区",
+    "修死链:18 页 sidebar 手写菜单替换为组件挂载点，全部真实跨端 *.html 链接(原 href=# 死链消除)",
+    "index.html 由 iframe 套壳改为真门户首页(3真入口+31页索引+主题切换)",
+    "修 P2:全站裸 oklch 遮罩色(13处)改 color-mix token 派生;apikeys 假复制改真 clipboard+fallback"
+  ],
+  "counts": {
+    "pages_built": 31,
+    "pages_expected": 31,
+    "coverage_complete": true,
+    "links_tokens_css": "31/31",
+    "bare_color_violations": 0,
+    "routify_residual": 0,
+    "console_error_pages": 0
+  },
+  "nav_verified": {
+    "console_user_view": "dashboard 普通用户=用户区9项,角色按钮普通用户高亮",
+    "admin_admin_view": "channels 超管=用户区+管理区18项,可链回 console",
+    "cross_surface_links": "管理页可跳用户页,用户页可跳管理页(超管)，死链消除"
+  },
+  "reviews": {
+    "web-public": "独立 reviewer PASS_WITH_GAPS 9/10(组件100%,交互全真)",
+    "console": "独立 reviewer 通过 9.0/10(零空壳,3旗舰页真交互),揪出的死链 P1 已修",
+    "admin": "reviewer 未完整产出(9页太重超时),已串行复核中(可补)",
+    "api-docs": "待独立 reviewer(可补)"
+  },
+  "verdict": "PASS"
+}

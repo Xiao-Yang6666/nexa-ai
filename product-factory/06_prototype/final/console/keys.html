@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API 密钥 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* API 密钥页：筛选栏 / 密集表 / 进度条 / 抽屉 / 确认弹窗 —— 零裸色值 */
+  /* 闭环：当前分组卡 + 关联导航条 */
+  .loopnav{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);
+    font-size:var(--text-body-sm);color:var(--color-text-muted);flex-wrap:wrap}
+  .loopnav a{display:inline-flex;align-items:center;gap:6px;color:var(--color-text-secondary);
+    text-decoration:none;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);
+    border:1px solid var(--color-border);background:var(--color-bg-elevated)}
+  .loopnav a:hover{color:var(--color-text);border-color:var(--color-border-strong);background:var(--color-surface-sunken)}
+  .loopnav a.cur{border-color:var(--color-primary-500);
+    background:color-mix(in oklch,var(--color-primary-500) 12%,transparent);color:var(--color-primary-700)}
+  .loopnav .nx-ic{width:14px;height:14px}
+  .loopnav .sep{color:var(--color-text-muted)}
+  .grpcard{display:flex;align-items:center;gap:var(--space-5);flex-wrap:wrap;
+    background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);padding:var(--space-4) var(--space-5);margin-bottom:var(--space-4)}
+  .grpcard .gc-badge{display:inline-flex;align-items:center;height:26px;padding:0 var(--space-3);
+    border-radius:var(--radius-full);font-size:var(--text-caption);font-weight:var(--fw-bold);
+    letter-spacing:var(--tracking-wide);text-transform:uppercase;
+    background:color-mix(in oklch,var(--color-primary-500) 18%,transparent);color:var(--color-primary-700)}
+  .grpcard .gc-block{display:flex;flex-direction:column;gap:2px}
+  .grpcard .gc-k{font-size:var(--text-caption);color:var(--color-text-muted)}
+  .grpcard .gc-v{font-size:var(--text-body);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .grpcard .gc-v.disc{font-family:var(--font-mono);color:var(--color-success)}
+  .grpcard .gc-spacer{flex:1}
+  .grpcard .gc-up{font-size:var(--text-caption);color:var(--color-text-muted);max-width:280px;line-height:var(--leading-snug)}
+  .grpcard .gc-up b{color:var(--color-text-secondary);font-weight:var(--fw-semibold)}
+  /* 行内：分组徽标 + 映射数（均可点击跳转） */
+  .grp-pill{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-full);
+    font-size:var(--text-overline);font-weight:var(--fw-semibold);letter-spacing:var(--tracking-wide);
+    text-transform:uppercase;text-decoration:none;cursor:pointer;border:1px solid transparent}
+  .grp-pill.free{background:color-mix(in oklch,var(--color-text-muted) 16%,transparent);color:var(--color-text-secondary)}
+  .grp-pill.vip{background:color-mix(in oklch,var(--color-primary-500) 16%,transparent);color:var(--color-primary-700)}
+  .grp-pill.svip{background:color-mix(in oklch,var(--color-warning) 18%,transparent);color:var(--color-warning)}
+  .grp-pill:hover{border-color:currentColor}
+  .grp-pill .disc{font-family:var(--font-mono);margin-left:5px;opacity:.85;text-transform:none}
+  .map-link{display:inline-flex;align-items:center;gap:5px;font-size:var(--text-caption);
+    color:var(--color-text-secondary);text-decoration:none;cursor:pointer}
+  .map-link:hover{color:var(--color-primary-700)}
+  .map-link .nx-ic{width:13px;height:13px;color:var(--color-text-muted)}
+  .map-link:hover .nx-ic{color:var(--color-primary-700)}
+  .map-link.zero{color:var(--color-text-muted)}
+  .filterbar{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap}
+  .select{font-family:inherit;font-size:var(--text-body-sm);height:36px;padding:0 var(--space-3);
+    border-radius:var(--radius-sm);border:1px solid var(--color-border);background:var(--color-bg-elevated);
+    color:var(--color-text);cursor:pointer}
+  .search{position:relative;flex:1;min-width:200px;max-width:320px}
+  .search .nx-ic{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--color-text-muted)}
+  .search input{height:36px;padding-left:34px;font-size:var(--text-body-sm)}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  th.sortable{cursor:pointer;user-select:none} th.sortable .nx-ic{width:12px;height:12px;vertical-align:middle;
+    margin-left:4px;color:var(--color-text-muted);transform:rotate(90deg);display:inline-block}
+  .keyprefix{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .prog{display:flex;align-items:center;gap:var(--space-2);min-width:140px}
+  .prog-track{flex:1;height:6px;border-radius:var(--radius-full);background:var(--color-surface-sunken);overflow:hidden}
+  .prog-fill{height:100%;border-radius:var(--radius-full);background:var(--color-primary-500)}
+  .prog-fill.warn{background:var(--color-warning)} .prog-fill.dan{background:var(--color-danger)}
+  .prog-txt{font-family:var(--font-mono);font-size:var(--text-caption);color:var(--color-text-muted);white-space:nowrap}
+  .rowacts{display:flex;gap:var(--space-1)}
+  .iconact{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:30px;height:30px;
+    display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)}
+  .iconact:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .iconact.dan:hover{color:var(--color-danger)}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .pager-btns{display:flex;gap:var(--space-1)}
+  .pgbtn{min-width:32px;height:32px;border:1px solid var(--color-border);background:var(--color-bg-elevated);
+    color:var(--color-text-secondary);border-radius:var(--radius-sm);cursor:pointer;font-size:var(--text-body-sm)}
+  .pgbtn.on{background:color-mix(in oklch,var(--color-primary-500) 14%,transparent);color:var(--color-primary-700);
+    border-color:var(--color-primary-500)}
+  .pgbtn:hover:not(.on){background:var(--color-surface-sunken)}
+  /* 抽屉 */
+  .drawer-scrim{display:none;position:fixed;inset:0;z-index:50;background:color-mix(in oklch,var(--color-surface-sunken) 78%,transparent)}
+  .drawer-scrim.open{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;z-index:51;background:var(--color-bg-elevated);
+    border-left:1px solid var(--color-border);box-shadow:var(--shadow-lg);transform:translateX(100%);
+    transition:transform var(--dur-2) var(--ease-out);display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .drawer-head h3{margin:0;font-size:var(--text-h4);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .drawer-body{padding:var(--space-5);overflow-y:auto;flex:1}
+  .drawer-foot{padding:var(--space-4) var(--space-5);border-top:1px solid var(--color-border);display:flex;
+    gap:var(--space-3);justify-content:flex-end}
+  .fld{margin-bottom:var(--space-5)}
+  .chiprow{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+  .chk{display:inline-flex;align-items:center;gap:6px;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);
+    border:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-secondary);cursor:pointer}
+  .chk input{accent-color:var(--color-primary-500)}
+  /* 使用范围 可折叠区 */
+  .collapse{border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface-sunken)}
+  .collapse-head{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-3);cursor:pointer;
+    user-select:none}
+  .collapse-head .nx-ic{width:16px;height:16px;color:var(--color-text-muted);transition:transform var(--dur-1)}
+  .collapse.open .collapse-head .nx-ic{transform:rotate(90deg)}
+  .collapse-head .ch-t{font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:var(--color-text)}
+  .collapse-head .ch-d{margin-left:auto;font-size:var(--text-caption);color:var(--color-text-muted)}
+  .collapse-body{display:none;padding:0 var(--space-3) var(--space-3)}
+  .collapse.open .collapse-body{display:block}
+  .scope-note{font-size:var(--text-caption);color:var(--color-text-muted);line-height:var(--leading-relaxed);
+    margin-bottom:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-xs);
+    background:color-mix(in oklch,var(--color-warning) 9%,transparent)}
+  .scope-note b{color:var(--color-text-secondary);font-weight:var(--fw-semibold)}
+  .sub-label{font-size:var(--text-caption);color:var(--color-text-muted);margin:var(--space-3) 0 var(--space-2);
+    text-transform:uppercase;letter-spacing:var(--tracking-wide);font-weight:var(--fw-semibold)}
+  /* 接入信息（行展开） */
+  .row-expandable{cursor:pointer}
+  .expand-row > td{padding:0;border-top:none}
+  .expand-row{display:none} .expand-row.open{display:table-row}
+  .access{background:var(--color-surface-sunken);padding:var(--space-4) var(--space-5);
+    border-top:1px dashed var(--color-border)}
+  .access-line{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap}
+  .access-line .lbl{font-size:var(--text-caption);color:var(--color-text-muted);min-width:64px}
+  .codepill{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text);
+    background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-xs);
+    padding:3px var(--space-2)}
+  .epts{display:flex;flex-direction:column;gap:6px;margin:var(--space-2) 0 var(--space-3)}
+  .ept{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .ept .badge{flex:none}
+  .ept .ep-path{font-family:var(--font-mono);color:var(--color-text)}
+  .universal{display:inline-flex;align-items:center;gap:6px;font-size:var(--text-caption);color:var(--color-success);
+    margin-bottom:var(--space-3)}
+  .universal .nx-ic{width:14px;height:14px}
+  .curl-block{position:relative}
+  .curl-block pre{margin:0;font-family:var(--font-mono);font-size:var(--text-caption);line-height:var(--leading-relaxed);
+    color:var(--color-text-secondary);background:var(--color-bg-elevated);border:1px solid var(--color-border);
+    border-radius:var(--radius-sm);padding:var(--space-3);overflow-x:auto;white-space:pre}
+  .curl-tabs{display:inline-flex;background:var(--color-bg-elevated);border:1px solid var(--color-border);
+    border-radius:var(--radius-sm);padding:3px;gap:2px;margin-bottom:var(--space-2)}
+  .curl-tabs button{font-family:inherit;font-size:var(--text-caption);height:26px;padding:0 var(--space-3);border:none;
+    background:transparent;color:var(--color-text-secondary);border-radius:var(--radius-xs);cursor:pointer}
+  .curl-tabs button.on{background:var(--color-surface-sunken);color:var(--color-text)}
+  .copybtn{position:absolute;top:6px;right:6px;background:var(--color-surface-sunken);border:1px solid var(--color-border);
+    color:var(--color-text-muted);border-radius:var(--radius-xs);height:26px;padding:0 var(--space-2);cursor:pointer;
+    font-size:var(--text-caption)}
+  .copybtn:hover{color:var(--color-text)}
+  /* 确认弹窗 */
+  .modal-scrim{display:none;position:fixed;inset:0;z-index:60;background:color-mix(in oklch,var(--color-surface-sunken) 78%,transparent);
+    align-items:center;justify-content:center}
+  .modal-scrim.open{display:flex}
+  .modal{width:400px;max-width:92vw;background:var(--color-bg-elevated);border:1px solid var(--color-border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-6)}
+  .modal h3{margin:0 0 var(--space-3);font-size:var(--text-h4);color:var(--color-text)}
+  .modal p{margin:0 0 var(--space-5);color:var(--color-text-secondary);font-size:var(--text-body)}
+  .modal-acts{display:flex;gap:var(--space-3);justify-content:flex-end}
+</style>
+</head>
+<body data-page="keys" data-title="API 密钥" data-crumb="控制台|API 密钥"
+      data-actions='<button class="btn btn-primary" id="btn-create">创建密钥</button>'>
+
+  <!-- 闭环导航：API 密钥 ↔ 模型映射 ↔ 分组 -->
+  <div class="loopnav nx-fade">
+    <a class="cur" href="keys.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7a4 4 0 1 1-3.5 6H7v3H4v-3l2-2a4 4 0 0 1 8-2z"/></svg>
+      API 密钥
+    </a>
+    <span class="sep">·</span>
+    <a href="model-map.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg>
+      我的模型映射
+    </a>
+    <span class="sep">·</span>
+    <a href="recharge.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 12h2"/><path d="M3 7l13-3v3"/></svg>
+      分组与折扣
+    </a>
+  </div>
+
+  <!-- 当前分组小卡：闭环里「分组」这一环（升级跳充值） -->
+  <div class="grpcard nx-fade">
+    <span class="gc-badge">VIP</span>
+    <div class="gc-block">
+      <span class="gc-k">当前分组</span>
+      <span class="gc-v">VIP 会员</span>
+    </div>
+    <div class="gc-block">
+      <span class="gc-k">折扣系数</span>
+      <span class="gc-v disc">×0.85</span>
+    </div>
+    <div class="gc-block">
+      <span class="gc-k">分组级映射</span>
+      <span class="gc-v"><a class="map-link" href="model-map.html#group" style="font-size:var(--text-body);color:var(--color-text)">3 条 <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg></a></span>
+    </div>
+    <div class="gc-spacer"></div>
+    <div class="gc-up">分组只决定<b>折扣系数</b>，不限制可用模型。累计充值满 <b>$2,000</b> 升 SVIP（×0.75）。</div>
+    <a class="btn btn-sec btn-sm" href="recharge.html">升级 / 查看分组</a>
+  </div>
+
+  <div class="filterbar nx-fade">
+    <select class="select"><option>全部状态</option><option>已启用</option><option>已禁用</option><option>已过期</option></select>
+    <select class="select"><option>全部权限</option><option>只读</option><option>读写</option></select>
+    <div class="search">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input class="input" placeholder="搜索密钥名称或前缀…">
+    </div>
+  </div>
+
+  <div class="table-card nx-fade">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="sortable">密钥名 <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></th>
+          <th>Key 前缀</th>
+          <th>状态</th>
+          <th>分组 / 映射</th>
+          <th class="sortable">已用额度 <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></th>
+          <th class="sortable">创建时间 <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></th>
+          <th>最后使用</th>
+          <th>操作</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span>共 <b style="color:var(--color-text)">12</b> 个密钥</span>
+      <div class="pager-btns">
+        <button class="pgbtn">上一页</button>
+        <button class="pgbtn on">1</button>
+        <button class="pgbtn">2</button>
+        <button class="pgbtn">下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建密钥抽屉 -->
+  <div class="drawer-scrim" id="drawer-scrim"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head">
+      <h3>创建 API 密钥</h3>
+      <button class="iconact" id="drawer-close" aria-label="关闭">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="fld">
+        <label class="field-label">密钥名称 <span class="field-req">*</span></label>
+        <input class="input" placeholder="如：生产环境-后端服务">
+        <div class="field-hint">用于在列表中识别此密钥的用途。</div>
+      </div>
+      <div class="fld">
+        <label class="field-label">权限范围</label>
+        <div class="chiprow">
+          <label class="chk"><input type="checkbox" checked>对话补全</label>
+          <label class="chk"><input type="checkbox" checked>嵌入向量</label>
+          <label class="chk"><input type="checkbox">图像生成</label>
+          <label class="chk"><input type="checkbox">语音转写</label>
+        </div>
+      </div>
+      <div class="fld">
+        <label class="field-label">消费限额（USD / 月）</label>
+        <input class="input mono-num" value="500.00">
+        <div class="field-hint">超出后该密钥将被自动暂停，留空表示不限。</div>
+      </div>
+      <div class="fld">
+        <label class="field-label">过期时间</label>
+        <select class="select" style="width:100%;height:40px"><option>永不过期</option><option>30 天后</option><option>90 天后</option><option>自定义日期</option></select>
+      </div>
+      <div class="fld">
+        <div class="collapse" id="scope-collapse">
+          <div class="collapse-head" id="scope-toggle">
+            <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            <span class="ch-t">使用范围（可选）</span>
+            <span class="ch-d">默认全部可用</span>
+          </div>
+          <div class="collapse-body">
+            <div class="scope-note">这是给自己上保险的 <b>自我约束</b>（缩小范围、防泄露爆量），<b>不是授权</b>——平台模型本就对你全开，默认全部可用。留空即不限制。</div>
+            <div class="sub-label">限定模型</div>
+            <div class="chiprow" id="scope-models"></div>
+            <div class="sub-label">限定端点协议</div>
+            <div class="chiprow">
+              <label class="chk"><input type="checkbox" checked>OpenAI 格式（/v1/chat/completions）</label>
+              <label class="chk"><input type="checkbox" checked>Anthropic 格式（/v1/messages）</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-sec" id="drawer-cancel">取消</button>
+      <button class="btn btn-primary">生成密钥</button>
+    </div>
+  </aside>
+
+  <!-- 二次确认弹窗 -->
+  <div class="modal-scrim" id="modal-scrim">
+    <div class="modal">
+      <h3 id="modal-title">禁用密钥？</h3>
+      <p id="modal-desc">禁用后使用此密钥的请求将立即返回 401，可随时重新启用。</p>
+      <div class="modal-acts">
+        <button class="btn btn-sec" id="modal-cancel">取消</button>
+        <button class="btn btn-danger" id="modal-ok">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="console-shell.js"></script>
+  <script src="../assets/model-data.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    var BASE_URL='https://api.nexa.ai/v1';
+
+    var data=[
+      ['生产环境-主网关','sk-nexa-a91f****','suc',92,500,'2025-09-12','2 分钟前','vip',5],
+      ['后端服务-订单','sk-nexa-7c20****','suc',61,300,'2025-08-30','17 分钟前','vip',3],
+      ['移动 App','sk-nexa-d4e8****','suc',38,200,'2025-08-15','1 小时前','vip',2],
+      ['数据分析批处理','sk-nexa-3b6a****','suc',78,400,'2025-07-22','3 小时前','vip',4],
+      ['内部测试','sk-nexa-f019****','warn',95,100,'2025-07-10','昨天','free',0],
+      ['Webhook 回调','sk-nexa-5d2c****','suc',12,150,'2025-06-28','2 天前','vip',1],
+      ['临时调试','sk-nexa-8a4f****','dis',0,50,'2025-06-15','已禁用','free',0],
+      ['合作方-渠道A','sk-nexa-b73e****','suc',54,250,'2025-05-30','5 天前','svip',6],
+      ['旧版网关（弃用）','sk-nexa-1f88****','exp',100,200,'2025-03-12','已过期','free',2],
+      ['CI 流水线','sk-nexa-e560****','suc',27,120,'2025-04-18','6 小时前','vip',1],
+      ['监控探针','sk-nexa-9d31****','suc',8,80,'2025-09-01','30 分钟前','free',0],
+      ['沙箱-实验','sk-nexa-2a77****','suc',45,100,'2025-08-08','4 小时前','vip',3]
+    ];
+    // 分组 → [折扣系数]，仅折扣层，不控权限
+    var GRP={free:'×1.00',vip:'×0.85',svip:'×0.75'};
+    var st={suc:['b-suc','已启用','--color-success'],warn:['b-warn','额度紧张','--color-warning'],
+            dis:['b-neutral','已禁用','--color-text-muted'],exp:['b-dan','已过期','--color-danger']};
+    document.getElementById('rows').innerHTML=data.map(function(r,ri){
+      var pct=Math.round(r[3]/r[4]*100);
+      var fc=pct>=90?'dan':(pct>=75?'warn':'');
+      var s=st[r[2]];
+      var keyFull='sk-nexa-'+r[1].slice(8);
+      var access='<tr class="expand-row" id="exp-'+ri+'"><td colspan="8">'+
+        '<div class="access">'+
+          '<div class="access-line"><span class="lbl">base_url</span>'+
+            '<span class="codepill">'+BASE_URL+'</span>'+
+            '<span class="lbl">密钥</span><span class="codepill">'+r[1]+'</span></div>'+
+          '<div class="access-line"><span class="lbl">支持端点</span></div>'+
+          '<div class="epts">'+
+            '<div class="ept"><span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>OpenAI 兼容</span><span class="ep-path">POST '+BASE_URL+'/chat/completions</span></div>'+
+            '<div class="ept"><span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>Anthropic 兼容</span><span class="ep-path">POST '+BASE_URL+'/messages</span></div>'+
+          '</div>'+
+          '<div class="universal"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>一个 key 两种协议通用，按你客户端 SDK 的协议选端点即可。</div>'+
+          '<div class="curl-tabs" data-row="'+ri+'">'+
+            '<button class="on" data-proto="openai">OpenAI</button>'+
+            '<button data-proto="anthropic">Anthropic</button>'+
+          '</div>'+
+          '<div class="curl-block">'+
+            '<button class="copybtn">复制</button>'+
+            '<pre class="curl-pre" id="curl-'+ri+'">'+curlText('openai',keyFull)+'</pre>'+
+          '</div>'+
+        '</div>'+
+      '</td></tr>';
+      return '<tr class="row-expandable" data-row="'+ri+'">'+
+        '<td style="color:var(--color-text);font-weight:var(--fw-medium)">'+r[0]+'</td>'+
+        '<td class="keyprefix">'+r[1]+'</td>'+
+        '<td><span class="badge '+s[0]+'"><span class="dot" style="background:var('+s[2]+')"></span>'+s[1]+'</span></td>'+
+        '<td>'+grpMapCell(r[7],r[8])+'</td>'+
+        '<td><div class="prog"><div class="prog-track"><div class="prog-fill '+fc+'" style="width:'+pct+'%"></div></div>'+
+          '<span class="prog-txt">$'+r[3]+'/'+r[4]+'</span></div></td>'+
+        '<td class="mono-num">'+r[5]+'</td>'+
+        '<td class="muted">'+r[6]+'</td>'+
+        '<td><div class="rowacts">'+
+          '<button class="iconact" title="编辑"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button>'+
+          '<button class="iconact js-disable" title="禁用"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M6 6l12 12"/></svg></button>'+
+          '<button class="iconact dan js-delete" title="删除"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg></button>'+
+        '</div></td></tr>'+access;
+    }).join('');
+
+    // 分组徽标 + 映射数（两者均可点击跳转：分组→充值/分组页，映射→model-map）
+    function grpMapCell(grp,n){
+      var label={free:'FREE',vip:'VIP',svip:'SVIP'}[grp]||grp;
+      var pill='<a class="grp-pill '+grp+' js-cellnav" href="recharge.html" title="分组只决定折扣系数，点击查看/升级">'+
+        label+'<span class="disc">'+(GRP[grp]||'')+'</span></a>';
+      var mapTxt = n>0 ? ('已配 '+n+' 条映射') : '未配映射';
+      var map='<a class="map-link js-cellnav'+(n>0?'':' zero')+'" href="model-map.html" title="查看/编辑此 key 生效的模型映射">'+
+        '<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M7.7 11l8.6-4M7.7 13l8.6 4"/></svg>'+
+        mapTxt+'</a>';
+      return '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start">'+pill+map+'</div>';
+    }
+
+    function curlText(proto,key){
+      if(proto==='anthropic'){
+        return 'curl '+BASE_URL+'/messages \\\n'+
+          '  -H "x-api-key: '+key+'" \\\n'+
+          '  -H "anthropic-version: 2023-06-01" \\\n'+
+          '  -H "content-type: application/json" \\\n'+
+          '  -d \'{"model":"opus-4.8","max_tokens":1024,"messages":[{"role":"user","content":"你好"}]}\'';
+      }
+      return 'curl '+BASE_URL+'/chat/completions \\\n'+
+        '  -H "Authorization: Bearer '+key+'" \\\n'+
+        '  -H "Content-Type: application/json" \\\n'+
+        '  -d \'{"model":"gpt-4o","messages":[{"role":"user","content":"你好"}]}\'';
+    }
+
+    // 行展开 接入信息（点行展开，不与操作按钮冲突）
+    document.querySelectorAll('.row-expandable').forEach(function(tr){
+      tr.addEventListener('click',function(e){
+        if(e.target.closest('.rowacts')) return;
+        if(e.target.closest('.js-cellnav')) return;
+        var ri=tr.getAttribute('data-row');
+        document.getElementById('exp-'+ri).classList.toggle('open');
+      });
+    });
+    // curl 协议切换
+    document.querySelectorAll('.curl-tabs').forEach(function(tabs){
+      var ri=tabs.getAttribute('data-row');
+      var keyFull='sk-nexa-'+data[ri][1].slice(8);
+      tabs.querySelectorAll('button').forEach(function(b){
+        b.addEventListener('click',function(e){
+          e.stopPropagation();
+          tabs.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+          b.classList.add('on');
+          document.getElementById('curl-'+ri).textContent=curlText(b.getAttribute('data-proto'),keyFull);
+        });
+      });
+    });
+    document.querySelectorAll('.copybtn').forEach(function(b){
+      b.addEventListener('click',function(e){
+        e.stopPropagation();
+        var pre=b.parentElement.querySelector('pre');
+        if(navigator.clipboard) navigator.clipboard.writeText(pre.textContent);
+        var t=b.textContent; b.textContent='已复制'; setTimeout(function(){b.textContent=t;},1200);
+      });
+    });
+
+    // 使用范围：限定模型 chips（候选源 = window.MODEL_PRICING 平台公开模型 A 全集，含 opus 三档）
+    var smEl=document.getElementById('scope-models');
+    if(smEl){
+      smEl.innerHTML=(window.MODEL_PRICING||[]).map(function(m){
+        return '<label class="chk"><input type="checkbox">'+m.name+'</label>';
+      }).join('');
+    }
+    // 使用范围 折叠区
+    var sc=document.getElementById('scope-collapse');
+    var stog=document.getElementById('scope-toggle');
+    if(stog) stog.addEventListener('click',function(){ sc.classList.toggle('open'); });
+
+    // 抽屉
+    var ds=document.getElementById('drawer-scrim'), dw=document.getElementById('drawer');
+    function openD(o){ds.classList.toggle('open',o);dw.classList.toggle('open',o);}
+    document.getElementById('btn-create').addEventListener('click',function(){openD(true);});
+    document.getElementById('drawer-close').addEventListener('click',function(){openD(false);});
+    document.getElementById('drawer-cancel').addEventListener('click',function(){openD(false);});
+    ds.addEventListener('click',function(){openD(false);});
+
+    // 确认弹窗
+    var ms=document.getElementById('modal-scrim');
+    function openM(o){ms.classList.toggle('open',o);}
+    document.querySelectorAll('.js-delete').forEach(function(b){b.addEventListener('click',function(){
+      document.getElementById('modal-title').textContent='删除密钥？';
+      document.getElementById('modal-desc').textContent='删除后无法恢复，使用此密钥的所有请求将立即失败。';
+      openM(true);
+    });});
+    document.querySelectorAll('.js-disable').forEach(function(b){b.addEventListener('click',function(){
+      document.getElementById('modal-title').textContent='禁用密钥？';
+      document.getElementById('modal-desc').textContent='禁用后使用此密钥的请求将立即返回 401，可随时重新启用。';
+      openM(true);
+    });});
+    document.getElementById('modal-cancel').addEventListener('click',function(){openM(false);});
+    document.getElementById('modal-ok').addEventListener('click',function(){openM(false);});
+    ms.addEventListener('click',function(e){if(e.target===ms)openM(false);});
+  })();
+  </script>
+</body>
+</html>

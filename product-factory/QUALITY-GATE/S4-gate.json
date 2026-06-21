@@ -1,0 +1,76 @@
+{
+  "stage": "S4",
+  "stage_name": "detailed_prd_rerun_new_mechanical_gates",
+  "status": "PASS_WITH_GAPS",
+  "downstream_allowed": true,
+  "checked_at": "2026-06-19T06:31:34.604980+00:00",
+  "authority": {
+    "machine_source_of_truth": [
+      "03_flow_prd/final/FLOW-PRD-TRACEABILITY.csv",
+      "02_decomposition/final/FUNCTION-LIST.csv"
+    ],
+    "human_review_files": [
+      "03_flow_prd/final/PRD.md",
+      "03_flow_prd/reviews/ARCHITECTURE-REVIEW.md",
+      "03_flow_prd/reviews/S4-REVIEW-REPORT.md"
+    ],
+    "display_only": []
+  },
+  "counts": {
+    "prd_files": 15,
+    "prd_blocks": 104,
+    "function_rows": 231,
+    "prd_covered": 197,
+    "prd_coverage_pct": 85.3,
+    "slop.prd.prd_blocks": 119,
+    "slop.prd.repeated_paragraph_ratio": 0.0,
+    "slop.prd.placeholder_max_repeats": 0
+  },
+  "scripts_run": [
+    {
+      "cmd": "template_slop_probe.py --stage S4",
+      "exit": 0,
+      "status": "PASS"
+    },
+    {
+      "cmd": "compute_gate_counts.py --stage S4",
+      "exit": 0
+    }
+  ],
+  "checks": [
+    {
+      "id": "slop.repeated_paragraph_ratio",
+      "status": "PASS",
+      "evidence": "0.0 (上轮0.75)"
+    },
+    {
+      "id": "slop.placeholder_max_repeats",
+      "status": "PASS",
+      "evidence": "0 (上轮330)"
+    },
+    {
+      "id": "architect.evidence_based_review",
+      "status": "PASS_WITH_GAPS",
+      "evidence": "03_flow_prd/reviews/ARCHITECTURE-REVIEW.md 8项举证"
+    },
+    {
+      "id": "independent.business_review",
+      "status": "PASS_WITH_GAPS",
+      "evidence": "03_flow_prd/reviews/S4-REVIEW-REPORT.md 8.5/10"
+    }
+  ],
+  "review": {
+    "reviewer": "architect(举证式)+independent business reviewer",
+    "status": "PASS_WITH_GAPS"
+  },
+  "blockers": [],
+  "warnings": [
+    "约13个P1管理端CRUD块未独立成块(合法归并或登记降级),不阻断核心链路",
+    "NFR横切片部分目标态结构(Audit/PerfMetric/Team)未字段级冻结,开发前补"
+  ],
+  "rework": {
+    "required": false,
+    "plan_path": null
+  },
+  "handoff_path": "03_flow_prd/HANDOFF.md"
+}

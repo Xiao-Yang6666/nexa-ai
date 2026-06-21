@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聊天补全 API · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link" href="authentication.html">认证说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link is-current" href="chat-completions.html">聊天补全 API</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#endpoint">端点</a>
+        <a class="nt-anchor" href="#request">请求示例</a>
+        <a class="nt-anchor" href="#params">请求参数</a>
+        <a class="nt-anchor" href="#response">响应</a>
+        <a class="nt-anchor" href="#stream">流式响应</a>
+      </div>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link" href="images.html">图像 API</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link" href="errors.html">错误码参考</a>
+      <a class="nt-link" href="rate-limits.html">限流说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link" href="sdks.html">SDK 下载</a>
+      <a class="nt-link" href="changelog.html">更新日志</a>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>API 参考</span>
+        <span class="sep">/</span>
+        <span>聊天补全 API</span>
+      </nav>
+
+      <h1 class="reveal" id="top">聊天补全 API</h1>
+      <p class="lede reveal">给定一组对话消息，模型返回一条补全回复。这是 Nexa·AI 最核心的接口，完全兼容 OpenAI Chat Completions 协议，支持多轮对话、函数调用、流式输出与多模态输入。</p>
+
+      <section class="reveal">
+        <h2 id="endpoint">端点</h2>
+        <div class="endpoint">
+          <span class="method post">POST</span>
+          <span class="path">https://api.nexa.ai/v1/chat/completions</span>
+        </div>
+        <p>需要在 <code>Authorization</code> 头携带有效的 Bearer Token，详见 <a class="inline" href="authentication.html">认证说明</a>。请求体为 JSON，<code>model</code> 与 <code>messages</code> 为必填字段。</p>
+      </section>
+
+      <section class="reveal">
+        <h2 id="request">请求示例</h2>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="curl" aria-selected="true">curl</button>
+            <button class="cb-tab" data-lang="python" aria-selected="false">Python</button>
+            <button class="cb-tab" data-lang="node" aria-selected="false">Node</button>
+            <button class="cb-tab" data-lang="go" aria-selected="false">Go</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="curl"><pre><code><span class="t-fn">curl</span> https://api.nexa.ai/v1/chat/completions <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Authorization: Bearer $NEXA_API_KEY"</span> <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Content-Type: application/json"</span> <span class="t-pun">\</span>
+  <span class="t-key">-d</span> <span class="t-str">'{
+    "model": "gpt-4o",
+    "messages": [
+      {"role": "system", "content": "你是一个简洁的助手。"},
+      {"role": "user", "content": "什么是向量数据库？"}
+    ],
+    "temperature": 0.7,
+    "max_tokens": 512
+  }'</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="python"><pre><code><span class="t-key">from</span> openai <span class="t-key">import</span> OpenAI
+
+client <span class="t-pun">=</span> <span class="t-fn">OpenAI</span><span class="t-pun">(</span>
+    base_url<span class="t-pun">=</span><span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">,</span>
+    api_key<span class="t-pun">=</span><span class="t-str">"sk-nexa-..."</span><span class="t-pun">,</span>
+<span class="t-pun">)</span>
+
+resp <span class="t-pun">=</span> client<span class="t-pun">.</span>chat<span class="t-pun">.</span>completions<span class="t-pun">.</span><span class="t-fn">create</span><span class="t-pun">(</span>
+    model<span class="t-pun">=</span><span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+    messages<span class="t-pun">=</span><span class="t-pun">[</span>
+        <span class="t-pun">{</span><span class="t-str">"role"</span><span class="t-pun">:</span> <span class="t-str">"system"</span><span class="t-pun">,</span> <span class="t-str">"content"</span><span class="t-pun">:</span> <span class="t-str">"你是一个简洁的助手。"</span><span class="t-pun">},</span>
+        <span class="t-pun">{</span><span class="t-str">"role"</span><span class="t-pun">:</span> <span class="t-str">"user"</span><span class="t-pun">,</span> <span class="t-str">"content"</span><span class="t-pun">:</span> <span class="t-str">"什么是向量数据库？"</span><span class="t-pun">},</span>
+    <span class="t-pun">],</span>
+    temperature<span class="t-pun">=</span><span class="t-num">0.7</span><span class="t-pun">,</span>
+    max_tokens<span class="t-pun">=</span><span class="t-num">512</span><span class="t-pun">,</span>
+<span class="t-pun">)</span>
+<span class="t-fn">print</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>choices<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>message<span class="t-pun">.</span>content<span class="t-pun">)</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="node"><pre><code><span class="t-key">import</span> OpenAI <span class="t-key">from</span> <span class="t-str">"openai"</span><span class="t-pun">;</span>
+
+<span class="t-key">const</span> client <span class="t-pun">=</span> <span class="t-key">new</span> <span class="t-fn">OpenAI</span><span class="t-pun">({</span>
+  baseURL<span class="t-pun">:</span> <span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">,</span>
+  apiKey<span class="t-pun">:</span> process<span class="t-pun">.</span>env<span class="t-pun">.</span>NEXA_API_KEY<span class="t-pun">,</span>
+<span class="t-pun">});</span>
+
+<span class="t-key">const</span> resp <span class="t-pun">=</span> <span class="t-key">await</span> client<span class="t-pun">.</span>chat<span class="t-pun">.</span>completions<span class="t-pun">.</span><span class="t-fn">create</span><span class="t-pun">({</span>
+  model<span class="t-pun">:</span> <span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+  messages<span class="t-pun">:</span> <span class="t-pun">[</span>
+    <span class="t-pun">{</span> role<span class="t-pun">:</span> <span class="t-str">"system"</span><span class="t-pun">,</span> content<span class="t-pun">:</span> <span class="t-str">"你是一个简洁的助手。"</span> <span class="t-pun">},</span>
+    <span class="t-pun">{</span> role<span class="t-pun">:</span> <span class="t-str">"user"</span><span class="t-pun">,</span> content<span class="t-pun">:</span> <span class="t-str">"什么是向量数据库？"</span> <span class="t-pun">},</span>
+  <span class="t-pun">],</span>
+  temperature<span class="t-pun">:</span> <span class="t-num">0.7</span><span class="t-pun">,</span>
+  max_tokens<span class="t-pun">:</span> <span class="t-num">512</span><span class="t-pun">,</span>
+<span class="t-pun">});</span>
+console<span class="t-pun">.</span><span class="t-fn">log</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>choices<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>message<span class="t-pun">.</span>content<span class="t-pun">);</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="go"><pre><code><span class="t-key">package</span> main
+
+<span class="t-key">import</span> <span class="t-pun">(</span>
+    <span class="t-str">"context"</span>
+    <span class="t-str">"fmt"</span>
+
+    <span class="t-str">"github.com/sashabaranov/go-openai"</span>
+<span class="t-pun">)</span>
+
+<span class="t-key">func</span> <span class="t-fn">main</span><span class="t-pun">()</span> <span class="t-pun">{</span>
+    cfg <span class="t-pun">:=</span> openai<span class="t-pun">.</span><span class="t-fn">DefaultConfig</span><span class="t-pun">(</span><span class="t-str">"sk-nexa-..."</span><span class="t-pun">)</span>
+    cfg<span class="t-pun">.</span>BaseURL <span class="t-pun">=</span> <span class="t-str">"https://api.nexa.ai/v1"</span>
+    client <span class="t-pun">:=</span> openai<span class="t-pun">.</span><span class="t-fn">NewClientWithConfig</span><span class="t-pun">(</span>cfg<span class="t-pun">)</span>
+
+    resp<span class="t-pun">,</span> _ <span class="t-pun">:=</span> client<span class="t-pun">.</span><span class="t-fn">CreateChatCompletion</span><span class="t-pun">(</span>context<span class="t-pun">.</span><span class="t-fn">Background</span><span class="t-pun">(),</span> openai<span class="t-pun">.</span>ChatCompletionRequest<span class="t-pun">{</span>
+        Model<span class="t-pun">:</span> <span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+        Messages<span class="t-pun">:</span> <span class="t-pun">[]</span>openai<span class="t-pun">.</span>ChatCompletionMessage<span class="t-pun">{</span>
+            <span class="t-pun">{</span>Role<span class="t-pun">:</span> <span class="t-str">"system"</span><span class="t-pun">,</span> Content<span class="t-pun">:</span> <span class="t-str">"你是一个简洁的助手。"</span><span class="t-pun">},</span>
+            <span class="t-pun">{</span>Role<span class="t-pun">:</span> <span class="t-str">"user"</span><span class="t-pun">,</span> Content<span class="t-pun">:</span> <span class="t-str">"什么是向量数据库？"</span><span class="t-pun">},</span>
+        <span class="t-pun">},</span>
+        Temperature<span class="t-pun">:</span> <span class="t-num">0.7</span><span class="t-pun">,</span>
+        MaxTokens<span class="t-pun">:</span> <span class="t-num">512</span><span class="t-pun">,</span>
+    <span class="t-pun">})</span>
+    fmt<span class="t-pun">.</span><span class="t-fn">Println</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>Choices<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>Message<span class="t-pun">.</span>Content<span class="t-pun">)</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="params">请求参数</h2>
+        <p>请求体为 JSON 对象，支持以下字段：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">model</td><td class="ty">string</td><td class="req-yes">必填</td><td>要使用的模型 ID，如 <code>gpt-4o</code>、<code>claude-3-5-sonnet</code>、<code>deepseek-chat</code>。完整列表见 <a class="inline" href="models.html">模型列表</a>。</td></tr>
+              <tr><td class="pn">messages</td><td class="ty">array</td><td class="req-yes">必填</td><td>对话消息数组，每个元素含 <code>role</code>（system / user / assistant / tool）与 <code>content</code>。</td></tr>
+              <tr><td class="pn">temperature</td><td class="ty">number</td><td class="req-no">可选</td><td>采样温度，范围 0–2，默认 1。值越高输出越随机，越低越确定。</td></tr>
+              <tr><td class="pn">top_p</td><td class="ty">number</td><td class="req-no">可选</td><td>核采样阈值，范围 0–1，默认 1。与 temperature 二选一调节即可。</td></tr>
+              <tr><td class="pn">max_tokens</td><td class="ty">integer</td><td class="req-no">可选</td><td>本次补全生成的最大 token 数，不含输入。</td></tr>
+              <tr><td class="pn">stream</td><td class="ty">boolean</td><td class="req-no">可选</td><td>为 <code>true</code> 时以 SSE 流式逐块返回，默认 <code>false</code>。</td></tr>
+              <tr><td class="pn">stop</td><td class="ty">string / array</td><td class="req-no">可选</td><td>最多 4 个停止序列，模型生成到任一序列即停止。</td></tr>
+              <tr><td class="pn">presence_penalty</td><td class="ty">number</td><td class="req-no">可选</td><td>范围 -2–2，正值鼓励谈及新话题，默认 0。</td></tr>
+              <tr><td class="pn">frequency_penalty</td><td class="ty">number</td><td class="req-no">可选</td><td>范围 -2–2，正值降低重复用词的概率，默认 0。</td></tr>
+              <tr><td class="pn">n</td><td class="ty">integer</td><td class="req-no">可选</td><td>为每条输入生成的补全条数，默认 1。</td></tr>
+              <tr><td class="pn">tools</td><td class="ty">array</td><td class="req-no">可选</td><td>可供模型调用的工具（函数）定义列表，用于函数调用。</td></tr>
+              <tr><td class="pn">tool_choice</td><td class="ty">string / object</td><td class="req-no">可选</td><td>控制是否及如何调用工具：<code>auto</code> / <code>none</code> / 指定函数。</td></tr>
+              <tr><td class="pn">response_format</td><td class="ty">object</td><td class="req-no">可选</td><td>设为 <code>{"type":"json_object"}</code> 强制返回合法 JSON。</td></tr>
+              <tr><td class="pn">user</td><td class="ty">string</td><td class="req-no">可选</td><td>代表终端用户的稳定标识，用于滥用监测。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout info">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+          <div class="co-body"><strong>跨厂商参数对齐。</strong>Nexa 会把上述统一参数自动映射到各厂商的原生字段。若某模型不支持某参数（如部分模型无 <code>frequency_penalty</code>），网关会安全地忽略而非报错。</div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="response">响应</h2>
+        <p>非流式请求返回一个 <code>chat.completion</code> 对象。主要字段如下：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">id</td><td class="ty">string</td><td>本次补全的唯一标识。</td></tr>
+              <tr><td class="pn">object</td><td class="ty">string</td><td>固定为 <code>chat.completion</code>。</td></tr>
+              <tr><td class="pn">created</td><td class="ty">integer</td><td>创建时间的 Unix 时间戳（秒）。</td></tr>
+              <tr><td class="pn">model</td><td class="ty">string</td><td>实际服务本次请求的模型 ID。</td></tr>
+              <tr><td class="pn">choices</td><td class="ty">array</td><td>补全结果数组，含 <code>index</code>、<code>message</code>、<code>finish_reason</code>。</td></tr>
+              <tr><td class="pn">usage</td><td class="ty">object</td><td>token 用量：<code>prompt_tokens</code>、<code>completion_tokens</code>、<code>total_tokens</code>。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="json" aria-selected="true">响应 JSON</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="json"><pre><code><span class="t-pun">{</span>
+  <span class="t-str">"id"</span><span class="t-pun">:</span> <span class="t-str">"chatcmpl-b3e1f9a2"</span><span class="t-pun">,</span>
+  <span class="t-str">"object"</span><span class="t-pun">:</span> <span class="t-str">"chat.completion"</span><span class="t-pun">,</span>
+  <span class="t-str">"created"</span><span class="t-pun">:</span> <span class="t-num">1718857800</span><span class="t-pun">,</span>
+  <span class="t-str">"model"</span><span class="t-pun">:</span> <span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+  <span class="t-str">"choices"</span><span class="t-pun">:</span> <span class="t-pun">[{</span>
+    <span class="t-str">"index"</span><span class="t-pun">:</span> <span class="t-num">0</span><span class="t-pun">,</span>
+    <span class="t-str">"message"</span><span class="t-pun">:</span> <span class="t-pun">{</span>
+      <span class="t-str">"role"</span><span class="t-pun">:</span> <span class="t-str">"assistant"</span><span class="t-pun">,</span>
+      <span class="t-str">"content"</span><span class="t-pun">:</span> <span class="t-str">"向量数据库是一种为高维向量的相似度检索而优化的数据库。"</span>
+    <span class="t-pun">},</span>
+    <span class="t-str">"finish_reason"</span><span class="t-pun">:</span> <span class="t-str">"stop"</span>
+  <span class="t-pun">}],</span>
+  <span class="t-str">"usage"</span><span class="t-pun">:</span> <span class="t-pun">{</span>
+    <span class="t-str">"prompt_tokens"</span><span class="t-pun">:</span> <span class="t-num">29</span><span class="t-pun">,</span>
+    <span class="t-str">"completion_tokens"</span><span class="t-pun">:</span> <span class="t-num">34</span><span class="t-pun">,</span>
+    <span class="t-str">"total_tokens"</span><span class="t-pun">:</span> <span class="t-num">63</span>
+  <span class="t-pun">}</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="stream">流式响应</h2>
+        <p>当请求中设置 <code>"stream": true</code> 时，网关以 <strong>Server-Sent Events（SSE）</strong> 协议逐块推送增量。每个事件以 <code>data:</code> 开头，承载一个 <code>chat.completion.chunk</code> 对象，增量内容位于 <code>choices[0].delta.content</code>。流以 <code>data: [DONE]</code> 结束。</p>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="curl" aria-selected="true">curl</button>
+            <button class="cb-tab" data-lang="python" aria-selected="false">Python</button>
+            <button class="cb-tab" data-lang="node" aria-selected="false">Node</button>
+            <button class="cb-tab" data-lang="go" aria-selected="false">Go</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="curl"><pre><code><span class="t-fn">curl</span> https://api.nexa.ai/v1/chat/completions <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Authorization: Bearer $NEXA_API_KEY"</span> <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Content-Type: application/json"</span> <span class="t-pun">\</span>
+  <span class="t-key">-d</span> <span class="t-str">'{
+    "model": "gpt-4o",
+    "messages": [{"role": "user", "content": "数到三"}],
+    "stream": true
+  }'</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="python"><pre><code>stream <span class="t-pun">=</span> client<span class="t-pun">.</span>chat<span class="t-pun">.</span>completions<span class="t-pun">.</span><span class="t-fn">create</span><span class="t-pun">(</span>
+    model<span class="t-pun">=</span><span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+    messages<span class="t-pun">=</span><span class="t-pun">[{</span><span class="t-str">"role"</span><span class="t-pun">:</span> <span class="t-str">"user"</span><span class="t-pun">,</span> <span class="t-str">"content"</span><span class="t-pun">:</span> <span class="t-str">"数到三"</span><span class="t-pun">}],</span>
+    stream<span class="t-pun">=</span><span class="t-key">True</span><span class="t-pun">,</span>
+<span class="t-pun">)</span>
+<span class="t-key">for</span> chunk <span class="t-key">in</span> stream<span class="t-pun">:</span>
+    delta <span class="t-pun">=</span> chunk<span class="t-pun">.</span>choices<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>delta<span class="t-pun">.</span>content <span class="t-key">or</span> <span class="t-str">""</span>
+    <span class="t-fn">print</span><span class="t-pun">(</span>delta<span class="t-pun">,</span> end<span class="t-pun">=</span><span class="t-str">""</span><span class="t-pun">,</span> flush<span class="t-pun">=</span><span class="t-key">True</span><span class="t-pun">)</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="node"><pre><code><span class="t-key">const</span> stream <span class="t-pun">=</span> <span class="t-key">await</span> client<span class="t-pun">.</span>chat<span class="t-pun">.</span>completions<span class="t-pun">.</span><span class="t-fn">create</span><span class="t-pun">({</span>
+  model<span class="t-pun">:</span> <span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+  messages<span class="t-pun">:</span> <span class="t-pun">[{</span> role<span class="t-pun">:</span> <span class="t-str">"user"</span><span class="t-pun">,</span> content<span class="t-pun">:</span> <span class="t-str">"数到三"</span> <span class="t-pun">}],</span>
+  stream<span class="t-pun">:</span> <span class="t-key">true</span><span class="t-pun">,</span>
+<span class="t-pun">});</span>
+<span class="t-key">for</span> <span class="t-key">await</span> <span class="t-pun">(</span><span class="t-key">const</span> chunk <span class="t-key">of</span> stream<span class="t-pun">)</span> <span class="t-pun">{</span>
+  process<span class="t-pun">.</span>stdout<span class="t-pun">.</span><span class="t-fn">write</span><span class="t-pun">(</span>chunk<span class="t-pun">.</span>choices<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>delta<span class="t-pun">.</span>content <span class="t-pun">??</span> <span class="t-str">""</span><span class="t-pun">);</span>
+<span class="t-pun">}</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="go"><pre><code>stream<span class="t-pun">,</span> _ <span class="t-pun">:=</span> client<span class="t-pun">.</span><span class="t-fn">CreateChatCompletionStream</span><span class="t-pun">(</span>context<span class="t-pun">.</span><span class="t-fn">Background</span><span class="t-pun">(),</span> openai<span class="t-pun">.</span>ChatCompletionRequest<span class="t-pun">{</span>
+    Model<span class="t-pun">:</span> <span class="t-str">"gpt-4o"</span><span class="t-pun">,</span>
+    Messages<span class="t-pun">:</span> <span class="t-pun">[]</span>openai<span class="t-pun">.</span>ChatCompletionMessage<span class="t-pun">{{</span>Role<span class="t-pun">:</span> <span class="t-str">"user"</span><span class="t-pun">,</span> Content<span class="t-pun">:</span> <span class="t-str">"数到三"</span><span class="t-pun">}},</span>
+    Stream<span class="t-pun">:</span> <span class="t-key">true</span><span class="t-pun">,</span>
+<span class="t-pun">})</span>
+<span class="t-key">defer</span> stream<span class="t-pun">.</span><span class="t-fn">Close</span><span class="t-pun">()</span>
+<span class="t-key">for</span> <span class="t-pun">{</span>
+    resp<span class="t-pun">,</span> err <span class="t-pun">:=</span> stream<span class="t-pun">.</span><span class="t-fn">Recv</span><span class="t-pun">()</span>
+    <span class="t-key">if</span> err <span class="t-pun">!=</span> <span class="t-key">nil</span> <span class="t-pun">{</span>
+        <span class="t-key">break</span>
+    <span class="t-pun">}</span>
+    fmt<span class="t-pun">.</span><span class="t-fn">Print</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>Choices<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>Delta<span class="t-pun">.</span>Content<span class="t-pun">)</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+
+        <p>SSE 数据流的原始格式如下，每个 chunk 携带一小段增量：</p>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="sse" aria-selected="true">SSE 数据流</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="sse"><pre><code><span class="t-key">data:</span> <span class="t-pun">{</span><span class="t-str">"id"</span><span class="t-pun">:</span><span class="t-str">"chatcmpl-c4..."</span><span class="t-pun">,</span><span class="t-str">"object"</span><span class="t-pun">:</span><span class="t-str">"chat.completion.chunk"</span><span class="t-pun">,</span><span class="t-str">"choices"</span><span class="t-pun">:</span><span class="t-pun">[{</span><span class="t-str">"delta"</span><span class="t-pun">:</span><span class="t-pun">{</span><span class="t-str">"role"</span><span class="t-pun">:</span><span class="t-str">"assistant"</span><span class="t-pun">},</span><span class="t-str">"index"</span><span class="t-pun">:</span><span class="t-num">0</span><span class="t-pun">}]}</span>
+
+<span class="t-key">data:</span> <span class="t-pun">{</span><span class="t-str">"choices"</span><span class="t-pun">:</span><span class="t-pun">[{</span><span class="t-str">"delta"</span><span class="t-pun">:</span><span class="t-pun">{</span><span class="t-str">"content"</span><span class="t-pun">:</span><span class="t-str">"一"</span><span class="t-pun">},</span><span class="t-str">"index"</span><span class="t-pun">:</span><span class="t-num">0</span><span class="t-pun">}]}</span>
+
+<span class="t-key">data:</span> <span class="t-pun">{</span><span class="t-str">"choices"</span><span class="t-pun">:</span><span class="t-pun">[{</span><span class="t-str">"delta"</span><span class="t-pun">:</span><span class="t-pun">{</span><span class="t-str">"content"</span><span class="t-pun">:</span><span class="t-str">"、二、三"</span><span class="t-pun">},</span><span class="t-str">"index"</span><span class="t-pun">:</span><span class="t-num">0</span><span class="t-pun">}]}</span>
+
+<span class="t-key">data:</span> <span class="t-pun">{</span><span class="t-str">"choices"</span><span class="t-pun">:</span><span class="t-pun">[{</span><span class="t-str">"delta"</span><span class="t-pun">:</span><span class="t-pun">{},</span><span class="t-str">"index"</span><span class="t-pun">:</span><span class="t-num">0</span><span class="t-pun">,</span><span class="t-str">"finish_reason"</span><span class="t-pun">:</span><span class="t-str">"stop"</span><span class="t-pun">}]}</span>
+
+<span class="t-key">data:</span> <span class="t-pun">[</span>DONE<span class="t-pun">]</span></code></pre></div>
+          </div>
+        </div>
+
+        <div class="callout warn">
+          <svg viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="co-body"><strong>流式下没有 usage 字段。</strong>默认流式响应的 chunk 不包含 token 用量。若需统计，请在请求中加入 <code>"stream_options": {"include_usage": true}</code>，网关会在 <code>[DONE]</code> 前补发一个仅含 <code>usage</code> 的 chunk。</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#endpoint">端点</a>
+    <a href="#request">请求示例</a>
+    <a href="#params">请求参数</a>
+    <a href="#response">响应</a>
+    <a href="#stream">流式响应</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

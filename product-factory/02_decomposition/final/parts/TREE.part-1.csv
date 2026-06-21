@@ -1,0 +1,73 @@
+node_id,parent_id,type,name,maps_to_function
+N-D1,,Module,D1 账号与身份,
+N-D2,,Module,D2 签到,
+N-D3,,Module,D3 邀请返利分销,
+N-D4,,Module,D4 Telegram登录Bot,
+C-D1-01,N-D1,Capability,邮箱账号生命周期(注册/登录/登出),
+R-D1-01-01,C-D1-01,Requirement,邮箱密码注册,F-1001
+R-D1-01-02,C-D1-01,Requirement,邮箱密码登录,F-1002
+R-D1-01-03,C-D1-01,Requirement,用户登出,F-1003
+C-D1-02,N-D1,Capability,邮箱验证与密码找回,
+R-D1-02-01,C-D1-02,Requirement,发送注册/找回邮箱验证码,F-1004
+R-D1-02-02,C-D1-02,Requirement,注册时邮箱验证码校验,F-1005
+R-D1-02-03,C-D1-02,Requirement,发送重置密码邮件,F-1006
+R-D1-02-04,C-D1-02,Requirement,提交重置新密码,F-1007
+C-D1-03,N-D1,Capability,管理端用户管理,
+R-D1-03-01,C-D1-03,Requirement,管理端查询/搜索用户,F-1008
+R-D1-03-02,C-D1-03,Requirement,管理端创建用户,F-1009
+R-D1-03-03,C-D1-03,Requirement,管理端管理用户状态,F-1010
+R-D1-03-04,C-D1-03,Requirement,更新用户资料,F-1011
+C-D1-04,N-D1,Capability,角色权限与分组,
+R-D1-04-01,C-D1-04,Requirement,用户角色分级,F-1012
+R-D1-04-02,C-D1-04,Requirement,用户分组绑定,F-1013
+R-D1-04-03,C-D1-04,Requirement,用户备注与个人设置,F-1014
+C-D1-05,N-D1,Capability,OAuth 登录与绑定,
+R-D1-05-01,C-D1-05,Requirement,生成 OAuth state 并暂存 aff,F-1015
+R-D1-05-02,C-D1-05,Requirement,GitHub OAuth 登录/注册,F-1016
+R-D1-05-03,C-D1-05,Requirement,GitHub legacy_id 迁移,F-1017
+R-D1-05-04,C-D1-05,Requirement,Discord OAuth 登录/绑定,F-1018
+R-D1-05-05,C-D1-05,Requirement,OIDC 通用 OAuth 登录/绑定,F-1019
+R-D1-05-06,C-D1-05,Requirement,LinuxDO OAuth 登录/绑定,F-1020
+R-D1-05-07,C-D1-05,Requirement,WeChat 扫码授权,F-1021
+R-D1-05-08,C-D1-05,Requirement,WeChat 绑定/登录,F-1022
+C-D1-06,N-D1,Capability,自定义 OAuth 与多绑定管理,
+R-D1-06-01,C-D1-06,Requirement,获取自定义 OAuth discovery,F-1023
+R-D1-06-02,C-D1-06,Requirement,自定义 OAuth provider CRUD,F-1024
+R-D1-06-03,C-D1-06,Requirement,自定义 provider 登录与绑定写入,F-1025
+R-D1-06-04,C-D1-06,Requirement,解绑自定义 OAuth(本人),F-1026
+R-D1-06-05,C-D1-06,Requirement,管理端查询/解绑用户 OAuth 绑定,F-1027
+C-D1-07,N-D1,Capability,Passkey/WebAuthn,
+R-D1-07-01,C-D1-07,Requirement,Passkey 注册,F-1028
+R-D1-07-02,C-D1-07,Requirement,Passkey 登录,F-1029
+R-D1-07-03,C-D1-07,Requirement,Passkey 二次验证,F-1030
+R-D1-07-04,C-D1-07,Requirement,Passkey 删除/查询状态,F-1031
+R-D1-07-05,C-D1-07,Requirement,管理端重置用户 Passkey,F-1032
+C-D1-08,N-D1,Capability,2FA 双因子与二次验证,
+R-D1-08-01,C-D1-08,Requirement,2FA 启用流程,F-1033
+R-D1-08-02,C-D1-08,Requirement,2FA 关闭,F-1034
+R-D1-08-03,C-D1-08,Requirement,2FA 备份码生成,F-1035
+R-D1-08-04,C-D1-08,Requirement,2FA 登录校验,F-1036
+R-D1-08-05,C-D1-08,Requirement,管理端 2FA 统计与禁用,F-1037
+R-D1-08-06,C-D1-08,Requirement,通用敏感动作二次验证,F-1038
+C-D2-01,N-D2,Capability,每日签到与奖励发放,
+R-D2-01-01,C-D2-01,Requirement,每日签到领取随机额度,F-1046
+R-D2-01-02,C-D2-01,Requirement,签到状态与本月记录查询,F-1047
+R-D2-01-03,C-D2-01,Requirement,签到防重复,F-1048
+C-D2-02,N-D2,Capability,签到配置与防刷,
+R-D2-02-01,C-D2-02,Requirement,签到开关与额度区间配置,F-1049
+R-D2-02-02,C-D2-02,Requirement,签到人机校验,F-1050
+C-D3-01,N-D3,Capability,邀请码与归因,
+R-D3-01-01,C-D3-01,Requirement,获取个人邀请码,F-1039
+R-D3-01-02,C-D3-01,Requirement,邮箱注册邀请码归因,F-1040
+R-D3-01-03,C-D3-01,Requirement,OAuth 注册邀请码归因,F-1041
+C-D3-02,N-D3,Capability,返利奖励与额度划转,
+R-D3-02-01,C-D3-02,Requirement,邀请人奖励发放,F-1042
+R-D3-02-02,C-D3-02,Requirement,新用户邀请奖励,F-1043
+R-D3-02-03,C-D3-02,Requirement,邀请额度划转为可用额度,F-1044
+R-D3-02-04,C-D3-02,Requirement,邀请统计展示,F-1045
+C-D4-01,N-D4,Capability,Telegram 登录与绑定,
+R-D4-01-01,C-D4-01,Requirement,Telegram 登录,F-1051
+R-D4-01-02,C-D4-01,Requirement,Telegram 绑定到现有账号,F-1052
+C-D4-02,N-D4,Capability,Telegram Widget 安全校验,
+R-D4-02-01,C-D4-02,Requirement,Telegram Login Widget HMAC 防伪,F-1053
+R-D4-02-02,C-D4-02,Requirement,Telegram 绑定唯一性校验,F-1054

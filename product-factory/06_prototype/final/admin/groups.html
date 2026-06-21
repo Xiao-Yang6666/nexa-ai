@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>预填分组 · Nexa·AI 管理后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<script src="admin-shell.js"></script>
+<style>
+  /* 预填分组专属 —— 全 token 驱动，零裸色值 */
+  .tabs{display:flex;gap:var(--space-1);border-bottom:1px solid var(--color-border);margin-bottom:var(--space-4)}
+  .tab{height:40px;padding:0 var(--space-4);font-family:inherit;font-size:var(--text-body);
+    color:var(--color-text-secondary);background:transparent;border:none;border-bottom:2px solid transparent;
+    cursor:pointer;font-weight:var(--fw-medium);display:inline-flex;align-items:center;gap:var(--space-2)}
+  .tab:hover{color:var(--color-text)}
+  .tab.on{color:var(--color-primary-700);border-bottom-color:var(--color-primary-500)}
+  .tab .cnt{font-family:var(--font-mono);font-size:var(--text-overline);background:var(--color-bg-subtle);
+    color:var(--color-text-secondary);padding:1px 7px;border-radius:var(--radius-full)}
+  .pane{display:none} .pane.on{display:block}
+  .filterbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}
+  .filterbar .sel,.filterbar .srch{height:36px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:inherit;font-size:var(--text-body-sm);padding:0 var(--space-3)}
+  .filterbar .srch{min-width:220px}
+  .filterbar .sel:focus,.filterbar .srch:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+  .filterbar .grow{margin-left:auto}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  .table-wrap table{min-width:980px}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable .arr{display:inline-flex;vertical-align:middle;color:var(--color-text-muted);margin-left:4px}
+  .cellmono{font-family:var(--font-mono)}
+  tr.soft td{color:var(--color-text-muted)}
+  tr.soft td:not(.keepcolor) *{color:var(--color-text-muted)}
+  .type-badge{font-family:var(--font-mono);font-size:var(--text-overline)}
+  .row-acts{display:flex;gap:var(--space-3);white-space:nowrap}
+  .row-acts a{font-size:var(--text-body-sm);color:var(--color-primary-500);cursor:pointer}
+  .row-acts a:hover{color:var(--color-primary-600)}
+  .row-acts a.dang{color:var(--color-danger)}
+  .row-acts a.ok{color:var(--color-success)}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  /* 抽屉 */
+  .drawer-scrim{display:none;position:fixed;inset:0;z-index:60;background:color-mix(in oklch,var(--color-surface-sunken) 72%,transparent)}
+  .drawer-scrim.on{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:440px;max-width:92vw;z-index:61;transform:translateX(100%);
+    background:var(--color-bg-elevated);border-left:1px solid var(--color-border);box-shadow:var(--shadow-lg);
+    display:flex;flex-direction:column;transition:transform var(--dur-2) var(--ease-out)}
+  .drawer.on{transform:none}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .drawer-title{font-family:var(--font-brand);font-size:var(--text-h4);font-weight:var(--fw-bold);color:var(--color-text);margin:0}
+  .drawer-x{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:32px;height:32px;
+    border-radius:var(--radius-sm);font-size:var(--text-h5)}
+  .drawer-x:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .drawer-body{flex:1;overflow-y:auto;padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4)}
+  .drawer-foot{display:flex;justify-content:flex-end;gap:var(--space-3);padding:var(--space-4) var(--space-5);
+    border-top:1px solid var(--color-border)}
+  .tagin{display:flex;flex-wrap:wrap;gap:6px;padding:var(--space-2);border:1px solid var(--color-border);
+    border-radius:var(--radius-sm);background:var(--color-bg-elevated);min-height:40px}
+  .tagin .tag{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:var(--text-caption);
+    background:var(--color-bg-subtle);color:var(--color-text-secondary);padding:2px 8px;border-radius:var(--radius-sm)}
+  .tagin .tag b{cursor:pointer;color:var(--color-text-muted)}
+  .tagin input{flex:1;min-width:80px;border:none;background:transparent;color:var(--color-text);font-family:var(--font-mono);
+    font-size:var(--text-body-sm);outline:none}
+  .sw-row{display:flex;align-items:center;justify-content:space-between}
+  /* 折扣等级专属 */
+  .notice{display:flex;gap:var(--space-3);align-items:flex-start;background:var(--color-info-bg);
+    border:1px solid var(--color-info-border);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5);
+    margin-bottom:var(--space-4);color:var(--color-info-fg)}
+  .notice svg{flex:0 0 auto;margin-top:2px;color:var(--color-info)}
+  .notice .ntxt{font-size:var(--text-body-sm);line-height:var(--lh-normal)}
+  .notice .ntxt b{font-weight:var(--fw-semibold)}
+  .ratio-cell{font-family:var(--font-mono);font-weight:var(--fw-medium)}
+  .ratio-edit{width:72px;height:30px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:var(--font-mono);
+    font-size:var(--text-body-sm);padding:0 var(--space-2);text-align:right}
+  .ratio-edit:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+  .thresh{font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .formula-card{display:flex;gap:var(--space-3);align-items:center;background:var(--color-bg-elevated);
+    border:1px solid var(--color-border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);
+    padding:var(--space-4) var(--space-5);margin-top:var(--space-4)}
+  .formula-card svg{flex:0 0 auto;color:var(--color-primary-500)}
+  .formula-card .ftitle{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-bottom:4px}
+  .formula-card .fcode{font-family:var(--font-mono);font-size:var(--text-body);color:var(--color-text);
+    font-weight:var(--fw-medium)}
+  .formula-card .fcode em{font-style:normal;color:var(--color-primary-700)}
+  @media (max-width:560px){.filterbar .srch{min-width:140px}}
+</style>
+</head>
+<body data-page="groups" data-title="预填分组" data-crumb="管理后台|资源管理|预填分组"
+      data-actions='<button class="btn btn-sec" id="newRatio">新增等级</button><button class="btn btn-primary" id="newGrp">新建分组</button>'>
+
+  <!-- 分类 Tab -->
+  <div class="tabs">
+    <button class="tab on" data-pane="ratio">折扣等级 <span class="cnt" id="cntRatio">0</span></button>
+    <button class="tab" data-pane="prefill">预填分组</button>
+  </div>
+
+  <!-- ════ 折扣等级 Pane ════ -->
+  <section class="pane on" id="paneRatio">
+    <div class="notice">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 9v4"/><path d="M10 6.4v.2"/></svg>
+      <div class="ntxt">分组现在主要作为「折扣等级」使用——<b>所有对外模型对所有客户全开</b>，分组不再圈定「能用哪些模型」、也不再单独定价。分组只决定<b>折扣系数</b>，决定客户在基准价上享受的折扣力度。</div>
+    </div>
+
+    <section class="filterbar">
+      <input class="srch" id="rSearch" type="search" placeholder="搜索等级名">
+      <span class="grow"></span>
+      <span class="muted">折扣系数行内可编辑，回车保存</span>
+    </section>
+
+    <section class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>等级名</th>
+              <th class="sortable">折扣系数 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+              <th>升级门槛</th>
+              <th class="sortable">当前用户数 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="rtbody"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="rpgInfo">共 0 个折扣等级</span>
+      </div>
+    </section>
+
+    <div class="formula-card">
+      <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 8h6M7 12h4"/></svg>
+      <div>
+        <div class="ftitle">最终扣费公式</div>
+        <div class="fcode">客户实付 <em>=</em> 对外模型基准价 <em>×</em> 分组折扣系数</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ 预填分组 Pane（保留旧能力） ════ -->
+  <section class="pane" id="panePrefill">
+  <!-- 预填分组子分类 Tab -->
+  <div class="tabs">
+    <button class="tab on" data-tab="model">模型分组 <span class="cnt" id="cntModel">0</span></button>
+    <button class="tab" data-tab="tag">标签分组 <span class="cnt" id="cntTag">0</span></button>
+    <button class="tab" data-tab="endpoint">端点分组 <span class="cnt" id="cntEndpoint">0</span></button>
+  </div>
+
+  <div class="notice">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 9v4"/><path d="M10 6.4v.2"/></svg>
+    <div class="ntxt">预填分组用于<b>批量预设 model / tag / endpoint 成员</b>，是与折扣无关的辅助配置。<b>它不再圈定客户能用哪些模型</b>——模型对所有客户全开，权限不由分组决定。</div>
+  </div>
+
+  <!-- FilterBar -->
+  <section class="filterbar nx-fade">
+    <select class="sel" id="fStatus">
+      <option value="">全部状态</option>
+      <option value="on">启用</option>
+      <option value="soft">软删</option>
+    </select>
+    <input class="srch" id="fSearch" type="search" placeholder="搜索分组名 / 成员">
+    <span class="grow"></span>
+    <span class="muted" id="paneHint"></span>
+  </section>
+
+  <!-- 表格 -->
+  <section class="table-card nx-fade">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="sortable">分组名 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th>类型</th>
+            <th class="sortable">成员数量 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th class="sortable">优先级 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th>状态</th>
+            <th class="sortable">创建时间 <span class="arr"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6l3-3 3 3M5 10l3 3 3-3"/></svg></span></th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span id="pgInfo">共 0 个分组</span>
+    </div>
+  </section>
+  </section>
+  <!-- /panePrefill -->
+
+  <!-- 编辑抽屉 -->
+  <div class="drawer-scrim" id="drawerScrim"></div>
+  <aside class="drawer" id="drawer" aria-label="分组编辑">
+    <div class="drawer-head">
+      <h2 class="drawer-title">新建分组</h2>
+      <button class="drawer-x" id="drawerX" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body">
+      <div>
+        <label class="field-label">分组名 <span class="field-req">*</span></label>
+        <input class="input" id="dName" placeholder="例如：高性能聊天模型">
+      </div>
+      <div>
+        <label class="field-label">分组类型 <span class="field-req">*</span></label>
+        <select class="input" id="dType">
+          <option value="model">模型分组（model）</option>
+          <option value="tag">标签分组（tag）</option>
+          <option value="endpoint">端点分组（endpoint）</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" id="memLabel">包含的模型</label>
+        <div class="tagin" id="memTags">
+          <span class="tag">gpt-4o <b>×</b></span>
+          <span class="tag">claude-3-5-sonnet <b>×</b></span>
+          <input type="text" placeholder="输入成员后回车">
+        </div>
+        <div class="field-hint" id="memHint">支持多个成员，回车添加</div>
+      </div>
+      <div>
+        <label class="field-label">优先级</label>
+        <input class="input cellmono" id="dPriority" value="10">
+        <div class="field-hint">数值越大越优先匹配</div>
+      </div>
+      <div class="sw-row">
+        <label class="field-label" style="margin:0">启用分组</label>
+        <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-ghost" id="drawerCancel">取消</button>
+      <button class="btn btn-primary">保存分组</button>
+    </div>
+  </aside>
+
+  <!-- 折扣等级抽屉 -->
+  <div class="drawer-scrim" id="rDrawerScrim"></div>
+  <aside class="drawer" id="rDrawer" aria-label="折扣等级编辑">
+    <div class="drawer-head">
+      <h2 class="drawer-title" id="rDrawerTitle">新增等级</h2>
+      <button class="drawer-x" id="rDrawerX" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="notice">
+        <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 9v4"/><path d="M10 6.4v.2"/></svg>
+        <div class="ntxt">等级只决定<b>折扣系数</b>，不再圈定可用模型。系数 1.0 = 原价，越小折扣越大。</div>
+      </div>
+      <div>
+        <label class="field-label">等级名 <span class="field-req">*</span></label>
+        <input class="input" id="rName" placeholder="例如：vip / svip / 企业版">
+      </div>
+      <div>
+        <label class="field-label">折扣系数 <span class="field-req">*</span></label>
+        <input class="input cellmono" id="rRatio" value="0.85">
+        <div class="field-hint">客户实付 = 对外模型基准价 × 此系数</div>
+      </div>
+      <div>
+        <label class="field-label">升级门槛方式</label>
+        <select class="input" id="rThreshType">
+          <option value="recharge">按累计充值额自动升档</option>
+          <option value="pack">绑定付费包等级</option>
+          <option value="manual">仅手动指派</option>
+        </select>
+      </div>
+      <div id="rThreshValWrap">
+        <label class="field-label" id="rThreshValLabel">累计充值门槛（USD）</label>
+        <input class="input cellmono" id="rThreshVal" value="500">
+        <div class="field-hint">客户累计充值达到此额度后自动升入本档</div>
+      </div>
+      <div class="sw-row">
+        <label class="field-label" style="margin:0">启用此等级</label>
+        <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-ghost" id="rDrawerCancel">取消</button>
+      <button class="btn btn-primary">保存等级</button>
+    </div>
+  </aside>
+
+  <script src="admin-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // ════ 折扣等级数据（DECISIONS §6：纯折扣，不控权限） ════
+    var ratioData=[
+      {nm:'free',  ratio:1.00, thresh:'默认档（注册即用）',           users:8421, st:'on'},
+      {nm:'vip',   ratio:0.85, thresh:'累计充值满 $500 自动升档',     users:1247, st:'on'},
+      {nm:'svip',  ratio:0.70, thresh:'累计充值满 $2000 / 企业付费包', users:312,  st:'on'},
+      {nm:'partner',ratio:0.60,thresh:'人工指派（合作伙伴）',          users:24,   st:'on'},
+      {nm:'trial', ratio:0.95, thresh:'7 日试用档（到期回落 free）',   users:186,  st:'soft'}
+    ];
+    var rtbody=document.getElementById('rtbody'), rpgInfo=document.getElementById('rpgInfo');
+    var rSearch=document.getElementById('rSearch');
+    function stBadgeRatio(s){
+      return s==='on'
+        ? '<span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>启用</span>'
+        : '<span class="badge b-neutral"><span class="dot" style="background:var(--color-text-muted)"></span>停用</span>';
+    }
+    function renderRatio(){
+      var kw=rSearch.value.trim().toLowerCase();
+      var rows=ratioData.filter(function(r){ return !kw || r.nm.toLowerCase().indexOf(kw)>=0; });
+      rtbody.innerHTML=rows.map(function(r,i){
+        var off=ratioData.indexOf(r);
+        return '<tr>'+
+          '<td><span class="ratio-cell">'+r.nm+'</span></td>'+
+          '<td><input class="ratio-edit" data-i="'+off+'" value="'+r.ratio.toFixed(2)+'"></td>'+
+          '<td><span class="thresh">'+r.thresh+'</span></td>'+
+          '<td class="cellmono">'+r.users.toLocaleString()+'</td>'+
+          '<td class="keepcolor">'+stBadgeRatio(r.st)+'</td>'+
+          '<td><div class="row-acts"><a class="rEdit" data-i="'+off+'">编辑</a></div></td>'+
+        '</tr>';
+      }).join('') || '<tr><td colspan="6" class="muted" style="text-align:center;padding:var(--space-6)">无匹配等级</td></tr>';
+      rpgInfo.textContent='共 '+rows.length+' 个折扣等级';
+    }
+    document.getElementById('cntRatio').textContent=ratioData.length;
+    rSearch.addEventListener('input', renderRatio);
+    renderRatio();
+    // 折扣系数行内编辑：回车提交
+    rtbody.addEventListener('keydown', function(e){
+      if(e.target.classList.contains('ratio-edit') && e.key==='Enter'){
+        e.preventDefault();
+        var i=parseInt(e.target.getAttribute('data-i'),10);
+        var v=parseFloat(e.target.value);
+        if(!isNaN(v)){ ratioData[i].ratio=v; }
+        e.target.blur(); renderRatio();
+      }
+    });
+
+    // ════ 折扣等级抽屉 ════
+    var rScrim=document.getElementById('rDrawerScrim'), rDrawer=document.getElementById('rDrawer');
+    var rThreshType=document.getElementById('rThreshType'), rThreshValWrap=document.getElementById('rThreshValWrap');
+    var rThreshValLabel=document.getElementById('rThreshValLabel');
+    function openR(){ rScrim.classList.add('on'); rDrawer.classList.add('on'); }
+    function closeR(){ rScrim.classList.remove('on'); rDrawer.classList.remove('on'); }
+    function syncThresh(){
+      var v=rThreshType.value;
+      if(v==='recharge'){ rThreshValWrap.style.display=''; rThreshValLabel.textContent='累计充值门槛（USD）'; }
+      else if(v==='pack'){ rThreshValWrap.style.display=''; rThreshValLabel.textContent='付费包等级 ID'; }
+      else{ rThreshValWrap.style.display='none'; }
+    }
+    rThreshType.addEventListener('change', syncThresh);
+    document.getElementById('newRatio').addEventListener('click', function(){
+      document.getElementById('rDrawerTitle').textContent='新增等级'; syncThresh(); openR();
+    });
+    document.getElementById('rDrawerX').addEventListener('click', closeR);
+    document.getElementById('rDrawerCancel').addEventListener('click', closeR);
+    rScrim.addEventListener('click', closeR);
+    rtbody.addEventListener('click', function(e){
+      if(e.target.classList.contains('rEdit')){
+        document.getElementById('rDrawerTitle').textContent='编辑等级'; syncThresh(); openR();
+      }
+    });
+
+    // ════ 顶层 Pane 切换（折扣等级 / 预填分组） ════
+    var paneTabs=document.querySelectorAll('.tab[data-pane]');
+    var newRatioBtn=document.getElementById('newRatio'), newGrpBtn=document.getElementById('newGrp');
+    function switchPane(p){
+      paneTabs.forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-pane')===p); });
+      document.getElementById('paneRatio').classList.toggle('on', p==='ratio');
+      document.getElementById('panePrefill').classList.toggle('on', p==='prefill');
+      if(newRatioBtn) newRatioBtn.style.display = p==='ratio' ? '' : 'none';
+      if(newGrpBtn)   newGrpBtn.style.display   = p==='prefill' ? '' : 'none';
+    }
+    paneTabs.forEach(function(t){
+      t.addEventListener('click', function(){ switchPane(t.getAttribute('data-pane')); });
+    });
+    switchPane('ratio');
+
+    // ════ 分组数据（12+ 行，三类、状态多样） ════
+    var data=[
+      {nm:'高性能聊天',     type:'model',    mem:8,  pr:20, st:'on',   ct:'06-02 09:14'},
+      {nm:'经济型模型',     type:'model',    mem:6,  pr:14, st:'on',   ct:'06-02 09:31'},
+      {nm:'推理专用',       type:'model',    mem:4,  pr:18, st:'on',   ct:'06-03 11:02'},
+      {nm:'视觉多模态',     type:'model',    mem:5,  pr:12, st:'on',   ct:'06-04 15:48'},
+      {nm:'已弃用大模型',   type:'model',    mem:3,  pr:2,  st:'soft', ct:'05-21 08:20'},
+      {nm:'企业版标签',     type:'tag',      mem:12, pr:16, st:'on',   ct:'06-01 10:05'},
+      {nm:'内测白名单',     type:'tag',      mem:9,  pr:15, st:'on',   ct:'06-05 13:27'},
+      {nm:'高配额用户',     type:'tag',      mem:7,  pr:10, st:'on',   ct:'06-06 16:40'},
+      {nm:'临时活动标签',   type:'tag',      mem:4,  pr:4,  st:'soft', ct:'05-28 09:11'},
+      {nm:'主区端点',       type:'endpoint', mem:6,  pr:22, st:'on',   ct:'06-01 08:00'},
+      {nm:'备区端点',       type:'endpoint', mem:5,  pr:18, st:'on',   ct:'06-01 08:02'},
+      {nm:'低延迟边缘',     type:'endpoint', mem:3,  pr:20, st:'on',   ct:'06-07 14:55'},
+      {nm:'国内合规端点',   type:'endpoint', mem:4,  pr:16, st:'on',   ct:'06-09 10:33'},
+      {nm:'旧版网关',       type:'endpoint', mem:2,  pr:3,  st:'soft', ct:'05-19 17:42'}
+    ];
+    var typeMap={
+      model:    {cls:'b-info',    lab:'model'},
+      tag:      {cls:'b-suc',     lab:'tag'},
+      endpoint: {cls:'b-neutral', lab:'endpoint'}
+    };
+    var stMap={
+      on:  {cls:'b-suc',     tone:'--color-success',    lab:'启用'},
+      soft:{cls:'b-neutral', tone:'--color-text-muted', lab:'软删'}
+    };
+    function typeBadge(t){ var m=typeMap[t]; return '<span class="badge '+m.cls+' type-badge">'+m.lab+'</span>'; }
+    function stBadge(s){
+      var m=stMap[s];
+      return '<span class="badge '+m.cls+'"><span class="dot" style="background:var('+m.tone+')"></span>'+m.lab+'</span>';
+    }
+
+    var curTab='model', tbody=document.getElementById('tbody'), pgInfo=document.getElementById('pgInfo');
+    var fStatus=document.getElementById('fStatus'), fSearch=document.getElementById('fSearch');
+
+    function render(){
+      var kw=fSearch.value.trim().toLowerCase(), st=fStatus.value;
+      var rows=data.filter(function(r){
+        if(r.type!==curTab) return false;
+        if(st && r.st!==st) return false;
+        if(kw && r.nm.toLowerCase().indexOf(kw)<0) return false;
+        return true;
+      });
+      tbody.innerHTML=rows.map(function(r){
+        var soft=r.st==='soft';
+        var acts = soft
+          ? '<a class="ok">恢复</a>'
+          : '<a class="doEdit">编辑</a><a class="dang">软删</a>';
+        return '<tr class="'+(soft?'soft':'')+'">'+
+          '<td>'+r.nm+'</td>'+
+          '<td class="keepcolor">'+typeBadge(r.type)+'</td>'+
+          '<td class="cellmono">'+r.mem+'</td>'+
+          '<td class="cellmono">'+r.pr+'</td>'+
+          '<td class="keepcolor">'+stBadge(r.st)+'</td>'+
+          '<td class="cellmono muted">'+r.ct+'</td>'+
+          '<td><div class="row-acts">'+acts+'</div></td>'+
+        '</tr>';
+      }).join('') || '<tr><td colspan="7" class="muted" style="text-align:center;padding:var(--space-6)">无匹配分组</td></tr>';
+      pgInfo.textContent='共 '+rows.length+' 个分组';
+    }
+
+    // Tab 计数
+    document.getElementById('cntModel').textContent=data.filter(function(r){return r.type==='model';}).length;
+    document.getElementById('cntTag').textContent=data.filter(function(r){return r.type==='tag';}).length;
+    document.getElementById('cntEndpoint').textContent=data.filter(function(r){return r.type==='endpoint';}).length;
+
+    // Tab 切换（预填分组子分类）
+    var tabs=document.querySelectorAll('.tab[data-tab]');
+    tabs.forEach(function(t){
+      t.addEventListener('click', function(){
+        tabs.forEach(function(x){ x.classList.remove('on'); });
+        t.classList.add('on');
+        curTab=t.getAttribute('data-tab');
+        render();
+      });
+    });
+    fStatus.addEventListener('change', render);
+    fSearch.addEventListener('input', render);
+    render();
+
+    // 抽屉
+    var scrim=document.getElementById('drawerScrim'), drawer=document.getElementById('drawer');
+    var memLabel=document.getElementById('memLabel'), memHint=document.getElementById('memHint');
+    var dType=document.getElementById('dType');
+    function openD(){ scrim.classList.add('on'); drawer.classList.add('on'); }
+    function closeD(){ scrim.classList.remove('on'); drawer.classList.remove('on'); }
+    function syncTypeLabel(){
+      var v=dType.value;
+      if(v==='model'){ memLabel.textContent='包含的模型'; memHint.textContent='填写模型名，回车添加'; }
+      else if(v==='tag'){ memLabel.textContent='包含的标签'; memHint.textContent='填写标签，回车添加'; }
+      else{ memLabel.textContent='包含的端点'; memHint.textContent='填写端点地址，回车添加'; }
+    }
+    dType.addEventListener('change', syncTypeLabel);
+    document.getElementById('newGrp').addEventListener('click', function(){
+      drawer.querySelector('.drawer-title').textContent='新建分组';
+      dType.value=curTab; syncTypeLabel(); openD();
+    });
+    document.getElementById('drawerX').addEventListener('click', closeD);
+    document.getElementById('drawerCancel').addEventListener('click', closeD);
+    scrim.addEventListener('click', closeD);
+    tbody.addEventListener('click', function(e){
+      if(e.target.classList.contains('doEdit')){
+        drawer.querySelector('.drawer-title').textContent='编辑分组';
+        dType.value=curTab; syncTypeLabel(); openD();
+      }
+    });
+
+    // 成员标签输入
+    var memTags=document.getElementById('memTags'), memInput=memTags.querySelector('input');
+    memInput.addEventListener('keydown', function(e){
+      if(e.key==='Enter' && memInput.value.trim()){
+        e.preventDefault();
+        var span=document.createElement('span');
+        span.className='tag';
+        span.innerHTML=memInput.value.trim()+' <b>×</b>';
+        memTags.insertBefore(span, memInput);
+        memInput.value='';
+      }
+    });
+    memTags.addEventListener('click', function(e){
+      if(e.target.tagName==='B') e.target.parentNode.remove();
+    });
+  })();
+  </script>
+</body>
+</html>

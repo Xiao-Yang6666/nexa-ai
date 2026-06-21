@@ -1,0 +1,61 @@
+{
+  "stage": "S3",
+  "stage_name": "flow_design_rerun",
+  "status": "PASS",
+  "downstream_allowed": true,
+  "checked_at": "2026-06-19T07:05:21.292251+00:00",
+  "authority": {
+    "machine_source_of_truth": [
+      "03_flow_prd/final/FLOW-COVERAGE.csv"
+    ],
+    "human_review_files": [
+      "03_flow_prd/final/OVERALL-FLOW.md",
+      "03_flow_prd/reviews/S3-REVIEW-REPORT.md"
+    ],
+    "display_only": []
+  },
+  "counts": {
+    "flow_files": 14,
+    "mermaid_blocks": 77,
+    "traceability_rows": 231,
+    "slop.flow.flow_scenarios": 77,
+    "slop.flow.flow_distinct_templates": 77,
+    "slop.flow.flow_template_diversity": 1.0
+  },
+  "scripts_run": [
+    {
+      "cmd": "template_slop_probe.py --stage S3",
+      "exit": 0,
+      "status": "PASS"
+    },
+    {
+      "cmd": "compute_gate_counts.py --stage S3",
+      "exit": 0
+    }
+  ],
+  "checks": [
+    {
+      "id": "flow.template_diversity",
+      "status": "PASS",
+      "evidence": "1.0 (上轮0.15塌缩)"
+    },
+    {
+      "id": "flow.scenarios",
+      "status": "PASS",
+      "evidence": "77场景77独立骨架"
+    }
+  ],
+  "review": {
+    "reviewer": "independent",
+    "status": "PASS",
+    "report_path": "03_flow_prd/reviews/S3-REVIEW-REPORT.md"
+  },
+  "blockers": [],
+  "warnings": [
+    "3个横切P0(F-5006/5019/5021)已在S4接住"
+  ],
+  "rework": {
+    "required": false
+  },
+  "handoff_path": "03_flow_prd/HANDOFF.md"
+}

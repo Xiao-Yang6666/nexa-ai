@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>限流说明 · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link" href="authentication.html">认证说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link" href="chat-completions.html">聊天补全 API</a>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link" href="images.html">图像 API</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link" href="errors.html">错误码参考</a>
+      <a class="nt-link is-current" href="rate-limits.html">限流说明</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#mechanism">限流机制</a>
+        <a class="nt-anchor" href="#tiers">额度档位</a>
+        <a class="nt-anchor" href="#response">命中限流</a>
+        <a class="nt-anchor" href="#backoff">退避重试</a>
+      </div>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link" href="sdks.html">SDK 下载</a>
+      <a class="nt-link" href="changelog.html">更新日志</a>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>运行约定</span>
+        <span class="sep">/</span>
+        <span>限流说明</span>
+      </nav>
+
+      <h1 class="reveal" id="top">限流说明</h1>
+      <p class="lede reveal">为保障服务质量，Nexa·AI 对每个 API Key 与分组施加速率限制。本页解释限流维度、各档位额度、命中限流时的响应，以及推荐的退避重试策略，帮助你在高并发下平稳运行。</p>
+
+      <section class="reveal">
+        <h2 id="mechanism">限流机制</h2>
+        <p>限流按两个维度并行计量，任一维度超限都会触发 <code>429</code>：</p>
+        <ul>
+          <li><strong>RPM（Requests Per Minute）</strong>——每分钟最大请求数，约束调用频次。</li>
+          <li><strong>TPM（Tokens Per Minute）</strong>——每分钟最大 token 吞吐（输入+输出合计），约束数据体量。</li>
+        </ul>
+        <p>限流粒度可按 <strong>API Key</strong> 或 <strong>分组（Group）</strong>设定：同一分组下的多个 Key 共享分组级配额，单个 Key 也可设独立上限。计量采用滑动窗口，窗口随时间连续推进，而非每分钟整点清零。每条响应都会回携以下头部，便于你实时感知余量：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>响应头</th><th>含义</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">x-ratelimit-limit-requests</td><td>当前窗口的 RPM 上限。</td></tr>
+              <tr><td class="pn">x-ratelimit-remaining-requests</td><td>本窗口剩余可用请求数。</td></tr>
+              <tr><td class="pn">x-ratelimit-limit-tokens</td><td>当前窗口的 TPM 上限。</td></tr>
+              <tr><td class="pn">x-ratelimit-remaining-tokens</td><td>本窗口剩余可用 token 数。</td></tr>
+              <tr><td class="pn">x-ratelimit-reset-requests</td><td>请求配额恢复的预计秒数。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="tiers">额度档位</h2>
+        <p>不同套餐对应不同的默认 RPM / TPM 上限。企业分组可在控制台申请定制额度。下表为各档位的基准值（聊天类模型）：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>套餐 / 分组</th><th>RPM</th><th>TPM</th><th>并发上限</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">Free</td><td>20</td><td>40,000</td><td>2</td></tr>
+              <tr><td class="pn">Starter</td><td>200</td><td>400,000</td><td>10</td></tr>
+              <tr><td class="pn">Pro</td><td>1,000</td><td>2,000,000</td><td>50</td></tr>
+              <tr><td class="pn">Scale</td><td>5,000</td><td>10,000,000</td><td>200</td></tr>
+              <tr><td class="pn">Enterprise</td><td class="req-yes">定制</td><td class="req-yes">定制</td><td class="req-yes">定制</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout info">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+          <div class="co-body"><strong>额度按分组聚合。</strong>若一个分组内有多个 Key，它们共享上表的分组级配额。需要隔离配额时，请为关键业务创建独立分组，避免相互挤占。</div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="response">命中限流</h2>
+        <p>超出 RPM 或 TPM 时，网关返回 <code>429 Too Many Requests</code>，并在 <code>Retry-After</code> 头中给出建议的等待秒数。响应体携带 <code>rate_limit_exceeded</code> 错误码。</p>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="http" aria-selected="true">429 响应</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="http"><pre><code><span class="t-key">HTTP/1.1</span> <span class="t-num">429</span> Too Many Requests
+<span class="t-fn">Retry-After</span><span class="t-pun">:</span> <span class="t-num">3</span>
+<span class="t-fn">x-ratelimit-remaining-requests</span><span class="t-pun">:</span> <span class="t-num">0</span>
+<span class="t-fn">Content-Type</span><span class="t-pun">:</span> application/json
+
+<span class="t-pun">{</span>
+  <span class="t-str">"error"</span><span class="t-pun">:</span> <span class="t-pun">{</span>
+    <span class="t-str">"message"</span><span class="t-pun">:</span> <span class="t-str">"Rate limit reached for requests. Please retry after 3s."</span><span class="t-pun">,</span>
+    <span class="t-str">"type"</span><span class="t-pun">:</span> <span class="t-str">"rate_limit_exceeded"</span><span class="t-pun">,</span>
+    <span class="t-str">"code"</span><span class="t-pun">:</span> <span class="t-str">"rate_limit_exceeded"</span>
+  <span class="t-pun">}</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="backoff">退避重试</h2>
+        <p>最佳实践是<strong>指数退避（exponential backoff）叠加随机抖动（jitter）</strong>：每次失败后等待时间翻倍并加入随机量，避免多客户端同步重试造成尖峰。优先尊重 <code>Retry-After</code> 头给出的值，并设置最大重试次数。</p>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="curl" aria-selected="true">curl</button>
+            <button class="cb-tab" data-lang="python" aria-selected="false">Python</button>
+            <button class="cb-tab" data-lang="node" aria-selected="false">Node</button>
+            <button class="cb-tab" data-lang="go" aria-selected="false">Go</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="curl"><pre><code><span class="t-com"># --retry 内置指数退避，遇 429/5xx 自动重试</span>
+<span class="t-fn">curl</span> <span class="t-key">--retry</span> <span class="t-num">5</span> <span class="t-key">--retry-delay</span> <span class="t-num">1</span> <span class="t-key">--retry-all-errors</span> <span class="t-pun">\</span>
+  https://api.nexa.ai/v1/chat/completions <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Authorization: Bearer $NEXA_API_KEY"</span> <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Content-Type: application/json"</span> <span class="t-pun">\</span>
+  <span class="t-key">-d</span> <span class="t-str">'{"model":"gpt-4o","messages":[{"role":"user","content":"hi"}]}'</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="python"><pre><code><span class="t-key">import</span> time<span class="t-pun">,</span> random
+<span class="t-key">from</span> openai <span class="t-key">import</span> OpenAI<span class="t-pun">,</span> RateLimitError
+
+client <span class="t-pun">=</span> <span class="t-fn">OpenAI</span><span class="t-pun">(</span>base_url<span class="t-pun">=</span><span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">)</span>
+
+<span class="t-key">def</span> <span class="t-fn">with_retry</span><span class="t-pun">(</span>fn<span class="t-pun">,</span> max_tries<span class="t-pun">=</span><span class="t-num">5</span><span class="t-pun">):</span>
+    <span class="t-key">for</span> i <span class="t-key">in</span> <span class="t-fn">range</span><span class="t-pun">(</span>max_tries<span class="t-pun">):</span>
+        <span class="t-key">try</span><span class="t-pun">:</span>
+            <span class="t-key">return</span> <span class="t-fn">fn</span><span class="t-pun">()</span>
+        <span class="t-key">except</span> RateLimitError<span class="t-pun">:</span>
+            <span class="t-key">if</span> i <span class="t-pun">==</span> max_tries <span class="t-pun">-</span> <span class="t-num">1</span><span class="t-pun">:</span>
+                <span class="t-key">raise</span>
+            delay <span class="t-pun">=</span> <span class="t-num">2</span> <span class="t-pun">**</span> i <span class="t-pun">+</span> random<span class="t-pun">.</span><span class="t-fn">random</span><span class="t-pun">()</span>
+            time<span class="t-pun">.</span><span class="t-fn">sleep</span><span class="t-pun">(</span>delay<span class="t-pun">)</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="node"><pre><code><span class="t-key">async</span> <span class="t-key">function</span> <span class="t-fn">withRetry</span><span class="t-pun">(</span>fn<span class="t-pun">,</span> maxTries <span class="t-pun">=</span> <span class="t-num">5</span><span class="t-pun">)</span> <span class="t-pun">{</span>
+  <span class="t-key">for</span> <span class="t-pun">(</span><span class="t-key">let</span> i <span class="t-pun">=</span> <span class="t-num">0</span><span class="t-pun">;</span> i <span class="t-pun">&lt;</span> maxTries<span class="t-pun">;</span> i<span class="t-pun">++)</span> <span class="t-pun">{</span>
+    <span class="t-key">try</span> <span class="t-pun">{</span>
+      <span class="t-key">return</span> <span class="t-key">await</span> <span class="t-fn">fn</span><span class="t-pun">();</span>
+    <span class="t-pun">}</span> <span class="t-key">catch</span> <span class="t-pun">(</span>err<span class="t-pun">)</span> <span class="t-pun">{</span>
+      <span class="t-key">if</span> <span class="t-pun">(</span>err<span class="t-pun">.</span>status <span class="t-pun">!==</span> <span class="t-num">429</span> <span class="t-pun">||</span> i <span class="t-pun">===</span> maxTries <span class="t-pun">-</span> <span class="t-num">1</span><span class="t-pun">)</span> <span class="t-key">throw</span> err<span class="t-pun">;</span>
+      <span class="t-key">const</span> delay <span class="t-pun">=</span> <span class="t-num">2</span> <span class="t-pun">**</span> i <span class="t-pun">*</span> <span class="t-num">1000</span> <span class="t-pun">+</span> Math<span class="t-pun">.</span><span class="t-fn">random</span><span class="t-pun">()</span> <span class="t-pun">*</span> <span class="t-num">1000</span><span class="t-pun">;</span>
+      <span class="t-key">await</span> <span class="t-key">new</span> <span class="t-fn">Promise</span><span class="t-pun">((</span>r<span class="t-pun">)</span> <span class="t-pun">=></span> <span class="t-fn">setTimeout</span><span class="t-pun">(</span>r<span class="t-pun">,</span> delay<span class="t-pun">));</span>
+    <span class="t-pun">}</span>
+  <span class="t-pun">}</span>
+<span class="t-pun">}</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="go"><pre><code><span class="t-key">func</span> <span class="t-fn">withRetry</span><span class="t-pun">(</span>fn <span class="t-key">func</span><span class="t-pun">()</span> <span class="t-key">error</span><span class="t-pun">,</span> maxTries <span class="t-key">int</span><span class="t-pun">)</span> <span class="t-key">error</span> <span class="t-pun">{</span>
+    <span class="t-key">var</span> err <span class="t-key">error</span>
+    <span class="t-key">for</span> i <span class="t-pun">:=</span> <span class="t-num">0</span><span class="t-pun">;</span> i <span class="t-pun">&lt;</span> maxTries<span class="t-pun">;</span> i<span class="t-pun">++</span> <span class="t-pun">{</span>
+        <span class="t-key">if</span> err <span class="t-pun">=</span> <span class="t-fn">fn</span><span class="t-pun">();</span> err <span class="t-pun">==</span> <span class="t-key">nil</span> <span class="t-pun">{</span>
+            <span class="t-key">return</span> <span class="t-key">nil</span>
+        <span class="t-pun">}</span>
+        delay <span class="t-pun">:=</span> time<span class="t-pun">.</span>Duration<span class="t-pun">(</span><span class="t-num">1</span><span class="t-pun">&lt;&lt;</span>i<span class="t-pun">)</span><span class="t-pun">*</span>time<span class="t-pun">.</span>Second <span class="t-pun">+</span> time<span class="t-pun">.</span><span class="t-fn">Duration</span><span class="t-pun">(</span>rand<span class="t-pun">.</span><span class="t-fn">Intn</span><span class="t-pun">(</span><span class="t-num">1000</span><span class="t-pun">))</span><span class="t-pun">*</span>time<span class="t-pun">.</span>Millisecond
+        time<span class="t-pun">.</span><span class="t-fn">Sleep</span><span class="t-pun">(</span>delay<span class="t-pun">)</span>
+    <span class="t-pun">}</span>
+    <span class="t-key">return</span> err
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+        <div class="callout warn">
+          <svg viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="co-body"><strong>不要无限重试。</strong>务必设置最大重试次数与总超时上限，并对持续 <code>429</code> 的情况做降级（如排队、限速或提示用户稍后再试）。无上限的重试会在故障时放大流量、加剧拥塞。错误分类详见 <a class="inline" href="errors.html">错误码参考</a>。</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#mechanism">限流机制</a>
+    <a href="#tiers">额度档位</a>
+    <a href="#response">命中限流</a>
+    <a href="#backoff">退避重试</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+node_id,parent_id,type,name,maps_to_function
+M-301,,Module,令牌管理,
+C-3011,M-301,Capability,令牌生命周期管理,
+R-3001,C-3011,Requirement,创建令牌（生成唯一明文 key + 校验额度区间与令牌数量上限）,F-3001
+R-3002,C-3011,Requirement,令牌列表分页查询（key 自动打码）,F-3002
+R-3003,C-3011,Requirement,令牌关键词/前缀搜索（SQL LIKE 注入防护 + 强制截断）,F-3003
+R-3006,C-3011,Requirement,更新令牌（含仅改状态 status_only 与启用前合法性校验）,F-3006
+R-3007,C-3011,Requirement,删除令牌 / 批量删除令牌,F-3007
+C-3012,M-301,Capability,令牌密钥访问,
+R-3004,C-3012,Requirement,获取单个令牌明文 key（限流 + 禁缓存保护）,F-3004
+R-3005,C-3012,Requirement,批量获取令牌明文 key（数量上限 100）,F-3005
+C-3013,M-301,Capability,令牌额度与访问策略,
+R-3008,C-3013,Requirement,令牌额度与过期时间管理（无限额度 / -1 永不过期）,F-3008
+R-3009,C-3013,Requirement,令牌模型白名单（ModelLimits 开关 + 列表）,F-3009
+R-3010,C-3013,Requirement,令牌 IP 白名单（AllowIps 多行解析）,F-3010
+R-3011,C-3013,Requirement,令牌按分组绑定（Group + 跨分组重试开关）,F-3011
+C-3014,M-301,Capability,令牌用量查询,
+R-3012,C-3014,Requirement,令牌用量查询（OpenAI 兼容 credit_summary / token_usage）,F-3012
+M-302,,Module,模型广场,
+C-3021,M-302,Capability,模型元数据管理,
+R-3013,C-3021,Requirement,模型元数据列表（分页 + 供应商计数填充）,F-3013
+R-3014,C-3021,Requirement,模型元数据搜索（关键词 + 供应商过滤）,F-3014
+R-3015,C-3021,Requirement,模型元数据创建（名称查重 + 刷新定价）,F-3015
+R-3016,C-3021,Requirement,模型元数据更新（全量更新 / 仅状态 status_only）,F-3016
+R-3017,C-3021,Requirement,模型元数据删除（刷新定价）,F-3017
+C-3022,M-302,Capability,供应商元数据管理,
+R-3018,C-3022,Requirement,供应商元数据 CRUD（名称唯一约束）,F-3018
+C-3023,M-302,Capability,上游模型同步,
+R-3019,C-3023,Requirement,上游模型同步执行（拉取 basellm 元数据创建缺失模型 + 可选字段覆盖）,F-3019
+R-3020,C-3023,Requirement,上游模型同步预览（差异对比不落库）,F-3020
+R-3021,C-3023,Requirement,缺失模型检测（渠道引用但无元数据的模型）,F-3021
+C-3024,M-302,Capability,模型展示与排行,
+R-3022,C-3024,Requirement,模型排行榜（公开 period 维度快照）,F-3022
+R-3023,C-3024,Requirement,公开价格页（按用户可用分组过滤定价 + 分组倍率）,F-3023
+R-3024,C-3024,Requirement,模型广场（DashboardListModels 渠道到模型映射）,F-3024
+R-3025,C-3024,Requirement,用户可见模型列表（按用户分组聚合去重）,F-3025
+M-303,,Module,Relay网关,
+C-3031,M-303,Capability,OpenAI 兼容端点中转,
+R-3026,C-3031,Requirement,OpenAI 兼容 chat/completions 与 completions 中转,F-3026
+R-3027,C-3031,Requirement,embeddings 中转（含后缀匹配兼容）,F-3027
+R-3028,C-3031,Requirement,images 中转（generations/edits，variations 未实现）,F-3028
+R-3029,C-3031,Requirement,audio 中转（speech/transcription/translation 统一格式）,F-3029
+R-3030,C-3031,Requirement,moderations 内容审核中转,F-3030
+R-3031,C-3031,Requirement,rerank 重排序中转,F-3031
+R-3032,C-3031,Requirement,responses 中转（含 compact 紧凑变体）,F-3032
+R-3057,C-3031,Requirement,edits 中转（legacy /v1/edits 编辑端点）,F-3057
+C-3032,M-303,Capability,原生协议中转,
+R-3033,C-3032,Requirement,realtime WebSocket 实时中转,F-3033
+R-3034,C-3032,Requirement,Gemini 原生协议中转（/v1beta/models/*）,F-3034
+R-3035,C-3032,Requirement,Claude 原生协议中转（/v1/messages）,F-3035
+R-3036,C-3032,Requirement,各厂商原生协议适配（37 个 provider adapter 转换）,F-3036
+C-3033,M-303,Capability,错误处理与内容代理,
+R-3037,C-3033,Requirement,Relay 统一错误处理与渠道自动禁用（按状态码重试/禁用）,F-3037
+R-3038,C-3033,Requirement,生成视频内容网关代理下发（/videos/:task_id/content）,F-3038
+M-304,,Module,部署管理,
+C-3041,M-304,Capability,io.net 集成配置,
+R-3039,C-3041,Requirement,io.net 部署集成开关与设置查询,F-3039
+R-3040,C-3041,Requirement,io.net 连接测试（校验 api_key + 返回硬件可用量）,F-3040
+C-3042,M-304,Capability,部署生命周期管理,
+R-3041,C-3042,Requirement,部署列表查询与状态计数（分页 + 状态聚合）,F-3041
+R-3042,C-3042,Requirement,部署搜索（按状态过滤 + 名称关键词本地过滤）,F-3042
+R-3043,C-3042,Requirement,部署详情查询（GPU/容器/计算分钟/地域）,F-3043
+R-3044,C-3042,Requirement,创建部署（DeployContainer 下发容器）,F-3044
+R-3045,C-3042,Requirement,部署更新（UpdateDeployment 配置变更）,F-3045
+R-3046,C-3042,Requirement,部署重命名（名称可用性预检）,F-3046
+R-3047,C-3042,Requirement,部署续期（ExtendDeployment 延长计算时长）,F-3047
+R-3048,C-3042,Requirement,删除部署（请求终止）,F-3048
+C-3043,M-304,Capability,部署资源查询,
+R-3049,C-3043,Requirement,硬件类型查询（含总可用量统计）,F-3049
+R-3050,C-3043,Requirement,部署地域查询,F-3050
+R-3051,C-3043,Requirement,可用副本查询（按硬件 ID + GPU 数）,F-3051
+R-3052,C-3043,Requirement,部署价格预估,F-3052
+R-3053,C-3043,Requirement,集群名称可用性查询,F-3053
+C-3044,M-304,Capability,容器监控,
+R-3054,C-3044,Requirement,部署容器列表（含容器事件）,F-3054
+R-3055,C-3044,Requirement,容器详情查询,F-3055
+R-3056,C-3044,Requirement,容器日志查询（按级别/流/游标分页 + 时间范围）,F-3056

@@ -1,0 +1,6 @@
+https://app.routifyapi.com/console
+https://app.routifyapi.com/console/token
+https://app.routifyapi.com/pricing
+https://docs.newapi.pro
+https://github.com/QuantumNous/new-api
+https://github.com/huey1in

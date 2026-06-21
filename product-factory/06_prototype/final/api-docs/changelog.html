@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>更新日志 · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+<style>
+  /* 竖线时间线（SVG 节点点 + 连接线，全 var() token，零裸色值） */
+  .timeline { position: relative; margin: var(--space-6) 0 0; padding: 0; list-style: none; }
+  .tl-item { position: relative; padding: 0 0 var(--space-8) var(--space-8); }
+  .tl-item:last-child { padding-bottom: var(--space-2); }
+  .tl-line { position: absolute; left: 9px; top: 6px; bottom: -6px; width: 1px;
+    background: var(--hd-line); }
+  .tl-item:last-child .tl-line { display: none; }
+  .tl-node { position: absolute; left: 0; top: 2px; width: 20px; height: 20px; }
+  .tl-node svg { width: 20px; height: 20px; display: block; }
+  .tl-node .dot { fill: var(--color-primary-300); }
+  .tl-node .ring { fill: none; stroke: color-mix(in oklch, var(--color-primary-300) 35%, transparent);
+    stroke-width: 2; }
+  .tl-meta { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
+    margin-bottom: var(--space-3); }
+  .tl-ver { font-family: var(--font-mono); font-size: var(--text-body-sm);
+    font-weight: var(--fw-semibold); color: var(--hd-text); background: var(--hd-glass);
+    border: 1px solid var(--hd-line); border-radius: var(--radius-sm); padding: 2px 10px; }
+  .tl-date { font-size: var(--text-caption); color: var(--hd-muted);
+    font-family: var(--font-mono); }
+  .tl-list { list-style: none; padding: 0; margin: 0; display: flex;
+    flex-direction: column; gap: var(--space-2); }
+  .tl-entry { display: flex; align-items: baseline; gap: var(--space-3);
+    font-size: var(--text-body-sm); line-height: var(--lh-relaxed);
+    color: color-mix(in oklch, var(--hd-text) 86%, transparent); }
+  .tl-tag { flex-shrink: 0; font-size: var(--text-overline); font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-snug); padding: 2px 8px; border-radius: var(--radius-full);
+    border: 1px solid transparent; min-width: 42px; text-align: center; }
+  .tl-tag.add { color: var(--color-success);
+    border-color: color-mix(in oklch, var(--color-success) 45%, transparent);
+    background: color-mix(in oklch, var(--color-success) 12%, transparent); }
+  .tl-tag.opt { color: var(--color-primary-300);
+    border-color: color-mix(in oklch, var(--color-primary-300) 45%, transparent);
+    background: color-mix(in oklch, var(--color-primary-300) 12%, transparent); }
+  .tl-tag.fix { color: var(--color-warning);
+    border-color: color-mix(in oklch, var(--color-warning) 45%, transparent);
+    background: color-mix(in oklch, var(--color-warning) 12%, transparent); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link" href="authentication.html">认证说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link" href="chat-completions.html">聊天补全 API</a>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link" href="images.html">图像 API</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link" href="errors.html">错误码参考</a>
+      <a class="nt-link" href="rate-limits.html">限流说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link" href="sdks.html">SDK 下载</a>
+      <a class="nt-link is-current" href="changelog.html">更新日志</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#legend">图例</a>
+        <a class="nt-anchor" href="#timeline">版本时间线</a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>资源</span>
+        <span class="sep">/</span>
+        <span>更新日志</span>
+      </nav>
+
+      <h1 class="reveal" id="top">更新日志</h1>
+      <p class="lede reveal">记录 Nexa·AI 网关的模型接入、能力增强与问题修复。我们遵循向后兼容原则——除非另行公告，既有接口与字段保持稳定。下方按时间倒序排列各版本。</p>
+
+      <section class="reveal">
+        <h2 id="legend">图例</h2>
+        <p>每条变更以标签标注类型：</p>
+        <ul class="tl-list" style="margin-top: var(--space-3);">
+          <li class="tl-entry"><span class="tl-tag add">新增</span><span>引入全新的模型、端点或能力。</span></li>
+          <li class="tl-entry"><span class="tl-tag opt">优化</span><span>对既有能力的性能、体验或行为改进。</span></li>
+          <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修正缺陷或不符合预期的行为。</span></li>
+        </ul>
+      </section>
+
+      <section class="reveal">
+        <h2 id="timeline">版本时间线</h2>
+        <ul class="timeline">
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.8.0</span><span class="tl-date">2026-06-12</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>接入 <code>gemini-2.0-flash</code> 与 <code>gemini-2.0-pro</code>，支持百万级长上下文。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>流式响应首 token 延迟（TTFT）平均降低约 22%。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.7.2</span><span class="tl-date">2026-05-28</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修复 <code>embeddings</code> 接口在传入 <code>dimensions</code> 时偶发维度未截断的问题。</span></li>
+              <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修正部分 <code>429</code> 响应缺失 <code>Retry-After</code> 头的情况。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.7.0</span><span class="tl-date">2026-05-15</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>图像接口接入 <code>flux-pro</code> 与 <code>flux-schnell</code>，支持更高分辨率出图。</span></li>
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>聊天补全支持 <code>stream_options.include_usage</code>，可在流式末尾返回 token 用量。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>统一各厂商的 <code>finish_reason</code> 取值，行为与 OpenAI 对齐。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.6.1</span><span class="tl-date">2026-04-30</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修复函数调用场景下 <code>tool_calls</code> 在跨厂商模型间字段映射不一致的问题。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>错误响应统一补齐 <code>error.code</code> 字段，便于客户端做分支处理。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.6.0</span><span class="tl-date">2026-04-18</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>接入 <code>claude-3-7-sonnet</code>，强化代码与推理能力。</span></li>
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>限流响应回携 <code>x-ratelimit-*</code> 系列头，实时暴露配额余量。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.5.3</span><span class="tl-date">2026-03-29</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修复长上下文请求在上游超时后未正确返回 <code>504</code> 的问题。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>降低冷启动场景下的连接建立耗时。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.5.0</span><span class="tl-date">2026-03-10</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>嵌入接口接入 <code>bge-m3</code> 与 <code>gte-large-zh</code>，强化中文检索。</span></li>
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>支持按分组（Group）粒度配置独立 RPM / TPM 限额。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>模型列表接口按 Key 权限自动过滤返回结果。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.4.1</span><span class="tl-date">2026-02-22</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修复 <code>response_format=json_object</code> 在个别模型下偶发返回非法 JSON 的问题。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.4.0</span><span class="tl-date">2026-02-05</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>接入 <code>deepseek-reasoner</code>，支持显式推理链输出。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>聊天补全的视觉输入（image_url）在多厂商间统一编解码。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.3.0</span><span class="tl-date">2026-01-16</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>图像接口接入 <code>sd3-large</code>，文字渲染表现显著提升。</span></li>
+              <li class="tl-entry"><span class="tl-tag opt">优化</span><span>统一计费口径，<code>usage</code> 字段含上游真实 token 计数。</span></li>
+              <li class="tl-entry"><span class="tl-tag fix">修复</span><span>修复 base64 图像返回时偶发的内容截断。</span></li>
+            </ul>
+          </li>
+
+          <li class="tl-item">
+            <span class="tl-line"></span>
+            <span class="tl-node"><svg viewBox="0 0 20 20"><circle class="ring" cx="10" cy="10" r="8"/><circle class="dot" cx="10" cy="10" r="4"/></svg></span>
+            <div class="tl-meta"><span class="tl-ver">v2.2.0</span><span class="tl-date">2025-12-20</span></div>
+            <ul class="tl-list">
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>正式发布 OpenAI 兼容网关，支持聊天、嵌入、图像三大接口。</span></li>
+              <li class="tl-entry"><span class="tl-tag add">新增</span><span>提供统一鉴权、分组管理与用量看板。</span></li>
+            </ul>
+          </li>
+
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#legend">图例</a>
+    <a href="#timeline">版本时间线</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

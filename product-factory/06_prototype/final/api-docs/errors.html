@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>错误码参考 · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link" href="authentication.html">认证说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link" href="chat-completions.html">聊天补全 API</a>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link" href="images.html">图像 API</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link is-current" href="errors.html">错误码参考</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#overview">概览</a>
+        <a class="nt-anchor" href="#structure">错误结构</a>
+        <a class="nt-anchor" href="#http">HTTP 状态码</a>
+        <a class="nt-anchor" href="#codes">业务错误码</a>
+        <a class="nt-anchor" href="#handling">处理建议</a>
+      </div>
+      <a class="nt-link" href="rate-limits.html">限流说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link" href="sdks.html">SDK 下载</a>
+      <a class="nt-link" href="changelog.html">更新日志</a>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>运行约定</span>
+        <span class="sep">/</span>
+        <span>错误码参考</span>
+      </nav>
+
+      <h1 class="reveal" id="top">错误码参考</h1>
+      <p class="lede reveal">Nexa·AI 沿用标准 HTTP 状态码语义，并在响应体中返回结构化的错误对象。本页列出全部状态码、业务错误码及其常见原因与处理建议，帮助你在客户端实现健壮的错误处理。</p>
+
+      <section class="reveal">
+        <h2 id="overview">概览</h2>
+        <p>所有错误响应均以非 2xx 的 HTTP 状态码返回，响应体为统一的 JSON 结构。状态码大类含义如下：<code>2xx</code> 成功；<code>4xx</code> 客户端错误（请求本身有问题，重试通常无效，需修正后再发）；<code>5xx</code> 服务端错误（网关或上游临时故障，可按退避策略重试）。</p>
+      </section>
+
+      <section class="reveal">
+        <h2 id="structure">错误结构</h2>
+        <p>错误响应体始终包含一个 <code>error</code> 对象，字段含义：<code>message</code> 人类可读的描述；<code>type</code> 错误大类；<code>code</code> 机器可读的业务错误码；<code>param</code> 触发错误的具体参数（若适用）。</p>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="json" aria-selected="true">错误响应 JSON</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="json"><pre><code><span class="t-pun">{</span>
+  <span class="t-str">"error"</span><span class="t-pun">:</span> <span class="t-pun">{</span>
+    <span class="t-str">"message"</span><span class="t-pun">:</span> <span class="t-str">"You exceeded your current quota, please check your plan and billing details."</span><span class="t-pun">,</span>
+    <span class="t-str">"type"</span><span class="t-pun">:</span> <span class="t-str">"insufficient_quota"</span><span class="t-pun">,</span>
+    <span class="t-str">"code"</span><span class="t-pun">:</span> <span class="t-str">"insufficient_quota"</span><span class="t-pun">,</span>
+    <span class="t-str">"param"</span><span class="t-pun">:</span> <span class="t-key">null</span>
+  <span class="t-pun">}</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="http">HTTP 状态码</h2>
+        <p>下表覆盖网关可能返回的全部 HTTP 状态码及其典型语义：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>状态</th><th>含义</th><th>常见原因</th><th>处理建议</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="badge b-dan">400</span></td><td>Bad Request</td><td>请求体非法、缺必填字段、参数取值越界。</td><td>检查 <code>error.param</code> 指出的字段并修正后重发。</td></tr>
+              <tr><td><span class="badge b-dan">401</span></td><td>Unauthorized</td><td>缺少 / 无效 / 已撤销的 API Key。</td><td>核对 <code>Authorization</code> 头与 Key 是否仍有效。</td></tr>
+              <tr><td><span class="badge b-dan">403</span></td><td>Forbidden</td><td>Key 无该模型 / 该接口的访问权限。</td><td>在控制台为分组授予对应模型权限。</td></tr>
+              <tr><td><span class="badge b-dan">404</span></td><td>Not Found</td><td>端点路径错误，或模型 ID 不存在。</td><td>核对 URL 与 <code>model</code>，参见 <a class="inline" href="models.html">模型列表</a>。</td></tr>
+              <tr><td><span class="badge b-warn">429</span></td><td>Too Many Requests</td><td>触发 RPM / TPM 限流，或额度已用尽。</td><td>读取 <code>Retry-After</code> 退避重试，见 <a class="inline" href="rate-limits.html">限流说明</a>。</td></tr>
+              <tr><td><span class="badge b-warn">500</span></td><td>Internal Server Error</td><td>网关内部异常。</td><td>指数退避重试；持续出现请联系支持。</td></tr>
+              <tr><td><span class="badge b-warn">502</span></td><td>Bad Gateway</td><td>上游模型供应商返回了无效响应。</td><td>稍后退避重试，或切换备用模型。</td></tr>
+              <tr><td><span class="badge b-warn">503</span></td><td>Service Unavailable</td><td>上游过载或维护中，暂时不可用。</td><td>按 <code>Retry-After</code> 退避重试。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="codes">业务错误码</h2>
+        <p><code>error.code</code> 提供比 HTTP 状态码更细的机器可读分类，便于在代码中做精准分支处理：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>状态</th><th>error.code</th><th>含义</th><th>处理建议</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="badge b-dan">401</span></td><td class="pn">invalid_api_key</td><td>提供的 API Key 无效或格式错误。</td><td>重新生成 Key 并更新环境变量。</td></tr>
+              <tr><td><span class="badge b-dan">403</span></td><td class="pn">model_access_denied</td><td>当前 Key 未被授权访问该模型。</td><td>在分组权限中开启该模型。</td></tr>
+              <tr><td><span class="badge b-dan">404</span></td><td class="pn">model_not_found</td><td>请求的 <code>model</code> 不存在或已下线。</td><td>改用 <a class="inline" href="models.html">模型列表</a> 中的有效 ID。</td></tr>
+              <tr><td><span class="badge b-dan">400</span></td><td class="pn">invalid_request_error</td><td>请求结构或字段取值不合法。</td><td>依据 <code>message</code> 与 <code>param</code> 修正。</td></tr>
+              <tr><td><span class="badge b-dan">400</span></td><td class="pn">context_length_exceeded</td><td>输入 token 超出模型上下文窗口。</td><td>缩短输入或改用更大上下文的模型。</td></tr>
+              <tr><td><span class="badge b-dan">400</span></td><td class="pn">content_policy_violation</td><td>提示词或输出触发内容安全策略。</td><td>调整内容后重试。</td></tr>
+              <tr><td><span class="badge b-warn">429</span></td><td class="pn">rate_limit_exceeded</td><td>超出每分钟请求或 token 速率上限。</td><td>按 <code>Retry-After</code> 退避，降低并发。</td></tr>
+              <tr><td><span class="badge b-warn">429</span></td><td class="pn">insufficient_quota</td><td>账户额度已用尽或欠费。</td><td>前往控制台充值或调整套餐。</td></tr>
+              <tr><td><span class="badge b-warn">502</span></td><td class="pn">upstream_error</td><td>上游供应商返回错误。</td><td>退避重试，或在请求中指定备用模型。</td></tr>
+              <tr><td><span class="badge b-warn">503</span></td><td class="pn">engine_overloaded</td><td>上游引擎当前过载。</td><td>稍后重试或降低请求频率。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="handling">处理建议</h2>
+        <div class="callout info">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+          <div class="co-body"><strong>4xx 不要盲目重试。</strong>除 <code>429</code> 外的客户端错误（<code>400/401/403/404</code>）通常源于请求本身的问题，原样重发只会再次失败。应先依据 <code>error.code</code> 与 <code>message</code> 修正请求，再重新提交。</div>
+        </div>
+        <div class="callout warn">
+          <svg viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="co-body"><strong>5xx 与 429 才适合重试。</strong>对 <code>429/500/502/503</code> 采用指数退避（含抖动）重试，并尊重响应中的 <code>Retry-After</code> 头；设置最大重试次数以避免雪崩。具体退避策略与示例代码见 <a class="inline" href="rate-limits.html">限流说明</a>。</div>
+        </div>
+        <div class="callout info">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+          <div class="co-body"><strong>始终以 <code>error.code</code> 为分支依据。</strong><code>message</code> 文案可能随版本调整，而 <code>code</code> 是稳定契约。在代码中按 <code>code</code> 做精确匹配，能让错误处理在网关升级后依然可靠。</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#overview">概览</a>
+    <a href="#structure">错误结构</a>
+    <a href="#http">HTTP 状态码</a>
+    <a href="#codes">业务错误码</a>
+    <a href="#handling">处理建议</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

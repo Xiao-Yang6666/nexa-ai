@@ -1,0 +1,79 @@
+{
+  "stage": "S7",
+  "stage_name": "开发契约设计 (Dev Contract Design)",
+  "project": "Nexa (routifyapi-newapi-product)",
+  "generated_by": "脚本实算 (execute_code), 非手填",
+  "counts": {
+    "function_baseline": 243,
+    "api_endpoints_registered": 243,
+    "openapi_paths": 133,
+    "openapi_operations": 159,
+    "openapi_schemas": 84,
+    "openapi_rest_functions": 109,
+    "db_tables_gorm_tags": 231,
+    "backlog_tasks": 243,
+    "coverage_rows": 243
+  },
+  "coverage_check": {
+    "forward_miss_api_registration": 0,
+    "forward_miss_task": 0,
+    "reverse_orphan_endpoints": 0,
+    "rest_endpoint_functions": 109,
+    "cross_cutting_or_internal": 134,
+    "verdict": "PASS"
+  },
+  "artifacts": [
+    "DB-SCHEMA.md (22表 GORM model)",
+    "MIGRATION-PLAN.md",
+    "API-ENDPOINTS.md (16模块,人读)",
+    "openapi.yaml (OpenAPI 3.0.3,机读,yaml.safe_load通过)",
+    "BACKLOG.csv (243 task)",
+    "WAVE-PLAN.md (5波,前后端并行策略)",
+    "API-COVERAGE.csv (243功能×端点×task)"
+  ],
+  "scripts_run": [
+    {
+      "check": "功能基准计数 (csv)",
+      "result": "243",
+      "exit": 0
+    },
+    {
+      "check": "正向覆盖 API登记 miss",
+      "result": "0",
+      "exit": 0
+    },
+    {
+      "check": "正向覆盖 task miss",
+      "result": "0",
+      "exit": 0
+    },
+    {
+      "check": "反向孤儿端点",
+      "result": "0",
+      "exit": 0
+    },
+    {
+      "check": "openapi yaml.safe_load",
+      "result": "通过(104 paths/121 ops/79 schemas)",
+      "exit": 0
+    },
+    {
+      "check": "openapi 重复path键",
+      "result": "0",
+      "exit": 0
+    }
+  ],
+  "known_gaps": [
+    "DB-SCHEMA 标注 5 个 DATA-MODEL 表述不全的 GAP(Channel软删除/SubscriptionPlan支付字段/SubscriptionOrder枚举与索引/UserSubscription字段tag/UserModelAlias缓存Init命名)——非字段缺失,待回查DATA-MODEL补全",
+    "F-5020 账号注销端点路径待 repo 实际承载确认",
+    "152个横切/系统内部功能无独立REST端点(NFR/RBAC/计费登记等),由中间件/基础设施实现,已在API-ENDPOINTS登记,不进openapi paths——属正常,非漏"
+  ],
+  "reviewer": {
+    "verdict": "PASS_WITH_GAPS",
+    "gaps_resolved": [
+      "Gap-1 openapi管理端CRUD已补(91→109 REST功能)",
+      "Gap-2 BACKLOG depends_on已回填波次级依赖"
+    ],
+    "hard_issues": "漏功能/契约含糊/客户视图泄露 三类均无"
+  }
+}

@@ -1,0 +1,3721 @@
+openapi: 3.0.3
+info:
+  title: Nexa API
+  version: 1.0.0
+  description: |
+    Nexa — AI API 网关 SaaS（基于 new-api 二次开发，Go + Gin + GORM）的机读 API 契约。
+    本文件由人读版权威契约 `API-ENDPOINTS.md`（§1-§16）翻译而来，供前端 mock / 生成 client 用。
+
+    产品铁律（贯穿所有出参 DTO）：
+    1. 客户视图 DTO（*UserView/*PublicView）绝不含：成本（quota_cost）、利润（quota_profit）、
+       上游真实模型 B（actual_upstream_model / upstream_name / upstream_model）、供应商渠道维
+       （channel_id / channel_name）、cost_ratio。
+    2. 管理视图 DTO（*AdminView）给全链 C→A→B + 协议 + 售价/成本/利润 + channel_id。
+    3. 凡涉及 key/secret 的字段：列表脱敏（MaskTokenKey），取明文走 CriticalRateLimit + DisableCache + 二次验证。
+
+    通用响应包络（new-api 惯例）：{ "success": bool, "message": string, "data": <payload> }。
+    分页响应 data 形如 { "items": [...], "total": int, "page": int, "page_size": int }。
+
+    Relay 对外 schema 铁律：所有 /v1/*、/v1beta/* 入口的对外 API schema = 标准 OpenAI / Anthropic / Gemini
+    原生格式；内部 C→A→B 两层映射、选渠、协议头尾转换、双价记账对客户完全不感知。
+servers:
+  - url: https://nexa.ai
+    description: Nexa 生产环境
+security: []
+tags:
+  - name: account
+    description: 账号与身份（D1，模块一）
+  - name: token
+    description: 令牌管理（模块二）
+  - name: billing
+    description: 计费与额度（D6，模块三）
+  - name: model
+    description: 模型广场/元数据/同步/供应商/对外目录/映射（D8，模块四）
+  - name: channel
+    description: 渠道管理与上游路由/运维/成本（D7，模块五）
+  - name: relay
+    description: Relay 网关多协议中转（D9/D11/D13，模块六）
+  - name: task
+    description: 异步任务中心（视频/音乐/MJ，D5，模块七）
+  - name: log
+    description: 日志与用量（D4/D5，模块八）
+  - name: ops
+    description: 运营与运维 / 系统设置 / 选项配置 / 性能监控 / 合规（模块九）
+  - name: deployment
+    description: 部署管理（io.net 企业部署，模块十）
+  - name: public
+    description: 公开站点（营销站 / 协议隐私页 / 状态聚合，模块十一）
+  - name: growth
+    description: 增长（签到 / 邀请分销 / Telegram，模块十二）
+  - name: playground
+    description: Playground 站内对话试用（模块十三）
+  - name: prefill
+    description: 预填分组（模块十五）
+  - name: ranking
+    description: 用量排行榜快照（模块十六）
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: sk-nexa-...
+      description: |
+        API Key（sk-nexa 前缀）鉴权，用于 /v1/* 与 /v1beta/* 的 relay 中转端点（TokenAuth）。
+        Header: `Authorization: Bearer sk-nexa-...`。Claude 原生另支持 `x-api-key` + `anthropic-version`，
+        Gemini 原生另支持 `x-goog-api-key` 或 query key。
+    tokenReadAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: sk-nexa-...
+      description: |
+        TokenAuthReadOnly：Bearer sk-key 只读鉴权，用于按 key 查用量/日志（/api/usage/token、/api/log/token）。
+        附加 CriticalRateLimit + DisableCache。
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: |
+        UserAuth（会话/cookie 或 access token）。用于 /api/user/self/* 等 self-scope 端点，
+        按 user_id 强制过滤越权。普通用户角色（common+）。部分高危动作要求 dashboard 会话（拒绝 access token）。
+    adminAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: |
+        AdminAuth（admin+ 角色）。基于会话鉴权，要求 Role >= admin。用于用户管理、渠道/模型/计费配置、
+        管理端日志、部署管理等。越权路由返回 403（F-5031）。文档层用同一会话凭据 + 角色级别区分。
+    rootAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: |
+        RootAuth（root 角色）。基于会话鉴权，要求 Role == root。用于全站 Option 配置、性能监控运维、
+        支付合规确认、自定义 OAuth provider 配置等。部分端点额外要求 dashboard 会话。
+  schemas:
+    # ============ 通用响应包络 ============
+    ApiResponse:
+      type: object
+      description: 通用响应包络（new-api 惯例）
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          nullable: true
+          description: 业务载荷，按端点不同而不同
+      required:
+        - success
+    SuccessResponse:
+      type: object
+      description: 仅 success 的成功响应（多数状态变更/删除端点）
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          nullable: true
+      required:
+        - success
+    Pagination:
+      type: object
+      description: 分页元数据（data 内）
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    ErrorResponse:
+      type: object
+      description: 业务错误响应（success=false）
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        data:
+          nullable: true
+      required:
+        - success
+        - message
+
+    # ============ 账号与身份 DTO（模块一） ============
+    UserView:
+      type: object
+      description: |
+        用户客户视图（self-scope / 登录返回）。裁掉 password/access_token/remark(普通用户)/setting内部。
+        不下发 password、access_token。
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        display_name:
+          type: string
+        role:
+          type: integer
+          description: 1=common, 10=admin, 100=root（角色编码，护栏不可操作 >= 自身角色）
+        status:
+          type: integer
+          description: 1=启用，其它=禁用
+        group:
+          type: string
+        quota:
+          type: integer
+        used_quota:
+          type: integer
+        request_count:
+          type: integer
+        aff_code:
+          type: string
+        aff_count:
+          type: integer
+        aff_quota:
+          type: integer
+        aff_history_quota:
+          type: integer
+        email:
+          type: string
+        github_id:
+          type: string
+        discord_id:
+          type: string
+        wechat_id:
+          type: string
+        telegram_id:
+          type: string
+        linux_do_id:
+          type: string
+        oidc_id:
+          type: string
+        last_login_at:
+          type: integer
+          format: int64
+        setting:
+          type: object
+          description: dto.UserSetting，仅本人信息端点下发
+          additionalProperties: true
+    UserAdminView:
+      type: object
+      description: |
+        用户管理视图（AdminAuth）。含 remark / inviter_id（区别于 UserView）。
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        display_name:
+          type: string
+        role:
+          type: integer
+        status:
+          type: integer
+        email:
+          type: string
+        group:
+          type: string
+        quota:
+          type: integer
+        used_quota:
+          type: integer
+        request_count:
+          type: integer
+        aff_code:
+          type: string
+        aff_count:
+          type: integer
+        inviter_id:
+          type: integer
+        remark:
+          type: string
+        github_id:
+          type: string
+        discord_id:
+          type: string
+        wechat_id:
+          type: string
+        telegram_id:
+          type: string
+        last_login_at:
+          type: integer
+          format: int64
+        created_at:
+          type: integer
+          format: int64
+        setting:
+          type: object
+          additionalProperties: true
+          description: 单用户详情时含 setting
+    UserSetting:
+      type: object
+      description: 个人设置（dto.UserSetting）；含语言/边栏偏好与额度预警配置（F-4037）
+      additionalProperties: true
+      properties:
+        warning_type:
+          type: string
+          enum: [email, webhook, bark]
+        warning_threshold:
+          type: number
+          description: 预警阈值（必须为正数）
+        webhook_url:
+          type: string
+        webhook_secret:
+          type: string
+        bark_url:
+          type: string
+    OAuthBindingView:
+      type: object
+      description: 用户 OAuth 绑定项（管理端查询）
+      properties:
+        id:
+          type: integer
+        provider_id:
+          type: integer
+        provider_user_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    CustomOAuthProviderView:
+      type: object
+      description: 自定义 OAuth provider 配置（RootAuth；client_secret 受保护）
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        client_id:
+          type: string
+        authorization_endpoint:
+          type: string
+        token_endpoint:
+          type: string
+        userinfo_endpoint:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+    PasskeyView:
+      type: object
+      description: 本人 Passkey 状态（不下发 public_key 全文）
+      properties:
+        id:
+          type: integer
+        credential_id:
+          type: string
+        attestation_type:
+          type: string
+        sign_count:
+          type: integer
+        attachment:
+          type: string
+
+    # ============ 令牌管理 DTO（模块二） ============
+    TokenUserView:
+      type: object
+      description: |
+        令牌客户视图（self-scope）。key 字段经 MaskTokenKey 脱敏（列表/创建/更新场景）。
+        绝不含成本/供应商/上游字段。
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        key:
+          type: string
+          description: 脱敏 key（MaskTokenKey）
+        status:
+          type: integer
+        remain_quota:
+          type: integer
+        unlimited_quota:
+          type: boolean
+        used_quota:
+          type: integer
+        expired_time:
+          type: integer
+          format: int64
+          description: -1=永不过期
+        group:
+          type: string
+        model_limits_enabled:
+          type: boolean
+        model_limits:
+          type: string
+          description: JSON 字符串，允许模型列表（减法约束）
+        allow_ips:
+          type: string
+        cross_group_retry:
+          type: boolean
+        accessed_time:
+          type: integer
+          format: int64
+        created_time:
+          type: integer
+          format: int64
+    TokenCreateRequest:
+      type: object
+      description: 创建/更新令牌入参
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        remain_quota:
+          type: integer
+          description: unlimited_quota=false 时校验 [0, 10亿*QuotaPerUnit]
+        unlimited_quota:
+          type: boolean
+        expired_time:
+          type: integer
+          format: int64
+          default: -1
+        model_limits_enabled:
+          type: boolean
+        model_limits:
+          type: string
+          description: JSON 字符串
+        allow_ips:
+          type: string
+          description: 按换行切分，空=不限 IP
+        group:
+          type: string
+          description: 调用分组（auto 时 cross_group_retry 生效）
+        cross_group_retry:
+          type: boolean
+      required:
+        - name
+    UsageCreditSummary:
+      type: object
+      description: 令牌用量（OpenAI 兼容，credit_summary）
+      properties:
+        object:
+          type: string
+          example: credit_summary
+        total_granted:
+          type: number
+          description: RemainQuota + UsedQuota
+        total_used:
+          type: number
+          description: UsedQuota
+        total_available:
+          type: number
+        expires_at:
+          type: integer
+          format: int64
+          description: ExpiredTime=-1 时归零
+        model_limits:
+          type: string
+        model_limits_enabled:
+          type: boolean
+
+    # ============ 计费与额度 DTO（模块三） ============
+    TopUpRequest:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: 充值额度（quota 单位）
+        money:
+          type: number
+          format: double
+          description: 支付金额
+        payment_method:
+          type: string
+          enum: [stripe, creem, waffo, waffo_pancake, balance]
+        payment_provider:
+          type: string
+          description: epay / stripe / ...
+    TopUpUserView:
+      type: object
+      description: 充值下单结果（客户视图，不下发 Other 内部）
+      properties:
+        trade_no:
+          type: string
+        pay_url:
+          type: string
+        pay_params:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          example: pending
+    RedemptionCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        quota:
+          type: integer
+          default: 100
+        count:
+          type: integer
+          description: 批量数量
+        expired_time:
+          type: integer
+          format: int64
+          description: 0=不过期
+    RedemptionAdminView:
+      type: object
+      description: 兑换码管理视图
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        key:
+          type: string
+        status:
+          type: integer
+        quota:
+          type: integer
+        created_time:
+          type: integer
+          format: int64
+        redeemed_time:
+          type: integer
+          format: int64
+        used_user_id:
+          type: integer
+        expired_time:
+          type: integer
+          format: int64
+    SubscriptionPlanUserView:
+      type: object
+      description: 订阅套餐客户视图（裁掉 upgrade_group/downgrade_group/stripe_price_id 等内部）
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subtitle:
+          type: string
+        price_amount:
+          type: number
+        currency:
+          type: string
+        duration_unit:
+          type: string
+        duration_value:
+          type: integer
+        custom_seconds:
+          type: integer
+        total_amount:
+          type: number
+        quota_reset_period:
+          type: string
+        max_purchase_per_user:
+          type: integer
+        sort_order:
+          type: integer
+        enabled:
+          type: boolean
+    SubscriptionPlanAdminView:
+      type: object
+      description: 订阅套餐管理视图（全字段，含内部分组与商品号）
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subtitle:
+          type: string
+        price_amount:
+          type: number
+        currency:
+          type: string
+        duration_unit:
+          type: string
+        duration_value:
+          type: integer
+        custom_seconds:
+          type: integer
+        total_amount:
+          type: number
+        allow_balance_pay:
+          type: boolean
+        allow_wallet_overflow:
+          type: boolean
+        quota_reset_period:
+          type: string
+        max_purchase_per_user:
+          type: integer
+        upgrade_group:
+          type: string
+        downgrade_group:
+          type: string
+        stripe_price_id:
+          type: string
+        sort_order:
+          type: integer
+        enabled:
+          type: boolean
+    SubscriptionPlanCreateRequest:
+      type: object
+      description: 创建订阅套餐入参（SubscriptionPlan 全字段）
+      properties:
+        title:
+          type: string
+        price_amount:
+          type: number
+        currency:
+          type: string
+        duration_unit:
+          type: string
+        duration_value:
+          type: integer
+        total_amount:
+          type: number
+        allow_balance_pay:
+          type: boolean
+        allow_wallet_overflow:
+          type: boolean
+        quota_reset_period:
+          type: string
+        upgrade_group:
+          type: string
+        downgrade_group:
+          type: string
+      required:
+        - title
+        - price_amount
+    SubscriptionOrderRequest:
+      type: object
+      properties:
+        plan_id:
+          type: integer
+        payment_method:
+          type: string
+        payment_provider:
+          type: string
+      required:
+        - plan_id
+    UserSubscriptionView:
+      type: object
+      description: 本人订阅项（客户视图）
+      properties:
+        id:
+          type: integer
+        plan_id:
+          type: integer
+        amount_total:
+          type: number
+        amount_used:
+          type: number
+        start_time:
+          type: integer
+          format: int64
+        end_time:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [active, expired, cancelled]
+        allow_wallet_overflow:
+          type: boolean
+    RatioConfigAdminView:
+      type: object
+      description: 倍率配置（管理视图）
+      properties:
+        model_ratio:
+          type: object
+          additionalProperties: true
+        group_ratio:
+          type: object
+          additionalProperties: true
+        completion_ratio:
+          type: object
+          additionalProperties: true
+        cache_ratio:
+          type: object
+          additionalProperties: true
+    ProfitDashboardItem:
+      type: object
+      description: 利润分析看板项（AdminView，含成本/利润，仅 admin/root）
+      properties:
+        dimension_key:
+          type: string
+          description: 维度键（model→A / channel→channel_name / group）
+        sum_quota_sell:
+          type: integer
+        sum_quota_cost:
+          type: integer
+        sum_quota_profit:
+          type: integer
+        profit_rate:
+          type: number
+          description: profit / sell
+        cost_missing_count:
+          type: integer
+    PricingPublicView:
+      type: object
+      description: 公开模型价格页（客户/公开视图，绝不含 B/成本/供应商）
+      properties:
+        models:
+          type: array
+          items:
+            type: object
+            properties:
+              model_name:
+                type: string
+                description: 对外名 A
+              base_price_ratio:
+                type: number
+                description: 基准价（折扣=1 口径）
+              quality_tier:
+                type: string
+              display_name:
+                type: string
+              supported_endpoint:
+                type: string
+              cache_ratio:
+                type: number
+        group_ratio:
+          type: object
+          additionalProperties: true
+          description: 仅可用分组
+        auto_groups:
+          type: array
+          items:
+            type: string
+        pricing_version:
+          type: string
+
+    # ============ 模型与供应商 DTO（模块四） ============
+    ModelMetaAdminView:
+      type: object
+      description: 模型元数据管理视图（enrich 后含计数）
+      properties:
+        id:
+          type: integer
+        model_name:
+          type: string
+        status:
+          type: integer
+        description:
+          type: string
+        icon:
+          type: string
+        tags:
+          type: string
+        vendor_id:
+          type: integer
+        endpoints:
+          type: string
+        name_rule:
+          type: string
+        sync_official:
+          type: integer
+        created_time:
+          type: integer
+          format: int64
+        updated_time:
+          type: integer
+          format: int64
+    ModelMetaCreateRequest:
+      type: object
+      properties:
+        model_name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        tags:
+          type: string
+        vendor_id:
+          type: integer
+        endpoints:
+          type: string
+        name_rule:
+          type: string
+      required:
+        - model_name
+    ModelMetaUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        status_only:
+          type: boolean
+          description: true 仅改 status，不动其他字段
+        status:
+          type: integer
+        model_name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        tags:
+          type: string
+        vendor_id:
+          type: integer
+        endpoints:
+          type: string
+        name_rule:
+          type: string
+      required:
+        - id
+    VendorAdminView:
+      type: object
+      description: 供应商元数据管理视图
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        icon:
+          type: string
+        status:
+          type: integer
+    VendorWriteRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 更新时必填
+        name:
+          type: string
+        icon:
+          type: string
+        status:
+          type: integer
+    ModelSyncDiff:
+      type: object
+      description: 上游模型同步预览差异（不写库）
+      properties:
+        diff:
+          type: object
+          properties:
+            to_create_models:
+              type: array
+              items:
+                type: string
+            to_create_vendors:
+              type: array
+              items:
+                type: string
+            to_update_models:
+              type: array
+              items:
+                type: string
+            to_skip_models:
+              type: array
+              items:
+                type: string
+    ModelSyncResult:
+      type: object
+      description: 上游模型同步执行结果计数
+      properties:
+        created_models:
+          type: integer
+        created_vendors:
+          type: integer
+        updated_models:
+          type: integer
+        skipped_models:
+          type: integer
+    PublicModelAdminView:
+      type: object
+      description: 对外模型商品目录管理视图（含售价/上下架/品质）
+      properties:
+        id:
+          type: integer
+        public_name:
+          type: string
+          description: 对外名 A
+        quality_tier:
+          type: string
+          enum: [full, max, air]
+        base_price_ratio:
+          type: number
+        use_price:
+          type: boolean
+        base_price:
+          type: number
+        enabled:
+          type: boolean
+        display_name:
+          type: string
+        sort_order:
+          type: integer
+        description:
+          type: string
+        created_time:
+          type: integer
+          format: int64
+        updated_time:
+          type: integer
+          format: int64
+    PublicModelUserView:
+      type: object
+      description: 对外模型公开目录视图（绝不含 B/成本）
+      properties:
+        public_name:
+          type: string
+          description: 对外名 A
+        quality_tier:
+          type: string
+        display_name:
+          type: string
+        base_price_ratio:
+          type: number
+          description: 基准价
+        sort_order:
+          type: integer
+    PublicModelCreateRequest:
+      type: object
+      properties:
+        public_name:
+          type: string
+        quality_tier:
+          type: string
+          enum: [full, max, air]
+        base_price_ratio:
+          type: number
+        use_price:
+          type: boolean
+        base_price:
+          type: number
+        enabled:
+          type: boolean
+        display_name:
+          type: string
+        sort_order:
+          type: integer
+        description:
+          type: string
+      required:
+        - public_name
+    PublicModelUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        quality_tier:
+          type: string
+        base_price_ratio:
+          type: number
+        use_price:
+          type: boolean
+        base_price:
+          type: number
+        enabled:
+          type: boolean
+        display_name:
+          type: string
+        sort_order:
+          type: integer
+      required:
+        - id
+    PlatformModelMappingAdminView:
+      type: object
+      description: 超管底仓映射 A→B（仅 admin/root，客户绝不可见 upstream_name）
+      properties:
+        id:
+          type: integer
+        public_name:
+          type: string
+          description: A
+        upstream_name:
+          type: string
+          description: B（客户不可见）
+        enabled:
+          type: boolean
+        remark:
+          type: string
+        created_time:
+          type: integer
+          format: int64
+        updated_time:
+          type: integer
+          format: int64
+    PlatformModelMappingCreateRequest:
+      type: object
+      properties:
+        public_name:
+          type: string
+        upstream_name:
+          type: string
+        enabled:
+          type: boolean
+        remark:
+          type: string
+      required:
+        - public_name
+        - upstream_name
+    PlatformModelMappingUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        upstream_name:
+          type: string
+        enabled:
+          type: boolean
+        remark:
+          type: string
+      required:
+        - id
+    UserModelAliasUserView:
+      type: object
+      description: 客户层自助映射 C→A（target 仅 A，绝不含 B）
+      properties:
+        id:
+          type: integer
+        scope_type:
+          type: string
+          enum: [user, group]
+        scope_id:
+          type: string
+        alias:
+          type: string
+          description: C 客户别名
+        target:
+          type: string
+          description: A 目标公开名
+        enabled:
+          type: boolean
+        created_time:
+          type: integer
+          format: int64
+    UserModelAliasCreateRequest:
+      type: object
+      properties:
+        scope_type:
+          type: string
+          enum: [user, group]
+        alias:
+          type: string
+        target:
+          type: string
+          description: A，不校验白名单可硬输
+        enabled:
+          type: boolean
+      required:
+        - alias
+        - target
+    UserModelAliasUpdateRequest:
+      type: object
+      properties:
+        target:
+          type: string
+        enabled:
+          type: boolean
+
+    # ============ 渠道 DTO（模块五） ============
+    ChannelInfo:
+      type: object
+      description: 渠道多 Key 信息
+      properties:
+        is_multi_key:
+          type: boolean
+        multi_key_size:
+          type: integer
+        multi_key_mode:
+          type: string
+          description: 随机/轮询
+        multi_key_polling_index:
+          type: integer
+    ChannelAdminView:
+      type: object
+      description: 渠道管理视图（key 脱敏/不全量下发）
+      properties:
+        id:
+          type: integer
+        type:
+          type: integer
+        name:
+          type: string
+        status:
+          type: integer
+        weight:
+          type: integer
+        base_url:
+          type: string
+        models:
+          type: string
+        group:
+          type: string
+        priority:
+          type: integer
+          format: int64
+        auto_ban:
+          type: integer
+        balance:
+          type: number
+        used_quota:
+          type: integer
+          format: int64
+        response_time:
+          type: integer
+        test_time:
+          type: integer
+          format: int64
+        model_mapping:
+          type: string
+        status_code_mapping:
+          type: string
+        tag:
+          type: string
+        channel_info:
+          $ref: '#/components/schemas/ChannelInfo'
+        created_time:
+          type: integer
+          format: int64
+    ChannelCreateRequest:
+      type: object
+      properties:
+        type:
+          type: integer
+        key:
+          type: string
+        models:
+          type: string
+        name:
+          type: string
+        group:
+          type: string
+          default: default
+        priority:
+          type: integer
+          format: int64
+          default: 0
+        weight:
+          type: integer
+          default: 0
+        auto_ban:
+          type: integer
+          default: 1
+        base_url:
+          type: string
+        model_mapping:
+          type: string
+          description: JSON
+        status_code_mapping:
+          type: string
+          description: JSON ≤1024 字符
+        param_override:
+          type: string
+          description: JSON 请求体覆写
+        header_override:
+          type: string
+          description: JSON 请求头覆写
+        tag:
+          type: string
+        channel_info:
+          $ref: '#/components/schemas/ChannelInfo'
+      required:
+        - type
+        - key
+        - models
+    ChannelUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ChannelCreateRequest'
+        - type: object
+          properties:
+            id:
+              type: integer
+          required:
+            - id
+    BatchActionRequest:
+      type: object
+      description: 批量操作入参（ids + action）
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+        action:
+          type: string
+      required:
+        - ids
+    ChannelTestResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        time:
+          type: number
+          description: 耗时 ms
+        message:
+          type: string
+    ChannelPoolMember:
+      type: object
+      description: 供应渠道池成员（AdminView，含 B，客户不可见）
+      properties:
+        channel_id:
+          type: integer
+        channel_name:
+          type: string
+        upstream_model:
+          type: string
+          description: B
+        group:
+          type: string
+        priority:
+          type: integer
+        weight:
+          type: integer
+        status:
+          type: integer
+        enabled:
+          type: boolean
+    ChannelModelCostAdminView:
+      type: object
+      description: 供应商成本倍率（AdminView，绝不下发客户）
+      properties:
+        id:
+          type: integer
+        channel_id:
+          type: integer
+        upstream_model:
+          type: string
+          description: B
+        cost_ratio:
+          type: number
+        completion_cost_ratio:
+          type: number
+        enabled:
+          type: boolean
+        effective_time:
+          type: integer
+          format: int64
+        source_unit_price:
+          type: number
+        remark:
+          type: string
+        created_time:
+          type: integer
+          format: int64
+        updated_time:
+          type: integer
+          format: int64
+    ChannelModelCostWriteRequest:
+      type: object
+      properties:
+        channel_id:
+          type: integer
+        upstream_model:
+          type: string
+        cost_ratio:
+          type: number
+        completion_cost_ratio:
+          type: number
+          description: 0=回落 CostRatio×现网 CompletionRatio
+        enabled:
+          type: boolean
+        remark:
+          type: string
+      required:
+        - channel_id
+        - upstream_model
+
+    # ============ 日志与用量 DTO（模块八） ============
+    UserLogView:
+      type: object
+      description: |
+        用户侧日志视图（仅本人 + 裁剪）。结构级剔除：actual_upstream_model(B)、quota_cost、
+        quota_profit、channel/channel_name、upstream_request_id、Other 内部 JSON。
+      properties:
+        id:
+          type: integer
+        created_at:
+          type: integer
+          format: int64
+        type:
+          type: integer
+          description: 0=Unknown 1=Topup 2=Consume 3=Manage 4=System 5=Error 6=Refund 7=Login
+        content:
+          type: string
+        token_name:
+          type: string
+        model_name:
+          type: string
+          description: =C 客户输入名
+        requested_model:
+          type: string
+          description: C
+        resolved_public_model:
+          type: string
+          description: A 平台公开名
+        group:
+          type: string
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        quota:
+          type: integer
+          description: =quota_sell 实付
+        use_time:
+          type: integer
+        is_stream:
+          type: boolean
+        ip:
+          type: string
+        user_agent:
+          type: string
+        request_id:
+          type: string
+        inbound_protocol:
+          type: string
+        upstream_protocol:
+          type: string
+        protocol_converted:
+          type: boolean
+    AdminLogView:
+      type: object
+      description: |
+        管理侧日志视图（全局 + 全字段）。UserLogView 全部 + B + channel/channel_name +
+        quota_sell/quota_cost/quota_profit + upstream_request_id + Other。
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        username:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        type:
+          type: integer
+        content:
+          type: string
+        token_name:
+          type: string
+        model_name:
+          type: string
+        requested_model:
+          type: string
+          description: C
+        resolved_public_model:
+          type: string
+          description: A
+        actual_upstream_model:
+          type: string
+          description: B 真实上游名（仅 admin/root）
+        group:
+          type: string
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        quota:
+          type: integer
+        quota_sell:
+          type: integer
+        quota_cost:
+          type: integer
+          description: 仅 admin/root
+        quota_profit:
+          type: integer
+          description: 仅 admin/root
+        use_time:
+          type: integer
+        is_stream:
+          type: boolean
+        channel:
+          type: integer
+          description: channel_id（实际供应商）
+        channel_name:
+          type: string
+        token_id:
+          type: integer
+        ip:
+          type: string
+        user_agent:
+          type: string
+        request_id:
+          type: string
+        upstream_request_id:
+          type: string
+        inbound_protocol:
+          type: string
+        upstream_protocol:
+          type: string
+        protocol_converted:
+          type: boolean
+        other:
+          type: object
+          additionalProperties: true
+          description: 含 cost_missing / channel_redirect 诊断
+    LogStat:
+      type: object
+      description: 日志统计（仅 Type=2 Consume）
+      properties:
+        quota:
+          type: integer
+        rpm:
+          type: number
+        tpm:
+          type: number
+    QuotaDataItem:
+      type: object
+      description: 按日配额聚合数据项
+      properties:
+        date:
+          type: string
+        quota:
+          type: integer
+        count:
+          type: integer
+        model_name:
+          type: string
+
+    # ============ 异步任务 DTO（模块七） ============
+    TaskUserView:
+      type: object
+      description: 任务用户视图（Omit channel_id，无 PrivateData）
+      properties:
+        id:
+          type: integer
+        task_id:
+          type: string
+        platform:
+          type: string
+        action:
+          type: string
+        status:
+          type: string
+          enum: [NOT_START, SUBMITTED, QUEUED, IN_PROGRESS, FAILURE, SUCCESS, UNKNOWN]
+        fail_reason:
+          type: string
+        submit_time:
+          type: integer
+          format: int64
+        start_time:
+          type: integer
+          format: int64
+        finish_time:
+          type: integer
+          format: int64
+        progress:
+          type: string
+        properties:
+          type: object
+          additionalProperties: true
+        data:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+    TaskAdminView:
+      type: object
+      description: 任务管理视图（含 channel_id）
+      allOf:
+        - $ref: '#/components/schemas/TaskUserView'
+        - type: object
+          properties:
+            channel_id:
+              type: integer
+            user_id:
+              type: integer
+    TaskSubmitResult:
+      type: object
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+
+    # ============ 部署管理 DTO（模块十） ============
+    DeploymentListItem:
+      type: object
+      properties:
+        deployment_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        time_remaining:
+          type: string
+        hardware_info:
+          type: object
+          additionalProperties: true
+        compute_minutes_remaining:
+          type: number
+    DeploymentDetail:
+      type: object
+      properties:
+        total_gpus:
+          type: integer
+        total_containers:
+          type: integer
+        compute_minutes_served:
+          type: number
+        gpus_per_container:
+          type: integer
+        amount_paid:
+          type: number
+        completed_percent:
+          type: number
+        locations:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        container_config:
+          type: object
+          additionalProperties: true
+    ContainerView:
+      type: object
+      properties:
+        container_id:
+          type: string
+        device_id:
+          type: string
+        uptime_percent:
+          type: number
+        public_url:
+          type: string
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              time:
+                type: string
+              message:
+                type: string
+
+    # ============ 增长 / 公开站 / Playground / 预填 / 排行 DTO ============
+    CheckinResult:
+      type: object
+      properties:
+        quota_awarded:
+          type: integer
+        quota:
+          type: integer
+    CheckinStatusView:
+      type: object
+      properties:
+        total_quota:
+          type: integer
+        total_checkins:
+          type: integer
+        checkin_count:
+          type: integer
+        checked_in_today:
+          type: boolean
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              checkin_date:
+                type: string
+              quota_awarded:
+                type: integer
+    StatusAggregateView:
+      type: object
+      description: 营销首页公开状态聚合（敏感配置不暴露）
+      additionalProperties: true
+      properties:
+        system_name:
+          type: string
+        logo:
+          type: string
+        footer_html:
+          type: string
+        register_enabled:
+          type: boolean
+        email_verification:
+          type: boolean
+        github_oauth:
+          type: boolean
+        discord_oauth:
+          type: boolean
+        oidc_enabled:
+          type: boolean
+        linuxdo_oauth:
+          type: boolean
+        wechat_login:
+          type: boolean
+        telegram_oauth:
+          type: boolean
+        turnstile_check:
+          type: boolean
+        theme:
+          type: string
+        checkin_enabled:
+          type: boolean
+        user_agreement_enabled:
+          type: boolean
+        privacy_policy_enabled:
+          type: boolean
+        default_use_auto_group:
+          type: boolean
+    PrefillGroupAdminView:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [model, tag, endpoint]
+        items:
+          type: array
+          items:
+            type: string
+        created_time:
+          type: integer
+          format: int64
+    PrefillGroupCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [model, tag, endpoint]
+        items:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - type
+    PrefillGroupUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        items:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+    RankingPublicView:
+      type: object
+      description: 用量排行榜快照（公开视图，绝不含成本/利润/B/供应商）
+      properties:
+        rank:
+          type: integer
+        public_model:
+          type: string
+          description: 对外名 A
+        used_quota_or_count:
+          type: number
+        period:
+          type: string
+        snapshot_time:
+          type: integer
+          format: int64
+
+    # ============ Relay 标准协议 schema（对外契约，客户不感知内部 C→A→B） ============
+    OpenAIChatCompletionRequest:
+      type: object
+      description: 标准 OpenAI Chat Completions 请求体（对外契约）。model 为客户输入名 C。
+      properties:
+        model:
+          type: string
+          description: 客户输入名 C（内部经 C→A→B 两层映射，客户不感知）
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+              content: {}
+        stream:
+          type: boolean
+        temperature:
+          type: number
+        top_p:
+          type: number
+        max_tokens:
+          type: integer
+        tools:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tool_choice: {}
+      required:
+        - model
+        - messages
+      additionalProperties: true
+    OpenAIChatCompletionResponse:
+      type: object
+      description: 标准 OpenAI chat.completion 响应（非流式）。不暴露 B/渠道/成本。
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          example: chat.completion
+        created:
+          type: integer
+        model:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            completion_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+      additionalProperties: true
+    OpenAIEmbeddingsRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        input: {}
+        encoding_format:
+          type: string
+      required:
+        - model
+        - input
+    OpenAIEmbeddingsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              embedding:
+                type: array
+                items:
+                  type: number
+              index:
+                type: integer
+        model:
+          type: string
+        usage:
+          type: object
+          additionalProperties: true
+    OpenAIImagesRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        n:
+          type: integer
+        size:
+          type: string
+        response_format:
+          type: string
+      additionalProperties: true
+    OpenAIImagesResponse:
+      type: object
+      properties:
+        created:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              b64_json:
+                type: string
+    OpenAIModerationRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        input: {}
+    RerankRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        query:
+          type: string
+        documents:
+          type: array
+          items:
+            type: string
+        top_n:
+          type: integer
+      required:
+        - model
+        - query
+        - documents
+    RerankResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              relevance_score:
+                type: number
+        usage:
+          type: object
+          additionalProperties: true
+    AnthropicMessagesRequest:
+      type: object
+      description: 标准 Anthropic Messages 请求体（对外契约）。model 为 C。
+      properties:
+        model:
+          type: string
+          description: 客户输入名 C
+        system: {}
+        messages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        max_tokens:
+          type: integer
+        tools:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              input_schema:
+                type: object
+                additionalProperties: true
+        stream:
+          type: boolean
+      required:
+        - model
+        - messages
+        - max_tokens
+      additionalProperties: true
+    AnthropicMessagesResponse:
+      type: object
+      description: 标准 Anthropic message 响应。按入站协议 claude 原样返回。
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: message
+        role:
+          type: string
+        content:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        model:
+          type: string
+        stop_reason:
+          type: string
+        usage:
+          type: object
+          properties:
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+      additionalProperties: true
+  responses:
+    UnauthorizedError:
+      description: 鉴权失败（无会话/无效 token/越权）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenError:
+      description: 越权/权限不足（403）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequestError:
+      description: 参数错误 / 业务校验失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  parameters:
+    PageParam:
+      name: p
+      in: query
+      description: 页码
+      schema:
+        type: integer
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+    KeywordParam:
+      name: keyword
+      in: query
+      schema:
+        type: string
+    StartTimestampParam:
+      name: start_timestamp
+      in: query
+      schema:
+        type: integer
+        format: int64
+    EndTimestampParam:
+      name: end_timestamp
+      in: query
+      schema:
+        type: integer
+        format: int64
+
+paths:
+  # ==================== 模块一：账号与身份 ====================
+  /api/user/register:
+    post:
+      tags: [account]
+      summary: 邮箱密码注册
+      x-function-id: F-1001
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  maxLength: 20
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 20
+                email:
+                  type: string
+                  maxLength: 50
+                verification_code:
+                  type: string
+                  description: EmailVerificationEnabled=true 时必填（F-1005）
+                aff_code:
+                  type: string
+                  description: 邀请码（F-1040 归因）
+              required: [username, password]
+      responses:
+        '200':
+          description: 注册成功（不下发 password/access_token）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/user/login:
+    post:
+      tags: [account]
+      summary: 邮箱密码登录
+      x-function-id: F-1002
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required: [username, password]
+      responses:
+        '200':
+          description: 登录成功，返回用户信息（UserView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/user/logout:
+    get:
+      tags: [account]
+      summary: 用户登出
+      x-function-id: F-1003
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 登出成功（无会话幂等）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/login/2fa:
+    post:
+      tags: [account]
+      summary: 2FA 登录第二步
+      x-function-id: F-1036
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: TOTP 6 位或备份码
+              required: [code]
+      responses:
+        '200':
+          description: 登录成功（UserView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/verification:
+    get:
+      tags: [account]
+      summary: 发送注册/找回邮箱验证码
+      x-function-id: F-1004
+      security: []
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 已发送
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/reset_password:
+    get:
+      tags: [account]
+      summary: 发送重置密码邮件
+      x-function-id: F-1006
+      security: []
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 已发送（非注册邮箱仍返回成功避免枚举）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/reset:
+    post:
+      tags: [account]
+      summary: 提交重置新密码
+      x-function-id: F-1007
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 20
+              required: [email, token, password]
+      responses:
+        '200':
+          description: 重置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/user/self:
+    get:
+      tags: [account]
+      summary: 获取本人信息（含邀请统计）
+      x-function-id: F-1045
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 本人信息（UserView，普通用户 remark 置空）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/user/self/setting:
+    put:
+      tags: [account]
+      summary: 保存本人个人设置
+      x-function-id: F-1014
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                setting:
+                  $ref: '#/components/schemas/UserSetting'
+      responses:
+        '200':
+          description: 保存成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/user/self/aff:
+    get:
+      tags: [account]
+      summary: 获取个人邀请码
+      x-function-id: F-1039
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 邀请码字符串
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+  /api/user/:
+    get:
+      tags: [account]
+      summary: 用户列表（分页）
+      x-function-id: F-1008
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 用户列表（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Pagination'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/UserAdminView'
+    post:
+      tags: [account]
+      summary: 创建用户
+      x-function-id: F-1009
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                display_name:
+                  type: string
+                role:
+                  type: integer
+                  description: 不可高于自身角色
+              required: [username, password]
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+    put:
+      tags: [account]
+      summary: 更新用户资料（管理端）
+      x-function-id: F-1011
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                display_name:
+                  type: string
+                email:
+                  type: string
+                group:
+                  type: string
+                quota:
+                  type: integer
+                remark:
+                  type: string
+                status:
+                  type: integer
+              required: [id]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/search:
+    get:
+      tags: [account]
+      summary: 搜索用户
+      x-function-id: F-1008
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/KeywordParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 搜索结果（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Pagination'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/UserAdminView'
+  /api/user/{id}:
+    get:
+      tags: [account]
+      summary: 用户详情
+      x-function-id: F-1008
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 用户详情（AdminView，含 setting）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserAdminView'
+  /api/user/manage:
+    post:
+      tags: [account]
+      summary: 管理用户状态
+      x-function-id: F-1010
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                action:
+                  type: string
+                  enum: [disable, enable, promote, demote, delete]
+              required: [id, action]
+      responses:
+        '200':
+          description: 操作成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/oauth/state:
+    get:
+      tags: [account]
+      summary: 生成 OAuth state（CSRF）暂存 aff
+      x-function-id: F-1015
+      security: []
+      parameters:
+        - name: aff
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: state 字符串
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+  /api/oauth/{provider}:
+    get:
+      tags: [account]
+      summary: 通用 OAuth 回调（github/oidc/自定义）
+      x-function-id: F-1016
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 登录成功返回用户信息或绑定成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/oauth/discord:
+    get:
+      tags: [account]
+      summary: Discord OAuth 登录/绑定
+      x-function-id: F-1018
+      security: []
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 登录用户信息 / 绑定成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/oauth/linuxdo:
+    get:
+      tags: [account]
+      summary: LinuxDO OAuth 登录/绑定（信任级校验）
+      x-function-id: F-1020
+      security: []
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 登录用户信息 / 绑定成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/oauth/wechat:
+    get:
+      tags: [account]
+      summary: WeChat 扫码授权发起
+      x-function-id: F-1021
+      security: []
+      responses:
+        '200':
+          description: 授权态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/oauth/wechat/bind:
+    post:
+      tags: [account]
+      summary: WeChat 绑定/登录
+      x-function-id: F-1022
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+              required: [code]
+      responses:
+        '200':
+          description: 登录用户信息 / 绑定成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/oauth/telegram/login:
+    get:
+      tags: [account]
+      summary: Telegram 登录（HMAC 校验）
+      x-function-id: F-1051
+      security: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+        - name: hash
+          in: query
+          schema:
+            type: string
+        - name: auth_date
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 登录用户信息
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/oauth/telegram/bind:
+    get:
+      tags: [account]
+      summary: Telegram 绑定到现有账号
+      x-function-id: F-1052
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+        - name: hash
+          in: query
+          schema:
+            type: string
+      responses:
+        '302':
+          description: 绑定成功，302 跳转 /console/personal
+  /api/custom-oauth-provider/discovery:
+    post:
+      tags: [account]
+      summary: 拉取自定义 OAuth discovery
+      x-function-id: F-1023
+      security:
+        - rootAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                issuer:
+                  type: string
+              required: [issuer]
+      responses:
+        '200':
+          description: discovery 端点
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          authorization_endpoint:
+                            type: string
+                          token_endpoint:
+                            type: string
+                          userinfo_endpoint:
+                            type: string
+  /api/custom-oauth-provider:
+    get:
+      tags: [account]
+      summary: 自定义 OAuth provider 列表
+      x-function-id: F-1024
+      security:
+        - rootAuth: []
+      responses:
+        '200':
+          description: provider 列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CustomOAuthProviderView'
+    post:
+      tags: [account]
+      summary: 创建自定义 OAuth provider
+      x-function-id: F-1024
+      security:
+        - rootAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomOAuthProviderView'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+    put:
+      tags: [account]
+      summary: 更新自定义 OAuth provider
+      x-function-id: F-1024
+      security:
+        - rootAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomOAuthProviderView'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/custom-oauth-provider/{id}:
+    delete:
+      tags: [account]
+      summary: 删除自定义 OAuth provider
+      x-function-id: F-1024
+      security:
+        - rootAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/self/oauth/bindings/{provider_id}:
+    delete:
+      tags: [account]
+      summary: 解绑本人 OAuth（自定义）
+      x-function-id: F-1026
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 解绑成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/{id}/oauth/bindings:
+    get:
+      tags: [account]
+      summary: 管理端查询用户 OAuth 绑定
+      x-function-id: F-1027
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 绑定列表（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/OAuthBindingView'
+  /api/user/{id}/oauth/bindings/{provider_id}:
+    delete:
+      tags: [account]
+      summary: 管理端解绑用户 OAuth
+      x-function-id: F-1027
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: provider_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 解绑成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/self/passkey/register/begin:
+    post:
+      tags: [account]
+      summary: Passkey 注册（begin）
+      x-function-id: F-1028
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: WebAuthn CredentialCreationOptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/user/self/passkey/register/finish:
+    post:
+      tags: [account]
+      summary: Passkey 注册（finish）
+      x-function-id: F-1028
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: WebAuthn AttestationResponse
+      responses:
+        '200':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/passkey/login/begin:
+    post:
+      tags: [account]
+      summary: Passkey 登录（begin）
+      x-function-id: F-1029
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+      responses:
+        '200':
+          description: WebAuthn CredentialRequestOptions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/user/passkey/login/finish:
+    post:
+      tags: [account]
+      summary: Passkey 登录（finish）
+      x-function-id: F-1029
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: WebAuthn AssertionResponse
+      responses:
+        '200':
+          description: 登录用户信息（UserView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserView'
+  /api/user/self/passkey/verify/begin:
+    post:
+      tags: [account]
+      summary: Passkey 二次验证（begin）
+      x-function-id: F-1030
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 验证 options
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/user/self/passkey/verify/finish:
+    post:
+      tags: [account]
+      summary: Passkey 二次验证（finish）
+      x-function-id: F-1030
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: WebAuthn AssertionResponse
+      responses:
+        '200':
+          description: 验证通过
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/self/passkey:
+    get:
+      tags: [account]
+      summary: 查询本人 Passkey 状态
+      x-function-id: F-1031
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Passkey 列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PasskeyView'
+    delete:
+      tags: [account]
+      summary: 删除本人 Passkey
+      x-function-id: F-1031
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: credential_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/{id}/reset_passkey:
+    delete:
+      tags: [account]
+      summary: 管理端重置用户 Passkey
+      x-function-id: F-1032
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 重置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/self/2fa/setup:
+    post:
+      tags: [account]
+      summary: 2FA 启用第一步
+      x-function-id: F-1033
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: TOTP 密钥与二维码
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          secret:
+                            type: string
+                          qr_code:
+                            type: string
+  /api/user/self/2fa/enable:
+    post:
+      tags: [account]
+      summary: 2FA 启用第二步
+      x-function-id: F-1033
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+              required: [code]
+      responses:
+        '200':
+          description: 启用成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/self/2fa/disable:
+    post:
+      tags: [account]
+      summary: 2FA 关闭
+      x-function-id: F-1034
+      security:
+        - sessionAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 关闭成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/user/self/2fa/backup_codes:
+    post:
+      tags: [account]
+      summary: 生成/重置备份码
+      x-function-id: F-1035
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 明文新码（旧码失效）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          backup_codes:
+                            type: array
+                            items:
+                              type: string
+  /api/user/2fa/stats:
+    get:
+      tags: [account]
+      summary: 2FA 启用统计（管理端）
+      x-function-id: F-1037
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: 启用统计
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          enabled_count:
+                            type: integer
+                          total_users:
+                            type: integer
+  /api/user/{id}/2fa:
+    delete:
+      tags: [account]
+      summary: 管理端强制关闭用户 2FA（高危）
+      x-function-id: F-1037
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 关闭成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/verify:
+    post:
+      tags: [account]
+      summary: 通用敏感动作二次验证
+      x-function-id: F-1038
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: 验证凭据（密码 / TOTP / passkey assertion）
+      responses:
+        '200':
+          description: 验证通过，放行受保护动作
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/user/self/aff_transfer:
+    post:
+      tags: [account]
+      summary: 邀请额度划转为可用额度
+      x-function-id: F-1044
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quota:
+                  type: integer
+                  description: 划转额度，>= QuotaPerUnit
+              required: [quota]
+      responses:
+        '200':
+          description: 划转成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  # ==================== 模块二：令牌管理 ====================
+  /api/token/:
+    get:
+      tags: [token]
+      summary: 令牌列表（分页，key 脱敏）
+      x-function-id: F-3002
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 令牌列表（UserView，key 脱敏）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Pagination'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/TokenUserView'
+    post:
+      tags: [token]
+      summary: 创建令牌
+      x-function-id: F-3001
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenCreateRequest'
+      responses:
+        '200':
+          description: 创建后令牌（UserView，key 脱敏）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TokenUserView'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+    put:
+      tags: [token]
+      summary: 更新令牌（含 status_only）
+      x-function-id: F-3006
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/TokenCreateRequest'
+                - type: object
+                  properties:
+                    id:
+                      type: integer
+                    status_only:
+                      type: boolean
+                  required:
+                    - id
+      responses:
+        '200':
+          description: 更新后令牌（UserView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TokenUserView'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/token/{id}:
+    delete:
+      tags: [token]
+      summary: 删除单个令牌
+      x-function-id: F-3007
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功（软删）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/token/batch:
+    post:
+      tags: [token]
+      summary: 批量删除令牌
+      x-function-id: F-3007
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+              required: [ids]
+      responses:
+        '200':
+          description: 删除数量
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: integer
+  /api/token/search:
+    get:
+      tags: [token]
+      summary: 令牌关键词/前缀搜索
+      x-function-id: F-3003
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/KeywordParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 搜索结果（UserView，key 脱敏）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Pagination'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/TokenUserView'
+  /api/token/{id}/key:
+    post:
+      tags: [token]
+      summary: 获取单个令牌明文 key（受控）
+      x-function-id: F-3004
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 完整明文 key
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+  /api/token/keys/batch:
+    post:
+      tags: [token]
+      summary: 批量获取明文 key（上限 100）
+      x-function-id: F-3005
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: integer
+              required: [ids]
+      responses:
+        '200':
+          description: id→key 映射（仅本人令牌）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties:
+                          type: string
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/usage/token:
+    get:
+      tags: [token]
+      summary: 令牌用量查询（credit_summary，OpenAI 兼容）
+      x-function-id: F-3012
+      security:
+        - tokenReadAuth: []
+      responses:
+        '200':
+          description: 用量摘要
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UsageCreditSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== 模块三：计费与额度 ====================
+  /api/topup:
+    post:
+      tags: [billing]
+      summary: 发起充值下单
+      x-function-id: F-2044
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopUpRequest'
+      responses:
+        '200':
+          description: 下单结果（pending）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TopUpUserView'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/topup/callback/{provider}:
+    post:
+      tags: [billing]
+      summary: 支付回调入账（幂等）
+      x-function-id: F-2044
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: 渠道回调体（含 trade_no + 签名）
+      responses:
+        '200':
+          description: 入账成功（验签失败丢弃；重复回调幂等）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/redemption/:
+    get:
+      tags: [billing]
+      summary: 兑换码列表（管理端）
+      x-function-id: F-2045
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 兑换码列表（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Pagination'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/RedemptionAdminView'
+    post:
+      tags: [billing]
+      summary: 生成兑换码（单个/批量）
+      x-function-id: F-2045
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedemptionCreateRequest'
+      responses:
+        '200':
+          description: 生成的兑换码明文集合
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+  /api/user/topup:
+    post:
+      tags: [billing]
+      summary: 用户兑换兑换码
+      x-function-id: F-2045
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+              required: [key]
+      responses:
+        '200':
+          description: 入账额度
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          quota:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+  /api/subscription/plans:
+    get:
+      tags: [billing]
+      summary: 订阅套餐列表
+      x-function-id: F-2046
+      security:
+        - sessionAuth: []
+        - {}
+      responses:
+        '200':
+          description: 套餐列表（UserView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SubscriptionPlanUserView'
+    post:
+      tags: [billing]
+      summary: 创建订阅套餐（管理端）
+      x-function-id: F-2046
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanCreateRequest'
+      responses:
+        '200':
+          description: 创建后套餐（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SubscriptionPlanAdminView'
+  /api/subscription/order:
+    post:
+      tags: [billing]
+      summary: 下订阅订单
+      x-function-id: F-2046
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionOrderRequest'
+      responses:
+        '200':
+          description: 下单结果（pending）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TopUpUserView'
+  /api/subscription/self:
+    get:
+      tags: [billing]
+      summary: 本人订阅查询
+      x-function-id: F-2046
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 订阅列表（UserView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UserSubscriptionView'
+  /api/subscription/{id}/invalidate:
+    post:
+      tags: [billing]
+      summary: 管理端作废订阅
+      x-function-id: F-2046
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 作废成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/ratio_config:
+    get:
+      tags: [billing]
+      summary: 倍率配置查询（管理端）
+      x-function-id: F-2043
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: 倍率配置（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RatioConfigAdminView'
+    put:
+      tags: [billing]
+      summary: 倍率配置更新（高危）
+      x-function-id: F-2043
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatioConfigAdminView'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /api/ratio_sync:
+    post:
+      tags: [billing]
+      summary: 倍率远端同步
+      x-function-id: F-2043
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_url:
+                  type: string
+                preview:
+                  type: boolean
+      responses:
+        '200':
+          description: 差异预览 / 同步结果计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+  /api/profit/dashboard:
+    get:
+      tags: [billing]
+      summary: 利润分析看板（按维度聚合）
+      x-function-id: F-6009
+      security:
+        - adminAuth: []
+      parameters:
+        - name: dimension
+          in: query
+          schema:
+            type: string
+            enum: [model, channel, group]
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+      responses:
+        '200':
+          description: 利润看板（AdminView，含成本/利润）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ProfitDashboardItem'
+  /api/pricing:
+    get:
+      tags: [billing]
+      summary: 公开模型价格页
+      x-function-id: F-2048
+      security: []
+      parameters:
+        - name: locale
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 公开价格页（PublicView，绝不含 B/成本/供应商）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PricingPublicView'

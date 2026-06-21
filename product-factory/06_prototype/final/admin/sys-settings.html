@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统设置 · Nexa·AI 管理后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<script src="admin-shell.js"></script>
+<style>
+  /* 系统设置专属 —— 全 token 驱动，零裸色值 */
+  .set-banner{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-5);
+    padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);
+    background:var(--color-info-bg);border:1px solid var(--color-info-border)}
+  .set-banner .nx-ic{color:var(--color-info);width:18px;height:18px;flex:none}
+  .set-banner .txt{font-size:var(--text-body-sm);color:var(--color-info-fg)}
+  .set-layout{display:grid;grid-template-columns:200px 1fr;gap:var(--space-5);align-items:start}
+  /* 左侧子 Tab */
+  .set-nav{position:sticky;top:72px;display:flex;flex-direction:column;gap:2px;
+    background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-2);box-shadow:var(--shadow-sm)}
+  .set-nav button{display:flex;align-items:center;gap:var(--space-2);height:38px;padding:0 var(--space-3);
+    border:none;background:transparent;color:var(--color-text-secondary);font-family:inherit;font-size:var(--text-body);
+    text-align:left;border-radius:var(--radius-sm);cursor:pointer;font-weight:var(--fw-medium)}
+  .set-nav button:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .set-nav button.on{background:color-mix(in oklch,var(--color-primary-500) 12%,transparent);color:var(--color-primary-700)}
+  .set-nav button .nx-ic{width:16px;height:16px}
+  /* 区块 */
+  .pane{display:none} .pane.on{display:block}
+  .set-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);padding:var(--space-5);margin-bottom:var(--space-4)}
+  .set-card h3{font-family:var(--font-brand);font-size:var(--text-h5);font-weight:var(--fw-bold);
+    color:var(--color-text);margin:0 0 var(--space-1)}
+  .set-card .desc{font-size:var(--text-body-sm);color:var(--color-text-muted);margin:0 0 var(--space-4)}
+  .field{margin-bottom:var(--space-4)}
+  .field:last-child{margin-bottom:0}
+  .field2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+  .sw-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);
+    padding:var(--space-3) 0;border-bottom:1px solid var(--color-border)}
+  .sw-row:last-child{border-bottom:none}
+  .sw-row .sw-info .t{font-size:var(--text-body);color:var(--color-text);font-weight:var(--fw-medium)}
+  .sw-row .sw-info .d{font-size:var(--text-caption);color:var(--color-text-muted);margin-top:2px}
+  .logo-box{display:flex;align-items:center;gap:var(--space-3)}
+  .logo-sq{width:48px;height:48px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-700));color:var(--color-primary-fg);
+    font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h4)}
+  /* 危险区 */
+  .danger-zone{border:1px solid var(--color-danger-border);background:var(--color-danger-bg);border-radius:var(--radius-md);
+    padding:var(--space-5);margin-bottom:var(--space-4)}
+  .danger-zone h3{font-family:var(--font-brand);font-size:var(--text-h5);font-weight:var(--fw-bold);
+    color:var(--color-danger-fg);margin:0 0 var(--space-3)}
+  .danger-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);
+    padding:var(--space-3) 0;border-bottom:1px solid var(--color-danger-border)}
+  .danger-item:last-child{border-bottom:none}
+  .danger-item .di-info .t{font-size:var(--text-body);color:var(--color-text);font-weight:var(--fw-medium)}
+  .danger-item .di-info .d{font-size:var(--text-caption);color:var(--color-text-muted);margin-top:2px}
+  .save-bar{position:sticky;bottom:0;display:flex;align-items:center;gap:var(--space-3);margin-top:var(--space-5);
+    padding:var(--space-4) var(--space-5);background:var(--color-bg-elevated);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);box-shadow:var(--shadow-md)}
+  .save-bar .hint{font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .save-bar .grow{margin-left:auto}
+  @media (max-width:880px){.set-layout{grid-template-columns:1fr}.set-nav{position:static;flex-direction:row;flex-wrap:wrap}
+    .field2{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="sys" data-title="系统设置" data-crumb="管理后台|系统|系统设置">
+
+  <!-- root 专属标记 -->
+  <section class="set-banner nx-fade">
+    <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+    <span class="txt">本页为 <b>超管专属</b> 区域，所有改动将全站生效，请谨慎操作。</span>
+    <span class="badge b-info" style="margin-left:auto">超管专属</span>
+  </section>
+
+  <div class="set-layout">
+    <!-- 左侧子 Tab -->
+    <nav class="set-nav nx-fade">
+      <button class="on" data-pane="basic">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>基础设置</button>
+      <button data-pane="auth">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M17 8v6M14 11h6"/></svg>注册与登录</button>
+      <button data-pane="billing">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01"/></svg>计费与配额</button>
+      <button data-pane="mail">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 7l8 6 8-6"/></svg>邮件与通知</button>
+      <button data-pane="security">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>安全</button>
+      <button data-pane="advanced">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1"/></svg>高级</button>
+    </nav>
+
+    <!-- 右侧内容 -->
+    <div>
+      <!-- 基础设置 -->
+      <div class="pane on" id="pane-basic">
+        <div class="set-card">
+          <h3>站点信息</h3>
+          <p class="desc">站点对外展示的基本信息。</p>
+          <div class="field">
+            <label class="field-label">站点名称</label>
+            <input class="input" value="Nexa·AI 网关">
+          </div>
+          <div class="field">
+            <label class="field-label">站点描述</label>
+            <input class="input" value="统一多模型 API 网关与计费平台">
+          </div>
+          <div class="field">
+            <label class="field-label">站点 Logo</label>
+            <div class="logo-box">
+              <span class="logo-sq">N</span>
+              <button class="btn btn-sec btn-sm">上传新 Logo</button>
+            </div>
+            <div class="field-hint">推荐 PNG / SVG，建议 256×256 以内</div>
+          </div>
+          <div class="field">
+            <label class="field-label">站点公告</label>
+            <textarea class="input" style="height:72px;padding:var(--space-2) var(--space-3)">系统将于本周日 02:00–04:00 进行例行维护。</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 注册与登录 -->
+      <div class="pane" id="pane-auth">
+        <div class="set-card">
+          <h3>注册与登录</h3>
+          <p class="desc">控制新用户注册与登录方式。</p>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">开放注册</div><div class="d">关闭后仅管理员可创建账号</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">邮箱验证</div><div class="d">注册后需验证邮箱才能使用</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">GitHub OAuth 登录</div><div class="d">允许使用 GitHub 账号登录</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">邀请码注册</div><div class="d">注册必须填写有效邀请码</div></div>
+            <label class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 计费与配额 -->
+      <div class="pane" id="pane-billing">
+        <div class="set-card">
+          <h3>计费与配额</h3>
+          <p class="desc">新用户默认额度与限流策略。</p>
+          <div class="field2">
+            <div class="field">
+              <label class="field-label">默认新用户额度（美元）</label>
+              <input class="input mono-num" value="5.00">
+            </div>
+            <div class="field">
+              <label class="field-label">计费货币</label>
+              <select class="input"><option>USD（美元）</option><option>CNY（人民币）</option></select>
+            </div>
+          </div>
+          <div class="field2">
+            <div class="field">
+              <label class="field-label">默认 RPM 限制</label>
+              <input class="input mono-num" value="60">
+            </div>
+            <div class="field">
+              <label class="field-label">默认 TPM 限制</label>
+              <input class="input mono-num" value="40000">
+            </div>
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">额度耗尽自动停用</div><div class="d">余额为零时拒绝新请求</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 邮件与通知 -->
+      <div class="pane" id="pane-mail">
+        <div class="set-card">
+          <h3>SMTP 配置</h3>
+          <p class="desc">用于发送验证邮件与系统通知。</p>
+          <div class="field2">
+            <div class="field">
+              <label class="field-label">SMTP 服务器</label>
+              <input class="input mono-num" value="smtp.mailgun.org">
+            </div>
+            <div class="field">
+              <label class="field-label">端口</label>
+              <input class="input mono-num" value="587">
+            </div>
+          </div>
+          <div class="field2">
+            <div class="field">
+              <label class="field-label">发件账号</label>
+              <input class="input mono-num" value="noreply@nexa.ai">
+            </div>
+            <div class="field">
+              <label class="field-label">发件密码</label>
+              <input class="input mono-num" type="password" value="************">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">发件人显示名</label>
+            <input class="input" value="Nexa·AI 平台">
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">启用 TLS</div><div class="d">使用加密连接发送邮件</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="field" style="margin-top:var(--space-4)">
+            <button class="btn btn-sec btn-sm" id="testMail">发送测试邮件</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 安全 -->
+      <div class="pane" id="pane-security">
+        <div class="set-card">
+          <h3>安全策略</h3>
+          <p class="desc">账户与访问安全相关设置。</p>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">强制双因素认证（2FA）</div><div class="d">管理员账户必须启用 2FA</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">登录失败锁定</div><div class="d">连续失败 5 次锁定 15 分钟</div></div>
+            <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="field2" style="margin-top:var(--space-4)">
+            <div class="field">
+              <label class="field-label">会话有效期（小时）</label>
+              <input class="input mono-num" value="72">
+            </div>
+            <div class="field">
+              <label class="field-label">API Key 最大数 / 用户</label>
+              <input class="input mono-num" value="10">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">IP 白名单（管理后台访问）</label>
+            <textarea class="input mono-num" style="height:64px;padding:var(--space-2) var(--space-3)">10.0.0.0/8
+118.24.6.0/24</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 高级 -->
+      <div class="pane" id="pane-advanced">
+        <div class="set-card">
+          <h3>高级选项</h3>
+          <p class="desc">系统级运行参数，谨慎调整。</p>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">维护模式</div><div class="d">开启后仅管理员可访问，普通用户看到维护页</div></div>
+            <label class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="sw-row">
+            <div class="sw-info"><div class="t">调试日志</div><div class="d">记录详细请求日志（会增加存储占用）</div></div>
+            <label class="switch"><input type="checkbox"><span class="track"></span><span class="thumb"></span></label>
+          </div>
+          <div class="field2" style="margin-top:var(--space-4)">
+            <div class="field">
+              <label class="field-label">请求超时（秒）</label>
+              <input class="input mono-num" value="120">
+            </div>
+            <div class="field">
+              <label class="field-label">日志保留（天）</label>
+              <input class="input mono-num" value="90">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">缓存</label>
+            <button class="btn btn-sec btn-sm" id="clearCache">清理缓存</button>
+            <div class="field-hint" id="cacheHint">当前缓存占用约 482 MB</div>
+          </div>
+        </div>
+
+        <!-- 危险操作区 -->
+        <div class="danger-zone">
+          <h3>危险操作</h3>
+          <div class="danger-item">
+            <div class="di-info"><div class="t">清空全部缓存</div><div class="d">立即清除所有路由 / 模型 / 配额缓存</div></div>
+            <button class="btn btn-danger btn-sm">清空缓存</button>
+          </div>
+          <div class="danger-item">
+            <div class="di-info"><div class="t">重置统计数据</div><div class="d">清零全站请求 / 费用 / token 统计，不可恢复</div></div>
+            <button class="btn btn-danger btn-sm">重置统计</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 保存栏 -->
+      <div class="save-bar">
+        <span class="hint" id="saveHint">所有改动将全站生效</span>
+        <span class="grow"></span>
+        <button class="btn btn-ghost">放弃更改</button>
+        <button class="btn btn-primary" id="saveBtn">保存设置</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // 子 Tab 切换
+    var navBtns=document.querySelectorAll('.set-nav button');
+    navBtns.forEach(function(b){
+      b.addEventListener('click', function(){
+        navBtns.forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('on'); });
+        document.getElementById('pane-'+b.getAttribute('data-pane')).classList.add('on');
+      });
+    });
+
+    // 保存反馈
+    var saveHint=document.getElementById('saveHint');
+    document.getElementById('saveBtn').addEventListener('click', function(){
+      saveHint.textContent='设置已保存';
+      setTimeout(function(){ saveHint.textContent='所有改动将全站生效'; }, 1600);
+    });
+
+    // 清理缓存反馈
+    var cacheHint=document.getElementById('cacheHint');
+    var clearCache=document.getElementById('clearCache');
+    if(clearCache) clearCache.addEventListener('click', function(){ cacheHint.textContent='缓存已清理，当前占用 0 MB'; });
+
+    // 测试邮件
+    var testMail=document.getElementById('testMail');
+    if(testMail) testMail.addEventListener('click', function(){ testMail.textContent='测试邮件已发送'; });
+  })();
+  </script>
+</body>
+</html>

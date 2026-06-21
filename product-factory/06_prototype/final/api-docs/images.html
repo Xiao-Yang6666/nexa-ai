@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图像 API · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link" href="authentication.html">认证说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link" href="chat-completions.html">聊天补全 API</a>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link is-current" href="images.html">图像 API</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#endpoint">端点</a>
+        <a class="nt-anchor" href="#request">请求示例</a>
+        <a class="nt-anchor" href="#params">请求参数</a>
+        <a class="nt-anchor" href="#response">响应字段</a>
+        <a class="nt-anchor" href="#models">图像模型</a>
+      </div>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link" href="errors.html">错误码参考</a>
+      <a class="nt-link" href="rate-limits.html">限流说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link" href="sdks.html">SDK 下载</a>
+      <a class="nt-link" href="changelog.html">更新日志</a>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>API 参考</span>
+        <span class="sep">/</span>
+        <span>图像 API</span>
+      </nav>
+
+      <h1 class="reveal" id="top">图像 API</h1>
+      <p class="lede reveal">根据文本提示词生成图像。完全兼容 OpenAI Images 协议，支持多种尺寸、质量档位与返回格式，可在 URL 与 Base64 之间自由选择，便于直接落库或前端渲染。</p>
+
+      <section class="reveal">
+        <h2 id="endpoint">端点</h2>
+        <div class="endpoint">
+          <span class="method post">POST</span>
+          <span class="path">https://api.nexa.ai/v1/images/generations</span>
+        </div>
+        <p>需要在 <code>Authorization</code> 头携带有效的 Bearer Token，详见 <a class="inline" href="authentication.html">认证说明</a>。请求体为 JSON，<code>model</code> 与 <code>prompt</code> 为必填字段。生成图像的计费按张数与尺寸/质量档位累计。</p>
+      </section>
+
+      <section class="reveal">
+        <h2 id="request">请求示例</h2>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="curl" aria-selected="true">curl</button>
+            <button class="cb-tab" data-lang="python" aria-selected="false">Python</button>
+            <button class="cb-tab" data-lang="node" aria-selected="false">Node</button>
+            <button class="cb-tab" data-lang="go" aria-selected="false">Go</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="curl"><pre><code><span class="t-fn">curl</span> https://api.nexa.ai/v1/images/generations <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Authorization: Bearer $NEXA_API_KEY"</span> <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Content-Type: application/json"</span> <span class="t-pun">\</span>
+  <span class="t-key">-d</span> <span class="t-str">'{
+    "model": "dall-e-3",
+    "prompt": "薄雾笼罩的青色山谷，等距视角，柔光",
+    "n": 1,
+    "size": "1024x1024",
+    "quality": "hd",
+    "response_format": "url"
+  }'</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="python"><pre><code><span class="t-key">from</span> openai <span class="t-key">import</span> OpenAI
+
+client <span class="t-pun">=</span> <span class="t-fn">OpenAI</span><span class="t-pun">(</span>
+    base_url<span class="t-pun">=</span><span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">,</span>
+    api_key<span class="t-pun">=</span><span class="t-str">"sk-nexa-..."</span><span class="t-pun">,</span>
+<span class="t-pun">)</span>
+
+resp <span class="t-pun">=</span> client<span class="t-pun">.</span>images<span class="t-pun">.</span><span class="t-fn">generate</span><span class="t-pun">(</span>
+    model<span class="t-pun">=</span><span class="t-str">"dall-e-3"</span><span class="t-pun">,</span>
+    prompt<span class="t-pun">=</span><span class="t-str">"薄雾笼罩的青色山谷，等距视角，柔光"</span><span class="t-pun">,</span>
+    size<span class="t-pun">=</span><span class="t-str">"1024x1024"</span><span class="t-pun">,</span>
+    quality<span class="t-pun">=</span><span class="t-str">"hd"</span><span class="t-pun">,</span>
+<span class="t-pun">)</span>
+<span class="t-fn">print</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>data<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>url<span class="t-pun">)</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="node"><pre><code><span class="t-key">import</span> OpenAI <span class="t-key">from</span> <span class="t-str">"openai"</span><span class="t-pun">;</span>
+
+<span class="t-key">const</span> client <span class="t-pun">=</span> <span class="t-key">new</span> <span class="t-fn">OpenAI</span><span class="t-pun">({</span>
+  baseURL<span class="t-pun">:</span> <span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">,</span>
+  apiKey<span class="t-pun">:</span> process<span class="t-pun">.</span>env<span class="t-pun">.</span>NEXA_API_KEY<span class="t-pun">,</span>
+<span class="t-pun">});</span>
+
+<span class="t-key">const</span> resp <span class="t-pun">=</span> <span class="t-key">await</span> client<span class="t-pun">.</span>images<span class="t-pun">.</span><span class="t-fn">generate</span><span class="t-pun">({</span>
+  model<span class="t-pun">:</span> <span class="t-str">"dall-e-3"</span><span class="t-pun">,</span>
+  prompt<span class="t-pun">:</span> <span class="t-str">"薄雾笼罩的青色山谷，等距视角，柔光"</span><span class="t-pun">,</span>
+  size<span class="t-pun">:</span> <span class="t-str">"1024x1024"</span><span class="t-pun">,</span>
+  quality<span class="t-pun">:</span> <span class="t-str">"hd"</span><span class="t-pun">,</span>
+<span class="t-pun">});</span>
+console<span class="t-pun">.</span><span class="t-fn">log</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>data<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>url<span class="t-pun">);</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="go"><pre><code><span class="t-key">package</span> main
+
+<span class="t-key">import</span> <span class="t-pun">(</span>
+    <span class="t-str">"context"</span>
+    <span class="t-str">"fmt"</span>
+
+    <span class="t-str">"github.com/sashabaranov/go-openai"</span>
+<span class="t-pun">)</span>
+
+<span class="t-key">func</span> <span class="t-fn">main</span><span class="t-pun">()</span> <span class="t-pun">{</span>
+    cfg <span class="t-pun">:=</span> openai<span class="t-pun">.</span><span class="t-fn">DefaultConfig</span><span class="t-pun">(</span><span class="t-str">"sk-nexa-..."</span><span class="t-pun">)</span>
+    cfg<span class="t-pun">.</span>BaseURL <span class="t-pun">=</span> <span class="t-str">"https://api.nexa.ai/v1"</span>
+    client <span class="t-pun">:=</span> openai<span class="t-pun">.</span><span class="t-fn">NewClientWithConfig</span><span class="t-pun">(</span>cfg<span class="t-pun">)</span>
+
+    resp<span class="t-pun">,</span> _ <span class="t-pun">:=</span> client<span class="t-pun">.</span><span class="t-fn">CreateImage</span><span class="t-pun">(</span>context<span class="t-pun">.</span><span class="t-fn">Background</span><span class="t-pun">(),</span> openai<span class="t-pun">.</span>ImageRequest<span class="t-pun">{</span>
+        Model<span class="t-pun">:</span> openai<span class="t-pun">.</span>CreateImageModelDallE3<span class="t-pun">,</span>
+        Prompt<span class="t-pun">:</span> <span class="t-str">"薄雾笼罩的青色山谷，等距视角，柔光"</span><span class="t-pun">,</span>
+        Size<span class="t-pun">:</span> openai<span class="t-pun">.</span>CreateImageSize1024x1024<span class="t-pun">,</span>
+        N<span class="t-pun">:</span> <span class="t-num">1</span><span class="t-pun">,</span>
+    <span class="t-pun">})</span>
+    fmt<span class="t-pun">.</span><span class="t-fn">Println</span><span class="t-pun">(</span>resp<span class="t-pun">.</span>Data<span class="t-pun">[</span><span class="t-num">0</span><span class="t-pun">].</span>URL<span class="t-pun">)</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="params">请求参数</h2>
+        <p>请求体为 JSON 对象，支持以下字段：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">model</td><td class="ty">string</td><td class="req-yes">必填</td><td>图像模型 ID，如 <code>dall-e-3</code>、<code>flux-pro</code>、<code>sd3-large</code>。</td></tr>
+              <tr><td class="pn">prompt</td><td class="ty">string</td><td class="req-yes">必填</td><td>描述目标图像的文本提示词。<code>dall-e-3</code> 上限约 4000 字符，越具体越可控。</td></tr>
+              <tr><td class="pn">n</td><td class="ty">integer</td><td class="req-no">可选</td><td>生成图像张数，默认 1。<code>dall-e-3</code> 仅支持 1，其余模型上限 10。</td></tr>
+              <tr><td class="pn">size</td><td class="ty">string</td><td class="req-no">可选</td><td>输出尺寸：<code>1024x1024</code>（默认）/ <code>1792x1024</code> / <code>1024x1792</code>。</td></tr>
+              <tr><td class="pn">quality</td><td class="ty">string</td><td class="req-no">可选</td><td>质量档位：<code>standard</code>（默认）或 <code>hd</code>（更精细，耗时与计费更高）。</td></tr>
+              <tr><td class="pn">response_format</td><td class="ty">string</td><td class="req-no">可选</td><td>返回形式：<code>url</code>（默认，临时链接，约 1 小时有效）或 <code>b64_json</code>（内联 Base64）。</td></tr>
+              <tr><td class="pn">style</td><td class="ty">string</td><td class="req-no">可选</td><td><code>vivid</code>（默认，更具张力）或 <code>natural</code>（更写实），仅 <code>dall-e-3</code> 支持。</td></tr>
+              <tr><td class="pn">user</td><td class="ty">string</td><td class="req-no">可选</td><td>代表终端用户的稳定标识，用于滥用监测。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout info">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+          <div class="co-body"><strong>URL 是临时链接。</strong>默认返回的 <code>url</code> 有效期约 1 小时，请及时下载并落库到你自己的对象存储。若希望直接拿到字节流，把 <code>response_format</code> 设为 <code>b64_json</code> 即可在响应里取得 Base64 内容。</div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="response">响应字段</h2>
+        <p>返回对象包含生成时间戳与图像数组。每个元素含图像数据及（部分模型的）修订后提示词。</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">created</td><td class="ty">integer</td><td>生成时间的 Unix 时间戳（秒）。</td></tr>
+              <tr><td class="pn">data</td><td class="ty">array</td><td>图像对象数组，长度等于 <code>n</code>。</td></tr>
+              <tr><td class="pn">url</td><td class="ty">string</td><td><code>response_format=url</code> 时返回的临时图像链接。</td></tr>
+              <tr><td class="pn">b64_json</td><td class="ty">string</td><td><code>response_format=b64_json</code> 时返回的 Base64 图像内容。</td></tr>
+              <tr><td class="pn">revised_prompt</td><td class="ty">string</td><td>模型实际采用的优化后提示词（<code>dall-e-3</code> 会自动改写）。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="json" aria-selected="true">响应 JSON</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="json"><pre><code><span class="t-pun">{</span>
+  <span class="t-str">"created"</span><span class="t-pun">:</span> <span class="t-num">1718861400</span><span class="t-pun">,</span>
+  <span class="t-str">"data"</span><span class="t-pun">:</span> <span class="t-pun">[{</span>
+    <span class="t-str">"url"</span><span class="t-pun">:</span> <span class="t-str">"https://cdn.nexa.ai/img/8f3a1c2e.png"</span><span class="t-pun">,</span>
+    <span class="t-str">"revised_prompt"</span><span class="t-pun">:</span> <span class="t-str">"等距视角下薄雾缭绕的青绿山谷，柔和的清晨侧光。"</span>
+  <span class="t-pun">}]</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="models">图像模型</h2>
+        <p>Nexa 接入多家厂商的图像生成模型，统一在同一接口下暴露。常用模型如下：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>模型 ID</th><th>厂商</th><th>最大尺寸</th><th>特点</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">dall-e-3</td><td>OpenAI</td><td>1792x1024</td><td>提示词遵循度高，自动改写优化。</td></tr>
+              <tr><td class="pn">dall-e-2</td><td>OpenAI</td><td>1024x1024</td><td>速度快，支持单次多张。</td></tr>
+              <tr><td class="pn">flux-pro</td><td>Black Forest Labs</td><td>1440x1440</td><td>细节锐利，写实质感强。</td></tr>
+              <tr><td class="pn">flux-schnell</td><td>Black Forest Labs</td><td>1024x1024</td><td>极速出图，适合预览迭代。</td></tr>
+              <tr><td class="pn">sd3-large</td><td>Stability AI</td><td>1536x1536</td><td>排版与文字渲染表现优秀。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warn">
+          <svg viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="co-body"><strong>内容合规由网关统一审查。</strong>提示词与生成结果会经过安全策略过滤，违规请求将返回 <code>400</code> 并附带 <code>content_policy_violation</code> 错误码，详见 <a class="inline" href="errors.html">错误码参考</a>。</div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#endpoint">端点</a>
+    <a href="#request">请求示例</a>
+    <a href="#params">请求参数</a>
+    <a href="#response">响应字段</a>
+    <a href="#models">图像模型</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

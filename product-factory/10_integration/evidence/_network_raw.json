@@ -1,0 +1,96 @@
+[
+  {
+    "url": "http://172.17.0.1:8080/api/user/login",
+    "method": "OPTIONS",
+    "reqbody": null,
+    "status": 403,
+    "respbody": "<fail:CDPSession.send: Protocol error (Network.getResponseBody): No resource with given identifier found>",
+    "resp_headers": {
+      "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+      "Connection": "keep-alive",
+      "Date": "Sun, 21 Jun 2026 02:32:38 GMT",
+      "Expires": "0",
+      "Keep-Alive": "timeout=60",
+      "Pragma": "no-cache",
+      "Transfer-Encoding": "chunked",
+      "Vary": "Origin\nAccess-Control-Request-Method\nAccess-Control-Request-Headers",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "X-Trace-Id": "c1dec30e66a3c457c83c6edd376ae713",
+      "X-XSS-Protection": "0",
+      "traceparent": "00-c1dec30e66a3c457c83c6edd376ae713-858ef3386a5ec53c-01"
+    }
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/login",
+    "method": "POST",
+    "reqbody": "{\"username\":\"nexa_e2e_1782008976@example.com\",\"password\":\"Test1234\"}",
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/self",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/self",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self?type=2&page=1&page_size=50",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self?type=2&page=1&page_size=50",
+    "method": "GET",
+    "reqbody": null,
+    "status": null,
+    "respbody": null,
+    "resp_headers": null
+  }
+]

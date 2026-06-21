@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日签到 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 每日签到页：连续天数 / 签到日历 / 奖励阶梯 / 记录表 —— 零裸色值 */
+  .ck-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-5)}
+  @media (max-width:860px){.ck-hero{grid-template-columns:1fr}}
+  .ck-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-6);box-shadow:var(--shadow-sm)}
+  .ck-streak{display:flex;align-items:center;gap:var(--space-5)}
+  .ck-streak-ring{position:relative;width:120px;height:120px;flex:none}
+  .ck-streak-num{font-family:var(--font-brand);font-size:var(--text-h1);font-weight:var(--fw-bold);
+    color:var(--color-text);line-height:1}
+  .ck-streak-unit{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-top:var(--space-1)}
+  .ck-streak-meta h3{margin:0 0 var(--space-2);font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .ck-streak-meta p{margin:0;font-size:var(--text-body-sm);color:var(--color-text-secondary);line-height:var(--lh-normal)}
+  .ck-streak-meta .hl{color:var(--color-primary-700);font-weight:var(--fw-semibold)}
+  .ck-today{display:flex;flex-direction:column;justify-content:center;gap:var(--space-4);text-align:center}
+  .ck-today-label{font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .ck-today-reward{font-family:var(--font-brand);font-size:var(--text-h3);font-weight:var(--fw-bold);color:var(--color-text)}
+  .ck-today-reward .cur{color:var(--color-primary-700)}
+  .ck-btn-big{height:52px;font-size:var(--text-body-lg);font-weight:var(--fw-semibold);width:100%;justify-content:center}
+  .ck-section-title{font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text);margin:0 0 var(--space-4)}
+  /* 日历 —— 紧凑两栏：左侧小尺寸日历 + 右侧状态卡，顶部对齐 */
+  .cal-wrap{display:grid;grid-template-columns:300px 1fr;gap:var(--space-5);margin-bottom:var(--space-5);align-items:stretch}
+  @media (max-width:760px){.cal-wrap{grid-template-columns:1fr}}
+  .cal-card{padding:var(--space-4) var(--space-5)}
+  .cal-panel{max-width:300px}
+  @media (max-width:760px){.cal-panel{max-width:none}}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3)}
+  .cal-month{font-size:var(--text-body);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;grid-auto-rows:34px;align-items:stretch}
+  .cal-dow{font-size:var(--text-overline);color:var(--color-text-muted);text-align:center;padding-bottom:2px;font-weight:var(--fw-medium)}
+  .cal-cell{position:relative;height:34px!important;min-height:34px;max-height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:var(--radius-xs);font-size:var(--text-caption);color:var(--color-text-secondary);
+    border:1px solid transparent;transition:background var(--dur-2) var(--ease-out),transform var(--dur-2) var(--ease-out)}
+  .cal-cell:not(.empty):hover{background:var(--color-surface-sunken);transform:translateY(-1px)}
+  .cal-cell.empty{background:transparent}
+  .cal-cell.empty:hover{background:transparent;transform:none}
+  .cal-cell.done{background:color-mix(in oklch,var(--color-primary-500) 16%,transparent);color:var(--color-primary-700);
+    font-weight:var(--fw-medium)}
+  .cal-cell.done:hover{background:color-mix(in oklch,var(--color-primary-500) 24%,transparent)}
+  .cal-cell.done .cal-tick{color:var(--color-primary-700)}
+  .cal-cell.today{border-color:var(--color-primary-500);box-shadow:var(--focus-ring);color:var(--color-text);font-weight:var(--fw-semibold)}
+  .cal-cell.future{color:var(--color-text-muted)}
+  .cal-tick{width:9px;height:9px;margin-top:1px}
+  .cal-legend{display:flex;gap:var(--space-3);margin-top:var(--space-3);font-size:var(--text-overline);color:var(--color-text-secondary);flex-wrap:wrap}
+  .cal-legend span{display:inline-flex;align-items:center;gap:4px}
+  .cal-legend i{width:10px;height:10px;border-radius:var(--radius-xs);display:inline-block}
+  /* 右侧状态卡 */
+  .cal-status{display:flex;flex-direction:column;gap:var(--space-2);height:100%}
+  .cal-stat{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);
+    padding:var(--space-3) 0;border-bottom:1px solid var(--color-border)}
+  .cal-stat:last-of-type{border-bottom:none}
+  .cal-stat .k{font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .cal-stat .v{font-family:var(--font-brand);font-size:var(--text-h6);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .cal-stat .v.hl{color:var(--color-primary-700)}
+  .cal-status-note{margin-top:auto;font-size:var(--text-body-sm);color:var(--color-text-secondary);line-height:var(--lh-normal)}
+  .cal-status-note .hl{color:var(--color-primary-700);font-weight:var(--fw-semibold)}
+  /* 奖励阶梯 */
+  .ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-4);margin-bottom:var(--space-5)}
+  @media (max-width:860px){.ladder{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:480px){.ladder{grid-template-columns:1fr}}
+  .lad{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm);position:relative;overflow:hidden}
+  .lad.reached{border-color:var(--color-primary-500);
+    background:color-mix(in oklch,var(--color-primary-500) 8%,var(--color-bg-elevated))}
+  .lad-days{font-family:var(--font-brand);font-size:var(--text-h4);font-weight:var(--fw-bold);color:var(--color-text)}
+  .lad-days small{font-size:var(--text-body-sm);font-weight:var(--fw-regular);color:var(--color-text-muted)}
+  .lad-reward{margin-top:var(--space-2);font-size:var(--text-body);color:var(--color-text-secondary)}
+  .lad-reward b{font-family:var(--font-mono);color:var(--color-primary-700);font-weight:var(--fw-semibold)}
+  .lad-state{margin-top:var(--space-3)}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .th-bar{display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .th-bar h3{margin:0;font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .table-wrap{overflow-x:auto}
+  .table-wrap td,.table-wrap th{padding:var(--space-3) var(--space-5)}
+</style>
+</head>
+<body data-page="checkin" data-title="每日签到" data-crumb="控制台|每日签到">
+
+  <!-- 连续天数 + 今日签到 -->
+  <section class="ck-hero">
+    <div class="ck-card nx-fade">
+      <div class="ck-streak">
+        <div class="ck-streak-ring">
+          <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--color-surface-sunken)" stroke-width="9"/>
+            <circle id="streak-arc" cx="60" cy="60" r="52" fill="none" stroke="var(--color-primary-500)" stroke-width="9"
+              stroke-linecap="round" transform="rotate(-90 60 60)"
+              stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span class="ck-streak-num" data-count="12">0</span>
+            <span class="ck-streak-unit">连续天数</span>
+          </div>
+        </div>
+        <div class="ck-streak-meta">
+          <h3>已连续签到 12 天</h3>
+          <p>再坚持 <span class="hl">3 天</span> 即可领取 15 天阶梯奖励 <span class="hl">$2.00</span>。<br>累计签到 <span class="hl">86 天</span>，已获额度 <span class="hl">$9.40</span>。</p>
+        </div>
+      </div>
+    </div>
+    <div class="ck-card ck-today nx-fade">
+      <div class="ck-today-label">今日签到奖励</div>
+      <div class="ck-today-reward"><span class="cur">+$0.20</span> 调用额度</div>
+      <button class="btn btn-primary ck-btn-big" id="ck-btn">立即签到</button>
+    </div>
+  </section>
+
+  <!-- 签到日历 -->
+  <section class="cal-wrap nx-fade">
+    <div class="ck-card cal-card cal-panel">
+      <div class="cal-head">
+        <span class="cal-month" id="cal-month">2026 年 6 月</span>
+        <span class="muted" style="font-size:var(--text-body-sm)">已签到 <b style="color:var(--color-primary-700)">12</b> 天</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <span><i style="background:color-mix(in oklch,var(--color-primary-500) 24%,transparent)"></i>已签到</span>
+        <span><i style="background:var(--color-bg-elevated);border:1px solid var(--color-primary-500)"></i>今天</span>
+        <span><i style="background:var(--color-surface-sunken)"></i>未签到 / 未来</span>
+      </div>
+    </div>
+    <div class="ck-card cal-status">
+      <h3 class="ck-section-title" style="margin:0 0 var(--space-2)">本月签到概览</h3>
+      <div class="cal-stat"><span class="k">本月已签到</span><span class="v hl">12 天</span></div>
+      <div class="cal-stat"><span class="k">本月获得额度</span><span class="v hl">$2.90</span></div>
+      <div class="cal-stat"><span class="k">当前连续</span><span class="v">12 天</span></div>
+      <div class="cal-stat"><span class="k">本月签到率</span><span class="v">60%</span></div>
+      <p class="cal-status-note">坚持每日签到，连续 <span class="hl">15 天</span> 可额外获得 <span class="hl">$2.00</span> 阶梯奖励。</p>
+    </div>
+  </section>
+
+  <!-- 奖励阶梯 -->
+  <h2 class="ck-section-title">连续签到奖励阶梯</h2>
+  <section class="ladder">
+    <div class="lad reached nx-fade">
+      <div class="lad-days">3 <small>天</small></div>
+      <div class="lad-reward">额外奖励 <b>$0.50</b></div>
+      <div class="lad-state"><span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>已达成</span></div>
+    </div>
+    <div class="lad reached nx-fade">
+      <div class="lad-days">7 <small>天</small></div>
+      <div class="lad-reward">额外奖励 <b>$1.00</b></div>
+      <div class="lad-state"><span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>已达成</span></div>
+    </div>
+    <div class="lad nx-fade">
+      <div class="lad-days">15 <small>天</small></div>
+      <div class="lad-reward">额外奖励 <b>$2.00</b></div>
+      <div class="lad-state"><span class="badge b-info"><span class="dot" style="background:var(--color-info)"></span>还差 3 天</span></div>
+    </div>
+    <div class="lad nx-fade">
+      <div class="lad-days">30 <small>天</small></div>
+      <div class="lad-reward">额外奖励 <b>$5.00</b></div>
+      <div class="lad-state"><span class="badge b-neutral"><span class="dot" style="background:var(--color-text-muted)"></span>还差 18 天</span></div>
+    </div>
+  </section>
+
+  <!-- 签到记录 -->
+  <section class="table-card nx-fade">
+    <div class="th-bar">
+      <h3>签到记录</h3>
+      <span class="muted" style="font-size:var(--text-body-sm)">近 10 次</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>日期</th><th>获得额度</th><th>连续天数</th><th>备注</th></tr></thead>
+        <tbody id="ck-log"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+    NexaShell.countAll('[data-count]');
+
+    var tick='<svg class="cal-tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg>';
+
+    // 连续天数环（12/15 临近阶梯）
+    var arc=document.getElementById('streak-arc');
+    var len=326.7, ratio=Math.min(12/15,1);
+    arc.style.transition='stroke-dashoffset var(--dur-4) var(--ease-out)';
+    requestAnimationFrame(function(){ arc.style.strokeDashoffset=(len*(1-ratio)).toFixed(1); });
+
+    // 日历：2026-06，1 号为周一(getDay 计算)，今天=20，已签到 1..12 + 14,16,18,20
+    (function(){
+      var year=2026, month=5; // 0-based June
+      var first=new Date(year,month,1).getDay(); // 0=Sun
+      var days=new Date(year,month+1,0).getDate();
+      var today=20;
+      var done={};[1,2,3,4,5,6,7,8,9,10,11,12,14,16,18].forEach(function(d){done[d]=1;});
+      var dow=['日','一','二','三','四','五','六'];
+      var g='';
+      dow.forEach(function(d){ g+='<div class="cal-dow">'+d+'</div>'; });
+      for(var e=0;e<first;e++){ g+='<div class="cal-cell empty"></div>'; }
+      for(var d=1;d<=days;d++){
+        var cls='cal-cell', inner=String(d);
+        if(d===today){ cls+=' done today'; inner=d+tick; }
+        else if(done[d]){ cls+=' done'; inner=d+tick; }
+        else if(d>today){ cls+=' future'; }
+        g+='<div class="'+cls+'">'+inner+'</div>';
+      }
+      document.getElementById('cal-grid').innerHTML=g;
+    })();
+
+    // 签到记录表
+    (function(){
+      var rows=[
+        ['2026-06-20','$0.20',12,'连续 · 临近 15 天阶梯'],
+        ['2026-06-18','$0.20',11,'连续'],
+        ['2026-06-16','$0.20',10,'连续'],
+        ['2026-06-14','$0.20',9,'连续'],
+        ['2026-06-12','$1.00',8,'达成 7 天阶梯 +$1.00'],
+        ['2026-06-11','$0.20',7,'连续'],
+        ['2026-06-10','$0.20',6,'连续'],
+        ['2026-06-09','$0.20',5,'连续'],
+        ['2026-06-08','$0.50',4,'达成 3 天阶梯 +$0.50'],
+        ['2026-06-07','$0.20',3,'连续']
+      ];
+      document.getElementById('ck-log').innerHTML=rows.map(function(r){
+        return '<tr><td class="mono-num">'+r[0]+'</td>'+
+          '<td class="mono-num" style="color:var(--color-primary-700);font-weight:var(--fw-medium)">'+r[1]+'</td>'+
+          '<td class="mono-num">'+r[2]+' 天</td>'+
+          '<td class="muted">'+r[3]+'</td></tr>';
+      }).join('');
+    })();
+
+    // 签到按钮 -> 已签到 disabled 态
+    var btn=document.getElementById('ck-btn');
+    btn.addEventListener('click',function(){
+      btn.textContent='今日已签到';
+      btn.disabled=true;
+    });
+  })();
+  </script>
+</body>
+</html>

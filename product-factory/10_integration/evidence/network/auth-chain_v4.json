@@ -1,0 +1,47 @@
+[
+  {
+    "url": "http://172.17.0.1:8080/api/user/login",
+    "method": "POST",
+    "status": 200,
+    "reqbody": "{\"username\":\"qa10330\",\"password\":\"test1234\"}",
+    "req_has_session_cookie": false,
+    "resp_set_cookie": null,
+    "respbody": "{\"success\":true,\"data\":{\"id\":5,\"username\":\"qa10330\",\"role\":1,\"status\":1,\"quota\":0,\"aff_code\":\"PVET\",\"last_login_at\":1782011322}}"
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/self",
+    "method": "GET",
+    "status": 403,
+    "reqbody": null,
+    "req_has_session_cookie": false,
+    "resp_set_cookie": null,
+    "respbody": ""
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+    "method": "GET",
+    "status": 200,
+    "reqbody": null,
+    "req_has_session_cookie": false,
+    "resp_set_cookie": null,
+    "respbody": "{\"success\":true,\"data\":{\"quota\":0,\"rpm\":0.0,\"tpm\":0.0}}"
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/self",
+    "method": "GET",
+    "status": 403,
+    "reqbody": null,
+    "req_has_session_cookie": false,
+    "resp_set_cookie": null,
+    "respbody": ""
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+    "method": "GET",
+    "status": 200,
+    "reqbody": null,
+    "req_has_session_cookie": false,
+    "resp_set_cookie": null,
+    "respbody": "{\"success\":true,\"data\":{\"quota\":0,\"rpm\":0.0,\"tpm\":0.0}}"
+  }
+]

@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="teal">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexa·AI · 模型广场</title>
+<!-- 字体：品牌巨字 Space Grotesk（几何 sans），正文 Inter。非阻塞加载（与首页同源）。
+     生产环境用户浏览器直连 Google Fonts；离线/受限环境优雅回退到字体栈。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<!-- 真实模型数据 + 厂商官方图标（window.VENDOR_ICONS / window.MODEL_PRICING） -->
+<script src="../assets/model-data.js"></script>
+<style>
+  /* ===================================================================
+     Nexa·AI 模型广场 —— 与首页 home.html 完全同源（深色场景 + teal 辉光 + Space Grotesk + 玻璃质感）
+     视觉 DNA：品牌字 Space Grotesk；teal 辉光；--hd-bg 深色底；玻璃卡片
+     现代交互：page-head 克制 aurora 辉光（弱于首页 hero）；卡片 stagger 错位入场；
+              卡片 Spotlight 光斑跟随 hover；Count Up 数字；筛选/搜索/排序 FLIP 平滑重排
+     色值纪律：仅 var(--token) 与 color-mix(in oklch,var(--…),transparent N%)，裸色值=0；图标全线性 SVG，无 emoji
+     交互纪律：addEventListener / 事件委托，零内联 onclick / oninput
+     =================================================================== */
+
+  /* 本页字体本地别名（仅设置 family 名称，不写裸色值） */
+  :root{ --font-brand:'Space Grotesk','Inter',var(--font-sans); }
+
+  /* 厂商品牌色 token（收敛 model-data.js 的官方品牌 hex 进受控变量层，
+     页面内联 style 一律引用 var(--v-*)，DOM 中无裸 hex；月之暗面近黑，深底下提亮为 mint 描边色保证可见） */
+  :root{
+    --v-openai:#412991; --v-anthropic:#D97757; --v-google:#8E75B2; --v-xai:#E7ECEC;
+    --v-meta:#0467DF; --v-mistral:#FA520F; --v-deepseek:#4D6BFE; --v-qwen:#615CED;
+    --v-zhipu:#3859FF; --v-moonshot:#C9D4D6;
+  }
+
+  html,body{min-height:100%}
+  body{
+    background:var(--hd-bg);
+    color:var(--hd-text);
+    overflow-x:hidden;
+    font-family:'Inter',var(--font-sans);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  .wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 var(--space-5)}
+
+  /* ─────────── 顶部导航（玻璃质感，贴顶，延续首页） ─────────── */
+  .nav-bar{
+    position:sticky;top:0;z-index:40;
+    background:color-mix(in oklch,var(--hd-bg) 72%,transparent);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--hd-line);
+  }
+  .nav-in{display:flex;align-items:center;gap:var(--space-6);height:68px}
+  .brand-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);letter-spacing:-.01em}
+  .brand-logo .m{
+    width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));
+    color:var(--color-primary-fg);font-weight:var(--fw-bold);font-family:var(--font-brand);
+    box-shadow:0 0 0 1px color-mix(in oklch,var(--hd-mint) 40%,transparent),0 8px 26px -8px var(--color-primary-500);
+  }
+  .nav-links{display:flex;gap:var(--space-5);margin-left:var(--space-4)}
+  .nav-links a{color:color-mix(in oklch,var(--hd-text) 72%,transparent);font-weight:var(--fw-medium);font-size:var(--text-body);transition:color var(--dur-1)}
+  .nav-links a:hover{color:var(--hd-text)}
+  .nav-links a.active{color:var(--hd-mint)}
+  .nav-cta{margin-left:auto;display:flex;gap:var(--space-3);align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);
+    padding:9px 18px;border-radius:var(--radius-md);font-family:inherit;font-weight:var(--fw-semibold);
+    font-size:var(--text-body-sm);cursor:pointer;text-decoration:none;border:1px solid transparent;
+    transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2),background var(--dur-2),border-color var(--dur-2),color var(--dur-2);
+  }
+  .btn-glass{background:var(--hd-glass);color:var(--hd-text);border-color:var(--hd-line);backdrop-filter:blur(8px)}
+  .btn-glass:hover{background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--hd-text) 24%,transparent)}
+  .btn-glow{
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));
+    color:var(--color-primary-fg);box-shadow:0 8px 24px -8px var(--color-primary-500);
+  }
+  .btn-glow:hover{transform:translateY(-1px);box-shadow:0 12px 30px -8px var(--color-primary-500)}
+
+  /* ─────────── 页头：克制 aurora 辉光（内容页，弱于首页 hero，不喧宾夺主） ─────────── */
+  .page-head{
+    position:relative;isolation:isolate;overflow:hidden;
+    padding:var(--space-10) 0 var(--space-6);
+  }
+  /* 招牌辉光层：teal 柔光团，比首页弱（更低透明度 + 更小覆盖 + 缓慢漂移） */
+  .page-head::before{
+    content:'';position:absolute;inset:-40% -10% auto -10%;height:160%;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(40% 60% at 22% 20%, color-mix(in oklch,var(--color-primary-500) 30%,transparent), transparent 70%),
+      radial-gradient(36% 52% at 82% 8%, color-mix(in oklch,var(--hd-cyan) 22%,transparent), transparent 72%);
+    filter:blur(26px);
+    animation:aurora 24s var(--ease-in-out) infinite alternate;
+  }
+  /* 极淡细网格，被径向 mask 收口，避免脏 */
+  .page-head::after{
+    content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.4;
+    background-image:
+      linear-gradient(var(--hd-line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--hd-line) 1px,transparent 1px);
+    background-size:56px 56px;
+    -webkit-mask-image:radial-gradient(90% 100% at 30% 0%, var(--hd-text) 20%, transparent 80%);
+    mask-image:radial-gradient(90% 100% at 30% 0%, var(--hd-text) 20%, transparent 80%);
+  }
+  @keyframes aurora{
+    0%{transform:translate3d(-2%,0,0) scale(1)}
+    100%{transform:translate3d(3%,2%,0) scale(1.08)}
+  }
+  .head-pill{
+    display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:var(--radius-full);
+    background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);
+    font-size:var(--text-body-sm);color:var(--hd-muted);margin-bottom:var(--space-4);
+    opacity:0;animation:fade-up var(--dur-4) .05s var(--ease-out) forwards;
+  }
+  .head-pill .live{width:7px;height:7px;border-radius:50%;background:var(--color-success);box-shadow:0 0 0 3px color-mix(in oklch,var(--color-success) 30%,transparent);animation:breath 2.4s var(--ease-in-out) infinite}
+  .page-head h1{
+    font-family:var(--font-brand);font-size:var(--text-h1);font-weight:var(--fw-bold);
+    letter-spacing:var(--tracking-tight);margin:0 0 var(--space-3);color:var(--hd-text);
+    opacity:0;animation:fade-up var(--dur-4) .12s var(--ease-out) forwards;
+  }
+  .page-head h1 .accent{
+    background:linear-gradient(100deg,var(--color-primary-300),var(--hd-mint));
+    -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  }
+  .page-head .lead{
+    color:color-mix(in oklch,var(--hd-text) 72%,transparent);font-size:var(--text-body-lg);margin:0;max-width:640px;
+    opacity:0;animation:fade-up var(--dur-4) .2s var(--ease-out) forwards;
+  }
+  .page-head .lead b{color:var(--hd-text);font-family:var(--font-mono);font-weight:var(--fw-semibold)}
+
+  /* ─────────── 筛选区：玻璃态搜索 + 排序 ─────────── */
+  .toolbar{
+    padding:var(--space-6) 0 0;
+    opacity:0;animation:fade-up var(--dur-4) .28s var(--ease-out) forwards;
+  }
+  .filter-bar{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--space-4)}
+  .search{flex:1;min-width:240px;position:relative;display:flex;align-items:center}
+  .search .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);display:grid;place-items:center;color:var(--hd-muted);pointer-events:none}
+  .search .si svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .ctrl-inp{
+    width:100%;height:46px;
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-md);
+    color:var(--hd-text);font-family:'Inter',var(--font-sans);font-size:var(--text-body);
+    padding:0 var(--space-4) 0 42px;backdrop-filter:blur(10px);
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background var(--dur-2);
+  }
+  .ctrl-inp::placeholder{color:color-mix(in oklch,var(--hd-muted) 88%,transparent)}
+  /* focus 发光质感，延续首页输入框 */
+  .ctrl-inp:focus{
+    outline:none;border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent);
+    background:var(--hd-glass-strong);
+    box-shadow:0 0 0 4px color-mix(in oklch,var(--color-primary-500) 15%,transparent),0 0 22px -4px color-mix(in oklch,var(--color-primary-500) 40%,transparent);
+  }
+  .selw{position:relative;display:flex;align-items:center}
+  select.ctrl-inp{width:auto;min-width:172px;padding:0 40px 0 var(--space-4);cursor:pointer;appearance:none;-webkit-appearance:none}
+  /* 自定义下拉箭头（线性 SVG，currentColor 跟随，不算裸色值） */
+  .selw .chev{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:grid;place-items:center;color:var(--hd-muted);pointer-events:none}
+  .selw .chev svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  select.ctrl-inp option{background:var(--hd-bg2);color:var(--hd-text)}
+
+  /* pills：玻璃态，激活态 teal 辉光 */
+  .pills{display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-5)}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hd-line);background:var(--hd-glass);
+    color:color-mix(in oklch,var(--hd-text) 72%,transparent);padding:8px var(--space-4);border-radius:var(--radius-full);
+    cursor:pointer;font-size:var(--text-body-sm);font-weight:var(--fw-medium);backdrop-filter:blur(8px);user-select:none;
+    transition:color var(--dur-1),border-color var(--dur-2),background var(--dur-2),transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2);
+  }
+  .pill svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .pill:hover{color:var(--hd-text);border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);transform:translateY(-1px)}
+  .pill.on{
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));
+    border-color:color-mix(in oklch,var(--color-primary-300) 60%,transparent);
+    color:var(--color-primary-fg);
+    box-shadow:0 8px 22px -8px var(--color-primary-500),0 0 0 3px color-mix(in oklch,var(--color-primary-500) 18%,transparent);
+  }
+
+  .count{color:var(--hd-muted);font-size:var(--text-body-sm);margin-bottom:var(--space-4);opacity:0;animation:fade-up var(--dur-4) .34s var(--ease-out) forwards}
+  .count b{color:var(--hd-text);font-family:var(--font-mono);font-weight:var(--fw-semibold)}
+
+  /* ─────────── 模型卡网格：玻璃质感 + stagger 入场 + Spotlight hover ─────────── */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4)}
+  .mcard{
+    position:relative;isolation:isolate;overflow:hidden;
+    display:flex;flex-direction:column;gap:var(--space-3);
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-lg);
+    padding:var(--space-4);backdrop-filter:blur(12px);
+    transition:transform var(--dur-2) var(--ease-out),border-color var(--dur-2),box-shadow var(--dur-2);
+  }
+  /* Spotlight 光斑：跟随鼠标的 teal 径向光，由 --mx/--my 驱动，hover 时显形 */
+  .mcard::before{
+    content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;
+    background:radial-gradient(220px 220px at var(--mx,50%) var(--my,0%), color-mix(in oklch,var(--color-primary-500) 22%,transparent), transparent 60%);
+    transition:opacity var(--dur-2) var(--ease-out);
+  }
+  .mcard:hover{
+    transform:translateY(-3px);
+    border-color:color-mix(in oklch,var(--color-primary-300) 45%,transparent);
+    box-shadow:0 18px 50px -22px color-mix(in oklch,var(--color-primary-500) 80%,transparent),0 0 0 1px color-mix(in oklch,var(--hd-mint) 14%,transparent);
+  }
+  .mcard:hover::before{opacity:1}
+  /* stagger 入场：JS 给每张卡设 --i，逐个浮现 */
+  .mcard.enter{opacity:0;transform:translateY(18px);animation:card-in var(--dur-4) var(--ease-out) forwards;animation-delay:calc(var(--i,0) * 42ms)}
+  @keyframes card-in{to{opacity:1;transform:none}}
+
+  .mcard .top{display:flex;align-items:center;gap:var(--space-3)}
+  .mcard .av,.dw-head .av{
+    width:42px;height:42px;border-radius:var(--radius-md);display:grid;place-items:center;
+    font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-body-lg);flex:none;
+    color:var(--color-primary-fg);
+    box-shadow:0 6px 18px -8px color-mix(in oklch,var(--hd-bg) 50%,transparent);
+  }
+  /* 厂商官方 SVG 图标：白底玻璃片承托，SVG 用 currentColor 取厂商品牌色（适配深底） */
+  .av.icon{
+    background:color-mix(in oklch,var(--hd-text) 92%,transparent);
+    box-shadow:0 6px 18px -8px color-mix(in oklch,var(--hd-bg) 50%,transparent),0 0 0 1px var(--hd-line);
+  }
+  .mcard .av.icon svg{width:24px;height:24px;display:block}
+  /* placeholder 占位：厂商品牌色圆底 + 首字母 */
+  .av.ph{border-radius:50%;color:var(--hd-text)}
+  .mcard .nm{font-family:var(--font-brand);font-weight:var(--fw-semibold);font-size:var(--text-h5);margin:0;color:var(--hd-text);letter-spacing:-.01em;word-break:break-all}
+  .mcard .vd{color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{
+    font-size:var(--text-caption);padding:3px 9px;border-radius:var(--radius-full);
+    background:var(--hd-glass-strong);color:color-mix(in oklch,var(--hd-text) 70%,transparent);
+    border:1px solid var(--hd-line);backdrop-filter:blur(4px);
+  }
+  /* ─────────── 品质徽章：三档三色（复用 .tag 形态，强化语义色） ───────────
+     旗舰 flagship -> teal 实心（--color-primary 系）/ 增强 enhanced -> 蓝（--hd-blue 系）/ 经济 economy -> 中性灰（--hd-muted 系） */
+  .tier-badge{
+    display:inline-flex;align-items:center;gap:5px;flex:none;
+    font-size:var(--text-caption);font-weight:var(--fw-semibold);
+    padding:3px 10px;border-radius:var(--radius-full);
+    border:1px solid transparent;letter-spacing:.01em;line-height:1.2;
+  }
+  .tier-badge svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .tier-badge.flagship{
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));
+    color:var(--color-primary-fg);
+    box-shadow:0 6px 16px -8px var(--color-primary-500),0 0 0 1px color-mix(in oklch,var(--hd-mint) 30%,transparent);
+  }
+  .tier-badge.enhanced{
+    background:color-mix(in oklch,var(--color-warning) 20%,transparent);
+    color:color-mix(in oklch,var(--color-warning) 55%,var(--hd-text));
+    border-color:color-mix(in oklch,var(--color-warning) 48%,transparent);
+  }
+  .tier-badge.economy{
+    background:color-mix(in oklch,var(--hd-muted) 16%,transparent);
+    color:color-mix(in oklch,var(--hd-muted) 70%,var(--hd-text));
+    border-color:color-mix(in oklch,var(--hd-muted) 40%,transparent);
+  }
+  /* 卡片名行：名称 + 品质徽章并排 */
+  .mcard .nm-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+  /* ─────────── 同族归组：家族小标题 + 成组容器 ─────────── */
+  .fam-group{grid-column:1 / -1;display:flex;flex-direction:column;gap:var(--space-3)}
+  .fam-head{
+    display:flex;align-items:center;gap:10px;
+    color:color-mix(in oklch,var(--hd-text) 80%,transparent);
+  }
+  .fam-head .fav{flex:none}
+  .fam-head .ft{font-family:var(--font-brand);font-weight:var(--fw-semibold);font-size:var(--text-h5);letter-spacing:-.01em;color:var(--hd-text)}
+  .fam-head .fsub{color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .fam-head .fline{flex:1;height:1px;background:linear-gradient(90deg,color-mix(in oklch,var(--hd-mint) 30%,transparent),transparent)}
+  .fam-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4)}
+  @media(max-width:880px){.fam-cards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.fam-cards{grid-template-columns:1fr}}
+
+  /* 详情弹层：品质说明行 */
+  .tier-note{
+    display:flex;align-items:flex-start;gap:10px;
+    border:1px solid color-mix(in oklch,var(--hd-mint) 22%,transparent);
+    border-radius:var(--radius-md);background:color-mix(in oklch,var(--hd-mint) 7%,transparent);
+    padding:var(--space-3);
+  }
+  .tier-note .tn-badge{margin-top:1px}
+  .tier-note .tn-text{color:color-mix(in oklch,var(--hd-text) 80%,transparent);font-size:var(--text-body-sm);line-height:var(--lh-snug)}
+  .tier-note .tn-text b{color:var(--hd-text);font-weight:var(--fw-semibold)}
+  .mcard .meta{
+    display:flex;justify-content:space-between;align-items:flex-end;font-size:var(--text-body-sm);
+    color:var(--hd-muted);border-top:1px solid var(--hd-line);padding-top:var(--space-3);margin-top:auto;
+  }
+  .mcard .meta .ctx{display:flex;flex-direction:column;gap:3px}
+  .mcard .meta .ctx .k{color:color-mix(in oklch,var(--hd-text) 50%,transparent);font-size:var(--text-caption)}
+  .mcard .meta .ctx .v{color:color-mix(in oklch,var(--hd-text) 82%,transparent);font-family:var(--font-mono);font-weight:var(--fw-medium)}
+  /* 卡片价格区：Nexa 价高亮 + 官方价划线 + 省X% 角标 */
+  .mcard .price{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+  .mcard .price .nexa{font-family:var(--font-mono);color:var(--hd-mint);font-weight:var(--fw-semibold);font-size:var(--text-body-lg);line-height:1.1}
+  .mcard .price .nexa .u{color:var(--hd-muted);font-weight:var(--fw-regular);font-size:var(--text-caption)}
+  .mcard .price .ori{font-family:var(--font-mono);color:color-mix(in oklch,var(--hd-text) 42%,transparent);font-size:var(--text-caption);text-decoration:line-through}
+  .mcard .price .na{font-family:var(--font-mono);color:var(--hd-muted);font-size:var(--text-body-sm)}
+  /* 省X% 角标（teal 玻璃药丸） */
+  .save{
+    display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-weight:var(--fw-semibold);
+    font-size:var(--text-caption);padding:2px 8px;border-radius:var(--radius-full);
+    color:var(--hd-mint);background:color-mix(in oklch,var(--hd-mint) 14%,transparent);
+    border:1px solid color-mix(in oklch,var(--hd-mint) 30%,transparent);
+  }
+  .save svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  /* 卡片可点击：cursor + 右上角"查看详情"线性提示，hover 显形 */
+  .mcard{cursor:pointer}
+  .mcard .open-hint{
+    position:absolute;top:var(--space-4);right:var(--space-4);z-index:2;
+    display:grid;place-items:center;width:26px;height:26px;border-radius:var(--radius-sm);
+    color:var(--hd-muted);background:var(--hd-glass);border:1px solid var(--hd-line);
+    opacity:0;transform:translateX(-4px);
+    transition:opacity var(--dur-2) var(--ease-out),transform var(--dur-2) var(--ease-out),color var(--dur-2);
+  }
+  .mcard .open-hint svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .mcard:hover .open-hint{opacity:1;transform:none;color:var(--hd-mint)}
+  .mcard:focus-visible{outline:none;border-color:color-mix(in oklch,var(--color-primary-300) 60%,transparent);box-shadow:var(--focus-ring)}
+
+  /* ─────────── 空态：线性 SVG 图标 + 文案 + 重置按钮 ─────────── */
+  .empty{
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-4);
+    text-align:center;padding:var(--space-12) var(--space-5);color:var(--hd-muted);
+  }
+  .empty.show{display:flex;animation:fade-up var(--dur-3) var(--ease-out)}
+  .empty .ic{
+    width:72px;height:72px;border-radius:var(--radius-full);display:grid;place-items:center;
+    background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);
+    color:color-mix(in oklch,var(--hd-text) 50%,transparent);
+  }
+  .empty .ic svg{width:34px;height:34px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .empty .t{color:var(--hd-text);font-weight:var(--fw-semibold);font-size:var(--text-h5)}
+  .empty .s{font-size:var(--text-body-sm);max-width:320px}
+  .empty .btn{margin-top:var(--space-2)}
+
+  footer{border-top:1px solid var(--hd-line);padding:var(--space-6) 0;margin-top:var(--space-12);text-align:center;color:var(--hd-muted);font-size:var(--text-body-sm)}
+
+  /* ═══════════ 模型详情抽屉（右侧滑出，与首页登录抽屉同范式：body class + visibility 时序） ═══════════ */
+  /* 遮罩：默认 visibility:hidden + opacity:0，避免 hidden 硬切；body.drawer-open 时显形 */
+  .scrim{
+    position:fixed;inset:0;z-index:60;
+    background:color-mix(in oklch,var(--hd-bg) 64%,transparent);
+    backdrop-filter:blur(3px);
+    opacity:0;visibility:hidden;
+    transition:opacity var(--dur-3) var(--ease-out),visibility var(--dur-3) var(--ease-out);
+  }
+  body.drawer-open .scrim{opacity:1;visibility:visible}
+  /* 抽屉本体：玻璃质感，从右滑入 */
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;z-index:61;
+    width:min(440px,92vw);display:flex;flex-direction:column;
+    background:color-mix(in oklch,var(--hd-bg2) 86%,transparent);
+    backdrop-filter:blur(20px);
+    border-left:1px solid color-mix(in oklch,var(--hd-mint) 16%,transparent);
+    box-shadow:-30px 0 70px -30px color-mix(in oklch,var(--hd-bg) 90%,transparent);
+    transform:translateX(102%);
+    transition:transform var(--dur-3) var(--ease-out);
+    overflow:hidden;
+  }
+  body.drawer-open .drawer{transform:none}
+  /* 抽屉顶部辉光，呼应页头 aurora，但更收敛 */
+  .drawer::before{
+    content:'';position:absolute;inset:-30% -20% auto -20%;height:50%;z-index:0;pointer-events:none;
+    background:radial-gradient(50% 70% at 70% 0%, color-mix(in oklch,var(--color-primary-500) 26%,transparent), transparent 72%);
+    filter:blur(30px);
+  }
+  .dw-head{
+    position:relative;z-index:1;display:flex;align-items:flex-start;gap:var(--space-3);
+    padding:var(--space-6) var(--space-5) var(--space-4);border-bottom:1px solid var(--hd-line);
+  }
+  .dw-head .av{width:52px;height:52px;font-size:var(--text-h4)}
+  .dw-head .av.icon svg{width:30px;height:30px}
+  .dw-head .ttl{flex:1;min-width:0}
+  .dw-head .ttl h2{font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h4);margin:0 0 2px;color:var(--hd-text);letter-spacing:-.01em;word-break:break-all}
+  .dw-head .ttl .vd{color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .dw-close{
+    flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:var(--radius-sm);
+    background:var(--hd-glass);border:1px solid var(--hd-line);color:var(--hd-muted);cursor:pointer;
+    transition:background var(--dur-2),color var(--dur-2),border-color var(--dur-2),transform var(--dur-1) var(--ease-snap);
+  }
+  .dw-close svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .dw-close:hover{background:var(--hd-glass-strong);color:var(--hd-text);border-color:color-mix(in oklch,var(--hd-text) 24%,transparent)}
+  .dw-close:active{transform:scale(.94)}
+  /* 抽屉滚动体 */
+  .dw-body{position:relative;z-index:1;flex:1;overflow-y:auto;padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-5)}
+  .dw-sec-t{font-size:var(--text-overline);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--hd-muted);margin:0 0 var(--space-3);font-weight:var(--fw-semibold)}
+  /* 价格对比卡：官方价划线 -> Nexa 价高亮 + 省X% */
+  .price-card{
+    border:1px solid color-mix(in oklch,var(--hd-mint) 24%,transparent);border-radius:var(--radius-lg);
+    background:color-mix(in oklch,var(--hd-mint) 7%,transparent);
+    padding:var(--space-4);position:relative;overflow:hidden;
+  }
+  .price-card::before{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background:radial-gradient(80% 120% at 100% 0%, color-mix(in oklch,var(--hd-mint) 14%,transparent), transparent 60%);
+  }
+  .pc-rows{position:relative;z-index:1;display:flex;flex-direction:column;gap:var(--space-3)}
+  .pc-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)}
+  .pc-row .lab{color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-sm)}
+  .pc-row .vals{display:flex;align-items:baseline;gap:var(--space-3)}
+  .pc-row .ori{font-family:var(--font-mono);color:color-mix(in oklch,var(--hd-text) 42%,transparent);font-size:var(--text-body-sm);text-decoration:line-through}
+  .pc-row .nexa{font-family:var(--font-mono);color:var(--hd-mint);font-weight:var(--fw-bold);font-size:var(--text-body-lg)}
+  .pc-foot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid color-mix(in oklch,var(--hd-mint) 18%,transparent)}
+  .pc-foot .tier{color:var(--hd-muted);font-size:var(--text-caption)}
+  .pc-foot .tier b{color:color-mix(in oklch,var(--hd-text) 82%,transparent);font-family:var(--font-mono);font-weight:var(--fw-semibold)}
+  .pc-unit{position:relative;z-index:1;color:var(--hd-muted);font-size:var(--text-caption);margin-top:var(--space-2)}
+  /* 无官方价（待核）态 */
+  .price-card.na{border-color:var(--hd-line);background:var(--hd-glass)}
+  .price-card.na .pc-na{position:relative;z-index:1;color:var(--hd-muted);font-size:var(--text-body-sm);display:flex;align-items:center;gap:8px}
+  .price-card.na .pc-na svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  /* 规格行（上下文 / 能力） */
+  .spec-grid{display:flex;flex-direction:column;gap:var(--space-2)}
+  .spec-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:1px solid var(--hd-line)}
+  .spec-row:last-child{border-bottom:0}
+  .spec-row .sk{color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .spec-row .sv{color:color-mix(in oklch,var(--hd-text) 88%,transparent);font-size:var(--text-body-sm);font-family:var(--font-mono);text-align:right}
+  .dw-tags{display:flex;gap:6px;flex-wrap:wrap}
+  .src{color:var(--hd-muted);font-size:var(--text-caption);line-height:var(--lh-snug);background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-md);padding:var(--space-3)}
+  .src .sl{color:color-mix(in oklch,var(--hd-text) 64%,transparent);font-weight:var(--fw-semibold)}
+  .note{color:color-mix(in oklch,var(--hd-text) 46%,transparent);font-size:var(--text-caption);display:flex;align-items:center;gap:6px}
+  .note svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  /* 抽屉底部 CTA 区 */
+  .dw-foot{position:relative;z-index:1;padding:var(--space-4) var(--space-5);border-top:1px solid var(--hd-line);background:color-mix(in oklch,var(--hd-bg) 40%,transparent)}
+  .dw-foot .btn{width:100%}
+  .dw-foot .btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ─────────── 响应式：3列 -> 2列 -> 1列 ─────────── */
+  @media(max-width:880px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:760px){.nav-links{display:none}}
+  @media(max-width:560px){
+    .grid{grid-template-columns:1fr}
+    .filter-bar{flex-direction:column;align-items:stretch}
+    select.ctrl-inp{width:100%}
+  }
+
+  @keyframes fade-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  @keyframes breath{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.65}}
+
+  /* prefers-reduced-motion：辉光减速不冻结；入场动画关掉但内容全显 */
+  @media(prefers-reduced-motion:reduce){
+    .head-pill,.page-head h1,.page-head .lead,.toolbar,.count{animation:none!important;opacity:1!important;transform:none!important}
+    .mcard.enter{animation:none!important;opacity:1!important;transform:none!important}
+    .empty.show{animation:none!important}
+    .page-head::before{animation-duration:48s!important}
+    .head-pill .live{animation-duration:6s!important}
+    .scrim,.drawer{transition-duration:.01ms!important}
+  }
+
+  /* ═══════════ 统一导航：移动端汉堡 + 认证抽屉（与首页 home.html 同源） ═══════════ */
+  .nav-toggle{display:none;width:42px;height:42px;border-radius:11px;border:1px solid var(--hd-line);background:var(--hd-glass);backdrop-filter:blur(8px);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin-left:auto}
+  .nav-toggle span{display:block;width:18px;height:2px;border-radius:2px;background:var(--hd-text);transition:transform var(--dur-2) var(--ease-out),opacity var(--dur-1)}
+  body.nav-open .nav-toggle span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  body.nav-open .nav-toggle span:nth-child(2){opacity:0}
+  body.nav-open .nav-toggle span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .nav-mobile{display:none;flex-direction:column;gap:2px;padding:0 var(--space-5);max-height:0;overflow:hidden;opacity:0;transition:max-height var(--dur-4) var(--ease-out),opacity var(--dur-3) var(--ease-out)}
+  .nav-mobile a{padding:14px 4px;color:color-mix(in oklch,var(--hd-text) 86%,transparent);font-weight:var(--fw-medium);font-size:var(--text-h6);border-bottom:1px solid color-mix(in oklch,var(--hd-line) 60%,transparent)}
+  .nav-mobile a.active{color:var(--hd-mint)}
+  .nav-mobile a:active{color:var(--color-primary-400)}
+  .nav-mobile-cta{display:flex;gap:var(--space-3);padding:16px 0 6px}
+  .nav-mobile-cta .btn{flex:1;text-align:center;justify-content:center}
+  body.nav-open .nav-mobile{max-height:380px;opacity:1;padding-bottom:18px;border-bottom:1px solid var(--hd-line);background:color-mix(in oklch,var(--hd-bg) 70%,transparent);backdrop-filter:blur(10px)}
+  @media(max-width:760px){
+    .nav-cta{display:none}
+    .nav-toggle{display:flex}
+    .nav-mobile{display:flex}
+  }
+
+  /* 认证抽屉：右侧滑出（不跳页，背景保持） */
+  .auth-overlay{
+    position:fixed;inset:0;z-index:60;
+    background:color-mix(in oklch,var(--hd-bg) 64%,transparent);
+    backdrop-filter:blur(1.5px);
+    opacity:0;visibility:hidden;
+    transition:opacity var(--dur-3) var(--ease-out),visibility 0s linear var(--dur-3);
+  }
+  body.auth-open .auth-overlay{opacity:1;visibility:visible;transition:opacity var(--dur-3) var(--ease-out),visibility 0s}
+  .auth-drawer{
+    position:fixed;top:0;right:0;bottom:0;z-index:61;
+    width:min(468px,100vw);
+    background:color-mix(in oklch,var(--hd-bg) 86%,transparent);
+    backdrop-filter:blur(22px);
+    border-left:1px solid var(--hd-line);
+    box-shadow:-30px 0 80px -30px color-mix(in oklch,var(--hd-bg) 88%,transparent);
+    transform:translateX(100%);visibility:hidden;
+    transition:transform var(--dur-4) var(--ease-out),visibility 0s linear var(--dur-4);
+    overflow-y:auto;overscroll-behavior:contain;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:var(--space-8) var(--space-8) var(--space-6);
+  }
+  body.auth-open .auth-drawer{transform:translateX(0);visibility:visible;transition:transform var(--dur-4) var(--ease-out),visibility 0s}
+  .auth-close{
+    position:absolute;top:18px;right:18px;width:40px;height:40px;border:none;cursor:pointer;
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-full);
+    color:var(--hd-muted);display:grid;place-items:center;backdrop-filter:blur(8px);
+    transition:color var(--dur-1),background var(--dur-1),transform var(--dur-1) var(--ease-snap);
+  }
+  .auth-close:hover{color:var(--hd-text);background:var(--hd-glass-strong);transform:rotate(90deg)}
+  .auth-close svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+  .auth-card[hidden]{display:none}
+  .auth-card{animation:auth-in var(--dur-4) var(--ease-out)}
+  @keyframes auth-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .auth-brand{display:flex;align-items:center;gap:9px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);margin-bottom:var(--space-6)}
+  .auth-brand .m{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));color:var(--color-primary-fg);font-weight:var(--fw-bold);font-size:.9rem}
+  .auth-title{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);letter-spacing:-.02em;margin:0 0 var(--space-2);color:var(--hd-text)}
+  .auth-sub{color:var(--hd-muted);font-size:var(--text-body);margin:0 0 var(--space-6)}
+
+  .auth-drawer .field{margin-bottom:var(--space-4)}
+  .auth-drawer .field label{display:block;font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:color-mix(in oklch,var(--hd-text) 78%,transparent);margin-bottom:var(--space-2)}
+  .auth-drawer .ctrl{position:relative;display:flex;align-items:center}
+  .auth-drawer .inp{
+    width:100%;height:50px;
+    background:color-mix(in oklch,var(--hd-text) 4%,transparent);
+    border:1px solid var(--hd-line);border-radius:var(--radius-md);
+    color:var(--hd-text);font-family:'Inter',var(--font-sans);font-size:var(--text-body-lg);padding:0 var(--space-4);
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background var(--dur-2);
+  }
+  .auth-drawer .inp::placeholder{color:color-mix(in oklch,var(--hd-muted) 80%,transparent)}
+  .auth-drawer .inp:focus{outline:none;border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent);
+    background:color-mix(in oklch,var(--hd-text) 6%,transparent);
+    box-shadow:0 0 0 4px color-mix(in oklch,var(--color-primary-500) 16%,transparent),0 0 22px -4px color-mix(in oklch,var(--color-primary-500) 40%,transparent)}
+  .auth-drawer .ctrl.has-eye .inp{padding-right:46px}
+  .auth-drawer .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:transparent;cursor:pointer;display:grid;place-items:center;border-radius:var(--radius-sm);color:var(--hd-muted);transition:color var(--dur-1)}
+  .auth-drawer .eye:hover{color:var(--hd-text)}
+  .auth-drawer .eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .auth-drawer .eye .off{display:none}
+  .auth-drawer .eye.is-on .on{display:none}
+  .auth-drawer .eye.is-on .off{display:block}
+  .auth-drawer .inp.err{border-color:color-mix(in oklch,var(--color-danger) 80%,transparent);box-shadow:0 0 0 4px color-mix(in oklch,var(--color-danger) 16%,transparent)}
+  @keyframes auth-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+  .auth-drawer .shake{animation:auth-shake .4s var(--ease-in-out)}
+
+  .auth-drawer .pw-strength{display:flex;align-items:center;gap:6px;margin-top:var(--space-2)}
+  .auth-drawer .pw-strength i{flex:1;height:4px;border-radius:2px;background:color-mix(in oklch,var(--hd-text) 12%,transparent);transition:background var(--dur-2)}
+  .auth-drawer .pw-strength.s1 i:nth-child(1){background:var(--color-danger)}
+  .auth-drawer .pw-strength.s2 i:nth-child(-n+2){background:var(--color-warning)}
+  .auth-drawer .pw-strength.s3 i{background:var(--color-success)}
+  .auth-drawer .pw-strength .pw-label{margin-left:6px;font-size:var(--text-caption);color:var(--hd-muted);min-width:48px}
+
+  .auth-drawer .row-between{display:flex;align-items:center;justify-content:space-between;margin:var(--space-2) 0 var(--space-5)}
+  .auth-drawer .check{display:inline-flex;align-items:center;gap:var(--space-2);cursor:pointer;user-select:none;color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-sm)}
+  .auth-drawer .check-agree{margin:var(--space-2) 0 var(--space-5);align-items:flex-start;line-height:1.5}
+  .auth-drawer .check input{position:absolute;opacity:0;width:0;height:0}
+  .auth-drawer .check .box{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid color-mix(in oklch,var(--hd-text) 28%,transparent);background:color-mix(in oklch,var(--hd-text) 4%,transparent);display:grid;place-items:center;transition:border-color var(--dur-1),background var(--dur-1);margin-top:1px}
+  .auth-drawer .check .box svg{width:13px;height:13px;stroke:var(--color-primary-fg);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--dur-1)}
+  .auth-drawer .check input:checked + .box{background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent)}
+  .auth-drawer .check input:checked + .box svg{opacity:1}
+  .auth-drawer .check a{color:var(--hd-mint)}
+  .auth-drawer .link{color:var(--hd-mint);font-size:var(--text-body-sm);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .auth-drawer .link:hover{color:var(--color-primary-300)}
+
+  .auth-card .btn{font-family:inherit;border:none;border-radius:var(--radius-md);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2)}
+  .auth-card .btn-glow{width:100%;height:52px;font-size:var(--text-body-lg);font-weight:var(--fw-semibold);background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));color:var(--color-primary-fg);box-shadow:0 10px 28px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:hover{transform:translateY(-1px);box-shadow:0 14px 34px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:active{transform:translateY(0)}
+
+  .auth-drawer .divider{display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0 var(--space-5);color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .auth-drawer .divider::before,.auth-drawer .divider::after{content:'';flex:1;height:1px;background:var(--hd-line)}
+  .auth-drawer .oauth{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+  .auth-drawer .oauth a{height:48px;border-radius:var(--radius-md);display:grid;place-items:center;background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);color:color-mix(in oklch,var(--hd-text) 82%,transparent);transition:transform var(--dur-1) var(--ease-snap),border-color var(--dur-2),background var(--dur-2),color var(--dur-2)}
+  .auth-drawer .oauth a:hover{transform:translateY(-2px);background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);color:var(--hd-text)}
+  .auth-drawer .oauth a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .auth-drawer .foot{text-align:center;margin-top:var(--space-6);color:var(--hd-muted);font-size:var(--text-body)}
+  .auth-drawer .foot a{color:var(--hd-mint);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .auth-drawer .foot a:hover{color:var(--color-primary-300)}
+
+  @media(max-width:540px){
+    .auth-drawer{width:100vw;padding:var(--space-8) var(--space-5) var(--space-6)}
+    .auth-drawer .inp{height:52px}
+    .auth-card .btn-glow{height:54px}
+    .auth-drawer .oauth a{height:52px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .auth-drawer,.auth-overlay{transition-duration:.01ms!important}
+    .auth-card{animation:none!important}
+  }
+</style>
+</head>
+<body>
+<header class="nav-bar">
+  <div class="wrap nav-in">
+    <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa</a>
+    <nav class="nav-links">
+      <a href="models.html" class="active">模型广场</a>
+      <a href="pricing.html">价格</a>
+      <a href="ranking.html">排行榜</a>
+      <a href="../api-docs/quickstart.html">文档</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-glass" href="login.html" data-auth="login">登录</a>
+      <a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a>
+    </div>
+    <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="nav-mobile" id="navMobile" aria-hidden="true">
+    <a href="models.html" class="active">模型广场</a>
+    <a href="pricing.html">价格</a>
+    <a href="ranking.html">排行榜</a>
+    <a href="../api-docs/quickstart.html">文档</a>
+    <div class="nav-mobile-cta">
+      <a class="btn btn-glass" href="login.html" data-auth="login">登录</a>
+      <a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a>
+    </div>
+  </div>
+</header>
+
+<section class="page-head">
+  <div class="wrap">
+    <div class="head-pill"><span class="live"></span>实时在线 · 统一协议接入</div>
+    <h1>模型<span class="accent">广场</span></h1>
+    <p class="lead">聚合主流厂商共 <b id="totalN">0</b> 个模型，统一协议、统一计费。点击标签快速筛选，搜索模型名或厂商，按价格 / 上下文排序。</p>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="filter-bar">
+      <div class="search">
+        <span class="si" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        </span>
+        <input class="ctrl-inp" id="searchInp" placeholder="搜索模型名或厂商…" aria-label="搜索模型">
+      </div>
+      <div class="selw">
+        <select class="ctrl-inp" id="sortSel" aria-label="排序方式">
+          <option value="default">默认排序</option>
+          <option value="price">价格从低到高</option>
+          <option value="ctx">上下文从大到小</option>
+        </select>
+        <span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></span>
+      </div>
+    </div>
+
+    <div class="pills" id="pills">
+      <span class="pill on" data-cat="all" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>全部</span>
+      <span class="pill" data-cat="chat" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.4-.6L3 21l1.6-4.5A8.4 8.4 0 1 1 21 11.5z"/></svg>对话</span>
+      <span class="pill" data-cat="reasoning" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>推理</span>
+      <span class="pill" data-cat="vision" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-7 7"/></svg>多模态</span>
+      <span class="pill" data-cat="code" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/><path d="m13 5-2 14"/></svg>代码</span>
+    </div>
+
+    <div class="pills" id="tierPills" aria-label="品质筛选">
+      <span class="pill on" data-tier="all" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18"/><path d="M3 12h18"/><path d="M3 17h18"/></svg>全部品质</span>
+      <span class="pill" data-tier="flagship" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.6 6.8 19.2l1-5.9L3.5 9.2l5.9-.9z"/></svg>旗舰</span>
+      <span class="pill" data-tier="enhanced" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>增强</span>
+      <span class="pill" data-tier="economy" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8"/><path d="M9.5 10.5h3.5a1.8 1.8 0 0 1 0 3.5H10"/></svg>经济</span>
+    </div>
+
+    <div class="count">共 <b id="cnt">0</b> 个模型</div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="empty" id="empty">
+    <span class="ic" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8.5 11h5"/></svg>
+    </span>
+    <div class="t">没有匹配的模型</div>
+    <div class="s">换个关键词，或重置筛选条件试试。</div>
+    <button class="btn btn-glass" id="resetBtn" type="button">重置筛选</button>
+  </div>
+</div>
+
+<footer><div class="wrap">© 2026 Nexa·AI · 模型数据为原型演示，价格以控制台实时报价为准</div></footer>
+
+<!-- ═══ 模型详情抽屉（右侧滑出，玻璃质感；内容由 JS 注入） ═══ -->
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dwTitle" aria-hidden="true">
+  <div class="dw-head">
+    <div class="av" id="dwAv"></div>
+    <div class="ttl">
+      <h2 id="dwTitle">—</h2>
+      <div class="vd" id="dwVendor">—</div>
+    </div>
+    <button class="dw-close" id="dwClose" type="button" aria-label="关闭详情">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="dw-body" id="dwBody"></div>
+  <div class="dw-foot">
+    <a class="btn btn-glow" id="dwCta" href="home.html">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      在控制台调用
+    </a>
+  </div>
+</aside>
+
+<script>
+/* ===================================================================
+   模型广场逻辑：数据 -> 筛选/搜索/排序 -> FLIP 平滑重排 + stagger 入场
+   交互全走 addEventListener / 事件委托，无内联 onclick / oninput。
+   =================================================================== */
+
+// ── 数据源：来自 model-data.js（真实官方价 + 厂商官方图标） ──
+// window.VENDOR_ICONS：{color, svg, placeholder, letter}
+// window.MODEL_PRICING：{name, vendor, ctx, cats, official_in, official_out, tags, source}
+var VENDOR_ICONS = window.VENDOR_ICONS || {};
+var MODELS = window.MODEL_PRICING || [];
+
+/* ── 品质分级配置（与 model-data.js 的 tier/tierLabel 对接） ──
+ *   旗舰 flagship -> teal 实心；增强 enhanced -> 蓝；经济 economy -> 中性灰
+ *   svg 为内联线性/实心图标（零 emoji）；note 为详情弹层品质说明文案。 */
+var TIER_CONFIG = {
+  flagship: { label:'旗舰', cls:'flagship',
+    svg:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.9L12 16.6 6.8 19.2l1-5.9L3.5 9.2l5.9-.9z"/></svg>',
+    note:'官方满血，最高质量输出，适合对效果最敏感的核心任务。' },
+  enhanced: { label:'增强', cls:'enhanced',
+    svg:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+    note:'高性价比均衡，质量与成本兼顾，适合大多数生产场景。' },
+  economy:  { label:'经济', cls:'economy',
+    svg:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8"/><path d="M9.5 10.5h3.5a1.8 1.8 0 0 1 0 3.5H10"/></svg>',
+    note:'入门够用，低价档位，适合高并发、低敏感度或预算优先的场景。' }
+};
+// 品质徽章 HTML（无 tier 返回空串，兼容单档模型）
+function tierBadgeHTML(m){
+  if(!m || !m.tier) return '';
+  var t = TIER_CONFIG[m.tier];
+  if(!t) return '';
+  var lab = m.tierLabel || t.label;
+  return '<span class="tier-badge '+t.cls+'">'+t.svg+esc(lab)+'</span>';
+}
+
+// 厂商主色（兜底用，未在 VENDOR_ICONS 命中时回退到图表色）
+var VENDOR_FALLBACK = {
+  'OpenAI':'var(--chart-5)','Anthropic':'var(--chart-4)','Google':'var(--chart-2)',
+  'xAI':'var(--chart-8)','DeepSeek':'var(--chart-7)','Mistral':'var(--chart-3)',
+  'Meta':'var(--chart-2)','阿里通义':'var(--chart-6)','智谱AI':'var(--chart-1)','月之暗面':'var(--chart-4)'
+};
+
+/* ── 分档倍率：官方输出价(official_out) 决定档位 ──
+ *   旗舰/贵模型 official_out ≥ 10  -> ×0.15（省 85%）
+ *   中端        official_out 4~10  -> ×0.20（省 80%）
+ *   高性价比     official_out < 4   -> ×0.30（省 70%）
+ *   nexa_in = official_in × rate，nexa_out = official_out × rate，rate 按档位
+ *   省 X% = round((1-rate)*100)
+ */
+function tierRate(officialOut){
+  if(officialOut == null) return null;
+  if(officialOut >= 10) return 0.15;
+  if(officialOut >= 4)  return 0.20;
+  return 0.30;
+}
+function tierLabel(rate){
+  if(rate === 0.15) return '旗舰档';
+  if(rate === 0.20) return '中端档';
+  if(rate === 0.30) return '高性价比档';
+  return '—';
+}
+// 价格格式化：去掉无意义末尾 0，保留有效小数
+function fmtUSD(v){
+  if(v == null) return null;
+  // 小数动态精度：<1 保 3 位，≥1 保 2 位，再去尾零
+  var s = (v < 1) ? v.toFixed(3) : v.toFixed(2);
+  s = s.replace(/\.?0+$/,'');
+  return s;
+}
+// 计算单个模型的价格视图（含官方价 / Nexa 价 / 倍率 / 省X%）
+function pricingOf(m){
+  var rate = tierRate(m.official_out);
+  if(rate == null){
+    return { hasPrice:false };
+  }
+  return {
+    hasPrice:true,
+    rate:rate,
+    save:Math.round((1-rate)*100),
+    tier:tierLabel(rate),
+    oin:m.official_in, oout:m.official_out,
+    nin:m.official_in * rate, nout:m.official_out * rate
+  };
+}
+
+var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function $(id){ return document.getElementById(id); }
+var grid = $('grid'), empty = $('empty'), cntEl = $('cnt'),
+    searchInp = $('searchInp'), sortSel = $('sortSel'), pillsBox = $('pills'), resetBtn = $('resetBtn');
+var tierPillsBox = $('tierPills');
+
+var curCat = 'all';
+var curTier = 'all';
+var firstRender = true;
+
+// 上下文体量解析（用于排序）：M -> x1000, K -> x1, 纯token -> 归一
+function ctxVal(c){
+  if(!c || c==='—') return 0;
+  var n = parseFloat(c);
+  if(isNaN(n)) return 0;
+  if(c.indexOf('M')>=0) return n*1000;
+  if(c.indexOf('K')>=0) return n;
+  return n/1000; // 纯 token 数（如 512）归一到 K 量级
+}
+
+// 转义，防止 XSS（数据可控但保持安全习惯）
+function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+
+// ── 厂商头像渲染：有官方 SVG 用 SVG（厂商品牌色 token），placeholder 用品牌色圆底+首字母 ──
+// 注：SVG 来自 model-data.js（simple-icons MIT），整体可信，故直接注入。
+// 厂商品牌色统一走页面 :root 定义的 var(--v-*) token，DOM 内联 style 不出现裸 hex。
+var VENDOR_VAR = {
+  'OpenAI':'var(--v-openai)','Anthropic':'var(--v-anthropic)','Google':'var(--v-google)',
+  'xAI':'var(--v-xai)','Meta':'var(--v-meta)','Mistral':'var(--v-mistral)',
+  'DeepSeek':'var(--v-deepseek)','阿里通义':'var(--v-qwen)','智谱AI':'var(--v-zhipu)','月之暗面':'var(--v-moonshot)'
+};
+function avatarHTML(vendor, cls){
+  cls = cls || '';
+  var ic = VENDOR_ICONS[vendor];
+  var color = VENDOR_VAR[vendor] || VENDOR_FALLBACK[vendor] || 'var(--chart-1)';
+  if(ic && !ic.placeholder && ic.svg){
+    // 官方 SVG：白底承托（.icon），SVG 用 currentColor 取厂商品牌色 token
+    return '<div class="av icon '+cls+'" style="color:'+color+'">'+ic.svg+'</div>';
+  }
+  // placeholder：品牌色圆底 + 首字母
+  var letter = (ic && ic.letter) || vendor.charAt(0).toUpperCase();
+  var bg = 'linear-gradient(140deg, color-mix(in oklch,'+color+' 86%,transparent), color-mix(in oklch,'+color+' 60%,transparent))';
+  return '<div class="av ph '+cls+'" style="background:'+bg+'">'+esc(letter)+'</div>';
+}
+
+function computeList(){
+  var q = searchInp.value.trim().toLowerCase();
+  var sort = sortSel.value;
+  var list = MODELS.filter(function(m){
+    return (curCat==='all' || (m.cats && m.cats.indexOf(curCat)>=0)) &&
+      (curTier==='all' || m.tier===curTier) &&
+      (m.name.toLowerCase().indexOf(q)>=0 || m.vendor.toLowerCase().indexOf(q)>=0);
+  });
+  // 价格排序按 Nexa 输出价从低到高（无价者沉底）
+  if(sort==='price') list = list.slice().sort(function(a,b){
+    var pa = pricingOf(a), pb = pricingOf(b);
+    var va = pa.hasPrice ? pa.nout : Infinity;
+    var vb = pb.hasPrice ? pb.nout : Infinity;
+    return va-vb;
+  });
+  if(sort==='ctx')   list = list.slice().sort(function(a,b){ return ctxVal(b.ctx)-ctxVal(a.ctx); });
+  return clusterFamilies(list);
+}
+
+// 归组保序：把同 family 的条目聚到一起（以该 family 首次出现的位置为锚），
+// 无 family 的保持原位。确保排序/筛选后家族成员仍相邻，归组渲染不被打散。
+function clusterFamilies(list){
+  var out = [];
+  var seen = {};       // family -> 锚点在 out 中的占位索引（用数组承接成员）
+  var slots = {};      // family -> 成员数组引用
+  list.forEach(function(m){
+    if(m.family){
+      if(!(m.family in seen)){
+        var arr = [];
+        slots[m.family] = arr;
+        seen[m.family] = true;
+        out.push(arr);   // 占位：成员数组
+      }
+      slots[m.family].push(m);
+    }else{
+      out.push(m);
+    }
+  });
+  // 展平：成员数组就地展开
+  var flat = [];
+  out.forEach(function(x){
+    if(Array.isArray(x)) flat.push.apply(flat, x);
+    else flat.push(x);
+  });
+  return flat;
+}
+
+function cardHTML(m,i){
+  var tags = (m.tags||[]).slice(0,3).map(function(t){ return '<span class="tag">'+esc(t)+'</span>'; }).join('');
+  var p = pricingOf(m);
+  var priceHTML;
+  if(p.hasPrice){
+    // 卡片正面以"输出价"为代表展示 Nexa 价（高亮）+ 官方价划线 + 省X%
+    priceHTML =
+      '<div class="price">' +
+        '<span class="save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>省 '+p.save+'%</span>' +
+        '<span class="nexa">$'+fmtUSD(p.nout)+'<span class="u"> /1M out</span></span>' +
+        '<span class="ori">官方 $'+fmtUSD(p.oout)+'</span>' +
+      '</div>';
+  }else{
+    priceHTML = '<div class="price"><span class="na">价格待核</span></div>';
+  }
+  return '' +
+    '<article class="mcard'+(firstRender && !reduce ? ' enter' : '')+'" style="--i:'+i+'" data-key="'+esc(m.name)+'" tabindex="0" role="button" aria-label="查看 '+esc(m.name)+' 详情">' +
+      '<span class="open-hint" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>' +
+      '<div class="top">' +
+        avatarHTML(m.vendor) +
+        '<div><p class="nm-row"><span class="nm">'+esc(m.name)+'</span>'+tierBadgeHTML(m)+'</p><div class="vd">'+esc(m.vendor)+'</div></div>' +
+      '</div>' +
+      '<div class="tags">'+tags+'</div>' +
+      '<div class="meta">' +
+        '<span class="ctx"><span class="k">上下文</span><span class="v">'+esc(m.ctx||'—')+'</span></span>' +
+        priceHTML +
+      '</div>' +
+    '</article>';
+}
+
+// Count Up 动效：从当前值滚到目标值（reduce 时直接落值）
+function countUp(el, to, dur){
+  if(!el) return;
+  if(reduce){ el.textContent = to; return; }
+  var from = parseInt(el.textContent,10) || 0;
+  if(from === to){ el.textContent = to; return; }
+  var start = performance.now();
+  function step(now){
+    var p = Math.min(1, (now-start)/dur);
+    var eased = 1 - Math.pow(1-p, 3); // easeOutCubic
+    el.textContent = Math.round(from + (to-from)*eased);
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── 构建网格 HTML：按 family 归组 ──
+//   有 family 的连续多条 -> 成组渲染（家族小标题 + .fam-cards 容器），让同模型多品质档相邻。
+//   无 family 的 -> 维持独立卡渲染（兼容单档模型）。
+//   保持 list 原有顺序；同 family 的条目在 list 中本就相邻（数据按家族排布）。
+//   全局递增的卡片索引 gi 用于 stagger 入场 --i，组与散卡统一节奏。
+function buildGridHTML(list){
+  var out = [];
+  var gi = 0;          // 全局卡片序号（驱动 stagger）
+  var i = 0;
+  while(i < list.length){
+    var m = list[i];
+    if(m.family){
+      // 收集同 family 的连续区段
+      var fam = m.family;
+      var members = [];
+      while(i < list.length && list[i].family === fam){
+        members.push(list[i]); i++;
+      }
+      if(members.length > 1){
+        // 成组渲染：家族小标题 + 卡片容器
+        var head = members[0];
+        var label = head.familyLabel || fam;
+        var av = avatarHTML(head.vendor, 'fav');
+        var inner = members.map(function(mm){ return cardHTML(mm, gi++); }).join('');
+        out.push(
+          '<div class="fam-group">' +
+            '<div class="fam-head">' +
+              av +
+              '<span class="ft">'+esc(label)+'</span>' +
+              '<span class="fsub">同模型 '+members.length+' 个品质档 · 按需选价</span>' +
+              '<span class="fline" aria-hidden="true"></span>' +
+            '</div>' +
+            '<div class="fam-cards">'+inner+'</div>' +
+          '</div>'
+        );
+      }else{
+        // family 仅剩单条（如被品质筛选过滤后只剩一档）-> 退化为独立卡
+        out.push(cardHTML(members[0], gi++));
+      }
+    }else{
+      out.push(cardHTML(m, gi++));
+      i++;
+    }
+  }
+  return out.join('');
+}
+
+// FLIP 平滑重排：渲染前记录旧位置 -> 写入新 DOM -> 反算位移做过渡
+function render(){
+  var list = computeList();
+
+  // 1) 记录现有卡片旧位置（First）
+  var oldRects = {};
+  if(!firstRender && !reduce){
+    Array.prototype.forEach.call(grid.querySelectorAll('.mcard'), function(c){
+      oldRects[c.dataset.key] = c.getBoundingClientRect();
+    });
+  }
+
+  // 2) 写入新 DOM（Last）—— 按 family 归组（成组带家族小标题）
+  grid.innerHTML = buildGridHTML(list);
+
+  // 3) 空态 + 计数
+  empty.classList.toggle('show', list.length===0);
+  countUp(cntEl, list.length, 420);
+
+  // 4) FLIP：对仍存在的卡片做 Invert + Play 平滑过渡
+  if(!firstRender && !reduce){
+    Array.prototype.forEach.call(grid.querySelectorAll('.mcard'), function(c){
+      var old = oldRects[c.dataset.key];
+      if(!old) return; // 新卡片：交给出现，不强加位移
+      var now = c.getBoundingClientRect();
+      var dx = old.left-now.left, dy = old.top-now.top;
+      if(dx || dy){
+        c.style.transform = 'translate('+dx+'px,'+dy+'px)';
+        c.style.transition = 'none';
+        requestAnimationFrame(function(){
+          c.style.transition = 'transform var(--dur-3) var(--ease-out)';
+          c.style.transform = '';
+        });
+      }
+    });
+  }
+
+  firstRender = false;
+}
+
+// ── Spotlight：卡片 hover 光斑跟随（事件委托到 grid，更新 --mx/--my） ──
+grid.addEventListener('pointermove', function(e){
+  var card = e.target.closest('.mcard');
+  if(!card) return;
+  var r = card.getBoundingClientRect();
+  card.style.setProperty('--mx', (e.clientX-r.left)+'px');
+  card.style.setProperty('--my', (e.clientY-r.top)+'px');
+});
+
+// ── 筛选 pill：事件委托 + 键盘可达 ──
+function activatePill(el){
+  if(!el || !el.classList.contains('pill')) return;
+  curCat = el.dataset.cat;
+  Array.prototype.forEach.call(pillsBox.querySelectorAll('.pill'), function(p){ p.classList.toggle('on', p===el); });
+  render();
+}
+pillsBox.addEventListener('click', function(e){ activatePill(e.target.closest('.pill')); });
+pillsBox.addEventListener('keydown', function(e){
+  if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('pill')){
+    e.preventDefault();
+    activatePill(e.target);
+  }
+});
+
+// ── 品质 pill：与能力 pill 同范式，事件委托 + 键盘可达 ──
+function activateTierPill(el){
+  if(!el || !el.classList.contains('pill')) return;
+  curTier = el.dataset.tier;
+  Array.prototype.forEach.call(tierPillsBox.querySelectorAll('.pill'), function(p){ p.classList.toggle('on', p===el); });
+  render();
+}
+if(tierPillsBox){
+  tierPillsBox.addEventListener('click', function(e){ activateTierPill(e.target.closest('.pill')); });
+  tierPillsBox.addEventListener('keydown', function(e){
+    if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('pill')){
+      e.preventDefault();
+      activateTierPill(e.target);
+    }
+  });
+}
+
+// ── 搜索 / 排序：addEventListener，无内联 ──
+searchInp.addEventListener('input', render);
+sortSel.addEventListener('change', render);
+
+/* ═══════════ 模型详情抽屉：打开 / 关闭 / 内容注入 ═══════════ */
+var scrim = $('scrim'), drawer = $('drawer'), dwBody = $('dwBody'),
+    dwAv = $('dwAv'), dwTitle = $('dwTitle'), dwVendor = $('dwVendor'), dwClose = $('dwClose');
+var lastFocus = null;
+
+function modelByKey(key){
+  for(var i=0;i<MODELS.length;i++){ if(MODELS[i].name===key) return MODELS[i]; }
+  return null;
+}
+
+// 能力标签中文化（cats -> 显示名）
+var CAT_LABEL = { chat:'对话', reasoning:'推理', vision:'多模态', code:'代码' };
+function catNames(cats){
+  return (cats||[]).map(function(c){ return CAT_LABEL[c]||c; }).join(' · ');
+}
+
+// 详情：品质说明区块（无 tier 返回空串，兼容单档模型）
+function tierSection(m){
+  if(!m || !m.tier) return '';
+  var t = TIER_CONFIG[m.tier];
+  if(!t) return '';
+  var lab = m.tierLabel || t.label;
+  var fam = m.familyLabel ? '（'+esc(m.familyLabel)+' 家族）' : '';
+  return '' +
+    '<section>' +
+      '<h3 class="dw-sec-t">品质档位</h3>' +
+      '<div class="tier-note">' +
+        '<span class="tier-badge '+t.cls+' tn-badge">'+t.svg+esc(lab)+'</span>' +
+        '<span class="tn-text"><b>'+esc(lab)+'</b>'+fam+' — '+esc(t.note)+'</span>' +
+      '</div>' +
+    '</section>';
+}
+
+// 构建详情内容（价格对比 + 规格 + 标签 + 来源 + 演示说明）
+function detailHTML(m){
+  var p = pricingOf(m);
+  var priceBlock;
+  if(p.hasPrice){
+    priceBlock =
+      '<div class="price-card">' +
+        '<div class="pc-rows">' +
+          '<div class="pc-row"><span class="lab">输入价</span><span class="vals">' +
+            '<span class="ori">官方 $'+fmtUSD(p.oin)+'</span>' +
+            '<span class="nexa">$'+fmtUSD(p.nin)+'</span>' +
+          '</span></div>' +
+          '<div class="pc-row"><span class="lab">输出价</span><span class="vals">' +
+            '<span class="ori">官方 $'+fmtUSD(p.oout)+'</span>' +
+            '<span class="nexa">$'+fmtUSD(p.nout)+'</span>' +
+          '</span></div>' +
+        '</div>' +
+        '<div class="pc-foot">' +
+          '<span class="tier">计费倍率 <b>×'+p.rate+'</b>（'+esc(p.tier)+'）</span>' +
+          '<span class="save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>省 '+p.save+'%</span>' +
+        '</div>' +
+        '<div class="pc-unit">单位：USD / 1M tokens · 官方价划线，Nexa 平台价高亮（只付零头）</div>' +
+      '</div>';
+  }else{
+    priceBlock =
+      '<div class="price-card na"><div class="pc-na">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>' +
+        '官方价以人民币计价，USD 折算待核 — 实际报价以控制台为准。' +
+      '</div></div>';
+  }
+
+  return '' +
+    '<section>' +
+      '<h3 class="dw-sec-t">价格对比</h3>' +
+      priceBlock +
+    '</section>' +
+    tierSection(m) +
+    '<section>' +
+      '<h3 class="dw-sec-t">规格</h3>' +
+      '<div class="spec-grid">' +
+        '<div class="spec-row"><span class="sk">上下文长度</span><span class="sv">'+esc(m.ctx||'—')+'</span></div>' +
+        '<div class="spec-row"><span class="sk">能力</span><span class="sv">'+esc(catNames(m.cats))+'</span></div>' +
+        '<div class="spec-row"><span class="sk">厂商</span><span class="sv">'+esc(m.vendor)+'</span></div>' +
+      '</div>' +
+    '</section>' +
+    '<section>' +
+      '<h3 class="dw-sec-t">能力标签</h3>' +
+      '<div class="dw-tags">'+(m.tags||[]).map(function(t){ return '<span class="tag">'+esc(t)+'</span>'; }).join('')+'</div>' +
+    '</section>' +
+    '<section>' +
+      '<h3 class="dw-sec-t">价格来源</h3>' +
+      '<div class="src"><span class="sl">来源：</span>'+esc(m.source||'—')+'</div>' +
+    '</section>' +
+    '<div class="note">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>' +
+      '价格为演示数据，实际计费以控制台实时报价为准。' +
+    '</div>';
+}
+
+function openDrawer(m){
+  if(!m) return;
+  lastFocus = document.activeElement;
+  // 头部头像（与卡片同范式，但更大）
+  dwAv.outerHTML = avatarHTML(m.vendor).replace('class="av','id="dwAv" class="av');
+  dwAv = $('dwAv'); // outerHTML 替换后重新取引用
+  dwTitle.textContent = m.name;
+  dwVendor.textContent = m.vendor;
+  dwBody.innerHTML = detailHTML(m);
+  dwBody.scrollTop = 0;
+  document.body.classList.add('drawer-open');
+  drawer.setAttribute('aria-hidden','false');
+  scrim.setAttribute('aria-hidden','false');
+  // 焦点移到关闭按钮（可达性）
+  setTimeout(function(){ dwClose.focus(); }, reduce ? 0 : 60);
+}
+function closeDrawer(){
+  document.body.classList.remove('drawer-open');
+  drawer.setAttribute('aria-hidden','true');
+  scrim.setAttribute('aria-hidden','true');
+  if(lastFocus && lastFocus.focus){ lastFocus.focus(); }
+}
+
+// 卡片点击 / 键盘激活 -> 打开详情（事件委托到 grid）
+grid.addEventListener('click', function(e){
+  var card = e.target.closest('.mcard');
+  if(!card) return;
+  openDrawer(modelByKey(card.dataset.key));
+});
+grid.addEventListener('keydown', function(e){
+  var card = e.target.closest('.mcard');
+  if(!card) return;
+  if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openDrawer(modelByKey(card.dataset.key)); }
+});
+
+// 关闭：按钮 / 遮罩 / Esc
+dwClose.addEventListener('click', closeDrawer);
+scrim.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape' && document.body.classList.contains('drawer-open')) closeDrawer();
+});
+
+// ── 空态重置筛选 ──
+resetBtn.addEventListener('click', function(){
+  searchInp.value = '';
+  sortSel.value = 'default';
+  curCat = 'all';
+  curTier = 'all';
+  Array.prototype.forEach.call(pillsBox.querySelectorAll('.pill'), function(p){ p.classList.toggle('on', p.dataset.cat==='all'); });
+  if(tierPillsBox){ Array.prototype.forEach.call(tierPillsBox.querySelectorAll('.pill'), function(p){ p.classList.toggle('on', p.dataset.tier==='all'); }); }
+  render();
+});
+
+// 顶部"共 N 个模型"总数 Count Up（页头那行的总量）
+countUp($('totalN'), MODELS.length, 900);
+
+// 首屏渲染
+render();
+</script>
+
+<!-- ═══════════ 认证抽屉：右侧滑出（与首页 home.html 同源，不跳页） ═══════════ -->
+<div class="auth-overlay" id="authOverlay"></div>
+<aside class="auth-drawer" id="authDrawer" aria-modal="true" role="dialog" aria-label="登录或注册">
+  <button class="auth-close" id="authClose" type="button" aria-label="关闭">
+    <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+  </button>
+  <form class="auth-card" id="loginForm" data-view="login" novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">欢迎回来</h2>
+    <p class="auth-sub">登录你的 Nexa 账号，继续直连全球大模型</p>
+    <div class="field">
+      <label for="lgAccount">邮箱 / 用户名</label>
+      <div class="ctrl"><input class="inp" id="lgAccount" type="text" autocomplete="username" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="lgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="lgPwd" type="password" autocomplete="current-password" placeholder="输入密码">
+        <button class="eye" type="button" data-eye="lgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="row-between">
+      <label class="check"><input type="checkbox" checked><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>记住我</label>
+      <a class="link" href="#">忘记密码？</a>
+    </div>
+    <button class="btn btn-glow" type="submit">登录</button>
+    <div class="divider">或使用以下方式登录</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">还没有账号？<a href="#" data-switch="register">去注册</a></p>
+  </form>
+  <form class="auth-card" id="registerForm" data-view="register" hidden novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">开始用 Nexa</h2>
+    <p class="auth-sub">一个账号，直连 OpenAI / Anthropic / Google / DeepSeek</p>
+    <div class="field">
+      <label for="rgEmail">邮箱</label>
+      <div class="ctrl"><input class="inp" id="rgEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="rgPwd" type="password" autocomplete="new-password" placeholder="至少 8 位">
+        <button class="eye" type="button" data-eye="rgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+      <div class="pw-strength" id="pwStrength"><i></i><i></i><i></i><span class="pw-label">密码强度</span></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd2">确认密码</label>
+      <div class="ctrl"><input class="inp" id="rgPwd2" type="password" autocomplete="new-password" placeholder="再次输入密码"></div>
+    </div>
+    <label class="check check-agree"><input type="checkbox" id="rgAgree"><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>我已阅读并同意 <a href="agreement.html">《服务协议》</a> 和 <a href="privacy.html">《隐私政策》</a></label>
+    <button class="btn btn-glow" type="submit">创建账号</button>
+    <div class="divider">或使用以下方式注册</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">已有账号？<a href="#" data-switch="login">去登录</a></p>
+  </form>
+</aside>
+
+<script>
+/* ── 统一认证抽屉 + 移动端汉堡（与首页 home.html 同源） ── */
+(function(){
+  var overlay=document.getElementById('authOverlay'),
+      drawer=document.getElementById('authDrawer'),
+      closeBtn=document.getElementById('authClose'),
+      loginView=document.getElementById('loginForm'),
+      registerView=document.getElementById('registerForm');
+  if(!drawer)return;
+  var lastFocus=null;
+
+  function showView(v){
+    var toLogin = v!=='register';
+    loginView.hidden = !toLogin;
+    registerView.hidden = toLogin;
+  }
+  window.openAuth=function(v){
+    lastFocus=document.activeElement;
+    showView(v||'login');
+    document.body.classList.add('auth-open');
+    document.body.style.overflow='hidden';
+    var first=(v==='register'?registerView:loginView).querySelector('input');
+    if(first) setTimeout(function(){first.focus();},460);
+  };
+  function closeAuth(){
+    document.body.classList.remove('auth-open');
+    document.body.style.overflow='';
+    if(lastFocus) lastFocus.focus();
+  }
+  document.querySelectorAll('[data-auth]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); openAuth(this.getAttribute('data-auth')); });
+  });
+  drawer.querySelectorAll('[data-switch]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); showView(this.getAttribute('data-switch')); });
+  });
+  closeBtn.addEventListener('click', closeAuth);
+  overlay.addEventListener('click', closeAuth);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && document.body.classList.contains('auth-open')) closeAuth(); });
+
+  // 移动端汉堡菜单 toggle
+  var navToggle=document.getElementById('navToggle');
+  var navMobile=document.getElementById('navMobile');
+  if(navToggle){
+    navToggle.addEventListener('click', function(){
+      var open=document.body.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', open?'true':'false');
+      navToggle.setAttribute('aria-label', open?'关闭菜单':'打开菜单');
+      if(navMobile) navMobile.setAttribute('aria-hidden', open?'false':'true');
+    });
+    if(navMobile) navMobile.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){
+        document.body.classList.remove('nav-open');
+        navToggle.setAttribute('aria-expanded','false');
+        navMobile.setAttribute('aria-hidden','true');
+      });
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.key==='Escape' && document.body.classList.contains('nav-open')){
+        document.body.classList.remove('nav-open');
+        navToggle.setAttribute('aria-expanded','false');
+        if(navMobile) navMobile.setAttribute('aria-hidden','true');
+      }
+    });
+  }
+
+  // 眼睛：切 password/text
+  drawer.querySelectorAll('.eye').forEach(function(eye){
+    eye.addEventListener('click', function(){
+      var pwd=document.getElementById(eye.getAttribute('data-eye'));
+      if(!pwd)return;
+      var show=pwd.type==='password';
+      pwd.type=show?'text':'password';
+      eye.classList.toggle('is-on',show);
+      eye.setAttribute('aria-pressed',String(show));
+      eye.setAttribute('aria-label',show?'隐藏密码':'显示密码');
+    });
+  });
+
+  // 密码强度（注册）
+  var rgPwd=document.getElementById('rgPwd'), bar=document.getElementById('pwStrength'),
+      lbl=bar?bar.querySelector('.pw-label'):null;
+  if(rgPwd&&bar){
+    rgPwd.addEventListener('input', function(){
+      var v=rgPwd.value, kinds=0;
+      if(/[a-z]/.test(v))kinds++; if(/[A-Z]/.test(v))kinds++;
+      if(/[0-9]/.test(v))kinds++; if(/[^a-zA-Z0-9]/.test(v))kinds++;
+      var s=0;
+      if(v.length>=8 && kinds>=3) s=3;
+      else if(v.length>=6 && kinds>=2) s=2;
+      else if(v.length>0) s=1;
+      bar.className='pw-strength'+(s?' s'+s:'');
+      if(lbl) lbl.textContent = s===0?'密码强度':(s===1?'弱':(s===2?'中':'强'));
+    });
+  }
+
+  function shake(el){ el.classList.add('err','shake'); setTimeout(function(){el.classList.remove('shake');},420); }
+  function clr(el){ el.classList.remove('err'); }
+
+  loginView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var acc=document.getElementById('lgAccount'), pw=document.getElementById('lgPwd'), bad=false;
+    [acc,pw].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(bad)return;
+    // TODO: 调登录接口；演示态——直接当作登录成功
+  });
+  registerView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var em=document.getElementById('rgEmail'), p1=document.getElementById('rgPwd'),
+        p2=document.getElementById('rgPwd2'), agree=document.getElementById('rgAgree'), bad=false;
+    [em,p1,p2].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(!bad && p1.value!==p2.value){ shake(p2); bad=true; }
+    if(!agree.checked){ var box=agree.nextElementSibling; if(box){box.classList.add('shake');setTimeout(function(){box.classList.remove('shake');},420);} bad=true; }
+    if(bad)return;
+    // TODO: 调注册接口；演示态——直接当作注册成功
+  });
+})();
+</script>
+</body>
+</html>

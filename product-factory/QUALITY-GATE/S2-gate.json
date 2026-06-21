@@ -1,0 +1,88 @@
+{
+  "stage": "S2",
+  "stage_name": "requirement_decomposition_rerun",
+  "status": "PASS_WITH_GAPS",
+  "downstream_allowed": true,
+  "checked_at": "2026-06-19T07:05:21.292251+00:00",
+  "authority": {
+    "machine_source_of_truth": [
+      "02_decomposition/final/FUNCTION-LIST.csv",
+      "02_decomposition/final/REQUIREMENT-TREE.csv"
+    ],
+    "human_review_files": [
+      "02_decomposition/final/FUNCTION-LIST.md",
+      "02_decomposition/reviews/S2-REVIEW-REPORT.md"
+    ],
+    "display_only": []
+  },
+  "counts": {
+    "function_rows": 231,
+    "priority_breakdown": {
+      "P0": 64,
+      "P1": 95,
+      "P2": 69,
+      "P3": 3
+    },
+    "evidence_distinct_values": 231,
+    "acceptance_focus_distinct_values": 231,
+    "tree_rows": 335,
+    "tree_type_breakdown": {
+      "Module": 14,
+      "Capability": 47,
+      "Requirement": 156,
+      "domain": 6,
+      "group": 14,
+      "function": 48,
+      "NFR": 31,
+      "Compliance": 10,
+      "RBAC": 9
+    }
+  },
+  "scripts_run": [
+    {
+      "cmd": "compute_gate_counts.py --stage S2",
+      "exit": 0
+    },
+    {
+      "cmd": "repo_capability_coverage.py",
+      "exit": 0,
+      "status": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "id": "evidence.distinct",
+      "status": "PASS",
+      "evidence": "231/231 (上轮=1模板填充)"
+    },
+    {
+      "id": "acceptance.distinct",
+      "status": "PASS",
+      "evidence": "231/231"
+    },
+    {
+      "id": "tree.nfr_compliance_rbac",
+      "status": "PASS",
+      "evidence": "{'Module': 14, 'Capability': 47, 'Requirement': 156, 'domain': 6, 'group': 14, 'function': 48, 'NFR': 31, 'Compliance': 10, 'RBAC': 9}"
+    },
+    {
+      "id": "repo.reverse_coverage",
+      "status": "PASS",
+      "evidence": "blind=0"
+    }
+  ],
+  "review": {
+    "reviewer": "independent",
+    "status": "PASS_WITH_GAPS",
+    "report_path": "02_decomposition/reviews/S2-REVIEW-REPORT.md"
+  },
+  "blockers": [],
+  "warnings": [
+    "约13个P1管理端CRUD合法归并或登记降级",
+    "REQUIREMENT-MINDMAP为补充人类视图"
+  ],
+  "rework": {
+    "required": false
+  },
+  "handoff_path": "02_decomposition/HANDOFF.md"
+}

@@ -1,0 +1,28 @@
+function_id,function,module,platform,roles,priority,trigger,core_result,data_objects,evidence,acceptance_focus,state_exception_permission_rule,source_fc
+F-5001,网关附加延迟与转发开销埋点,NFR,后端,运维/Root,P0,每次relay请求,采集网关附加延迟p50/p99并暴露指标,PerfMetric;Log,REPO-INSPECTION D16 perf_metrics;service/channel_select.go,p50<=15ms且p99<=60ms可在指标系统查询,仅运维/Root可见全量指标,NFR-P01/P02/P06
+F-5002,性能压测与基准门禁,NFR,后端,运维/Root,P1,发布前/定时,对chat转发做恒定负载压测验证吞吐与并发目标,PerfMetric,NFR-P04/P05;controller/relay.go,稳态>=1500req/s且>=5000并发长连接错误率<0.1%,失败阻断发布,NFR-P04/P05
+F-5003,渠道健康度看板,NFR,后端+前端,运营/运维/管理员/Root,P0,持续,展示每渠道错误率/延迟/AutoBan状态供降级判断,Channel;ChannelSatisfy;Log,AutoBan;StatusCodeMapping;channel-test.go,故障渠道命中后<=1次重试切换健康渠道,需admin+权限,NFR-A02/A04
+F-5004,SLA月度可用性报表,NFR,后端,运营/管理员/Root,P1,定时,按分钟探针聚合数据面/控制面月度可用性,PerfMetric;Log,NFR-A01;uptime_kuma.go,数据面>=99.9%控制面>=99.5%可出报,只读,NFR-A01
+F-5005,容灾演练与备份恢复,NFR,运维,运维/Root,P1,演练/故障,主从切换与备份恢复达成RTO/RPO目标,DB备份,NFR-A08;DB三选一,RTO<=30min且RPO<=5min,Root审批,NFR-A08
+F-5006,令牌Key掩码与受控取明文,Security,后端+前端,用户/开发者及以上,P0,查看/取Key,列表默认掩码显示取明文走二次验证受控接口,Token,controller/token.go;secure_verification.go,列表无明文且取明文需SecureVerification+CriticalRateLimit,self-scope+二次验证,NFR-S02
+F-5007,密钥与支付Secret加密静态存储,Security,后端,运维/Root,P0,写入/读取,渠道Key与WebhookSecret以AES-256-GCM/KMS密文落库,Channel;PaymentSetting,model/channel.go;payment_*.go;NFR-S01,DB字段为密文且支持轮换,Root配置,NFR-S01/S10
+F-5008,日志prompt/响应脱敏管线,Security,后端,运维/Root,P0,记录日志时,对开启正文留存的日志按PII规则脱敏后存储,Log,model/log.go;NFR-S04,含PII的prompt在日志中已掩码,默认不留正文,NFR-S04/DC-005
+F-5009,高危操作审计留痕,Security,后端,运营/运维/管理员/Root,P0,高危操作,取Key/改倍率/禁渠道/改Option等写审计含前后值,Log;Audit,controller/audit.go;NFR-S09,审计可按操作人/对象检索,admin+可查,NFR-S09
+F-5010,Prometheus RED指标导出,Observability,后端,运维/Root,P0,持续,暴露按渠道/模型的请求率/错误率/延迟与额度速率,PerfMetric;UseData,controller/perf_metrics.go;NFR-O01,/metrics可被抓取且含维度标签,运维/Root,NFR-O01/O02
+F-5011,多渠道告警编排,Observability,后端,运营/运维/管理员/Root,P0,阈值触发,渠道错误率/额度/限流/延迟超SLO经Email/Webhook/Bark告警,Option;NotificationSettings,NotificationSettings;NFR-O03,注入故障告警送达对应渠道,admin+配置,NFR-O03
+F-5012,链路追踪trace_id贯穿,Observability,后端,运维/Root,P1,每请求,入站到上游到结算贯穿trace_id并支持OTel导出,Log,relay链路;NFR-O04,单请求可在APM端到端串联,运维/Root,NFR-O04
+F-5013,无状态横扩与共享缓存,Scalability,后端,运维/Root,P0,扩容,转发实例无本地状态状态走Redis可线性扩展,ChannelCache;TokenCache,Redis;NFR-E01,2到4实例吞吐近线性增长,运维/Root,NFR-E01
+F-5014,缓存命中率监控,Scalability,后端,运维/Root,P1,持续,监控渠道/令牌/Ability缓存命中率,ChannelCache;TokenCache;Ability,model/channel_cache.go;NFR-E02,命中率>=95%且DB选渠占比<5%,运维/Root,NFR-E02
+F-5015,日志归档与分区,Scalability,后端,运维/Root,P1,定时,日志表分区并归档超期数据,Log;QuotaData,GORM;NFR-E03;DC-006,超期日志按策略归档不影响查询,运维/Root,NFR-E03/DC-006
+F-5016,数据分级登记,Compliance,后端,运营/Root,P1,初始化/变更,对凭证/PII/内容/计量四级数据字段标注分级,全表,DC-001;model/*,字段清单含分级标注,Root维护,DC-001
+F-5017,prompt留存开关与保留期,Compliance,后端+前端,运营/Root,P0,配置,正文留存默认关可开且独立保留期默认<=30天,Log;Option,model/log.go;DC-005,留存开关与保留期可配且生效,admin+配置,DC-005
+F-5018,合规分组仅境内provider,Compliance,后端,运营/Root,P1,选渠,为合规分组限定仅命中境内数据驻地渠道,Channel;UserGroup;VendorMeta,group_ratio;DC-008;INTEGRATION-LIST,合规分组请求不命中境外渠道,admin+配置,DC-008
+F-5019,数据出境告知与驻地标注,Compliance,后端+前端,访客/用户及以上,P0,展示/调用,每provider标注境内外驻地并明示请求转发地区,VendorMeta,vendor_meta.go;DC-009/DC-010,价格页与控制台可见数据驻地,公开可见,DC-008/DC-009
+F-5020,账号注销级联删除,Compliance,后端,用户及以上,P0,注销,注销级联删除令牌/OAuth绑定/PII并匿名化日志,User;Token;UserOAuthBinding;Log,DC-011;model/user.go,注销后PII清空或匿名,self-scope,DC-003/DC-011
+F-5021,隐私政策与出境条款同意闸门,Compliance,后端+前端,访客/用户,P0,首次调用前,未接受含出境与留存条款的协议不可调用,Option;User,controller/option.go;DC-010,未同意协议拒绝调用,公开闸门,DC-010
+F-5030,功能权限组运营集运维集分配,RBAC,后端+前端,Root,P1,配置,Root为admin细分运营/运维最小权限集,User;Option,ROLE-PERMISSION-MATRIX;role=admin,Operator仅得O07-O09且SRE仅得O11与O10只读,RootAuth,RBAC-matrix
+F-5031,三级系统角色鉴权,RBAC,后端,全部,P0,每请求,common/admin/root经AdminAuth/RootAuth中间件鉴权,User,GLOSSARY角色;AdminAuth/RootAuth,越权路由返回403,中间件强制,RBAC-matrix
+F-5032,self-scope资源越权防护,RBAC,后端,用户/开发者,P0,访问资源,按user_id强制过滤令牌/额度/任务/日志,Token;Log;Task;Quota,model层user_id过滤,访问他人资源返回403,self-scope,RBAC-matrix
+F-5033,高危操作二次验证闸门,RBAC,后端,用户及以上,P0,高危操作,取Key/改倍率/重置2FA等统一接入SecureVerification,Token;Channel;User,secure_verification.go;NFR-S09,无二次验证调用返回403,二次验证,RBAC-matrix
+F-5034,角色操作权限矩阵配置化,RBAC,后端+前端,Root,P2,配置/审计,矩阵可后台查看与审计变更,Option;Audit,ROLE-PERMISSION-MATRIX,矩阵变更可审计,RootAuth,RBAC-matrix
+F-5035,团队工作区实体阶段二预留,RBAC,后端,用户/Root,P3,创建团队,引入team_id与Owner/Member两级角色及共享额度池,User;Token;Team;Quota,SG-006;ROLE-PERMISSION-MATRIX多租户决策,团队共享额度且成员self-scope,阶段二启用,SG-006

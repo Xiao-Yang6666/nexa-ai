@@ -1,0 +1,44 @@
+[
+  {
+    "url": "http://172.17.0.1:8080/api/user/register",
+    "method": "POST",
+    "status": 200,
+    "reqbody": "{\"username\":\"qa010680\",\"email\":\"qa010680@x.local\",\"password\":\"Pass1234xyz\"}",
+    "respbody": "(no body: CDPSession.send: Protocol error (Network.getResponseBody): No resource with given identifier found)"
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/login",
+    "method": "POST",
+    "status": 200,
+    "reqbody": "{\"username\":\"qa010680\",\"password\":\"Pass1234xyz\"}",
+    "respbody": "{\"success\":true,\"data\":{\"id\":7,\"username\":\"qa010680\",\"role\":1,\"status\":1,\"quota\":0,\"aff_code\":\"WUX7\",\"email\":\"qa010680@x.local\",\"last_login_at\":1782010694}}"
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/self",
+    "method": "GET",
+    "status": 403,
+    "reqbody": null,
+    "respbody": ""
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+    "method": "GET",
+    "status": 403,
+    "reqbody": null,
+    "respbody": ""
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+    "method": "GET",
+    "status": 403,
+    "reqbody": null,
+    "respbody": ""
+  },
+  {
+    "url": "http://172.17.0.1:8080/api/user/self",
+    "method": "GET",
+    "status": 403,
+    "reqbody": null,
+    "respbody": ""
+  }
+]

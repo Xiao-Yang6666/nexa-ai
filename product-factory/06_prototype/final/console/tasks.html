@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>异步任务 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 异步任务页：说明条 / 筛选栏 / 任务表 / 进度条 —— 零裸色值 */
+  .intro{display:flex;align-items:flex-start;gap:var(--space-3);background:var(--color-bg-elevated);
+    border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5);
+    box-shadow:var(--shadow-sm);margin-bottom:var(--space-5)}
+  .intro .nx-ic{width:20px;height:20px;flex:none;color:var(--color-primary-700);margin-top:2px}
+  .intro p{margin:0;font-size:var(--text-body-sm);color:var(--color-text-secondary);line-height:var(--lh-normal)}
+  .intro b{color:var(--color-text)}
+  .filterbar{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap}
+  .seg{display:inline-flex;border:1px solid var(--color-border);border-radius:var(--radius-sm);overflow:hidden}
+  .seg button{background:transparent;border:none;color:var(--color-text-secondary);font-family:inherit;
+    font-size:var(--text-body-sm);padding:var(--space-2) var(--space-3);cursor:pointer;transition:background var(--dur-1),color var(--dur-1)}
+  .seg button.on{background:color-mix(in oklch,var(--color-primary-500) 14%,transparent);color:var(--color-primary-700)}
+  .seg button:hover:not(.on){background:var(--color-surface-sunken);color:var(--color-text)}
+  .select{font-family:inherit;font-size:var(--text-body-sm);height:36px;padding:0 var(--space-3);
+    border-radius:var(--radius-sm);border:1px solid var(--color-border);background:var(--color-bg-elevated);
+    color:var(--color-text);cursor:pointer}
+  .spacer{flex:1}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  .table-wrap td,.table-wrap th{padding:var(--space-3) var(--space-5)}
+  .tid{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .prog{display:flex;align-items:center;gap:var(--space-2);min-width:130px}
+  .prog-track{flex:1;height:6px;border-radius:var(--radius-full);background:var(--color-surface-sunken);overflow:hidden}
+  .prog-fill{height:100%;border-radius:var(--radius-full);background:var(--color-primary-500)}
+  .prog-txt{font-family:var(--font-mono);font-size:var(--text-caption);color:var(--color-text-muted);white-space:nowrap}
+  .result-dl{display:inline-flex;align-items:center;gap:5px;color:var(--color-primary-500);font-size:var(--text-body-sm);cursor:pointer}
+  .result-dl:hover{color:var(--color-primary-600);text-decoration:underline}
+  .result-dl .nx-ic{width:14px;height:14px}
+  .result-err{display:inline-flex;align-items:center;gap:5px;color:var(--color-danger);font-size:var(--text-body-sm)}
+  .result-err .nx-ic{width:14px;height:14px}
+  .rowacts{display:flex;gap:var(--space-1)}
+  .iconact{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:30px;height:30px;
+    display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)}
+  .iconact:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .iconact.dan:hover{color:var(--color-danger)}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .pager-btns{display:flex;gap:var(--space-1)}
+  .pgbtn{min-width:32px;height:32px;border:1px solid var(--color-border);background:var(--color-bg-elevated);
+    color:var(--color-text-secondary);border-radius:var(--radius-sm);cursor:pointer;font-size:var(--text-body-sm)}
+  .pgbtn.on{background:color-mix(in oklch,var(--color-primary-500) 14%,transparent);color:var(--color-primary-700);border-color:var(--color-primary-500)}
+  .pgbtn:hover:not(.on){background:var(--color-surface-sunken)}
+</style>
+</head>
+<body data-page="tasks" data-title="异步任务" data-crumb="控制台|异步任务"
+      data-actions='<button class="btn btn-primary">新建任务</button>'>
+
+  <div class="intro nx-fade">
+    <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+    <p>批量与长耗时 API 任务（如<b>批量 Embedding</b>、<b>长文档解析</b>、<b>批量推理</b>）在此异步执行。任务完成后结果可下载，失败可查看错误详情并重试。结果文件保留 <b>7 天</b>。</p>
+  </div>
+
+  <div class="filterbar nx-fade">
+    <div class="seg" id="status-seg" role="tablist">
+      <button class="on" data-st="all" type="button">全部</button>
+      <button data-st="queued" type="button">排队中</button>
+      <button data-st="running" type="button">处理中</button>
+      <button data-st="done" type="button">已完成</button>
+      <button data-st="failed" type="button">失败</button>
+    </div>
+    <select class="select"><option>全部类型</option><option>批量 Embedding</option><option>长文档解析</option><option>批量推理</option><option>语音转写</option></select>
+    <select class="select"><option>近 7 天</option><option>近 30 天</option><option>近 90 天</option><option>全部时间</option></select>
+    <span class="spacer"></span>
+    <span class="muted" id="count-label" style="font-size:var(--text-body-sm)"></span>
+  </div>
+
+  <div class="table-card nx-fade">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>任务 ID</th><th>类型</th><th>提交时间</th><th>状态</th><th>进度</th><th>结果</th><th>操作</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span>共 <b style="color:var(--color-text)">14</b> 个任务</span>
+      <div class="pager-btns">
+        <button class="pgbtn">上一页</button>
+        <button class="pgbtn on">1</button>
+        <button class="pgbtn">2</button>
+        <button class="pgbtn">下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // 图标
+    var icDl='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 4 5-4"/><path d="M5 20h14"/></svg>';
+    var icErr='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>';
+    var icView='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var icCancel='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>';
+    var icRetry='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.3 5.6"/><path d="M4 19v-5h5"/></svg>';
+
+    // st: queued/running/done/failed
+    var data=[
+      ['tsk_9f3a21','批量 Embedding','2026-06-20 10:42','running',64],
+      ['tsk_8e1c07','长文档解析','2026-06-20 10:38','running',23],
+      ['tsk_7d92bb','批量推理','2026-06-20 10:31','queued',0],
+      ['tsk_6c4480','语音转写','2026-06-20 10:15','done',100],
+      ['tsk_5b1f9e','批量 Embedding','2026-06-20 09:58','done',100],
+      ['tsk_4a77d3','长文档解析','2026-06-20 09:40','failed',47],
+      ['tsk_3920ee','批量推理','2026-06-20 09:12','done',100],
+      ['tsk_28f1a5','批量 Embedding','2026-06-20 08:50','running',88],
+      ['tsk_1d6b40','语音转写','2026-06-20 08:33','done',100],
+      ['tsk_0c5e2f','长文档解析','2026-06-19 22:14','failed',12],
+      ['tsk_fb83c1','批量推理','2026-06-19 20:05','done',100],
+      ['tsk_ea4709','批量 Embedding','2026-06-19 18:41','queued',0],
+      ['tsk_d93f8a','语音转写','2026-06-19 16:27','done',100],
+      ['tsk_c81b66','长文档解析','2026-06-19 14:02','done',100]
+    ];
+    var st={
+      queued:['b-neutral','排队中','--color-text-muted'],
+      running:['b-info','处理中','--color-info'],
+      done:['b-suc','已完成','--color-success'],
+      failed:['b-dan','失败','--color-danger']
+    };
+    var errs={ 'tsk_4a77d3':'输入文件格式错误', 'tsk_0c5e2f':'第 12 行超出 token 上限' };
+
+    function render(filter){
+      var list=data.filter(function(r){ return filter==='all'||r[3]===filter; });
+      document.getElementById('count-label').textContent='显示 '+list.length+' / '+data.length+' 个任务';
+      document.getElementById('rows').innerHTML=list.map(function(r){
+        var s=st[r[3]];
+        // 进度列
+        var prog;
+        if(r[3]==='running'){
+          prog='<div class="prog"><div class="prog-track"><div class="prog-fill" style="width:'+r[4]+'%"></div></div>'+
+               '<span class="prog-txt">'+r[4]+'%</span></div>';
+        } else if(r[3]==='queued'){
+          prog='<span class="muted">—</span>';
+        } else if(r[3]==='failed'){
+          prog='<div class="prog"><div class="prog-track"><div class="prog-fill" style="width:'+r[4]+'%;background:var(--color-danger)"></div></div>'+
+               '<span class="prog-txt">'+r[4]+'%</span></div>';
+        } else {
+          prog='<div class="prog"><div class="prog-track"><div class="prog-fill" style="width:100%"></div></div>'+
+               '<span class="prog-txt">100%</span></div>';
+        }
+        // 结果列
+        var result;
+        if(r[3]==='done'){ result='<span class="result-dl">'+icDl+'下载结果</span>'; }
+        else if(r[3]==='failed'){ result='<span class="result-err">'+icErr+(errs[r[0]]||'执行失败')+'</span>'; }
+        else { result='<span class="muted">—</span>'; }
+        // 操作列
+        var acts='';
+        if(r[3]==='running'||r[3]==='queued'){ acts+='<button class="iconact dan" title="取消">'+icCancel+'</button>'; }
+        if(r[3]==='failed'){ acts+='<button class="iconact" title="重试">'+icRetry+'</button>'; }
+        acts+='<button class="iconact" title="查看详情">'+icView+'</button>';
+        return '<tr>'+
+          '<td class="tid">'+r[0]+'</td>'+
+          '<td>'+r[1]+'</td>'+
+          '<td class="mono-num">'+r[2]+'</td>'+
+          '<td><span class="badge '+s[0]+'"><span class="dot" style="background:var('+s[2]+')"></span>'+s[1]+'</span></td>'+
+          '<td>'+prog+'</td>'+
+          '<td>'+result+'</td>'+
+          '<td><div class="rowacts">'+acts+'</div></td>'+
+        '</tr>';
+      }).join('');
+    }
+    render('all');
+
+    // 筛选
+    var seg=document.getElementById('status-seg');
+    seg.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){
+        seg.querySelectorAll('button').forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        render(b.getAttribute('data-st'));
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

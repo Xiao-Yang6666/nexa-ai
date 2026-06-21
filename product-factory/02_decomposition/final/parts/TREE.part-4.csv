@@ -1,0 +1,71 @@
+node_id,parent_id,type,name,maps_to_function
+N-4000,,Module,日志/用量/审计与运营运维,
+N-4100,N-4000,Module,日志与用量审计(D15),
+N-4110,N-4100,Capability,日志查询与维护,
+N-4111,N-4110,Requirement,管理端全量日志过滤分页查询,F-4001
+N-4112,N-4110,Requirement,用户自助本人日志查询,F-4002
+N-4113,N-4110,Requirement,按令牌 key 查消费日志,F-4003
+N-4114,N-4110,Requirement,清理历史日志(分批上限100),F-4006
+N-4120,N-4100,Capability,日志统计,
+N-4121,N-4120,Requirement,管理端消费日志 quota/rpm/tpm 统计,F-4004
+N-4122,N-4120,Requirement,用户自助日志统计,F-4005
+N-4130,N-4100,Capability,配额按日用量数据,
+N-4131,N-4130,Requirement,管理端配额按日数据查询,F-4007
+N-4132,N-4130,Requirement,配额按用户聚合查询,F-4008
+N-4133,N-4130,Requirement,用户自助配额按日数据(1月跨度限制),F-4009
+N-4134,N-4130,Requirement,模型用量排行榜快照,F-4010
+N-4140,N-4100,Capability,操作审计,
+N-4141,N-4140,Requirement,管理/高危操作审计记录,F-4011
+N-4142,N-4140,Requirement,用户安全敏感操作审计,F-4012
+N-4143,N-4140,Requirement,登录审计记录,F-4013
+N-4144,N-4140,Requirement,亲和缓存用量统计查询,F-4014
+N-4200,N-4000,Module,运营系统设置与运维(D16),
+N-4210,N-4200,Capability,系统初始化,
+N-4211,N-4210,Requirement,初始化状态查询,F-4015
+N-4212,N-4210,Requirement,初始化提交创建 root 与模式,F-4016
+N-4220,N-4200,Capability,全站选项配置,
+N-4221,N-4220,Requirement,选项列表查询(剔除敏感键),F-4017
+N-4222,N-4220,Requirement,选项更新(逐键校验+审计),F-4018
+N-4230,N-4200,Capability,性能与日志文件运维,
+N-4231,N-4230,Requirement,性能统计查询,F-4019
+N-4232,N-4230,Requirement,清理不活跃磁盘缓存,F-4020
+N-4233,N-4230,Requirement,强制GC与重置统计,F-4021
+N-4234,N-4230,Requirement,日志文件列表查询,F-4022
+N-4235,N-4230,Requirement,清理过期日志文件,F-4023
+N-4240,N-4200,Capability,性能指标暴露,
+N-4241,N-4240,Requirement,性能指标汇总查询(公开),F-4024
+N-4242,N-4240,Requirement,单模型性能指标查询,F-4025
+N-4243,N-4240,Requirement,Uptime-Kuma 状态接入,F-4026
+N-4250,N-4200,Capability,内容与法务页配置,
+N-4251,N-4250,Requirement,用户协议公开读取,F-4027
+N-4252,N-4250,Requirement,隐私政策公开读取,F-4028
+N-4253,N-4250,Requirement,公告/关于/首页内容读取,F-4029
+N-4260,N-4200,Capability,合规与迁移,
+N-4261,N-4260,Requirement,支付合规声明确认,F-4030
+N-4262,N-4260,Requirement,控制台旧设置迁移,F-4031
+N-4270,N-4200,Capability,限流/内容安全/分组/主题/语言配置,
+N-4271,N-4270,Requirement,模型请求限流分组配置,F-4032
+N-4272,N-4270,Requirement,敏感词内容过滤配置,F-4033
+N-4273,N-4270,Requirement,可用分组与自动分组配置,F-4034
+N-4274,N-4270,Requirement,前端主题切换配置,F-4035
+N-4275,N-4270,Requirement,后端多语言解析与切换,F-4036
+N-4280,N-4200,Capability,通知配置,
+N-4281,N-4280,Requirement,额度预警通知配置(email/webhook/bark),F-4037
+N-4300,N-4000,Module,Playground 在线试用(D17),
+N-4310,N-4300,Capability,站内对话试用,
+N-4311,N-4310,Requirement,Playground 对话(临时令牌走relay),F-4038
+N-4400,N-4000,Module,公开站点(营销/法务/入口),
+N-4410,N-4400,Capability,营销与首页入口,
+N-4411,N-4410,Requirement,营销首页公开状态聚合,F-4039
+N-4412,N-4410,Requirement,首页对话框 Playground 入口,F-4040
+N-4420,N-4400,Capability,法务公开页,
+N-4421,N-4420,Requirement,用户协议公开页,F-4041
+N-4422,N-4420,Requirement,隐私政策公开页,F-4042
+N-4430,N-4400,Capability,公开控件与控制台入口,
+N-4431,N-4430,Requirement,公开主题/语言切换控件,F-4043
+N-4432,N-4430,Requirement,控制台/模型广场/API Keys 主入口(GAP),F-4044
+N-4500,N-4000,Module,渠道运维与视频代理(评审补回),
+N-4510,N-4500,Capability,Codex 渠道运维,
+N-4511,N-4510,Requirement,Codex 渠道上游用量查询(自动刷新token),F-4045
+N-4520,N-4500,Capability,视频内容代理,
+N-4521,N-4520,Requirement,生成视频内容网关代理下发(含Gemini分支),F-4046

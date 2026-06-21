@@ -1,0 +1,1553 @@
+  # ==================== 模块四补：模型映射与对外目录 ====================
+  /api/user/self/models:
+    get:
+      tags: [model]
+      summary: 用户可见模型列表（去重，对外名 A）
+      x-function-id: F-3025
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 用户可用分组下启用模型去重合并（UserView，仅 A，不含 B）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+                          description: 对外模型名 A
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/user/self/model_aliases/candidates:
+    get:
+      tags: [model]
+      summary: 候选模型联想（公开 A 全集，B 不可见闸）
+      x-function-id: F-6003
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/KeywordParam'
+      responses:
+        '200':
+          description: 来源 PublicModel.Enabled=true 全集（UserView，绝不含任何 B）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+                          description: 对外名 A（public_name）
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/public_models:
+    get:
+      tags: [model]
+      summary: 对外模型商品目录列表
+      x-function-id: F-6001
+      description: AdminAuth 返回 AdminView（含成本/B 关联字段），匿名经 /api/pricing 暴露公开子集。
+      security:
+        - adminAuth: []
+        - []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 对外模型目录（AdminView 全字段 / 匿名公开子集）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PublicModelAdminView'
+                          total:
+                            type: integer
+    post:
+      tags: [model]
+      summary: 创建对外模型（品质拆分独立定价）
+      x-function-id: F-6001
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicModelCreateRequest'
+      responses:
+        '200':
+          description: 创建后对外模型（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PublicModelAdminView'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    put:
+      tags: [model]
+      summary: 更新对外模型（含上下架，F-6004 上架即全员可用）
+      x-function-id: F-6001
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicModelUpdateRequest'
+      responses:
+        '200':
+          description: 更新后对外模型（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PublicModelAdminView'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/public_models/{id}:
+    delete:
+      tags: [model]
+      summary: 删除对外模型（软删）
+      x-function-id: F-6001
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 软删成功（DeletedAt，移出对外全集）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== 模块五补：渠道亲和缓存 ====================
+  /api/channel_affinity_cache/clear:
+    post:
+      tags: [channel]
+      summary: 清空渠道亲和缓存
+      x-function-id: F-2032
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: all 与 rule_name 二选一必填
+              properties:
+                all:
+                  type: boolean
+                rule_name:
+                  type: string
+      responses:
+        '200':
+          description: 清理结果（AdminView，含删除条数）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          deleted:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== 模块六：Relay 网关多协议中转 ====================
+  /v1/chat/completions:
+    post:
+      tags: [relay]
+      summary: OpenAI Chat Completions 中转
+      x-function-id: F-3026
+      description: |
+        TokenAuth（RelayFormatOpenAI）。客户输入 model=C，内部经 C→A→B 两层映射（客户不感知）。
+        响应按入站协议 openai 原样返回，不暴露 B/渠道/成本。统一中间件错误 + 统一上游错误处置。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAIChatCompletionRequest'
+      responses:
+        '200':
+          description: 标准 OpenAI chat.completion / chat.completion.chunk（流式 SSE）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIChatCompletionResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE 流式 chat.completion.chunk
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: 预扣额度不足（BL-2 SkipRetry，不重试）/ 模型或 IP 白名单未命中
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: ModelRequestRateLimit 超限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/completions:
+    post:
+      tags: [relay]
+      summary: OpenAI Completions 中转
+      x-function-id: F-3026
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAIChatCompletionRequest'
+      responses:
+        '200':
+          description: 标准 OpenAI completion 响应（流式/非流式）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIChatCompletionResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /v1/messages:
+    post:
+      tags: [relay]
+      summary: Anthropic Claude 原生 Messages 中转
+      x-function-id: F-3035
+      description: |
+        TokenAuth（RelayFormatClaude）。可用 x-api-key + anthropic-version 头识别。
+        响应按入站协议 claude 原样返回；目标供应商协议非 claude 时经 IR（ChatIR）转换（F-6010）。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnthropicMessagesRequest'
+      responses:
+        '200':
+          description: 标准 Anthropic message / SSE 多 event（message_start/content_block_delta/...）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnthropicMessagesResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE 多 event（Claude 流式）
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: 预扣额度不足 / 白名单未命中
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/models:
+    get:
+      tags: [relay]
+      summary: 模型列表（OpenAI 兼容；x-goog-api-key/query key 走 Gemini 检索）
+      x-function-id: F-3034
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 模型列表（对外名 A，不含 B）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        object:
+                          type: string
+                        owned_by:
+                          type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /v1/embeddings:
+    post:
+      tags: [relay]
+      summary: Embeddings 中转
+      x-function-id: F-3027
+      description: TokenAuth（RelayFormatEmbedding）。任意 *embeddings 后缀路径均判 Embeddings。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAIEmbeddingsRequest'
+      responses:
+        '200':
+          description: 标准 { object:"list", data:[{embedding,index}], model, usage }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIEmbeddingsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /engines/{model}/embeddings:
+    post:
+      tags: [relay]
+      summary: Embeddings 中转（engines 路径，Gemini 检索分支）
+      x-function-id: F-3027
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+            description: 客户输入名 C
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAIEmbeddingsRequest'
+      responses:
+        '200':
+          description: 标准 embeddings 响应
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIEmbeddingsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /v1/responses:
+    post:
+      tags: [relay]
+      summary: OpenAI Responses API 中转
+      x-function-id: F-3032
+      description: TokenAuth（RelayFormatOpenAIResponses）。/v1/responses/compact 必须先于本路径前缀匹配。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: OpenAI Responses API 请求体（model=C）
+              properties:
+                model:
+                  type: string
+                input: {}
+                stream:
+                  type: boolean
+      responses:
+        '200':
+          description: OpenAI Responses 响应（流式/非流式）
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /v1/responses/compact:
+    post:
+      tags: [relay]
+      summary: OpenAI Responses 紧凑变体中转
+      x-function-id: F-3032
+      description: RelayFormatOpenAIResponsesCompaction，顺序敏感（须先于 /v1/responses 匹配）。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: OpenAI Responses 紧凑响应
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /v1/edits:
+    post:
+      tags: [relay]
+      summary: Legacy 图像编辑中转（RelayModeEdits）
+      x-function-id: F-3057
+      description: legacy /v1/edits 独立 RelayModeEdits，区别于 /images/edits。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAIImagesRequest'
+      responses:
+        '200':
+          description: 标准 { created, data:[{url|b64_json}] }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIImagesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /images/edits:
+    post:
+      tags: [relay]
+      summary: 图像编辑中转
+      x-function-id: F-3028
+      description: TokenAuth（RelayFormatOpenAIImage）。
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                model:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+                prompt:
+                  type: string
+                n:
+                  type: integer
+                size:
+                  type: string
+      responses:
+        '200':
+          description: 标准 { created, data:[{url|b64_json}] }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIImagesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /pg/chat/completions:
+    post:
+      tags: [playground]
+      summary: 站内对话试用 Playground
+      x-function-id: F-4038
+      description: |
+        UserAuth + Distribute + SystemPerformanceCheck。以 tempToken{playground-<group>} 经 SetupContextForToken 后调 Relay，
+        按用户实际额度计费（落 Log，C→A 客户视图）。禁用 access token（关键安全闸）。
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenAIChatCompletionRequest'
+      responses:
+        '200':
+          description: 透传上游 chat/completions 响应（流式/非流式）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenAIChatCompletionResponse'
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: use_access_token → ErrorCodeAccessDenied「暂不支持使用 access token」
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/videos/{task_id}/content:
+    get:
+      tags: [relay]
+      summary: 生成视频内容网关代理下发
+      x-function-id: F-4046
+      description: |
+        UserAuth（GetByTaskId 带 userID，self-scope）。视频内容流式回写（io.Copy），
+        响应头 Cache-Control: max-age=86400；PrivateData（含 Key，json:"-"）不下发。
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 视频内容流（二进制）
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: SSRF 校验（ValidateURLWithFetchSetting）未过
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: task 不存在/非本人/未完成（Task.Status≠Success）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /suno/fetch:
+    get:
+      tags: [task]
+      summary: Suno 任务列表/批量条件拉取
+      x-function-id: F-2007
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Suno 任务数组（UserView，无 PrivateData）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskUserView'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /suno/fetch/{id}:
+    get:
+      tags: [task]
+      summary: Suno 单任务拉取
+      x-function-id: F-2007
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: task_id
+      responses:
+        '200':
+          description: Suno 单任务状态/产物（UserView，无 PrivateData）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskUserView'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: 他人 task_id 不可拉取
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== 模块七：异步任务中心 ====================
+  /api/task/self:
+    get:
+      tags: [task]
+      summary: 用户任务列表（分页，self-scope）
+      x-function-id: F-2003
+      description: UserAuth 强制 Where(user_id=本人) 隔离。
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: task_id
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: platform
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 用户视图任务列表（Omit channel_id，无 PrivateData）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TaskUserView'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          page_size:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/task:
+    get:
+      tags: [task]
+      summary: 管理端全量任务列表（分页，跨用户）
+      x-function-id: F-2004
+      description: AdminAuth，无 user_id 限制。管理视图含 channel_id（区别用户自助接口）。
+      security:
+        - adminAuth: []
+      parameters:
+        - name: channel_id
+          in: query
+          schema:
+            type: integer
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+        - name: user_ids
+          in: query
+          schema:
+            type: string
+        - name: platform
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 管理视图任务列表（全字段含 channel_id）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TaskAdminView'
+                          total:
+                            type: integer
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== 模块八：日志与用量 ====================
+  /api/log/:
+    get:
+      tags: [log]
+      summary: 管理端全量日志查询（分页）
+      x-function-id: F-4001
+      security:
+        - adminAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: 0=全部
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: token_name
+          in: query
+          schema:
+            type: string
+        - name: model_name
+          in: query
+          schema:
+            type: string
+        - name: channel
+          in: query
+          schema:
+            type: string
+        - name: group
+          in: query
+          schema:
+            type: string
+        - name: request_id
+          in: query
+          schema:
+            type: string
+        - name: upstream_request_id
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 日志列表（AdminLogView 全字段，含 B/成本/利润/供应商）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AdminLogView'
+                          total:
+                            type: integer
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    delete:
+      tags: [log]
+      summary: 清理历史日志（分批，每批上限 100）
+      x-function-id: F-4006
+      security:
+        - adminAuth: []
+      parameters:
+        - name: target_timestamp
+          in: query
+          required: true
+          description: 删早于该时间的日志
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 删除 count
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: integer
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/log/self:
+    get:
+      tags: [log]
+      summary: 用户自助日志查询（仅本人，分页）
+      x-function-id: F-4002
+      description: UserAuth 强制本人。无 username/channel 维度。
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+        - name: token_name
+          in: query
+          schema:
+            type: string
+        - name: model_name
+          in: query
+          schema:
+            type: string
+        - name: group
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 日志列表（UserLogView，无 quota_cost/quota_profit/B/供应商）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/UserLogView'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/log/token:
+    get:
+      tags: [log]
+      summary: 按令牌明文 key 查消费日志
+      x-function-id: F-4003
+      description: TokenAuthReadOnly + CriticalRateLimit + DisableCache。
+      security:
+        - tokenReadAuth: []
+      responses:
+        '200':
+          description: 该 token_id 的日志数组（UserLogView 裁剪口径）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserLogView'
+        '400':
+          description: token_id==0 →「无效的令牌」
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: CriticalRateLimit 高频限流
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/log/stat:
+    get:
+      tags: [log]
+      summary: 管理端日志统计（quota/rpm/tpm）
+      x-function-id: F-4004
+      security:
+        - adminAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+        - name: username
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 统计（仅 Type=2 Consume）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LogStat'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/log/self/stat:
+    get:
+      tags: [log]
+      summary: 用户自助日志统计
+      x-function-id: F-4005
+      description: UserAuth，username 来自上下文不可伪造。
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+      responses:
+        '200':
+          description: 当前用户消费日志聚合统计
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LogStat'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /api/log/channel_affinity_usage_cache:
+    get:
+      tags: [log]
+      summary: 渠道亲和缓存用量统计
+      x-function-id: F-4014
+      security:
+        - adminAuth: []
+      parameters:
+        - name: rule_name
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: key_fp
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: using_group
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 命中渠道用量统计（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/data/:
+    get:
+      tags: [log]
+      summary: 管理端配额按日数据（可按 username）
+      x-function-id: F-4007
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+        - name: username
+          in: query
+          description: 空=全站
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 按日聚合 QuotaData（管理视图）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/QuotaDataItem'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/data/self:
+    get:
+      tags: [log]
+      summary: 用户自助配额按日数据（跨度上限 1 月）
+      x-function-id: F-4009
+      description: UserAuth，userId 来自上下文防越权。end-start>2592000 拒绝。
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/StartTimestampParam'
+        - $ref: '#/components/parameters/EndTimestampParam'
+      responses:
+        '200':
+          description: 本人每日 QuotaData
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/QuotaDataItem'
+        '400':
+          description: 时间跨度超 1 月（2592000s）→「时间跨度不能超过 1 个月」
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== 模块九：运营与运维 ====================
+  /api/option/:
+    get:
+      tags: [ops]
+      summary: 全站选项列表查询（剔除敏感键）
+      x-function-id: F-4017
+      description: RootAuth。自动剔除以 Token/Secret/Key/secret/api_key 结尾的键，额外追加 CompletionRatioMeta。
+      security:
+        - rootAuth: []
+      responses:
+        '200':
+          description: 选项 { key, value } 数组（剔除敏感键）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            value:
+                              type: string
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    put:
+      tags: [ops]
+      summary: 全站选项更新（逐键校验 + 依赖检查）
+      x-function-id: F-4018
+      description: |
+        RootAuth。单键覆盖式更新。分支校验：OAuth 启用需 ClientId、theme.frontend 仅 default/classic、
+        ModelRequestRateLimitGroup 格式、正值倍率需先确认支付合规。payment_setting.compliance_* 禁经本接口改。
+        写审计 option.update（仅记 key 不记 value，F-4011）。
+      security:
+        - rootAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                value:
+                  type: string
+              required: [key, value]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/option/payment_compliance:
+    post:
+      tags: [ops]
+      summary: 支付合规声明确认
+      x-function-id: F-4030
+      description: RootAuth 且仅 dashboard 会话（拒绝 access_token / API token）。
+      security:
+        - rootAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirmed:
+                  type: boolean
+                  description: 须为 true
+              required: [confirmed]
+      responses:
+        '200':
+          description: 确认成功（写 5 项 payment_setting.compliance_*）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          terms_version:
+                            type: string
+                          confirmed_by:
+                            type: string
+        '400':
+          description: confirmed=false →「请确认合规声明」
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: use_access_token →「requires dashboard session」
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/status:
+    get:
+      tags: [public]
+      summary: 营销首页公开状态聚合
+      x-function-id: F-4039
+      security: []
+      responses:
+        '200':
+          description: 站点状态聚合（敏感配置不在此暴露）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/StatusAggregateView'
+  /api/status-page/{slug}:
+    get:
+      tags: [ops]
+      summary: Uptime-Kuma 状态页代理（按 slug）
+      x-function-id: F-4026
+      description: 公开状态聚合（GET /api/uptime/status）并发拉取的上游之一。
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Uptime-Kuma 状态页数据
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /heartbeat/{slug}:
+    get:
+      tags: [ops]
+      summary: Uptime-Kuma 心跳数据代理（按 slug）
+      x-function-id: F-4026
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Uptime-Kuma 心跳列表
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /metrics:
+    get:
+      tags: [ops]
+      summary: Prometheus RED 指标导出（基础设施抓取端点）
+      x-function-id: F-5010
+      description: 暴露按渠道/模型的请求率/错误率/延迟与额度速率，含维度标签（NFR-O01/O02）。运维/Root。
+      security:
+        - rootAuth: []
+      responses:
+        '200':
+          description: Prometheus 文本格式指标
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  # ==================== 模块十一：公开站点 ====================
+  /api/user_agreement:
+    get:
+      tags: [public]
+      summary: 用户协议公开内容读取
+      x-function-id: F-4027
+      security: []
+      responses:
+        '200':
+          description: UserAgreement 文本（未设置为空串）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+  /api/privacy_policy:
+    get:
+      tags: [public]
+      summary: 隐私政策公开内容读取
+      x-function-id: F-4028
+      security: []
+      responses:
+        '200':
+          description: PrivacyPolicy 文本（未设置为空串）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: string
+  /api/rankings:
+    get:
+      tags: [ranking]
+      summary: 用量排行榜快照（公开 period 快照）
+      x-function-id: F-4010
+      description: 匿名/UserAuth（HeaderNavModuleAuth rankings 控制可见）。PublicView 裁掉成本/利润/上游模型 B/供应商。
+      security:
+        - sessionAuth: []
+        - []
+      parameters:
+        - name: period
+          in: query
+          description: week|month，缺省 week
+          schema:
+            type: string
+            enum: [week, month]
+      responses:
+        '200':
+          description: 指定 period 用量排行榜快照（PublicView，仅对外模型 A 名与聚合量）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RankingPublicView'
+        '400':
+          description: period 非法 → 400 invalid period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== 模块十二：增长（签到） ====================
+  /api/user/checkin:
+    post:
+      tags: [growth]
+      summary: 每日签到领取随机额度
+      x-function-id: F-1046
+      description: UserAuth（前置 TurnstileCheck，F-1050）。写 Checkin + user.Quota += quota_awarded（事务/CAS）。
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: 签到结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CheckinResult'
+        '400':
+          description: 签到未启用 / 今日已签（F-1048）/ Turnstile 校验失败（F-1050）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags: [growth]
+      summary: 签到状态与本月记录查询
+      x-function-id: F-1047
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: month
+          in: query
+          description: 默认本月
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 签到状态与脱敏记录（不含 id/user_id）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CheckinStatusView'
+        '400':
+          description: CheckinSetting.Enabled=false → 签到未启用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== 模块二补：令牌取明文 key ====================
+  # 注：/api/token/{id}/key 已在令牌模块定义；以下登记 relay 侧 /token/{id}/key 别名（如有独立路由）
+
+  # ==================== 模块十五：预填分组 ====================
+  /api/prefill_group:
+    get:
+      tags: [prefill]
+      summary: 预填分组列表（按 type 下拉填充）
+      x-function-id: F-2014
+      security:
+        - adminAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: 可选，缺省返回全部
+          schema:
+            type: string
+            enum: [model, tag, endpoint]
+      responses:
+        '200':
+          description: 预填分组列表（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PrefillGroupAdminView'
+        '400':
+          description: type 非法枚举 → 400 invalid type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags: [prefill]
+      summary: 预填分组创建
+      x-function-id: F-2012
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrefillGroupCreateRequest'
+      responses:
+        '200':
+          description: 创建后预填分组（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PrefillGroupAdminView'
+        '400':
+          description: name/type required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 同 type 下 name 冲突 → prefill group name conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    put:
+      tags: [prefill]
+      summary: 预填分组更新（名称冲突校验）
+      x-function-id: F-2013
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrefillGroupUpdateRequest'
+      responses:
+        '200':
+          description: 更新后预填分组（AdminView）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PrefillGroupAdminView'
+        '404':
+          description: id 不存在 → prefill group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 新 name 与同 type 他组冲突 → prefill group name conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/prefill_group/{id}:
+    delete:
+      tags: [prefill]
+      summary: 预填分组软删除
+      x-function-id: F-2015
+      description: 按 id 软删除（gorm.DeletedAt），保留历史不物理移除。
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 软删成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: id 不存在 → prefill group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'

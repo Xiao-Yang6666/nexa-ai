@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人设置 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 个人设置页：左子 Tab + 右表单分区 —— 零裸色值 */
+  .set-layout{display:grid;grid-template-columns:200px 1fr;gap:var(--space-5);align-items:start}
+  @media (max-width:860px){.set-layout{grid-template-columns:1fr}}
+  .set-tabs{display:flex;flex-direction:column;gap:var(--space-1);position:sticky;top:72px}
+  @media (max-width:860px){.set-tabs{flex-direction:row;flex-wrap:wrap;position:static}}
+  .set-tab{display:flex;align-items:center;gap:var(--space-3);height:40px;padding:0 var(--space-3);
+    border-radius:var(--radius-sm);color:var(--color-text-secondary);font-size:var(--text-body);
+    font-weight:var(--fw-medium);cursor:pointer;border:none;background:transparent;text-align:left;transition:background var(--dur-1),color var(--dur-1)}
+  .set-tab .nx-ic{width:18px;height:18px;color:var(--color-text-muted)}
+  .set-tab:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .set-tab.on{background:color-mix(in oklch,var(--color-primary-500) 12%,transparent);color:var(--color-primary-700)}
+  .set-tab.on .nx-ic{color:var(--color-primary-700)}
+  .set-panel{display:none}
+  .set-panel.on{display:block}
+  .card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);padding:var(--space-6);margin-bottom:var(--space-5)}
+  .card h3{margin:0 0 var(--space-1);font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .card .card-sub{margin:0 0 var(--space-5);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .fld{margin-bottom:var(--space-5);max-width:480px}
+  .fld:last-child{margin-bottom:0}
+  /* 头像 */
+  .avatar-row{display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-5)}
+  .avatar-lg{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-700));color:var(--color-primary-fg);
+    font-family:var(--font-brand);font-size:var(--text-h3);font-weight:var(--fw-bold)}
+  .avatar-meta p{margin:0 0 var(--space-2);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .verified{display:inline-flex;align-items:center;gap:4px}
+  .verified .nx-ic{width:14px;height:14px}
+  .input-verified{display:flex;align-items:center;gap:var(--space-3)}
+  /* 切换开关组 */
+  .toggle-list{display:flex;flex-direction:column;gap:var(--space-1)}
+  .toggle-item{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);
+    padding:var(--space-4) 0;border-bottom:1px solid var(--color-border)}
+  .toggle-item:last-child{border-bottom:none}
+  .toggle-item .ti-title{font-size:var(--text-body);color:var(--color-text);font-weight:var(--fw-medium)}
+  .toggle-item .ti-desc{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-top:2px}
+  /* 自定义 toggle（teal 激活） */
+  .toggle{position:relative;display:inline-block;width:42px;height:24px;flex:none;cursor:pointer}
+  .toggle input{position:absolute;opacity:0;width:0;height:0}
+  .toggle .track{position:absolute;inset:0;background:var(--color-border-strong);border-radius:var(--radius-full);
+    transition:background var(--dur-2)}
+  .toggle .thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:var(--color-text-inverse);
+    border-radius:50%;transition:transform var(--dur-2) var(--ease-snap);box-shadow:var(--shadow-xs)}
+  .toggle input:checked + .track{background:var(--color-primary-500)}
+  .toggle input:checked + .track + .thumb{transform:translateX(18px)}
+  .toggle input:focus-visible + .track{box-shadow:var(--focus-ring)}
+  /* 设备列表 */
+  .devices{display:flex;flex-direction:column}
+  .device{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid var(--color-border)}
+  .device:last-child{border-bottom:none}
+  .device-ic{width:40px;height:40px;flex:none;border-radius:var(--radius-sm);background:var(--color-surface-sunken);
+    display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary)}
+  .device-ic .nx-ic{width:20px;height:20px}
+  .device-body{flex:1;min-width:0}
+  .device-body .dv-name{font-size:var(--text-body);color:var(--color-text);font-weight:var(--fw-medium)}
+  .device-body .dv-meta{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-top:2px}
+  .device-body .dv-meta .mono-num{color:var(--color-text-secondary)}
+  /* 阈值输入 */
+  .thresh-row{display:flex;align-items:center;gap:var(--space-3)}
+  .thresh-row .input{max-width:160px}
+  .form-foot{display:flex;gap:var(--space-3);margin-top:var(--space-2)}
+  /* 闭环导航条 + 分组卡 */
+  .loopnav{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);
+    font-size:var(--text-body-sm);color:var(--color-text-muted);flex-wrap:wrap}
+  .loopnav a{display:inline-flex;align-items:center;gap:6px;color:var(--color-text-secondary);
+    text-decoration:none;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);
+    border:1px solid var(--color-border);background:var(--color-bg-elevated)}
+  .loopnav a:hover{color:var(--color-text);border-color:var(--color-border-strong);background:var(--color-surface-sunken)}
+  .loopnav .nx-ic{width:14px;height:14px}
+  .loopnav .sep{color:var(--color-text-muted)}
+  .grp-inline{display:flex;align-items:center;gap:var(--space-5);flex-wrap:wrap;
+    padding:var(--space-4) 0;border-bottom:1px solid var(--color-border)}
+  .grp-inline:last-of-type{border-bottom:none}
+  .grp-inline .gi-badge{display:inline-flex;align-items:center;height:26px;padding:0 var(--space-3);
+    border-radius:var(--radius-full);font-size:var(--text-caption);font-weight:var(--fw-bold);
+    letter-spacing:var(--tracking-wide);text-transform:uppercase;
+    background:color-mix(in oklch,var(--color-primary-500) 18%,transparent);color:var(--color-primary-700)}
+  .grp-inline .gi-block{display:flex;flex-direction:column;gap:2px}
+  .grp-inline .gi-k{font-size:var(--text-caption);color:var(--color-text-muted)}
+  .grp-inline .gi-v{font-size:var(--text-body);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .grp-inline .gi-v.disc{font-family:var(--font-mono);color:var(--color-success)}
+  .grp-inline .gi-spacer{flex:1}
+  .grp-links{display:flex;gap:var(--space-2);flex-wrap:wrap}
+</style>
+</head>
+<body data-page="settings" data-title="个人设置" data-crumb="控制台|个人设置">
+
+  <!-- 闭环导航：API 密钥 ↔ 模型映射 ↔ 分组 -->
+  <div class="loopnav nx-fade">
+    <a href="keys.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7a4 4 0 1 1-3.5 6H7v3H4v-3l2-2a4 4 0 0 1 8-2z"/></svg>
+      API 密钥
+    </a>
+    <span class="sep">·</span>
+    <a href="model-map.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg>
+      我的模型映射
+    </a>
+    <span class="sep">·</span>
+    <a href="recharge.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 12h2"/><path d="M3 7l13-3v3"/></svg>
+      分组与折扣
+    </a>
+  </div>
+
+  <div class="set-layout">
+    <!-- 左侧子 Tab -->
+    <div class="set-tabs nx-fade" id="set-tabs">
+      <button class="set-tab on" data-tab="profile" type="button">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        账户资料
+      </button>
+      <button class="set-tab" data-tab="security" type="button">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        安全
+      </button>
+      <button class="set-tab" data-tab="notify" type="button">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7z"/><path d="M10.5 19a1.7 1.7 0 0 0 3 0"/></svg>
+        通知偏好
+      </button>
+      <button class="set-tab" data-tab="api" type="button">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l-4 8 4 8"/><path d="M16 4l4 8-4 8"/></svg>
+        API 偏好
+      </button>
+    </div>
+
+    <!-- 右侧面板 -->
+    <div>
+      <!-- 账户资料 -->
+      <section class="set-panel on" data-panel="profile">
+        <div class="card nx-fade">
+          <h3>账户资料</h3>
+          <p class="card-sub">这些信息将用于账单与团队协作展示。</p>
+          <div class="avatar-row">
+            <div class="avatar-lg">M</div>
+            <div class="avatar-meta">
+              <p>支持 JPG / PNG，建议 256×256，不超过 2 MB。</p>
+              <button class="btn btn-sec btn-sm">更换头像</button>
+            </div>
+          </div>
+          <div class="fld">
+            <label class="field-label">昵称</label>
+            <input class="input" value="Morgan Li">
+          </div>
+          <div class="fld">
+            <label class="field-label">邮箱</label>
+            <div class="input-verified">
+              <input class="input" value="morgan.li@nexa.ai" readonly>
+              <span class="badge b-suc verified"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg>已验证</span>
+            </div>
+            <div class="field-hint">邮箱用于登录与安全通知，如需变更请联系支持。</div>
+          </div>
+          <div class="fld">
+            <label class="field-label">公司 / 团队</label>
+            <input class="input" placeholder="如：Nexa 智能科技有限公司" value="Nexa 智能科技有限公司">
+          </div>
+          <div class="form-foot">
+            <button class="btn btn-primary">保存更改</button>
+            <button class="btn btn-ghost">取消</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 安全 -->
+      <section class="set-panel" data-panel="security">
+        <div class="card nx-fade">
+          <h3>修改密码</h3>
+          <p class="card-sub">建议使用至少 12 位、含大小写与符号的强密码。</p>
+          <div class="fld">
+            <label class="field-label">当前密码</label>
+            <input class="input" type="password" placeholder="输入当前密码">
+          </div>
+          <div class="fld">
+            <label class="field-label">新密码</label>
+            <input class="input" type="password" placeholder="输入新密码">
+          </div>
+          <div class="fld">
+            <label class="field-label">确认新密码</label>
+            <input class="input" type="password" placeholder="再次输入新密码">
+          </div>
+          <button class="btn btn-primary">更新密码</button>
+        </div>
+
+        <div class="card nx-fade">
+          <h3>两步验证</h3>
+          <p class="card-sub">登录时除密码外要求额外验证码，显著提升账户安全。</p>
+          <div class="toggle-item" style="border:none;padding:0">
+            <div>
+              <div class="ti-title">基于 App 的两步验证（TOTP）</div>
+              <div class="ti-desc">使用 Authenticator 等应用生成动态验证码。</div>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+          </div>
+        </div>
+
+        <div class="card nx-fade">
+          <h3>登录设备</h3>
+          <p class="card-sub">当前已登录的设备，发现异常可随时登出。</p>
+          <div class="devices" id="devices"></div>
+        </div>
+      </section>
+
+      <!-- 通知偏好 -->
+      <section class="set-panel" data-panel="notify">
+        <div class="card nx-fade">
+          <h3>余额预警</h3>
+          <p class="card-sub">余额低于阈值时通知你，避免服务中断。</p>
+          <div class="fld">
+            <label class="field-label">预警阈值（USD）</label>
+            <div class="thresh-row">
+              <input class="input mono-num" value="20.00">
+              <span class="muted" style="font-size:var(--text-body-sm)">低于此值时发送预警</span>
+            </div>
+          </div>
+          <button class="btn btn-primary">保存阈值</button>
+        </div>
+
+        <div class="card nx-fade">
+          <h3>邮件通知</h3>
+          <p class="card-sub">选择你希望通过邮件接收的通知类型。</p>
+          <div class="toggle-list" id="notify-list"></div>
+        </div>
+      </section>
+
+      <!-- API 偏好 -->
+      <section class="set-panel" data-panel="api">
+        <div class="card nx-fade">
+          <h3>默认请求设置</h3>
+          <p class="card-sub">新建密钥与调用时的默认行为。</p>
+          <div class="fld">
+            <label class="field-label">默认超时（秒）</label>
+            <input class="input mono-num" value="60">
+            <div class="field-hint">单次请求最长等待时间，超时返回 504。</div>
+          </div>
+          <div class="fld">
+            <label class="field-label">失败自动重试次数</label>
+            <select class="input" style="cursor:pointer"><option>不重试</option><option selected>1 次</option><option>2 次</option><option>3 次</option></select>
+          </div>
+          <div class="toggle-list">
+            <div class="toggle-item">
+              <div>
+                <div class="ti-title">流式响应优先</div>
+                <div class="ti-desc">支持的模型默认以 SSE 流式返回。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+            </div>
+            <div class="toggle-item">
+              <div>
+                <div class="ti-title">记录请求日志</div>
+                <div class="ti-desc">保留请求与响应元数据用于排障（7 天）。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+            </div>
+          </div>
+          <div class="form-foot">
+            <button class="btn btn-primary">保存设置</button>
+          </div>
+        </div>
+
+        <div class="card nx-fade">
+          <h3>我的分组与折扣</h3>
+          <p class="card-sub">分组只决定计费<b>折扣系数</b>，不限制可用模型；按累计充值自动升级。分组级映射在「我的模型映射」中配置。</p>
+          <div class="grp-inline">
+            <span class="gi-badge">VIP</span>
+            <div class="gi-block">
+              <span class="gi-k">当前分组</span>
+              <span class="gi-v">VIP 会员</span>
+            </div>
+            <div class="gi-block">
+              <span class="gi-k">折扣系数</span>
+              <span class="gi-v disc">×0.85</span>
+            </div>
+            <div class="gi-block">
+              <span class="gi-k">升级门槛</span>
+              <span class="gi-v">累计充值 $2,000 → SVIP（×0.75）</span>
+            </div>
+            <div class="gi-spacer"></div>
+            <div class="grp-links">
+              <a class="btn btn-sec btn-sm" href="recharge.html">升级分组</a>
+              <a class="btn btn-ghost btn-sm" href="keys.html">查看密钥分组</a>
+              <a class="btn btn-ghost btn-sm" href="model-map.html#group">分组级映射</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // 子 Tab 切换
+    var tabs=document.getElementById('set-tabs');
+    tabs.querySelectorAll('.set-tab').forEach(function(t){
+      t.addEventListener('click',function(){
+        var name=t.getAttribute('data-tab');
+        tabs.querySelectorAll('.set-tab').forEach(function(x){x.classList.remove('on');});
+        t.classList.add('on');
+        document.querySelectorAll('.set-panel').forEach(function(p){
+          p.classList.toggle('on',p.getAttribute('data-panel')===name);
+        });
+      });
+    });
+
+    // 登录设备
+    var icDesktop='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>';
+    var icMobile='<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>';
+    var devs=[
+      [icDesktop,'MacBook Pro · Chrome','上海 · 中国','198.51.100.42','当前设备',true],
+      [icMobile,'iPhone 15 · Safari','上海 · 中国','198.51.100.88','2 小时前',false],
+      [icDesktop,'Windows · Edge','北京 · 中国','203.0.113.17','昨天 14:20',false],
+      [icDesktop,'Ubuntu · Firefox','深圳 · 中国','203.0.113.91','3 天前',false]
+    ];
+    document.getElementById('devices').innerHTML=devs.map(function(d){
+      var act=d[5]
+        ? '<span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>当前</span>'
+        : '<button class="btn btn-sec btn-sm">登出</button>';
+      return '<div class="device">'+
+        '<div class="device-ic">'+d[0]+'</div>'+
+        '<div class="device-body">'+
+          '<div class="dv-name">'+d[1]+'</div>'+
+          '<div class="dv-meta">'+d[2]+' · IP <span class="mono-num">'+d[3]+'</span> · 最后活跃 '+d[4]+'</div>'+
+        '</div>'+act+
+      '</div>';
+    }).join('');
+
+    // 邮件通知开关组
+    var items=[
+      ['账单与发票','每月账单生成、扣费成功 / 失败通知',true],
+      ['余额预警','余额低于设定阈值时提醒',true],
+      ['安全告警','异常登录、密钥异常使用',true],
+      ['用量周报','每周用量与成本汇总',false],
+      ['产品更新','新模型上线、功能发布',false],
+      ['营销活动','优惠、签到与推广活动',false]
+    ];
+    document.getElementById('notify-list').innerHTML=items.map(function(it,i){
+      return '<div class="toggle-item">'+
+        '<div>'+
+          '<div class="ti-title">'+it[0]+'</div>'+
+          '<div class="ti-desc">'+it[1]+'</div>'+
+        '</div>'+
+        '<label class="toggle"><input type="checkbox"'+(it[2]?' checked':'')+'><span class="track"></span><span class="thumb"></span></label>'+
+      '</div>';
+    }).join('');
+  })();
+  </script>
+</body>
+</html>

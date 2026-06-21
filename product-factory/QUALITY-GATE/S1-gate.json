@@ -1,0 +1,57 @@
+{
+  "stage": "S1",
+  "stage_name": "exhaustive_ingestion_rerun",
+  "status": "PASS_WITH_GAPS",
+  "downstream_allowed": true,
+  "checked_at": "2026-06-19T07:05:21.292251+00:00",
+  "authority": {
+    "machine_source_of_truth": [
+      "01_ingestion/final/FEATURE-CANDIDATES.md",
+      "01_ingestion/final/CAPABILITY-DROP-LEDGER.md"
+    ],
+    "human_review_files": [
+      "01_ingestion/reviews/S1-REVIEW-REPORT.md"
+    ],
+    "display_only": []
+  },
+  "counts": {
+    "final_md_files": 10,
+    "feature_candidate_ids": 128,
+    "integration_rows": 89,
+    "semantic_gap_ids": 11,
+    "repo_flagship_blind": 0,
+    "repo_domain_blind": 0
+  },
+  "scripts_run": [
+    {
+      "cmd": "repo_capability_coverage.py",
+      "exit": 0,
+      "status": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "id": "repo.flagship_blind",
+      "status": "PASS",
+      "evidence": "0 (上轮漏5旗舰)"
+    },
+    {
+      "id": "repo.domain_blind",
+      "status": "PASS",
+      "evidence": "0 (33域已裁决进DROP-LEDGER)"
+    }
+  ],
+  "review": {
+    "reviewer": "independent",
+    "status": "PASS_WITH_GAPS",
+    "report_path": "01_ingestion/reviews/S1-REVIEW-REPORT.md"
+  },
+  "blockers": [],
+  "warnings": [
+    "FC-126控制台动态域未抓动态截图(SG-001)"
+  ],
+  "rework": {
+    "required": false
+  },
+  "handoff_path": "01_ingestion/final/HANDOFF.md"
+}

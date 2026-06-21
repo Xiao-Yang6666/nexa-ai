@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="teal">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服务协议 · Nexa·AI</title>
+<!-- 字体：与首页同源 Space Grotesk + Inter，非阻塞加载 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* ===================================================================
+     Nexa·AI 用户服务协议 —— 全深色高保真，与门面页同源
+     纪律：禁 emoji（线性 SVG）、禁裸色值（只用 var(--token) 与 color-mix token 派生）
+     =================================================================== */
+  :root{ --font-brand:'Space Grotesk','Inter',var(--font-sans); }
+  html,body{height:auto}
+  html{scroll-behavior:smooth}
+  body{background:var(--hd-bg);color:var(--hd-text);font-family:'Inter',var(--font-sans);margin:0;line-height:var(--lh-normal);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  /* 顶部 aurora 柔光（与门面页同源，垫底） */
+  .page{position:relative;isolation:isolate;min-height:100svh;background:radial-gradient(120% 50% at 50% -12%, color-mix(in oklch,var(--hd-bg2) 50%,transparent), transparent 60%)}
+  .page::before{content:'';position:fixed;inset:-24% -10% auto -10%;height:60%;z-index:-1;pointer-events:none;
+    background:radial-gradient(46% 52% at 22% 14%, color-mix(in oklch,var(--color-primary-500) 50%,transparent), transparent 70%),
+      radial-gradient(40% 46% at 84% 20%, color-mix(in oklch,var(--hd-cyan) 38%,transparent), transparent 72%);
+    filter:blur(30px);opacity:.7;animation:aurora 24s var(--ease-in-out) infinite alternate}
+  @keyframes aurora{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(3%,2%,0) scale(1.08)}}
+
+  .wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 var(--space-5)}
+
+  /* ─────────── 顶部导航（与门面页一致，含汉堡） ─────────── */
+  .nav-bar{position:sticky;top:0;z-index:30;background:color-mix(in oklch,var(--hd-bg) 78%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--hd-line)}
+  .nav-in{display:flex;align-items:center;gap:var(--space-6);height:68px}
+  .brand-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);text-decoration:none;letter-spacing:-.01em}
+  .brand-logo .m{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));color:var(--color-primary-fg);font-weight:var(--fw-bold)}
+  .nav-links{display:flex;gap:var(--space-5);margin-left:var(--space-4)}
+  .nav-links a{color:color-mix(in oklch,var(--hd-text) 72%,transparent);text-decoration:none;font-weight:var(--fw-medium);font-size:var(--text-body);transition:color var(--dur-1)}
+  .nav-links a:hover,.nav-links a.active{color:var(--hd-text)}
+  .nav-cta{margin-left:auto;display:flex;gap:var(--space-3);align-items:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:var(--radius-md);font-weight:var(--fw-medium);font-size:var(--text-body);text-decoration:none;cursor:pointer;border:1px solid transparent;transition:all var(--dur-2) var(--ease-out)}
+  .btn-glass{background:var(--hd-glass);color:var(--hd-text);border:1px solid var(--hd-line);backdrop-filter:blur(8px)}
+  .btn-glass:hover{background:var(--hd-glass-strong)}
+  .btn-glow{background:var(--color-primary-500);color:var(--color-primary-fg);box-shadow:var(--shadow-glow)}
+  .btn-glow:hover{background:var(--color-primary-400)}
+  .nav-toggle{display:none;width:42px;height:42px;border-radius:11px;border:1px solid var(--hd-line);background:var(--hd-glass);backdrop-filter:blur(8px);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin-left:auto}
+  .nav-toggle span{display:block;width:18px;height:2px;border-radius:2px;background:var(--hd-text);transition:transform var(--dur-2) var(--ease-out),opacity var(--dur-1)}
+  body.nav-open .nav-toggle span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  body.nav-open .nav-toggle span:nth-child(2){opacity:0}
+  body.nav-open .nav-toggle span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .nav-mobile{display:none;flex-direction:column;gap:2px;padding:0 var(--space-5);max-height:0;overflow:hidden;opacity:0;transition:max-height var(--dur-4) var(--ease-out),opacity var(--dur-3) var(--ease-out)}
+  .nav-mobile a{padding:14px 4px;color:color-mix(in oklch,var(--hd-text) 86%,transparent);text-decoration:none;font-weight:var(--fw-medium);font-size:var(--text-h6);border-bottom:1px solid color-mix(in oklch,var(--hd-line) 60%,transparent)}
+  .nav-mobile-cta{display:flex;gap:var(--space-3);padding:16px 0 6px}
+  .nav-mobile-cta .btn{flex:1;text-align:center}
+  body.nav-open .nav-mobile{max-height:420px;opacity:1;padding-bottom:18px;border-bottom:1px solid var(--hd-line)}
+  @media(max-width:760px){.nav-links{display:none}.nav-cta{display:none}.nav-toggle{display:flex}.nav-mobile{display:flex}}
+
+  /* ─────────── 页头 ─────────── */
+  .doc-head{position:relative;z-index:2;text-align:center;padding:var(--space-12) 0 var(--space-7)}
+  .doc-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 15px;border-radius:var(--radius-full);background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);font-size:var(--text-body-sm);color:var(--hd-muted);margin-bottom:var(--space-5)}
+  .doc-pill svg{width:15px;height:15px;stroke:var(--hd-mint);fill:none;stroke-width:1.6}
+  .doc-head h1{font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h1);margin:0 0 var(--space-3);letter-spacing:-.02em}
+  .doc-sub{color:var(--hd-muted);font-size:var(--text-body-lg);margin:0 auto;max-width:60ch}
+  .doc-meta{margin-top:var(--space-4);font-size:var(--text-body-sm);color:color-mix(in oklch,var(--hd-text) 55%,transparent)}
+
+  /* ─────────── 布局：左 sticky 目录 + 右正文 ─────────── */
+  .doc-layout{position:relative;z-index:2;display:grid;grid-template-columns:230px minmax(0,1fr);gap:var(--space-8);align-items:start;padding-bottom:var(--space-12)}
+  .toc{position:sticky;top:88px;align-self:start}
+  .toc-title{font-size:var(--text-overline);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--hd-muted);margin:0 0 var(--space-3);font-weight:var(--fw-semibold)}
+  .toc nav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--hd-line);padding-left:var(--space-3)}
+  .toc nav a{color:color-mix(in oklch,var(--hd-text) 64%,transparent);text-decoration:none;font-size:var(--text-body);padding:7px 0 7px var(--space-3);margin-left:-1px;border-left:2px solid transparent;line-height:var(--lh-snug);transition:color var(--dur-1),border-color var(--dur-1)}
+  .toc nav a:hover{color:var(--hd-text)}
+  .toc nav a.active{color:var(--hd-text);border-left-color:var(--color-primary-400);font-weight:var(--fw-medium)}
+
+  .prose{max-width:var(--container-prose);font-size:var(--text-body-lg);line-height:var(--lh-relaxed)}
+  .prose section{padding:var(--space-5) 0;border-bottom:1px solid color-mix(in oklch,var(--hd-line) 55%,transparent)}
+  .prose section:last-of-type{border-bottom:none}
+  .prose h2{font-family:var(--font-brand);font-weight:var(--fw-semibold);font-size:var(--text-h3);color:var(--hd-text);margin:0 0 var(--space-3);scroll-margin-top:88px;display:flex;align-items:baseline;gap:var(--space-3);letter-spacing:-.01em}
+  .prose h2 .num{font-size:var(--text-body);color:var(--hd-mint);font-family:var(--font-mono);font-weight:var(--fw-medium);min-width:1.6em}
+  .prose p{margin:0 0 var(--space-3);color:color-mix(in oklch,var(--hd-text) 90%,transparent)}
+  .prose p:last-child{margin-bottom:0}
+  .prose ul{margin:0 0 var(--space-3);padding-left:var(--space-5);color:color-mix(in oklch,var(--hd-text) 82%,transparent)}
+  .prose li{margin-bottom:var(--space-2)}
+  .prose li::marker{color:var(--hd-mint)}
+  .prose strong{color:var(--hd-text);font-weight:var(--fw-semibold)}
+  .prose a{color:var(--hd-mint);text-decoration:none;border-bottom:1px solid color-mix(in oklch,var(--hd-mint) 40%,transparent)}
+  .prose a:hover{border-bottom-color:var(--hd-mint)}
+  .callout{background:var(--hd-glass);border:1px solid var(--hd-line);border-left:2px solid var(--color-primary-500);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5);margin:var(--space-4) 0;font-size:var(--text-body);color:color-mix(in oklch,var(--hd-text) 78%,transparent)}
+
+  @media(max-width:920px){.doc-layout{grid-template-columns:1fr;gap:var(--space-5)}.toc{position:static;display:none}}
+
+  /* ─────────── 页脚 ─────────── */
+  .foot{border-top:1px solid var(--hd-line);background:color-mix(in oklch,var(--hd-bg) 60%,transparent);position:relative;z-index:2}
+  .foot-in{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:var(--space-6);padding:var(--space-8) var(--space-5) var(--space-6)}
+  .foot-brand .brand-logo{margin-bottom:var(--space-3)}
+  .foot-slogan{color:var(--hd-muted);font-size:var(--text-body-sm);max-width:30ch;line-height:var(--lh-normal)}
+  .foot-col h4{font-size:var(--text-overline);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:color-mix(in oklch,var(--hd-text) 60%,transparent);margin:0 0 var(--space-3);font-weight:var(--fw-semibold)}
+  .foot-col a{display:block;color:var(--hd-muted);text-decoration:none;font-size:var(--text-body-sm);padding:4px 0;transition:color var(--dur-1)}
+  .foot-col a:hover{color:var(--hd-text)}
+  .foot-bottom{border-top:1px solid color-mix(in oklch,var(--hd-line) 60%,transparent);text-align:center;padding:var(--space-4) var(--space-5);font-size:var(--text-body-sm);color:color-mix(in oklch,var(--hd-text) 50%,transparent)}
+  @media(max-width:760px){.foot-in{grid-template-columns:1fr 1fr;gap:var(--space-5)}.foot-brand{grid-column:1 / -1}}
+
+  /* ═══════════ 认证抽屉：右侧滑出（与首页 home.html / ranking.html 同源，不跳页） ═══════════ */
+  .auth-overlay{
+    position:fixed;inset:0;z-index:60;
+    background:color-mix(in oklch,var(--hd-bg) 64%,transparent);
+    backdrop-filter:blur(1.5px);
+    opacity:0;visibility:hidden;
+    transition:opacity var(--dur-3) var(--ease-out),visibility 0s linear var(--dur-3);
+  }
+  body.auth-open .auth-overlay{opacity:1;visibility:visible;transition:opacity var(--dur-3) var(--ease-out),visibility 0s}
+  .auth-drawer{
+    position:fixed;top:0;right:0;bottom:0;z-index:61;
+    width:min(468px,100vw);
+    background:color-mix(in oklch,var(--hd-bg) 86%,transparent);
+    backdrop-filter:blur(22px);
+    border-left:1px solid var(--hd-line);
+    box-shadow:-30px 0 80px -30px color-mix(in oklch,var(--hd-bg) 88%,transparent);
+    transform:translateX(100%);visibility:hidden;
+    transition:transform var(--dur-4) var(--ease-out),visibility 0s linear var(--dur-4);
+    overflow-y:auto;overscroll-behavior:contain;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:var(--space-8) var(--space-8) var(--space-6);
+  }
+  body.auth-open .auth-drawer{transform:translateX(0);visibility:visible;transition:transform var(--dur-4) var(--ease-out),visibility 0s}
+  .auth-close{
+    position:absolute;top:18px;right:18px;width:40px;height:40px;border:none;cursor:pointer;
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-full);
+    color:var(--hd-muted);display:grid;place-items:center;backdrop-filter:blur(8px);
+    transition:color var(--dur-1),background var(--dur-1),transform var(--dur-1) var(--ease-snap);
+  }
+  .auth-close:hover{color:var(--hd-text);background:var(--hd-glass-strong);transform:rotate(90deg)}
+  .auth-close svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+  .auth-card[hidden]{display:none}
+  .auth-card{animation:auth-in var(--dur-4) var(--ease-out)}
+  @keyframes auth-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .auth-brand{display:flex;align-items:center;gap:9px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);margin-bottom:var(--space-6)}
+  .auth-brand .m{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));color:var(--color-primary-fg);font-weight:var(--fw-bold);font-size:.9rem}
+  .auth-title{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);letter-spacing:-.02em;margin:0 0 var(--space-2);color:var(--hd-text)}
+  .auth-sub{color:var(--hd-muted);font-size:var(--text-body);margin:0 0 var(--space-6)}
+
+  .auth-drawer .field{margin-bottom:var(--space-4)}
+  .auth-drawer .field label{display:block;font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:color-mix(in oklch,var(--hd-text) 78%,transparent);margin-bottom:var(--space-2)}
+  .auth-drawer .ctrl{position:relative;display:flex;align-items:center}
+  .auth-drawer .inp{
+    width:100%;height:50px;
+    background:color-mix(in oklch,var(--hd-text) 4%,transparent);
+    border:1px solid var(--hd-line);border-radius:var(--radius-md);
+    color:var(--hd-text);font-family:'Inter',var(--font-sans);font-size:var(--text-body-lg);padding:0 var(--space-4);
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background var(--dur-2);
+  }
+  .auth-drawer .inp::placeholder{color:color-mix(in oklch,var(--hd-muted) 80%,transparent)}
+  .auth-drawer .inp:focus{outline:none;border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent);
+    background:color-mix(in oklch,var(--hd-text) 6%,transparent);
+    box-shadow:0 0 0 4px color-mix(in oklch,var(--color-primary-500) 16%,transparent),0 0 22px -4px color-mix(in oklch,var(--color-primary-500) 40%,transparent)}
+  .auth-drawer .ctrl.has-eye .inp{padding-right:46px}
+  .auth-drawer .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:transparent;cursor:pointer;display:grid;place-items:center;border-radius:var(--radius-sm);color:var(--hd-muted);transition:color var(--dur-1)}
+  .auth-drawer .eye:hover{color:var(--hd-text)}
+  .auth-drawer .eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .auth-drawer .eye .off{display:none}
+  .auth-drawer .eye.is-on .on{display:none}
+  .auth-drawer .eye.is-on .off{display:block}
+  .auth-drawer .inp.err{border-color:color-mix(in oklch,var(--color-danger) 80%,transparent);box-shadow:0 0 0 4px color-mix(in oklch,var(--color-danger) 16%,transparent)}
+  @keyframes auth-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+  .auth-drawer .shake{animation:auth-shake .4s var(--ease-in-out)}
+
+  .auth-drawer .pw-strength{display:flex;align-items:center;gap:6px;margin-top:var(--space-2)}
+  .auth-drawer .pw-strength i{flex:1;height:4px;border-radius:2px;background:color-mix(in oklch,var(--hd-text) 12%,transparent);transition:background var(--dur-2)}
+  .auth-drawer .pw-strength.s1 i:nth-child(1){background:var(--color-danger)}
+  .auth-drawer .pw-strength.s2 i:nth-child(-n+2){background:var(--color-warning)}
+  .auth-drawer .pw-strength.s3 i{background:var(--color-success)}
+  .auth-drawer .pw-strength .pw-label{margin-left:6px;font-size:var(--text-caption);color:var(--hd-muted);min-width:48px}
+
+  .auth-drawer .row-between{display:flex;align-items:center;justify-content:space-between;margin:var(--space-2) 0 var(--space-5)}
+  .auth-drawer .check{display:inline-flex;align-items:center;gap:var(--space-2);cursor:pointer;user-select:none;color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-sm)}
+  .auth-drawer .check-agree{margin:var(--space-2) 0 var(--space-5);align-items:flex-start;line-height:1.5}
+  .auth-drawer .check input{position:absolute;opacity:0;width:0;height:0}
+  .auth-drawer .check .box{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid color-mix(in oklch,var(--hd-text) 28%,transparent);background:color-mix(in oklch,var(--hd-text) 4%,transparent);display:grid;place-items:center;transition:border-color var(--dur-1),background var(--dur-1);margin-top:1px}
+  .auth-drawer .check .box svg{width:13px;height:13px;stroke:var(--color-primary-fg);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--dur-1)}
+  .auth-drawer .check input:checked + .box{background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent)}
+  .auth-drawer .check input:checked + .box svg{opacity:1}
+  .auth-drawer .check a{color:var(--hd-mint)}
+  .auth-drawer .link{color:var(--hd-mint);font-size:var(--text-body-sm);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .auth-drawer .link:hover{color:var(--color-primary-300)}
+
+  .auth-card .btn{font-family:inherit;border:none;border-radius:var(--radius-md);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2)}
+  .auth-card .btn-glow{width:100%;height:52px;font-size:var(--text-body-lg);font-weight:var(--fw-semibold);background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));color:var(--color-primary-fg);box-shadow:0 10px 28px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:hover{transform:translateY(-1px);box-shadow:0 14px 34px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:active{transform:translateY(0)}
+
+  .auth-drawer .divider{display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0 var(--space-5);color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .auth-drawer .divider::before,.auth-drawer .divider::after{content:'';flex:1;height:1px;background:var(--hd-line)}
+  .auth-drawer .oauth{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+  .auth-drawer .oauth a{height:48px;border-radius:var(--radius-md);display:grid;place-items:center;background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);color:color-mix(in oklch,var(--hd-text) 82%,transparent);transition:transform var(--dur-1) var(--ease-snap),border-color var(--dur-2),background var(--dur-2),color var(--dur-2)}
+  .auth-drawer .oauth a:hover{transform:translateY(-2px);background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);color:var(--hd-text)}
+  .auth-drawer .oauth a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .auth-drawer .foot{text-align:center;margin-top:var(--space-6);color:var(--hd-muted);font-size:var(--text-body)}
+  .auth-drawer .foot a{color:var(--hd-mint);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .auth-drawer .foot a:hover{color:var(--color-primary-300)}
+
+  @media(max-width:540px){
+    .auth-drawer{width:100vw;padding:var(--space-8) var(--space-5) var(--space-6)}
+    .auth-drawer .inp{height:52px}
+    .auth-card .btn-glow{height:54px}
+    .auth-drawer .oauth a{height:52px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .auth-drawer,.auth-overlay{transition-duration:.01ms!important}
+    .auth-card{animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="nav-bar">
+    <div class="wrap nav-in">
+      <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa</a>
+      <nav class="nav-links">
+        <a href="models.html">模型广场</a>
+        <a href="pricing.html">价格</a>
+        <a href="ranking.html">排行榜</a>
+        <a href="../api-docs/quickstart.html">文档</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-glass" href="login.html" data-auth="login">登录</a>
+        <a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+    <div class="nav-mobile" id="navMobile" aria-hidden="true">
+      <a href="models.html">模型广场</a><a href="pricing.html">价格</a><a href="ranking.html">排行榜</a><a href="../api-docs/quickstart.html">文档</a>
+      <div class="nav-mobile-cta"><a class="btn btn-glass" href="login.html" data-auth="login">登录</a><a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="doc-head">
+      <span class="doc-pill">
+        <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        法律条款
+      </span>
+      <h1>用户服务协议</h1>
+      <p class="doc-sub">本协议是您与 Nexa·AI 之间就使用本平台 AI API 网关服务所订立的具有法律约束力的契约。请在注册或使用服务前完整阅读并理解全部条款。</p>
+      <p class="doc-meta">最近更新：2026 年 6 月　·　生效日期：2026 年 6 月 15 日</p>
+    </div>
+
+    <div class="doc-layout">
+      <aside class="toc">
+        <p class="toc-title">目录</p>
+        <nav>
+          <a href="#s1">1. 总则与定义</a>
+          <a href="#s2">2. 账户注册与安全</a>
+          <a href="#s3">3. 服务内容与计费规则</a>
+          <a href="#s4">4. 用户行为规范</a>
+          <a href="#s5">5. 知识产权</a>
+          <a href="#s6">6. 免责声明与服务可用性</a>
+          <a href="#s7">7. 账户终止</a>
+          <a href="#s8">8. 协议变更</a>
+          <a href="#s9">9. 争议解决与适用法律</a>
+          <a href="#s10">10. 联系方式</a>
+        </nav>
+      </aside>
+
+      <article class="prose">
+        <section id="s1">
+          <h2><span class="num">1</span>总则与定义</h2>
+          <p>本协议适用于 Nexa·AI（以下简称"本平台""我们"）通过其网站、控制台、API 接口及相关工具向用户（以下简称"您""用户"）提供的全部服务。一旦您完成注册、调用接口或以其他方式使用本平台服务，即视为您已阅读、理解并同意接受本协议全部条款的约束。</p>
+          <p>为便于理解，本协议中使用的关键术语定义如下：<strong>"服务"</strong>指本平台提供的、对接多家上游大模型供应商的统一 API 网关、密钥管理、计费、监控及配套功能；<strong>"上游模型"</strong>指由第三方模型厂商提供、经由本平台转发调用的大语言模型或多模态模型；<strong>"API 密钥"</strong>指本平台为您签发、用于身份鉴权与计量的凭证；<strong>"额度"</strong>指您预付费充值后形成的、用于抵扣调用费用的账户余额。</p>
+          <p>若您代表某一组织或企业接受本协议，您声明并保证已获得该组织充分授权，使其受本协议约束。本协议与您单独签署的企业服务订单或补充协议存在冲突时，以后者就冲突事项的约定为准。</p>
+        </section>
+
+        <section id="s2">
+          <h2><span class="num">2</span>账户注册与安全</h2>
+          <p>使用本平台服务需注册账户。注册时您应提供真实、准确、完整的信息，并在信息变更时及时更新。您应确保用于接收验证码与重要通知的邮箱或手机号处于有效可用状态。我们有权对明显使用虚假信息或冒用他人身份注册的账户采取限制或注销措施。</p>
+          <p>账户及 API 密钥的安全由您自行负责。您应妥善保管登录凭证与密钥，不得将其公开发布、提交至代码仓库或泄露给无关第三方。我们建议您为不同应用场景签发独立密钥、定期轮换，并在控制台中设置 IP 白名单与调用额度上限以降低风险。</p>
+          <div class="callout">凡通过您的账户或密钥发生的所有调用与计费，均视为您本人的行为，由您承担相应责任。如发现密钥泄露或账户异常，请立即在控制台禁用相关密钥并联系我们。</div>
+          <p>每个自然人或组织原则上仅应注册并使用一个主账户。以批量注册、自动化脚本恶意领取新用户额度等方式滥用注册机制的，我们有权回收相关额度并永久封禁关联账户。</p>
+        </section>
+
+        <section id="s3">
+          <h2><span class="num">3</span>服务内容与计费规则</h2>
+          <p>本平台以统一接口形式聚合多家上游模型供应商的能力，您可通过单一密钥访问不同厂商的对话、补全、向量、图像及其他模型。具体可用模型清单、上下文长度及能力以控制台与模型广场页实时展示为准，可能随上游供应方调整而变更。</p>
+          <p><strong>计费方式。</strong>本平台采用<strong>预付费</strong>模式，您需先充值形成账户额度，调用费用按实际消耗从额度中实时扣减。模型调用以 <strong>token</strong> 为基本计量单位，输入 token 与输出 token 通常分别计价；部分模型按请求次数、图像张数或时长计费，以该模型的计费说明为准。</p>
+          <p><strong>倍率说明。</strong>每个模型设有相对于上游官方价格的<strong>倍率</strong>，最终单价 = 上游基准价 × 倍率。倍率用于覆盖网关运营、流量调度与汇率成本，并可能因促销或上游价格调整而变化。每次调用的实际扣费、对应模型与 token 数均记录在账单明细中，您可随时在控制台查询、核对与导出。</p>
+          <p>额度一经消耗不可逆转。除适用法律强制要求或我们书面承诺的情形外，已充值的账户额度原则上不予退还；如需退款，须经人工审核并扣除已消耗部分。我们保留在提前公告后调整定价、倍率及计费规则的权利，调整不溯及已发生的扣费。</p>
+        </section>
+
+        <section id="s4">
+          <h2><span class="num">4</span>用户行为规范</h2>
+          <p>您承诺合法、合规地使用本平台服务，并对通过服务提交的输入内容及由此产生的输出承担全部责任。您不得利用本服务从事任何违反所适用法律法规、损害他人合法权益或危害公共利益的行为。</p>
+          <p>具体而言，您<strong>不得</strong>：</p>
+          <ul>
+            <li>生成、传播违法、暴力、淫秽、欺诈、侵犯他人隐私或知识产权的内容；</li>
+            <li>试图绕过、攻击或干扰本平台及上游供应商的安全机制、速率限制或计费系统；</li>
+            <li>对接口进行未经授权的高频压测、爬取，或以异常方式占用资源、影响其他用户正常使用；</li>
+            <li>将服务用于训练直接与本平台竞争的模型，或转售、再分发本平台密钥及调用能力而未取得书面授权；</li>
+            <li>利用服务实施自动化批量注册、刷量、垃圾信息群发等滥用行为。</li>
+          </ul>
+          <p><strong>速率限制。</strong>为保障服务稳定，本平台对各账户与密钥设有请求频率（RPM）与并发上限，超限请求可能被限流或拒绝。您可在控制台查看当前限额，企业用户可申请提额。我们有权对疑似滥用的流量临时限速并要求说明。</p>
+        </section>
+
+        <section id="s5">
+          <h2><span class="num">5</span>知识产权</h2>
+          <p>本平台的网站、控制台、API 设计、文档、商标、标识及一切由我们开发的软件与界面，其知识产权归本平台或相应权利人所有。除为正常使用服务所必需外，未经书面许可，您不得复制、修改、反向工程或以其他方式利用上述内容。</p>
+          <p>您通过服务提交的输入内容（提示词、数据等）之权利仍归您所有。在不违反法律与上游供应商条款的前提下，模型针对您的输入所生成的输出内容，其使用权归属于您；您应自行评估输出的准确性与可用性，并对其使用后果负责。我们不主张对您输入与输出内容的所有权，亦不会将其用于本协议第 4 节及隐私政策约定之外的用途。</p>
+        </section>
+
+        <section id="s6">
+          <h2><span class="num">6</span>免责声明与服务可用性</h2>
+          <p>本服务在很大程度上依赖第三方上游模型供应商。当上游供应商出现限流、宕机、模型下线、调价或政策变更时，相应模型可能临时或永久不可用，本平台将尽合理努力进行容灾切换或公告，但<strong>不对上游不可用造成的中断承担超出已扣费额度退回范围的责任</strong>。</p>
+          <p>除另有书面约定的企业级 SLA 外，本平台公开页面所述的可用性指标为<strong>努力目标而非法律承诺</strong>。服务按"现状"与"可用"基础提供，我们不对模型输出的准确性、完整性、适用性或不侵权作出明示或默示保证。</p>
+          <div class="callout">在适用法律允许的最大范围内，本平台对因使用或无法使用服务而产生的间接、偶然、特殊或后果性损失不承担责任；我们的累计赔偿责任以引发该责任事件发生前十二个月内您实际支付给本平台的费用为上限。</div>
+          <p>对于因不可抗力、网络运营商故障、黑客攻击或您自身原因导致的服务中断或损失，本平台不承担责任。我们可能因系统维护、升级或安全事件临时暂停服务，并将尽量提前通知。</p>
+        </section>
+
+        <section id="s7">
+          <h2><span class="num">7</span>账户终止</h2>
+          <p>您可随时停止使用服务并申请注销账户。注销前请自行导出所需数据，账户注销后剩余额度的处理依本协议第 3 节及退款政策执行，部分数据可能依法定保留义务暂存。</p>
+          <p>若您严重违反本协议（尤其是第 4 节行为规范）、从事违法活动或危及平台与其他用户安全，我们有权在不另行通知的情况下暂停或终止您的账户、禁用密钥并保留追究责任的权利。对于一般性违规，我们通常会先行提示并给予整改机会。账户终止不免除您在终止前已产生的付款义务。</p>
+        </section>
+
+        <section id="s8">
+          <h2><span class="num">8</span>协议变更</h2>
+          <p>我们可能根据法律法规、业务发展或服务调整不时修订本协议。重大变更将通过站内公告、邮件或控制台提示等方式于生效前合理期限内通知您。修订后的协议自公布的生效之日起取代原协议。</p>
+          <p>若您不同意变更内容，应在变更生效前停止使用服务并可申请注销账户；变更生效后您继续使用服务的，即视为接受修订后的协议。本协议每次更新的生效日期将标注于页头。</p>
+        </section>
+
+        <section id="s9">
+          <h2><span class="num">9</span>争议解决与适用法律</h2>
+          <p>本协议的订立、效力、解释、履行及争议解决均适用中华人民共和国大陆地区法律（不含冲突法规则）。本协议任何条款被认定为无效或不可执行的，不影响其余条款的效力。</p>
+          <p>因本协议或服务产生的争议，双方应首先通过友好协商解决；协商不成的，任一方均有权将争议提交至本平台运营主体所在地有管辖权的人民法院诉讼解决。我们未行使或延迟行使本协议项下任何权利，不构成对该权利的放弃。</p>
+        </section>
+
+        <section id="s10">
+          <h2><span class="num">10</span>联系方式</h2>
+          <p>如您对本协议存在疑问，或需就账户、计费、合规等事项与我们沟通，可通过以下渠道联系：</p>
+          <ul>
+            <li>客户支持邮箱：<a href="mailto:support@nexa.ai">support@nexa.ai</a></li>
+            <li>合规与法务邮箱：<a href="mailto:legal@nexa.ai">legal@nexa.ai</a></li>
+            <li>控制台内"帮助与支持"工单系统（登录后可用）</li>
+          </ul>
+          <p>我们将在收到您的有效请求后于合理期限内予以回复。感谢您选择并信任 Nexa·AI。</p>
+        </section>
+      </article>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div class="foot-brand">
+        <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa</a>
+        <p class="foot-slogan">统一 API 网关，满血直连多家大模型，只付零头。为开发者而生。</p>
+      </div>
+      <div class="foot-col">
+        <h4>产品</h4>
+        <a href="models.html">模型广场</a>
+        <a href="pricing.html">价格</a>
+        <a href="ranking.html">排行榜</a>
+      </div>
+      <div class="foot-col">
+        <h4>资源</h4>
+        <a href="../api-docs/quickstart.html">文档</a>
+        <a href="../api-docs/quickstart.html">API 参考</a>
+      </div>
+      <div class="foot-col">
+        <h4>法律</h4>
+        <a href="agreement.html">服务协议</a>
+        <a href="privacy.html">隐私政策</a>
+      </div>
+    </div>
+    <div class="foot-bottom">© 2026 Nexa·AI　·　满血直连，只付零头</div>
+  </footer>
+
+</div>
+<script>
+(function(){
+  var t=document.getElementById('navToggle'),m=document.getElementById('navMobile');
+  if(!t)return;
+  t.addEventListener('click',function(){
+    var o=document.body.classList.toggle('nav-open');
+    t.setAttribute('aria-expanded',o?'true':'false');
+    if(m)m.setAttribute('aria-hidden',o?'false':'true');
+  });
+  // 目录 scrollspy：滚动时高亮当前章节
+  var links=[].slice.call(document.querySelectorAll('.toc nav a[href^="#"]'));
+  var map={};
+  links.forEach(function(a){ var id=a.getAttribute('href').slice(1); var s=document.getElementById(id); if(s) map[id]=a; });
+  if(window.IntersectionObserver && links.length){
+    var spy=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('active');});
+          var a=map[e.target.id]; if(a)a.classList.add('active');
+        }
+      });
+    },{rootMargin:'-20% 0px -70% 0px',threshold:0});
+    Object.keys(map).forEach(function(id){ spy.observe(document.getElementById(id)); });
+  }
+})();
+</script>
+
+<!-- ═══════════ 统一认证抽屉（右侧滑出，与 models.html / ranking.html / home.html 同源） ═══════════ -->
+<div class="auth-overlay" id="authOverlay"></div>
+<aside class="auth-drawer" id="authDrawer" aria-modal="true" role="dialog" aria-label="登录或注册">
+  <button class="auth-close" id="authClose" type="button" aria-label="关闭">
+    <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+  </button>
+  <form class="auth-card" id="loginForm" data-view="login" novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">欢迎回来</h2>
+    <p class="auth-sub">登录你的 Nexa 账号，继续直连全球大模型</p>
+    <div class="field">
+      <label for="lgAccount">邮箱 / 用户名</label>
+      <div class="ctrl"><input class="inp" id="lgAccount" type="text" autocomplete="username" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="lgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="lgPwd" type="password" autocomplete="current-password" placeholder="输入密码">
+        <button class="eye" type="button" data-eye="lgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="row-between">
+      <label class="check"><input type="checkbox" checked><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>记住我</label>
+      <a class="link" href="#">忘记密码？</a>
+    </div>
+    <button class="btn btn-glow" type="submit">登录</button>
+    <div class="divider">或使用以下方式登录</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">还没有账号？<a href="#" data-switch="register">去注册</a></p>
+  </form>
+  <form class="auth-card" id="registerForm" data-view="register" hidden novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">开始用 Nexa</h2>
+    <p class="auth-sub">一个账号，直连 OpenAI / Anthropic / Google / DeepSeek</p>
+    <div class="field">
+      <label for="rgEmail">邮箱</label>
+      <div class="ctrl"><input class="inp" id="rgEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="rgPwd" type="password" autocomplete="new-password" placeholder="至少 8 位">
+        <button class="eye" type="button" data-eye="rgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+      <div class="pw-strength" id="pwStrength"><i></i><i></i><i></i><span class="pw-label">密码强度</span></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd2">确认密码</label>
+      <div class="ctrl"><input class="inp" id="rgPwd2" type="password" autocomplete="new-password" placeholder="再次输入密码"></div>
+    </div>
+    <label class="check check-agree"><input type="checkbox" id="rgAgree"><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>我已阅读并同意 <a href="agreement.html">《服务协议》</a> 和 <a href="privacy.html">《隐私政策》</a></label>
+    <button class="btn btn-glow" type="submit">创建账号</button>
+    <div class="divider">或使用以下方式注册</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">已有账号？<a href="#" data-switch="login">去登录</a></p>
+  </form>
+</aside>
+
+<script>
+/* ── 统一认证抽屉（与 models.html / ranking.html / home.html 同源；
+      本页已有 navToggle 绑定，此处只负责认证抽屉，不重复绑定汉堡） ── */
+(function(){
+  var overlay=document.getElementById('authOverlay'),
+      drawer=document.getElementById('authDrawer'),
+      closeBtn=document.getElementById('authClose'),
+      loginView=document.getElementById('loginForm'),
+      registerView=document.getElementById('registerForm');
+  if(!drawer)return;
+  var lastFocus=null;
+
+  function showView(v){
+    var toLogin = v!=='register';
+    loginView.hidden = !toLogin;
+    registerView.hidden = toLogin;
+  }
+  window.openAuth=function(v){
+    lastFocus=document.activeElement;
+    showView(v||'login');
+    document.body.classList.add('auth-open');
+    document.body.style.overflow='hidden';
+    var first=(v==='register'?registerView:loginView).querySelector('input');
+    if(first) setTimeout(function(){first.focus();},460);
+  };
+  function closeAuth(){
+    document.body.classList.remove('auth-open');
+    document.body.style.overflow='';
+    if(lastFocus) lastFocus.focus();
+  }
+  document.querySelectorAll('[data-auth]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); openAuth(this.getAttribute('data-auth')); });
+  });
+  drawer.querySelectorAll('[data-switch]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); showView(this.getAttribute('data-switch')); });
+  });
+  closeBtn.addEventListener('click', closeAuth);
+  overlay.addEventListener('click', closeAuth);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && document.body.classList.contains('auth-open')) closeAuth(); });
+
+  // 眼睛：切 password/text
+  drawer.querySelectorAll('.eye').forEach(function(eye){
+    eye.addEventListener('click', function(){
+      var pwd=document.getElementById(eye.getAttribute('data-eye'));
+      if(!pwd)return;
+      var show=pwd.type==='password';
+      pwd.type=show?'text':'password';
+      eye.classList.toggle('is-on',show);
+      eye.setAttribute('aria-pressed',String(show));
+      eye.setAttribute('aria-label',show?'隐藏密码':'显示密码');
+    });
+  });
+
+  // 密码强度（注册）
+  var rgPwd=document.getElementById('rgPwd'), bar=document.getElementById('pwStrength'),
+      lbl=bar?bar.querySelector('.pw-label'):null;
+  if(rgPwd&&bar){
+    rgPwd.addEventListener('input', function(){
+      var v=rgPwd.value, kinds=0;
+      if(/[a-z]/.test(v))kinds++; if(/[A-Z]/.test(v))kinds++;
+      if(/[0-9]/.test(v))kinds++; if(/[^a-zA-Z0-9]/.test(v))kinds++;
+      var s=0;
+      if(v.length>=8 && kinds>=3) s=3;
+      else if(v.length>=6 && kinds>=2) s=2;
+      else if(v.length>0) s=1;
+      bar.className='pw-strength'+(s?' s'+s:'');
+      if(lbl) lbl.textContent = s===0?'密码强度':(s===1?'弱':(s===2?'中':'强'));
+    });
+  }
+
+  function shake(el){ el.classList.add('err','shake'); setTimeout(function(){el.classList.remove('shake');},420); }
+  function clr(el){ el.classList.remove('err'); }
+
+  loginView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var acc=document.getElementById('lgAccount'), pw=document.getElementById('lgPwd'), bad=false;
+    [acc,pw].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(bad)return;
+    // TODO: 调登录接口；演示态——直接当作登录成功
+  });
+  registerView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var em=document.getElementById('rgEmail'), p1=document.getElementById('rgPwd'),
+        p2=document.getElementById('rgPwd2'), agree=document.getElementById('rgAgree'), bad=false;
+    [em,p1,p2].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(!bad && p1.value!==p2.value){ shake(p2); bad=true; }
+    if(!agree.checked){ var box=agree.nextElementSibling; if(box){box.classList.add('shake');setTimeout(function(){box.classList.remove('shake');},420);} bad=true; }
+    if(bad)return;
+    // TODO: 调注册接口；演示态——直接当作注册成功
+  });
+})();
+</script>
+</body>
+</html>

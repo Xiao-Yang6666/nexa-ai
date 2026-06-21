@@ -1,0 +1,38 @@
+{
+  "register": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "location": "{'url': 'http://172.17.0.1:8080/api/user/register', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+    }
+  ],
+  "login": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "location": "{'url': 'http://172.17.0.1:8080/api/user/login', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+    }
+  ],
+  "dashboard": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()",
+      "location": "{'url': 'http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()",
+      "location": "{'url': 'http://172.17.0.1:8080/api/user/self', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()",
+      "location": "{'url': 'http://172.17.0.1:8080/api/user/self', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 403 ()",
+      "location": "{'url': 'http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+    }
+  ]
+}

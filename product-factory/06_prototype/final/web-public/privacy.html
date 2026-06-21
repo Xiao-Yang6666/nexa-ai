@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="teal">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>隐私政策 · Nexa·AI</title>
+<!-- 字体：与首页同源 Space Grotesk + Inter，非阻塞加载 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* ===================================================================
+     Nexa·AI 隐私政策 —— 全深色高保真，与门面页同源
+     纪律：禁 emoji（线性 SVG）、禁裸色值（只用 var(--token) 与 color-mix token 派生）
+     =================================================================== */
+  :root{ --font-brand:'Space Grotesk','Inter',var(--font-sans); }
+  html,body{height:auto}
+  html{scroll-behavior:smooth}
+  body{background:var(--hd-bg);color:var(--hd-text);font-family:'Inter',var(--font-sans);margin:0;line-height:var(--lh-normal);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  .page{position:relative;isolation:isolate;min-height:100svh;background:radial-gradient(120% 50% at 50% -12%, color-mix(in oklch,var(--hd-bg2) 50%,transparent), transparent 60%)}
+  .page::before{content:'';position:fixed;inset:-24% -10% auto -10%;height:60%;z-index:-1;pointer-events:none;
+    background:radial-gradient(46% 52% at 22% 14%, color-mix(in oklch,var(--color-primary-500) 50%,transparent), transparent 70%),
+      radial-gradient(40% 46% at 84% 20%, color-mix(in oklch,var(--hd-cyan) 38%,transparent), transparent 72%);
+    filter:blur(30px);opacity:.7;animation:aurora 24s var(--ease-in-out) infinite alternate}
+  @keyframes aurora{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(3%,2%,0) scale(1.08)}}
+
+  .wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 var(--space-5)}
+
+  /* ─────────── 顶部导航（与门面页一致，含汉堡） ─────────── */
+  .nav-bar{position:sticky;top:0;z-index:30;background:color-mix(in oklch,var(--hd-bg) 78%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--hd-line)}
+  .nav-in{display:flex;align-items:center;gap:var(--space-6);height:68px}
+  .brand-logo{display:flex;align-items:center;gap:10px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);text-decoration:none;letter-spacing:-.01em}
+  .brand-logo .m{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));color:var(--color-primary-fg);font-weight:var(--fw-bold)}
+  .nav-links{display:flex;gap:var(--space-5);margin-left:var(--space-4)}
+  .nav-links a{color:color-mix(in oklch,var(--hd-text) 72%,transparent);text-decoration:none;font-weight:var(--fw-medium);font-size:var(--text-body);transition:color var(--dur-1)}
+  .nav-links a:hover,.nav-links a.active{color:var(--hd-text)}
+  .nav-cta{margin-left:auto;display:flex;gap:var(--space-3);align-items:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 16px;border-radius:var(--radius-md);font-weight:var(--fw-medium);font-size:var(--text-body);text-decoration:none;cursor:pointer;border:1px solid transparent;transition:all var(--dur-2) var(--ease-out)}
+  .btn-glass{background:var(--hd-glass);color:var(--hd-text);border:1px solid var(--hd-line);backdrop-filter:blur(8px)}
+  .btn-glass:hover{background:var(--hd-glass-strong)}
+  .btn-glow{background:var(--color-primary-500);color:var(--color-primary-fg);box-shadow:var(--shadow-glow)}
+  .btn-glow:hover{background:var(--color-primary-400)}
+  .nav-toggle{display:none;width:42px;height:42px;border-radius:11px;border:1px solid var(--hd-line);background:var(--hd-glass);backdrop-filter:blur(8px);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;margin-left:auto}
+  .nav-toggle span{display:block;width:18px;height:2px;border-radius:2px;background:var(--hd-text);transition:transform var(--dur-2) var(--ease-out),opacity var(--dur-1)}
+  body.nav-open .nav-toggle span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  body.nav-open .nav-toggle span:nth-child(2){opacity:0}
+  body.nav-open .nav-toggle span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .nav-mobile{display:none;flex-direction:column;gap:2px;padding:0 var(--space-5);max-height:0;overflow:hidden;opacity:0;transition:max-height var(--dur-4) var(--ease-out),opacity var(--dur-3) var(--ease-out)}
+  .nav-mobile a{padding:14px 4px;color:color-mix(in oklch,var(--hd-text) 86%,transparent);text-decoration:none;font-weight:var(--fw-medium);font-size:var(--text-h6);border-bottom:1px solid color-mix(in oklch,var(--hd-line) 60%,transparent)}
+  .nav-mobile-cta{display:flex;gap:var(--space-3);padding:16px 0 6px}
+  .nav-mobile-cta .btn{flex:1;text-align:center}
+  body.nav-open .nav-mobile{max-height:420px;opacity:1;padding-bottom:18px;border-bottom:1px solid var(--hd-line)}
+  @media(max-width:760px){.nav-links{display:none}.nav-cta{display:none}.nav-toggle{display:flex}.nav-mobile{display:flex}}
+
+  /* ─────────── 页头 ─────────── */
+  .doc-head{position:relative;z-index:2;text-align:center;padding:var(--space-12) 0 var(--space-7)}
+  .doc-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 15px;border-radius:var(--radius-full);background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);font-size:var(--text-body-sm);color:var(--hd-muted);margin-bottom:var(--space-5)}
+  .doc-pill svg{width:15px;height:15px;stroke:var(--hd-mint);fill:none;stroke-width:1.6}
+  .doc-head h1{font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h1);margin:0 0 var(--space-3);letter-spacing:-.02em}
+  .doc-sub{color:var(--hd-muted);font-size:var(--text-body-lg);margin:0 auto;max-width:60ch}
+  .doc-meta{margin-top:var(--space-4);font-size:var(--text-body-sm);color:color-mix(in oklch,var(--hd-text) 55%,transparent)}
+
+  /* ─────────── 布局：左 sticky 目录 + 右正文 ─────────── */
+  .doc-layout{position:relative;z-index:2;display:grid;grid-template-columns:230px minmax(0,1fr);gap:var(--space-8);align-items:start;padding-bottom:var(--space-12)}
+  .toc{position:sticky;top:88px;align-self:start}
+  .toc-title{font-size:var(--text-overline);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:var(--hd-muted);margin:0 0 var(--space-3);font-weight:var(--fw-semibold)}
+  .toc nav{display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--hd-line);padding-left:var(--space-3)}
+  .toc nav a{color:color-mix(in oklch,var(--hd-text) 64%,transparent);text-decoration:none;font-size:var(--text-body);padding:7px 0 7px var(--space-3);margin-left:-1px;border-left:2px solid transparent;line-height:var(--lh-snug);transition:color var(--dur-1),border-color var(--dur-1)}
+  .toc nav a:hover{color:var(--hd-text)}
+  .toc nav a.active{color:var(--hd-text);border-left-color:var(--color-primary-400);font-weight:var(--fw-medium)}
+
+  .prose{max-width:var(--container-prose);font-size:var(--text-body-lg);line-height:var(--lh-relaxed)}
+  .prose section{padding:var(--space-5) 0;border-bottom:1px solid color-mix(in oklch,var(--hd-line) 55%,transparent)}
+  .prose section:last-of-type{border-bottom:none}
+  .prose h2{font-family:var(--font-brand);font-weight:var(--fw-semibold);font-size:var(--text-h3);color:var(--hd-text);margin:0 0 var(--space-3);scroll-margin-top:88px;display:flex;align-items:baseline;gap:var(--space-3);letter-spacing:-.01em}
+  .prose h2 .num{font-size:var(--text-body);color:var(--hd-mint);font-family:var(--font-mono);font-weight:var(--fw-medium);min-width:1.6em}
+  .prose p{margin:0 0 var(--space-3);color:color-mix(in oklch,var(--hd-text) 90%,transparent)}
+  .prose p:last-child{margin-bottom:0}
+  .prose ul{margin:0 0 var(--space-3);padding-left:var(--space-5);color:color-mix(in oklch,var(--hd-text) 82%,transparent)}
+  .prose li{margin-bottom:var(--space-2)}
+  .prose li::marker{color:var(--hd-mint)}
+  .prose strong{color:var(--hd-text);font-weight:var(--fw-semibold)}
+  .prose a{color:var(--hd-mint);text-decoration:none;border-bottom:1px solid color-mix(in oklch,var(--hd-mint) 40%,transparent)}
+  .prose a:hover{border-bottom-color:var(--hd-mint)}
+  .callout{background:var(--hd-glass);border:1px solid var(--hd-line);border-left:2px solid var(--color-primary-500);border-radius:var(--radius-md);padding:var(--space-4) var(--space-5);margin:var(--space-4) 0;font-size:var(--text-body);color:color-mix(in oklch,var(--hd-text) 78%,transparent)}
+
+  @media(max-width:920px){.doc-layout{grid-template-columns:1fr;gap:var(--space-5)}.toc{position:static;display:none}}
+
+  /* ─────────── 页脚 ─────────── */
+  .foot{border-top:1px solid var(--hd-line);background:color-mix(in oklch,var(--hd-bg) 60%,transparent);position:relative;z-index:2}
+  .foot-in{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:var(--space-6);padding:var(--space-8) var(--space-5) var(--space-6)}
+  .foot-brand .brand-logo{margin-bottom:var(--space-3)}
+  .foot-slogan{color:var(--hd-muted);font-size:var(--text-body-sm);max-width:30ch;line-height:var(--lh-normal)}
+  .foot-col h4{font-size:var(--text-overline);letter-spacing:var(--tracking-wide);text-transform:uppercase;color:color-mix(in oklch,var(--hd-text) 60%,transparent);margin:0 0 var(--space-3);font-weight:var(--fw-semibold)}
+  .foot-col a{display:block;color:var(--hd-muted);text-decoration:none;font-size:var(--text-body-sm);padding:4px 0;transition:color var(--dur-1)}
+  .foot-col a:hover{color:var(--hd-text)}
+  .foot-bottom{border-top:1px solid color-mix(in oklch,var(--hd-line) 60%,transparent);text-align:center;padding:var(--space-4) var(--space-5);font-size:var(--text-body-sm);color:color-mix(in oklch,var(--hd-text) 50%,transparent)}
+  @media(max-width:760px){.foot-in{grid-template-columns:1fr 1fr;gap:var(--space-5)}.foot-brand{grid-column:1 / -1}}
+
+  /* ═══════════ 认证抽屉：右侧滑出（与首页 home.html / ranking.html 同源，不跳页） ═══════════ */
+  .auth-overlay{
+    position:fixed;inset:0;z-index:60;
+    background:color-mix(in oklch,var(--hd-bg) 64%,transparent);
+    backdrop-filter:blur(1.5px);
+    opacity:0;visibility:hidden;
+    transition:opacity var(--dur-3) var(--ease-out),visibility 0s linear var(--dur-3);
+  }
+  body.auth-open .auth-overlay{opacity:1;visibility:visible;transition:opacity var(--dur-3) var(--ease-out),visibility 0s}
+  .auth-drawer{
+    position:fixed;top:0;right:0;bottom:0;z-index:61;
+    width:min(468px,100vw);
+    background:color-mix(in oklch,var(--hd-bg) 86%,transparent);
+    backdrop-filter:blur(22px);
+    border-left:1px solid var(--hd-line);
+    box-shadow:-30px 0 80px -30px color-mix(in oklch,var(--hd-bg) 88%,transparent);
+    transform:translateX(100%);visibility:hidden;
+    transition:transform var(--dur-4) var(--ease-out),visibility 0s linear var(--dur-4);
+    overflow-y:auto;overscroll-behavior:contain;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:var(--space-8) var(--space-8) var(--space-6);
+  }
+  body.auth-open .auth-drawer{transform:translateX(0);visibility:visible;transition:transform var(--dur-4) var(--ease-out),visibility 0s}
+  .auth-close{
+    position:absolute;top:18px;right:18px;width:40px;height:40px;border:none;cursor:pointer;
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-full);
+    color:var(--hd-muted);display:grid;place-items:center;backdrop-filter:blur(8px);
+    transition:color var(--dur-1),background var(--dur-1),transform var(--dur-1) var(--ease-snap);
+  }
+  .auth-close:hover{color:var(--hd-text);background:var(--hd-glass-strong);transform:rotate(90deg)}
+  .auth-close svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+  .auth-card[hidden]{display:none}
+  .auth-card{animation:auth-in var(--dur-4) var(--ease-out)}
+  @keyframes auth-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .auth-brand{display:flex;align-items:center;gap:9px;font-family:var(--font-brand);font-weight:var(--fw-bold);font-size:var(--text-h5);color:var(--hd-text);margin-bottom:var(--space-6)}
+  .auth-brand .m{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));color:var(--color-primary-fg);font-weight:var(--fw-bold);font-size:.9rem}
+  .auth-title{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);letter-spacing:-.02em;margin:0 0 var(--space-2);color:var(--hd-text)}
+  .auth-sub{color:var(--hd-muted);font-size:var(--text-body);margin:0 0 var(--space-6)}
+
+  .auth-drawer .field{margin-bottom:var(--space-4)}
+  .auth-drawer .field label{display:block;font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:color-mix(in oklch,var(--hd-text) 78%,transparent);margin-bottom:var(--space-2)}
+  .auth-drawer .ctrl{position:relative;display:flex;align-items:center}
+  .auth-drawer .inp{
+    width:100%;height:50px;
+    background:color-mix(in oklch,var(--hd-text) 4%,transparent);
+    border:1px solid var(--hd-line);border-radius:var(--radius-md);
+    color:var(--hd-text);font-family:'Inter',var(--font-sans);font-size:var(--text-body-lg);padding:0 var(--space-4);
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background var(--dur-2);
+  }
+  .auth-drawer .inp::placeholder{color:color-mix(in oklch,var(--hd-muted) 80%,transparent)}
+  .auth-drawer .inp:focus{outline:none;border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent);
+    background:color-mix(in oklch,var(--hd-text) 6%,transparent);
+    box-shadow:0 0 0 4px color-mix(in oklch,var(--color-primary-500) 16%,transparent),0 0 22px -4px color-mix(in oklch,var(--color-primary-500) 40%,transparent)}
+  .auth-drawer .ctrl.has-eye .inp{padding-right:46px}
+  .auth-drawer .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:none;background:transparent;cursor:pointer;display:grid;place-items:center;border-radius:var(--radius-sm);color:var(--hd-muted);transition:color var(--dur-1)}
+  .auth-drawer .eye:hover{color:var(--hd-text)}
+  .auth-drawer .eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .auth-drawer .eye .off{display:none}
+  .auth-drawer .eye.is-on .on{display:none}
+  .auth-drawer .eye.is-on .off{display:block}
+  .auth-drawer .inp.err{border-color:color-mix(in oklch,var(--color-danger) 80%,transparent);box-shadow:0 0 0 4px color-mix(in oklch,var(--color-danger) 16%,transparent)}
+  @keyframes auth-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+  .auth-drawer .shake{animation:auth-shake .4s var(--ease-in-out)}
+
+  .auth-drawer .pw-strength{display:flex;align-items:center;gap:6px;margin-top:var(--space-2)}
+  .auth-drawer .pw-strength i{flex:1;height:4px;border-radius:2px;background:color-mix(in oklch,var(--hd-text) 12%,transparent);transition:background var(--dur-2)}
+  .auth-drawer .pw-strength.s1 i:nth-child(1){background:var(--color-danger)}
+  .auth-drawer .pw-strength.s2 i:nth-child(-n+2){background:var(--color-warning)}
+  .auth-drawer .pw-strength.s3 i{background:var(--color-success)}
+  .auth-drawer .pw-strength .pw-label{margin-left:6px;font-size:var(--text-caption);color:var(--hd-muted);min-width:48px}
+
+  .auth-drawer .row-between{display:flex;align-items:center;justify-content:space-between;margin:var(--space-2) 0 var(--space-5)}
+  .auth-drawer .check{display:inline-flex;align-items:center;gap:var(--space-2);cursor:pointer;user-select:none;color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-sm)}
+  .auth-drawer .check-agree{margin:var(--space-2) 0 var(--space-5);align-items:flex-start;line-height:1.5}
+  .auth-drawer .check input{position:absolute;opacity:0;width:0;height:0}
+  .auth-drawer .check .box{width:18px;height:18px;border-radius:5px;flex:none;border:1px solid color-mix(in oklch,var(--hd-text) 28%,transparent);background:color-mix(in oklch,var(--hd-text) 4%,transparent);display:grid;place-items:center;transition:border-color var(--dur-1),background var(--dur-1);margin-top:1px}
+  .auth-drawer .check .box svg{width:13px;height:13px;stroke:var(--color-primary-fg);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--dur-1)}
+  .auth-drawer .check input:checked + .box{background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent)}
+  .auth-drawer .check input:checked + .box svg{opacity:1}
+  .auth-drawer .check a{color:var(--hd-mint)}
+  .auth-drawer .link{color:var(--hd-mint);font-size:var(--text-body-sm);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .auth-drawer .link:hover{color:var(--color-primary-300)}
+
+  .auth-card .btn{font-family:inherit;border:none;border-radius:var(--radius-md);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2)}
+  .auth-card .btn-glow{width:100%;height:52px;font-size:var(--text-body-lg);font-weight:var(--fw-semibold);background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));color:var(--color-primary-fg);box-shadow:0 10px 28px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:hover{transform:translateY(-1px);box-shadow:0 14px 34px -10px var(--color-primary-500)}
+  .auth-card .btn-glow:active{transform:translateY(0)}
+
+  .auth-drawer .divider{display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0 var(--space-5);color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .auth-drawer .divider::before,.auth-drawer .divider::after{content:'';flex:1;height:1px;background:var(--hd-line)}
+  .auth-drawer .oauth{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+  .auth-drawer .oauth a{height:48px;border-radius:var(--radius-md);display:grid;place-items:center;background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);color:color-mix(in oklch,var(--hd-text) 82%,transparent);transition:transform var(--dur-1) var(--ease-snap),border-color var(--dur-2),background var(--dur-2),color var(--dur-2)}
+  .auth-drawer .oauth a:hover{transform:translateY(-2px);background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);color:var(--hd-text)}
+  .auth-drawer .oauth a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .auth-drawer .foot{text-align:center;margin-top:var(--space-6);color:var(--hd-muted);font-size:var(--text-body)}
+  .auth-drawer .foot a{color:var(--hd-mint);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .auth-drawer .foot a:hover{color:var(--color-primary-300)}
+
+  @media(max-width:540px){
+    .auth-drawer{width:100vw;padding:var(--space-8) var(--space-5) var(--space-6)}
+    .auth-drawer .inp{height:52px}
+    .auth-card .btn-glow{height:54px}
+    .auth-drawer .oauth a{height:52px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .auth-drawer,.auth-overlay{transition-duration:.01ms!important}
+    .auth-card{animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="nav-bar">
+    <div class="wrap nav-in">
+      <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa</a>
+      <nav class="nav-links">
+        <a href="models.html">模型广场</a>
+        <a href="pricing.html">价格</a>
+        <a href="ranking.html">排行榜</a>
+        <a href="../api-docs/quickstart.html">文档</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="btn btn-glass" href="login.html" data-auth="login">登录</a>
+        <a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a>
+      </div>
+      <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+    <div class="nav-mobile" id="navMobile" aria-hidden="true">
+      <a href="models.html">模型广场</a><a href="pricing.html">价格</a><a href="ranking.html">排行榜</a><a href="../api-docs/quickstart.html">文档</a>
+      <div class="nav-mobile-cta"><a class="btn btn-glass" href="login.html" data-auth="login">登录</a><a class="btn btn-glow" href="register.html" data-auth="register">免费开始</a></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="doc-head">
+      <span class="doc-pill">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        隐私与数据保护
+      </span>
+      <h1>隐私政策</h1>
+      <p class="doc-sub">本政策说明 Nexa·AI 在您使用平台服务过程中如何收集、使用、共享和保护您的个人信息，以及您对自身数据所享有的权利。我们承诺以最小必要原则处理数据。</p>
+      <p class="doc-meta">最近更新：2026 年 6 月　·　生效日期：2026 年 6 月 15 日</p>
+    </div>
+
+    <div class="doc-layout">
+      <aside class="toc">
+        <p class="toc-title">目录</p>
+        <nav>
+          <a href="#s1">1. 引言</a>
+          <a href="#s2">2. 我们收集的信息</a>
+          <a href="#s3">3. 信息使用方式</a>
+          <a href="#s4">4. 数据共享与第三方</a>
+          <a href="#s5">5. 数据安全措施</a>
+          <a href="#s6">6. 数据保留期限</a>
+          <a href="#s7">7. 您的权利</a>
+          <a href="#s8">8. Cookie 与追踪</a>
+          <a href="#s9">9. 儿童隐私</a>
+          <a href="#s10">10. 政策更新</a>
+          <a href="#s11">11. 联系我们</a>
+        </nav>
+      </aside>
+
+      <article class="prose">
+        <section id="s1">
+          <h2><span class="num">1</span>引言</h2>
+          <p>Nexa·AI（以下简称"本平台""我们"）深知个人信息对您的重要性，并将依照所适用的数据保护法律法规，尽力保护您的隐私与数据安全。本隐私政策适用于您通过本平台网站、控制台及 API 接口使用服务时所涉及的个人信息处理活动。</p>
+          <p>本政策与《用户服务协议》共同构成您与我们之间关系的组成部分。当您注册账户或使用服务时，即表示您已阅读并理解本政策所述的信息处理规则。若您不同意本政策的任何内容，请停止使用相关服务。</p>
+        </section>
+
+        <section id="s2">
+          <h2><span class="num">2</span>我们收集的信息</h2>
+          <p>为向您提供稳定、安全的服务，我们仅在必要范围内收集以下类别的信息：</p>
+          <ul>
+            <li><strong>账户信息</strong>：您注册时提供的邮箱、用户名、登录密码（以加盐哈希形式存储，我们无法还原明文），以及您可选填写的组织名称、联系方式。</li>
+            <li><strong>API 调用元数据</strong>：每次请求的时间戳、所用模型、密钥标识、输入与输出 token 数量、请求来源 IP 与状态码。这些元数据用于计量、计费、限流与异常排查。</li>
+            <li><strong>计费记录</strong>：充值流水、扣费明细、发票抬头等交易相关信息。支付所需的银行卡或第三方支付账户信息由持牌支付服务商处理，我们不直接存储您的完整支付凭证。</li>
+            <li><strong>技术日志</strong>：浏览器类型、设备与操作系统信息、访问页面与时间等，用于保障安全、诊断故障与改进体验。</li>
+          </ul>
+          <div class="callout">关于请求正文：默认情况下，我们不会持久化存储您 API 请求与响应的<strong>正文内容</strong>（如提示词、模型输出）。仅在排障所需且经您授权、或法律要求时，才会在受控、限时的前提下临时留存相关内容。</div>
+        </section>
+
+        <section id="s3">
+          <h2><span class="num">3</span>信息使用方式</h2>
+          <p>我们将所收集的信息用于以下合法、正当且与服务直接相关的目的：</p>
+          <ul>
+            <li>创建与管理您的账户、进行身份鉴权与密钥签发；</li>
+            <li>计量调用用量、计算费用并生成账单与发票；</li>
+            <li>提供限流、风控与安全防护，识别并阻止滥用、欺诈与攻击行为；</li>
+            <li>向您发送服务通知、安全告警及您订阅的产品更新；</li>
+            <li>在汇总、去标识化的前提下分析整体用量趋势，以优化网关性能与服务质量。</li>
+          </ul>
+          <p>我们<strong>不会</strong>将您的请求正文内容用于训练我们或第三方的模型。任何超出上述目的的使用，我们将另行征得您的同意。</p>
+        </section>
+
+        <section id="s4">
+          <h2><span class="num">4</span>数据共享与第三方</h2>
+          <p>我们仅在以下必要情形下，与有限的第三方共享为完成服务所必需的信息，并要求其遵守不低于本政策的保护标准：</p>
+          <ul>
+            <li><strong>上游模型厂商</strong>：当您调用某一模型时，您的请求内容会被转发至对应的上游供应商以生成响应。该转发受上游厂商各自的隐私与数据使用条款约束，我们建议您在调用敏感数据前知悉相关上游政策。</li>
+            <li><strong>支付服务商</strong>：充值与开票环节由持牌第三方支付机构处理，相关支付信息直接由其收集与保管。</li>
+            <li><strong>基础设施服务商</strong>：用于托管、存储与内容分发的云服务提供商，仅在为我们提供服务所必需的范围内接触数据。</li>
+            <li><strong>法律要求</strong>：当法律法规、司法或行政机关依法定程序要求时，我们可能依法披露相关信息。</li>
+          </ul>
+          <div class="callout">我们<strong>不会出售</strong>您的个人信息，也不会为第三方的独立营销目的而共享您的信息。</div>
+        </section>
+
+        <section id="s5">
+          <h2><span class="num">5</span>数据安全措施</h2>
+          <p>我们采用与行业实践相符的技术与管理措施保护您的数据安全。传输层全程采用 TLS 加密，敏感字段（如登录凭证）以加盐哈希或加密形式存储，数据库与存储介质实施静态加密。</p>
+          <p>在访问控制方面，我们遵循最小权限原则，对内部系统实行基于角色的访问控制与操作审计；API 密钥经哈希存储且仅在创建时向您完整展示一次。我们建立了密钥轮换、入侵检测与定期安全评估机制，以持续降低风险。</p>
+          <p>尽管我们已尽合理努力，但任何安全措施都无法保证绝对安全。若发生可能危及您权益的数据安全事件，我们将依法及时启动应急响应，并通过适当方式通知受影响的用户与监管机构。</p>
+        </section>
+
+        <section id="s6">
+          <h2><span class="num">6</span>数据保留期限</h2>
+          <p>我们仅在实现本政策所述目的所必需的期间内保留您的个人信息。账户信息在您账户存续期间保留；账户注销后，除法律法规要求继续保留的情形外，我们将在合理期限内删除或匿名化处理相关信息。</p>
+          <p>调用元数据与技术日志通常保留有限期限以满足计费核对与安全审计需要；计费与交易记录则依据财税与会计法规所要求的最短期限保存。超过保留期限的数据将被安全删除或不可逆地去标识化。</p>
+        </section>
+
+        <section id="s7">
+          <h2><span class="num">7</span>您的权利</h2>
+          <p>在适用法律框架内，您对自己的个人信息享有以下权利，我们将提供便捷的行使途径：</p>
+          <ul>
+            <li><strong>访问</strong>：查询我们持有的与您相关的账户信息及用量记录；</li>
+            <li><strong>更正</strong>：更新或修正不准确、不完整的个人信息；</li>
+            <li><strong>删除</strong>：在符合法定条件时请求删除您的个人信息或注销账户；</li>
+            <li><strong>导出</strong>：以结构化、通用格式获取您的账单明细与用量数据的副本。</li>
+          </ul>
+          <p>多数权利可直接在控制台的"账户设置"中自助完成；如需进一步协助或行使删除、导出等权利，可通过本政策第 11 节的联系方式与我们联系。我们将在法定期限内核验身份后予以回应，原则上不收取费用。</p>
+        </section>
+
+        <section id="s8">
+          <h2><span class="num">8</span>Cookie 与追踪</h2>
+          <p>我们在网站与控制台中使用必要的 Cookie 及类似技术，以维持您的登录状态、保障会话安全并记住您的界面偏好。这些 Cookie 对于服务的正常运行不可或缺。</p>
+          <p>我们可能使用有限的、注重隐私的分析工具来统计页面访问与功能使用情况，以改进产品。这类分析以汇总、去标识化数据为主。您可通过浏览器设置管理或清除 Cookie，但禁用必要 Cookie 可能导致部分功能无法正常使用。我们不参与跨站点的广告追踪。</p>
+        </section>
+
+        <section id="s9">
+          <h2><span class="num">9</span>儿童隐私</h2>
+          <p>本平台面向开发者与企业用户，不面向未成年人提供服务。我们不会有意收集未满法定年龄（依所适用法律确定）未成年人的个人信息。</p>
+          <p>若您是监护人，发现未成年人在未经您同意的情况下向我们提供了个人信息，请通过第 11 节渠道联系我们，我们将在核实后及时删除相关信息并关闭对应账户。</p>
+        </section>
+
+        <section id="s10">
+          <h2><span class="num">10</span>政策更新</h2>
+          <p>我们可能因法律法规变化、业务调整或安全实践升级而不时修订本隐私政策。对于重大变更，我们将通过站内公告、邮件或控制台提示于生效前合理期限内通知您。</p>
+          <p>修订后的政策自公布的生效日期起适用，最新版本的生效日期标注于本页页头。建议您定期查阅本政策以了解我们对个人信息的最新处理方式。变更生效后您继续使用服务，即视为接受更新后的政策。</p>
+        </section>
+
+        <section id="s11">
+          <h2><span class="num">11</span>联系我们</h2>
+          <p>如您对本隐私政策或我们的个人信息处理活动有任何疑问、意见或投诉，或希望行使您的数据权利，可通过以下方式联系我们的隐私团队：</p>
+          <ul>
+            <li>隐私官邮箱：<a href="mailto:privacy@nexa.ai">privacy@nexa.ai</a></li>
+            <li>客户支持邮箱：<a href="mailto:support@nexa.ai">support@nexa.ai</a></li>
+            <li>控制台内"帮助与支持"工单系统（登录后可用）</li>
+          </ul>
+          <p>我们将在收到您的有效请求后于合理且符合法律要求的期限内予以回复，并尽力妥善处理您的关切。感谢您信任 Nexa·AI。</p>
+        </section>
+      </article>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div class="foot-brand">
+        <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa</a>
+        <p class="foot-slogan">统一 API 网关，满血直连多家大模型，只付零头。为开发者而生。</p>
+      </div>
+      <div class="foot-col">
+        <h4>产品</h4>
+        <a href="models.html">模型广场</a>
+        <a href="pricing.html">价格</a>
+        <a href="ranking.html">排行榜</a>
+      </div>
+      <div class="foot-col">
+        <h4>资源</h4>
+        <a href="../api-docs/quickstart.html">文档</a>
+        <a href="../api-docs/quickstart.html">API 参考</a>
+      </div>
+      <div class="foot-col">
+        <h4>法律</h4>
+        <a href="agreement.html">服务协议</a>
+        <a href="privacy.html">隐私政策</a>
+      </div>
+    </div>
+    <div class="foot-bottom">© 2026 Nexa·AI　·　满血直连，只付零头</div>
+  </footer>
+
+</div>
+<script>
+(function(){
+  var t=document.getElementById('navToggle'),m=document.getElementById('navMobile');
+  if(!t)return;
+  t.addEventListener('click',function(){
+    var o=document.body.classList.toggle('nav-open');
+    t.setAttribute('aria-expanded',o?'true':'false');
+    if(m)m.setAttribute('aria-hidden',o?'false':'true');
+  });
+  // 目录 scrollspy：滚动时高亮当前章节
+  var links=[].slice.call(document.querySelectorAll('.toc nav a[href^="#"]'));
+  var map={};
+  links.forEach(function(a){ var id=a.getAttribute('href').slice(1); var s=document.getElementById(id); if(s) map[id]=a; });
+  if(window.IntersectionObserver && links.length){
+    var spy=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('active');});
+          var a=map[e.target.id]; if(a)a.classList.add('active');
+        }
+      });
+    },{rootMargin:'-20% 0px -70% 0px',threshold:0});
+    Object.keys(map).forEach(function(id){ spy.observe(document.getElementById(id)); });
+  }
+})();
+</script>
+
+<!-- ═══════════ 统一认证抽屉（右侧滑出，与 models.html / ranking.html / home.html 同源） ═══════════ -->
+<div class="auth-overlay" id="authOverlay"></div>
+<aside class="auth-drawer" id="authDrawer" aria-modal="true" role="dialog" aria-label="登录或注册">
+  <button class="auth-close" id="authClose" type="button" aria-label="关闭">
+    <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+  </button>
+  <form class="auth-card" id="loginForm" data-view="login" novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">欢迎回来</h2>
+    <p class="auth-sub">登录你的 Nexa 账号，继续直连全球大模型</p>
+    <div class="field">
+      <label for="lgAccount">邮箱 / 用户名</label>
+      <div class="ctrl"><input class="inp" id="lgAccount" type="text" autocomplete="username" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="lgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="lgPwd" type="password" autocomplete="current-password" placeholder="输入密码">
+        <button class="eye" type="button" data-eye="lgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="row-between">
+      <label class="check"><input type="checkbox" checked><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>记住我</label>
+      <a class="link" href="#">忘记密码？</a>
+    </div>
+    <button class="btn btn-glow" type="submit">登录</button>
+    <div class="divider">或使用以下方式登录</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">还没有账号？<a href="#" data-switch="register">去注册</a></p>
+  </form>
+  <form class="auth-card" id="registerForm" data-view="register" hidden novalidate>
+    <div class="auth-brand"><span class="m">N</span>Nexa</div>
+    <h2 class="auth-title">开始用 Nexa</h2>
+    <p class="auth-sub">一个账号，直连 OpenAI / Anthropic / Google / DeepSeek</p>
+    <div class="field">
+      <label for="rgEmail">邮箱</label>
+      <div class="ctrl"><input class="inp" id="rgEmail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd">密码</label>
+      <div class="ctrl has-eye">
+        <input class="inp" id="rgPwd" type="password" autocomplete="new-password" placeholder="至少 8 位">
+        <button class="eye" type="button" data-eye="rgPwd" aria-label="显示密码" aria-pressed="false">
+          <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+        </button>
+      </div>
+      <div class="pw-strength" id="pwStrength"><i></i><i></i><i></i><span class="pw-label">密码强度</span></div>
+    </div>
+    <div class="field">
+      <label for="rgPwd2">确认密码</label>
+      <div class="ctrl"><input class="inp" id="rgPwd2" type="password" autocomplete="new-password" placeholder="再次输入密码"></div>
+    </div>
+    <label class="check check-agree"><input type="checkbox" id="rgAgree"><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>我已阅读并同意 <a href="agreement.html">《服务协议》</a> 和 <a href="privacy.html">《隐私政策》</a></label>
+    <button class="btn btn-glow" type="submit">创建账号</button>
+    <div class="divider">或使用以下方式注册</div>
+    <div class="oauth">
+      <a href="#" aria-label="GitHub"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+      <a href="#" aria-label="Google"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg></a>
+      <a href="#" aria-label="微信"><svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg></a>
+      <a href="#" aria-label="Telegram"><svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg></a>
+    </div>
+    <p class="foot">已有账号？<a href="#" data-switch="login">去登录</a></p>
+  </form>
+</aside>
+
+<script>
+/* ── 统一认证抽屉（与 models.html / ranking.html / home.html 同源；
+      本页已有 navToggle 绑定，此处只负责认证抽屉，不重复绑定汉堡） ── */
+(function(){
+  var overlay=document.getElementById('authOverlay'),
+      drawer=document.getElementById('authDrawer'),
+      closeBtn=document.getElementById('authClose'),
+      loginView=document.getElementById('loginForm'),
+      registerView=document.getElementById('registerForm');
+  if(!drawer)return;
+  var lastFocus=null;
+
+  function showView(v){
+    var toLogin = v!=='register';
+    loginView.hidden = !toLogin;
+    registerView.hidden = toLogin;
+  }
+  window.openAuth=function(v){
+    lastFocus=document.activeElement;
+    showView(v||'login');
+    document.body.classList.add('auth-open');
+    document.body.style.overflow='hidden';
+    var first=(v==='register'?registerView:loginView).querySelector('input');
+    if(first) setTimeout(function(){first.focus();},460);
+  };
+  function closeAuth(){
+    document.body.classList.remove('auth-open');
+    document.body.style.overflow='';
+    if(lastFocus) lastFocus.focus();
+  }
+  document.querySelectorAll('[data-auth]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); openAuth(this.getAttribute('data-auth')); });
+  });
+  drawer.querySelectorAll('[data-switch]').forEach(function(a){
+    a.addEventListener('click', function(e){ e.preventDefault(); showView(this.getAttribute('data-switch')); });
+  });
+  closeBtn.addEventListener('click', closeAuth);
+  overlay.addEventListener('click', closeAuth);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && document.body.classList.contains('auth-open')) closeAuth(); });
+
+  // 眼睛：切 password/text
+  drawer.querySelectorAll('.eye').forEach(function(eye){
+    eye.addEventListener('click', function(){
+      var pwd=document.getElementById(eye.getAttribute('data-eye'));
+      if(!pwd)return;
+      var show=pwd.type==='password';
+      pwd.type=show?'text':'password';
+      eye.classList.toggle('is-on',show);
+      eye.setAttribute('aria-pressed',String(show));
+      eye.setAttribute('aria-label',show?'隐藏密码':'显示密码');
+    });
+  });
+
+  // 密码强度（注册）
+  var rgPwd=document.getElementById('rgPwd'), bar=document.getElementById('pwStrength'),
+      lbl=bar?bar.querySelector('.pw-label'):null;
+  if(rgPwd&&bar){
+    rgPwd.addEventListener('input', function(){
+      var v=rgPwd.value, kinds=0;
+      if(/[a-z]/.test(v))kinds++; if(/[A-Z]/.test(v))kinds++;
+      if(/[0-9]/.test(v))kinds++; if(/[^a-zA-Z0-9]/.test(v))kinds++;
+      var s=0;
+      if(v.length>=8 && kinds>=3) s=3;
+      else if(v.length>=6 && kinds>=2) s=2;
+      else if(v.length>0) s=1;
+      bar.className='pw-strength'+(s?' s'+s:'');
+      if(lbl) lbl.textContent = s===0?'密码强度':(s===1?'弱':(s===2?'中':'强'));
+    });
+  }
+
+  function shake(el){ el.classList.add('err','shake'); setTimeout(function(){el.classList.remove('shake');},420); }
+  function clr(el){ el.classList.remove('err'); }
+
+  loginView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var acc=document.getElementById('lgAccount'), pw=document.getElementById('lgPwd'), bad=false;
+    [acc,pw].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(bad)return;
+    // TODO: 调登录接口；演示态——直接当作登录成功
+  });
+  registerView.addEventListener('submit', function(e){
+    e.preventDefault();
+    var em=document.getElementById('rgEmail'), p1=document.getElementById('rgPwd'),
+        p2=document.getElementById('rgPwd2'), agree=document.getElementById('rgAgree'), bad=false;
+    [em,p1,p2].forEach(function(i){ clr(i); if(!i.value.trim()){ shake(i); bad=true; } });
+    if(!bad && p1.value!==p2.value){ shake(p2); bad=true; }
+    if(!agree.checked){ var box=agree.nextElementSibling; if(box){box.classList.add('shake');setTimeout(function(){box.classList.remove('shake');},420);} bad=true; }
+    if(bad)return;
+    // TODO: 调注册接口；演示态——直接当作注册成功
+  });
+})();
+</script>
+</body>
+</html>

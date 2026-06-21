@@ -1,0 +1,78 @@
+{
+  "user": "qa104523",
+  "steps": {
+    "login": {
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "network": [
+        {
+          "url": "http://172.17.0.1:8080/api/user/login",
+          "status": 200,
+          "reqMethod": "POST",
+          "reqBody": "{\"username\":\"qa104523\",\"password\":\"QaTest2026xyz\"}",
+          "respBody": "<no-body:CDPSession.send: Protocol error (Network.getResponseBody): No resource with given identifier found>"
+        }
+      ],
+      "url_after": "http://172.17.0.1:3100/console"
+    },
+    "dashboard": {
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()"
+        }
+      ],
+      "network": [
+        {
+          "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        },
+        {
+          "url": "http://172.17.0.1:8080/api/user/self",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        },
+        {
+          "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        },
+        {
+          "url": "http://172.17.0.1:8080/api/user/self",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        }
+      ],
+      "url_after": "http://172.17.0.1:3100/dashboard"
+    }
+  }
+}

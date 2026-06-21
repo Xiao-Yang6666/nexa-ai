@@ -1,0 +1,15 @@
+页面名,所属端,路由,核心功能,新增还是改造,优先级
+对外模型管理（PublicModel）,admin,/admin/models-admin.html#publics,"建/改对外模型A、品质标签、基准售价、上下架、A→B底仓映射、兜底池只读、品质拆分引导",改造（现有Tab增强）,P0
+供应商成本配置（ChannelModelCost）,admin,/admin/models-admin.html#costs,"手填渠道×真实模型B的成本倍率，按B分组并排多供应商成本，未配成本告警",新增（页内新Tab）,P0
+渠道路由/多供应商兜底,admin,/admin/channels.html,"复用现有渠道路由配优先级/权重/兜底顺序，同B下渠道同品质提示",复用（不重做）,P1
+分组折扣等级管理,admin,/admin/groups.html#tiers,"配分组折扣系数(free/vip/svip)与升级门槛，强调不再控模型权限",改造（页内新Tab）,P0
+利润分析看板,admin,/admin/profit.html,"按模型/供应商/分组聚合售价/成本/利润/利润率，识别亏损供应商与定价偏低模型，可下钻日志",新增（全新页+运营组导航项）,P0
+超管日志全链视图,admin,/admin/logs.html,"日志扩列C→A→B+实际供应商+协议转换+售价/成本/利润，行展开看完整链路，成本/利润admin-only",改造（扩列+行展开）,P0
+我的模型映射（C→A）,console,/console/model-map.html,"客户自助别名表，开放输入+候选下拉(候选源=平台模型A全集)，自由输入不拦截浅黄提示，作用域用户级/分组级",新增（全新页+接入组导航项）,P0
+建/改API密钥-使用范围,console,/console/keys.html#scope,"建key抽屉增可选折叠区限定模型/端点，默认全开，强调减法省心非权限",改造（抽屉增区块）,P1
+密钥接入信息（协议兼容）,console,/console/keys.html#access,"key详情抽屉展示base_url+两协议端点(OpenAI/Anthropic)+curl示例，标注一个key两协议通用",改造（抽屉增区块）,P1
+客户用量/日志视图,console,/console/usage.html,"只显C→A+token+折后价，绝不显示真实模型B/成本/供应商，体现已享折扣等级",复用（字段裁剪保证）,P1
+模型广场（公开站）,public,/web-public/models.html,"按模型族展示对外模型A，品质拆分可视化(满血/增强/经济三档)，不暴露成本/B",改造（增品质分级展示）,P2
+价格页（公开站）,public,/web-public/pricing.html,"展示基准价含品质三价，登录享折扣提示带与注册CTA，不暴露成本/B",改造（增三价+折扣带）,P2
+计费规则（语义收窄）,admin,/admin/billing-rules.html,"分组倍率语义收窄为纯折扣(若折扣不在groups配则在此)，模型倍率作A基准售价口径",复用/收窄,P2
+API文档-协议兼容说明,api-docs,/api-docs/quickstart.html,"补充一个key两种协议(OpenAI/Anthropic)接入说明，呼应key详情接入信息",改造（增说明段）,P3

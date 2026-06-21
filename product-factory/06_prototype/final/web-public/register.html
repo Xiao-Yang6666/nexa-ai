@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="teal">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注册 · Nexa·AI</title>
+<!-- 字体：品牌巨字 Space Grotesk + 正文 Inter。非阻塞加载，CDP 环境字体可能回退（已知限制）。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* ===================================================================
+     Nexa·AI 注册页 —— 与 login.html 同源同质：左光束品牌区 + 右玻璃表单
+     共用一致的表单组件（输入框/按钮/复选框/第三方按钮/眼睛切换）
+     新增：密码强度三档（弱/中/强）+ 两次密码一致校验
+     色值纪律：CSS 块裸色值 = 0
+     =================================================================== */
+
+  :root{ --font-brand:'Space Grotesk','Inter',var(--font-sans); }
+
+  html,body{height:100%}
+  body{
+    background:var(--hd-bg);
+    color:var(--hd-text);
+    overflow-x:hidden;
+    font-family:'Inter',var(--font-sans);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  .auth{
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    min-height:100svh;
+  }
+
+  /* ════════════ 左栏：深色光束品牌区 ════════════ */
+  .brand{
+    --glow-a:color-mix(in oklch,var(--color-primary-500) 62%,transparent);
+    --glow-b:color-mix(in oklch,var(--hd-cyan) 48%,transparent);
+    --glow-c:color-mix(in oklch,var(--hd-blue) 32%,transparent);
+    position:relative;overflow:hidden;isolation:isolate;
+    display:flex;flex-direction:column;padding:var(--space-8);
+    background:radial-gradient(120% 80% at 30% -12%, var(--hd-bg2), var(--hd-bg) 60%);
+  }
+  #threads{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block}
+  .brand::before{
+    content:'';position:absolute;inset:-22% -10% auto -10%;height:92%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(46% 52% at 26% 14%, var(--glow-a), transparent 70%),
+      radial-gradient(42% 46% at 80% 24%, var(--glow-b), transparent 72%),
+      radial-gradient(52% 60% at 54% 88%, var(--glow-c), transparent 70%);
+    filter:blur(22px);animation:aurora 20s var(--ease-in-out) infinite alternate;
+  }
+  .brand::after{
+    content:'';position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.4;
+    background-image:
+      linear-gradient(var(--hd-line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--hd-line) 1px,transparent 1px);
+    background-size:60px 60px;
+    -webkit-mask-image:radial-gradient(80% 72% at 40% 40%, var(--hd-text) 26%, transparent 80%);
+    mask-image:radial-gradient(80% 72% at 40% 40%, var(--hd-text) 26%, transparent 80%);
+  }
+  @keyframes aurora{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(3%,2%,0) scale(1.1)}}
+
+  .brand-top{position:relative;z-index:2}
+  .brand-mid{position:relative;z-index:2;margin-top:auto;margin-bottom:auto;max-width:440px}
+  .brand-bottom{position:relative;z-index:2;color:var(--hd-muted);font-size:var(--text-body-sm)}
+
+  .brand-logo{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--font-brand);font-weight:var(--fw-bold);
+    font-size:var(--text-h5);color:var(--hd-text);letter-spacing:-.01em;
+    opacity:0;animation:fade-up var(--dur-4) .1s var(--ease-out) forwards;
+  }
+  .brand-logo .m{
+    width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--color-primary-500),var(--hd-mint));
+    color:var(--color-primary-fg);font-weight:var(--fw-bold);font-family:var(--font-brand);
+    box-shadow:0 0 0 1px color-mix(in oklch,var(--hd-mint) 40%,transparent),0 8px 26px -8px var(--color-primary-500);
+  }
+
+  .mark{
+    font-family:var(--font-brand);font-size:clamp(2.6rem,5.4vw,4.4rem);
+    line-height:.95;font-weight:700;letter-spacing:var(--tracking-tight);
+    display:inline-flex;align-items:baseline;user-select:none;-webkit-user-select:none;
+    margin:0 0 var(--space-5);opacity:0;animation:fade-up var(--dur-4) .2s var(--ease-out) forwards;
+  }
+  .mark .word{color:var(--hd-text);text-shadow:0 0 38px color-mix(in oklch,var(--color-primary-500) 30%,transparent)}
+  .mark .dot{
+    display:inline-block;position:relative;width:.13em;height:.13em;margin:0 .14em;border-radius:50%;align-self:center;
+    background:radial-gradient(circle at 50% 42%,
+      color-mix(in oklch,var(--hd-mint) 96%,transparent) 0%,
+      var(--color-primary-500) 50%,
+      color-mix(in oklch,var(--color-primary-600) 82%,transparent) 100%);
+    box-shadow:0 0 10px 1px color-mix(in oklch,var(--hd-mint) 55%,transparent),0 0 24px 3px color-mix(in oklch,var(--color-primary-500) 48%,transparent);
+    animation:dot-breath 2.8s var(--ease-in-out) infinite;transform:translateY(-.06em);
+  }
+  .mark .dot::after{
+    content:'';position:absolute;inset:-22%;border-radius:50%;
+    border:1px solid color-mix(in oklch,var(--hd-mint) 45%,transparent);
+    animation:dot-ripple 2.8s var(--ease-in-out) infinite;
+  }
+  .mark .ai{font-size:.62em;font-weight:400;letter-spacing:-.02em;color:color-mix(in oklch,var(--hd-text) 52%,transparent);align-self:center;margin-left:.06em}
+  @keyframes dot-breath{
+    0%,100%{transform:translateY(-.06em) scale(1);box-shadow:0 0 10px 1px color-mix(in oklch,var(--hd-mint) 52%,transparent),0 0 22px 3px color-mix(in oklch,var(--color-primary-500) 44%,transparent);}
+    50%{transform:translateY(-.06em) scale(1.1);box-shadow:0 0 14px 2px color-mix(in oklch,var(--hd-mint) 72%,transparent),0 0 32px 5px color-mix(in oklch,var(--color-primary-500) 58%,transparent);}
+  }
+  @keyframes dot-ripple{0%{transform:scale(.7);opacity:.7}70%{transform:scale(1.5);opacity:0}100%{transform:scale(1.5);opacity:0}}
+
+  .tagline{
+    font-size:clamp(1.15rem,2.2vw,1.62rem);font-weight:var(--fw-medium);
+    color:color-mix(in oklch,var(--hd-text) 82%,transparent);letter-spacing:.01em;
+    margin:0 0 var(--space-6);line-height:1.4;
+    opacity:0;animation:fade-up var(--dur-4) .34s var(--ease-out) forwards;
+  }
+  .tagline .accent{
+    background:linear-gradient(100deg,var(--color-primary-300),var(--hd-mint));
+    -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;font-weight:var(--fw-bold);
+  }
+
+  .points{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-4)}
+  .points li{
+    display:flex;align-items:center;gap:var(--space-3);
+    color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-lg);
+    opacity:0;animation:fade-up var(--dur-4) var(--ease-out) forwards;
+  }
+  .points li:nth-child(1){animation-delay:.46s}
+  .points li:nth-child(2){animation-delay:.54s}
+  .points li:nth-child(3){animation-delay:.62s}
+  .points .ic{
+    flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+    background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);color:var(--hd-mint);
+  }
+  .points .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ════════════ 右栏：玻璃表单区 ════════════ */
+  .panel{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    padding:var(--space-8) var(--space-6);
+    background:radial-gradient(120% 90% at 80% 0%, var(--hd-bg2), var(--hd-bg) 70%);
+  }
+  .card{
+    width:100%;max-width:430px;
+    background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-lg);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    padding:var(--space-8) var(--space-8) var(--space-6);
+    box-shadow:0 30px 80px -30px color-mix(in oklch,var(--color-primary-500) 30%,transparent);
+    opacity:0;animation:fade-up var(--dur-4) .26s var(--ease-out) forwards;
+  }
+  .card h1{font-family:var(--font-brand);font-size:var(--text-h2);font-weight:var(--fw-bold);letter-spacing:-.02em;margin:0 0 var(--space-2);color:var(--hd-text)}
+  .card .sub{color:var(--hd-muted);font-size:var(--text-body);margin:0 0 var(--space-6)}
+
+  /* ── 表单组件（与 login.html 一致） ── */
+  .field{margin-bottom:var(--space-4)}
+  .field label{display:block;font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:color-mix(in oklch,var(--hd-text) 78%,transparent);margin-bottom:var(--space-2)}
+  .ctrl{position:relative;display:flex;align-items:center}
+  .inp{
+    width:100%;height:50px;
+    background:color-mix(in oklch,var(--hd-text) 4%,transparent);
+    border:1px solid var(--hd-line);border-radius:var(--radius-md);
+    color:var(--hd-text);font-family:'Inter',var(--font-sans);font-size:var(--text-body-lg);padding:0 var(--space-4);
+    transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background var(--dur-2);
+  }
+  .inp::placeholder{color:color-mix(in oklch,var(--hd-muted) 80%,transparent)}
+  .inp:focus{
+    outline:none;
+    border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent);
+    background:color-mix(in oklch,var(--hd-text) 6%,transparent);
+    box-shadow:0 0 0 4px color-mix(in oklch,var(--color-primary-500) 16%,transparent),0 0 22px -4px color-mix(in oklch,var(--color-primary-500) 40%,transparent);
+  }
+  .ctrl.has-eye .inp{padding-right:46px}
+  .eye{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:38px;height:38px;border:none;background:transparent;cursor:pointer;
+    display:grid;place-items:center;border-radius:var(--radius-sm);color:var(--hd-muted);transition:color var(--dur-1);
+  }
+  .eye:hover{color:var(--hd-text)}
+  .eye svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .eye .off{display:none}
+  .eye.is-on .on{display:none}
+  .eye.is-on .off{display:block}
+  .inp.err{border-color:color-mix(in oklch,var(--color-danger) 80%,transparent);box-shadow:0 0 0 4px color-mix(in oklch,var(--color-danger) 16%,transparent)}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+  .shake{animation:shake .4s var(--ease-in-out)}
+
+  /* ── 密码强度条（弱/中/强，主色） ── */
+  .meter{display:flex;gap:6px;margin-top:var(--space-2)}
+  .meter .seg{
+    flex:1;height:5px;border-radius:var(--radius-full);
+    background:color-mix(in oklch,var(--hd-text) 12%,transparent);
+    transition:background var(--dur-2) var(--ease-out);
+  }
+  /* 弱：1 段亮（暖色警示，走 danger token） */
+  .meter[data-lv="1"] .seg:nth-child(1){background:var(--color-danger)}
+  /* 中：2 段亮（warning token） */
+  .meter[data-lv="2"] .seg:nth-child(-n+2){background:var(--color-warning)}
+  /* 强：3 段亮（主色 teal） */
+  .meter[data-lv="3"] .seg{background:linear-gradient(90deg,var(--color-primary-500),var(--hd-mint))}
+  .meter-label{font-size:var(--text-body-sm);margin-top:6px;color:var(--hd-muted);min-height:1.1em}
+  .meter-label b{font-weight:var(--fw-semibold)}
+  .meter-label[data-lv="1"] b{color:var(--color-danger)}
+  .meter-label[data-lv="2"] b{color:var(--color-warning)}
+  .meter-label[data-lv="3"] b{color:var(--hd-mint)}
+
+  /* 复选框 + 协议 */
+  .agree{display:flex;align-items:flex-start;gap:var(--space-2);margin:var(--space-2) 0 var(--space-5)}
+  .check{display:inline-flex;align-items:flex-start;gap:var(--space-2);cursor:pointer;user-select:none;color:color-mix(in oklch,var(--hd-text) 76%,transparent);font-size:var(--text-body-sm);line-height:1.5}
+  .check input{position:absolute;opacity:0;width:0;height:0}
+  .check .box{
+    width:18px;height:18px;border-radius:5px;flex:none;margin-top:1px;
+    border:1px solid color-mix(in oklch,var(--hd-text) 28%,transparent);
+    background:color-mix(in oklch,var(--hd-text) 4%,transparent);
+    display:grid;place-items:center;transition:border-color var(--dur-1),background var(--dur-1);
+  }
+  .check .box svg{width:13px;height:13px;stroke:var(--color-primary-fg);fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity var(--dur-1)}
+  .check input:checked + .box{background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));border-color:color-mix(in oklch,var(--color-primary-300) 70%,transparent)}
+  .check input:checked + .box svg{opacity:1}
+  .check input:focus-visible + .box{box-shadow:0 0 0 3px color-mix(in oklch,var(--color-primary-500) 24%,transparent)}
+  .check.err .box{border-color:color-mix(in oklch,var(--color-danger) 80%,transparent);box-shadow:0 0 0 3px color-mix(in oklch,var(--color-danger) 16%,transparent)}
+  .check a{color:var(--hd-mint)}
+  .check a:hover{color:var(--color-primary-300)}
+
+  .btn{font-family:inherit;border:none;border-radius:var(--radius-md);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);
+    transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2),background var(--dur-2),border-color var(--dur-2)}
+  .btn-glow{
+    width:100%;height:52px;font-size:var(--text-body-lg);font-weight:var(--fw-semibold);
+    background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));
+    color:var(--color-primary-fg);box-shadow:0 10px 28px -10px var(--color-primary-500);
+  }
+  .btn-glow:hover{transform:translateY(-1px);box-shadow:0 14px 34px -10px var(--color-primary-500)}
+  .btn-glow:active{transform:translateY(0)}
+
+  .divider{display:flex;align-items:center;gap:var(--space-3);margin:var(--space-6) 0 var(--space-5);color:var(--hd-muted);font-size:var(--text-body-sm)}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--hd-line)}
+
+  .oauth{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3)}
+  .oauth a{
+    height:48px;border-radius:var(--radius-md);display:grid;place-items:center;
+    background:var(--hd-glass);border:1px solid var(--hd-line);backdrop-filter:blur(8px);
+    color:color-mix(in oklch,var(--hd-text) 82%,transparent);
+    transition:transform var(--dur-1) var(--ease-snap),border-color var(--dur-2),background var(--dur-2),color var(--dur-2);
+  }
+  .oauth a:hover{transform:translateY(-2px);background:var(--hd-glass-strong);border-color:color-mix(in oklch,var(--color-primary-300) 50%,transparent);color:var(--hd-text)}
+  .oauth a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+  .foot{text-align:center;margin-top:var(--space-6);color:var(--hd-muted);font-size:var(--text-body)}
+  .foot a{color:var(--hd-mint);font-weight:var(--fw-medium);transition:color var(--dur-1)}
+  .foot a:hover{color:var(--color-primary-300)}
+
+  @keyframes fade-up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+  /* ════════════ 移动端（≤860px）：堆叠 ════════════ */
+  @media(max-width:860px){
+    .auth{grid-template-columns:1fr;grid-template-rows:auto 1fr;min-height:100svh}
+    .brand{padding:var(--space-6) var(--space-5) var(--space-8);min-height:auto}
+    .brand-mid{margin:var(--space-6) 0 0;max-width:none}
+    .points{display:none}
+    .mark{font-size:clamp(2.2rem,11vw,3.2rem);margin-bottom:var(--space-3)}
+    .tagline{font-size:clamp(1rem,4.6vw,1.3rem);margin-bottom:0}
+    .brand-bottom{display:none}
+    .panel{padding:var(--space-6) var(--space-5) var(--space-8);align-items:flex-start}
+    .card{max-width:560px;padding:var(--space-6) var(--space-5)}
+    .inp{height:52px;font-size:var(--text-body-lg)}
+    .btn-glow{height:54px}
+    .oauth a{height:52px}
+  }
+  @media(max-width:420px){.oauth{gap:var(--space-2)}}
+
+  @media(prefers-reduced-motion:reduce){
+    .brand-logo,.mark,.tagline,.points li,.card{animation:none!important;opacity:1!important;transform:none!important}
+    .brand::before{animation-duration:36s!important}
+    .mark .dot{animation-duration:5.6s!important}
+    .mark .dot::after{animation:none!important}
+    .shake{animation:none!important}
+  }
+  .mark,.mark *{outline:none!important;-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<main class="auth">
+
+  <!-- ═══════ 左栏：深色光束品牌区 ═══════ -->
+  <section class="brand">
+    <canvas id="threads" aria-hidden="true"></canvas>
+
+    <div class="brand-top">
+      <a class="brand-logo" href="home.html"><span class="m">N</span>Nexa·AI</a>
+    </div>
+
+    <div class="brand-mid">
+      <h2 class="mark" aria-label="Nexa·AI">
+        <span class="word">Nexa</span><span class="dot" aria-hidden="true"></span><span class="ai">AI</span>
+      </h2>
+      <p class="tagline">开始用 Nexa <span class="accent">直连全球大模型</span></p>
+      <ul class="points">
+        <li>
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>
+          注册即送额度，零门槛上手
+        </li>
+        <li>
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2 4 6v6c0 5 3.5 8 8 10 4.5-2 8-5 8-10V6l-8-4z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          满血参数，企业级稳定与安全
+        </li>
+        <li>
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
+          实时计量，按量付费只付零头
+        </li>
+      </ul>
+    </div>
+
+    <div class="brand-bottom">© 2026 Nexa·AI · 直连 OpenAI / Anthropic / Google / DeepSeek</div>
+  </section>
+
+  <!-- ═══════ 右栏：玻璃表单区 ═══════ -->
+  <section class="panel">
+    <form class="card" id="regForm" novalidate>
+      <h1>创建账号</h1>
+      <p class="sub">几秒注册，即刻用一个 base_url 直连全球大模型</p>
+
+      <div class="field">
+        <label for="email">邮箱</label>
+        <div class="ctrl">
+          <input class="inp" id="email" type="email" autocomplete="email" placeholder="you@example.com">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">密码</label>
+        <div class="ctrl has-eye">
+          <input class="inp" id="password" type="password" autocomplete="new-password" placeholder="至少 8 位，含字母与数字">
+          <button class="eye" type="button" id="eyePwd" aria-label="显示密码" aria-pressed="false">
+            <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+          </button>
+        </div>
+        <div class="meter" id="meter" data-lv="0"><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+        <div class="meter-label" id="meterLabel"></div>
+      </div>
+
+      <div class="field">
+        <label for="confirm">确认密码</label>
+        <div class="ctrl has-eye">
+          <input class="inp" id="confirm" type="password" autocomplete="new-password" placeholder="再次输入密码">
+          <button class="eye" type="button" id="eyeConfirm" aria-label="显示密码" aria-pressed="false">
+            <svg class="on" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5"/><path d="M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="agree">
+        <label class="check" id="agreeWrap">
+          <input type="checkbox" id="agree">
+          <span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-11"/></svg></span>
+          我已阅读并同意 <a href="agreement.html">《服务协议》</a> 与 <a href="agreement.html">《隐私政策》</a>
+        </label>
+      </div>
+
+      <button class="btn btn-glow" type="submit">创建账号</button>
+
+      <div class="divider">或使用以下方式注册</div>
+
+      <div class="oauth">
+        <a href="#" aria-label="使用 GitHub 注册">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
+        </a>
+        <a href="#" aria-label="使用 Google 注册">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5h5.2"/><path d="M16.5 16.5A6 6 0 1 1 18 11"/></svg>
+        </a>
+        <a href="#" aria-label="使用微信注册">
+          <svg viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 17l2.7-1.4c.7.2 1.5.3 2.3.3"/><circle cx="6.6" cy="9" r=".6" fill="currentColor" stroke="none"/><circle cx="11" cy="9" r=".6" fill="currentColor" stroke="none"/><path d="M22 15.4c0-2.6-2.6-4.7-5.8-4.7-3.2 0-5.8 2.1-5.8 4.7s2.6 4.7 5.8 4.7c.7 0 1.4-.1 2-.3l2.3 1.2-.6-2c1.3-.9 2.1-2.2 2.1-3.6z"/><circle cx="14.3" cy="14.8" r=".5" fill="currentColor" stroke="none"/><circle cx="18.1" cy="14.8" r=".5" fill="currentColor" stroke="none"/></svg>
+        </a>
+        <a href="#" aria-label="使用 Telegram 注册">
+          <svg viewBox="0 0 24 24"><path d="M21.5 4.3 2.8 11.5c-.9.4-.9 1.1-.1 1.3l4.7 1.5 1.8 5.6c.2.5.4.6.9.2l2.6-2.4 4.6 3.4c.5.3.9.1 1-.5l3-13.9c.1-.7-.3-1-.9-.8z"/><path d="m7.4 14.3 9-5.7-7.4 6.5"/></svg>
+        </a>
+      </div>
+
+      <p class="foot">已有账号？<a href="login.html">去登录</a></p>
+    </form>
+  </section>
+</main>
+
+<script>
+/* ── 眼睛切换（密码 + 确认密码两个） ── */
+(function(){
+  function bindEye(btnId,inpId){
+    var eye=document.getElementById(btnId), pwd=document.getElementById(inpId);
+    if(!eye||!pwd)return;
+    eye.addEventListener('click',function(){
+      var show=pwd.type==='password';
+      pwd.type=show?'text':'password';
+      eye.classList.toggle('is-on',show);
+      eye.setAttribute('aria-pressed',String(show));
+      eye.setAttribute('aria-label',show?'隐藏密码':'显示密码');
+    });
+  }
+  bindEye('eyePwd','password');
+  bindEye('eyeConfirm','confirm');
+})();
+
+/* ── 密码强度实时反馈：按长度 + 字符种类判弱/中/强 ── */
+(function(){
+  var pwd=document.getElementById('password'),
+      meter=document.getElementById('meter'),
+      label=document.getElementById('meterLabel');
+  if(!pwd||!meter)return;
+  function score(v){
+    if(!v) return 0;
+    var kinds=0;
+    if(/[a-z]/.test(v)) kinds++;
+    if(/[A-Z]/.test(v)) kinds++;
+    if(/[0-9]/.test(v)) kinds++;
+    if(/[^A-Za-z0-9]/.test(v)) kinds++;
+    // 弱：短或单一种类；中：达标基础；强：长且多种类
+    if(v.length<8 || kinds<=1) return 1;
+    if(v.length>=12 && kinds>=3) return 3;
+    if(v.length>=8 && kinds>=2) return 2;
+    return 1;
+  }
+  var TXT={0:'',1:'弱',2:'中',3:'强'};
+  pwd.addEventListener('input',function(){
+    var lv=score(pwd.value);
+    meter.setAttribute('data-lv',String(lv));
+    if(lv===0){ label.textContent=''; label.removeAttribute('data-lv'); return; }
+    label.setAttribute('data-lv',String(lv));
+    label.innerHTML='密码强度：<b>'+TXT[lv]+'</b>';
+  });
+})();
+
+/* ── 提交校验：空抖动、两次密码不一致红边、未勾协议红框 ── */
+(function(){
+  var form=document.getElementById('regForm');
+  if(!form)return;
+  var email=document.getElementById('email'),
+      pwd=document.getElementById('password'),
+      confirm=document.getElementById('confirm'),
+      agree=document.getElementById('agree'),
+      agreeWrap=document.getElementById('agreeWrap');
+
+  function flag(el){
+    el.classList.add('err','shake');
+    el.addEventListener('animationend',function h(){ el.classList.remove('shake'); el.removeEventListener('animationend',h); });
+  }
+  [email,pwd,confirm].forEach(function(el){
+    el.addEventListener('input',function(){ el.classList.remove('err'); });
+  });
+  agree.addEventListener('change',function(){ agreeWrap.classList.remove('err'); });
+
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var bad=false, firstBad=null;
+    [email,pwd].forEach(function(el){ if(!el.value.trim()){ flag(el); bad=true; firstBad=firstBad||el; } });
+    // 确认密码：空 → 抖动；非空但与密码不一致 → 红边
+    if(!confirm.value.trim()){ flag(confirm); bad=true; firstBad=firstBad||confirm; }
+    else if(pwd.value && confirm.value!==pwd.value){
+      confirm.classList.add('err','shake');
+      confirm.addEventListener('animationend',function h(){ confirm.classList.remove('shake'); confirm.removeEventListener('animationend',h); });
+      bad=true; firstBad=firstBad||confirm;
+    }
+    if(!agree.checked){ agreeWrap.classList.add('err'); bad=true; }
+    if(bad){ if(firstBad) firstBad.focus(); return; }
+    /* 演示：通过校验（无后端）。生产接 POST /api/register */
+  });
+})();
+
+/* ===================================================================
+   FLOWING THREADS（光束网络）—— 整段复用首页实现，挂左栏 #threads
+   =================================================================== */
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var SPEED = reduce ? 0.42 : 1.0;
+  var canvas=document.getElementById('threads');
+  if(!canvas) return;
+  var ctx=canvas.getContext('2d');
+
+  var cs=getComputedStyle(document.documentElement);
+  function tok(name,fallback){ var v=cs.getPropertyValue(name).trim(); return v||fallback; }
+  var C_PRIMARY=tok('--color-primary-500','#0E7C86');
+  var C_CYAN=tok('--hd-cyan','#2BB7C2');
+  var C_MINT=tok('--hd-mint','#5FD4DE');
+  var C_LAV=tok('--hd-lav','#7AA2F7');
+  var palette=[C_PRIMARY,C_CYAN,C_MINT,C_LAV];
+
+  var DPR=Math.min(window.devicePixelRatio||1, 2);
+  var W=0,H=0;
+  var nodes=[], links=[];
+  var mouse={x:-9999,y:-9999,active:false};
+
+  function rand(a,b){return a+Math.random()*(b-a);}
+
+  function build(){
+    var rect=canvas.getBoundingClientRect();
+    W=rect.width; H=rect.height;
+    canvas.width=Math.floor(W*DPR);
+    canvas.height=Math.floor(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    var count=Math.max(16, Math.min(44, Math.round(W*H/40000)));
+    nodes=[];
+    for(var i=0;i<count;i++){
+      nodes.push({
+        x:rand(0,W), y:rand(0,H),
+        vx:rand(-0.2,0.2), vy:rand(-0.2,0.2),
+        r:rand(1.1,2.5),
+        c:palette[i%palette.length],
+        phase:rand(0,Math.PI*2)
+      });
+    }
+    links=[];
+    for(var a=0;a<nodes.length;a++){
+      var dists=[];
+      for(var b=0;b<nodes.length;b++){
+        if(a===b)continue;
+        var dx=nodes[a].x-nodes[b].x, dy=nodes[a].y-nodes[b].y;
+        dists.push({b:b,d:dx*dx+dy*dy});
+      }
+      dists.sort(function(p,q){return p.d-q.d;});
+      var k=2+(a%2);
+      for(var j=0;j<k && j<dists.length;j++){
+        var bi=dists[j].b;
+        if(bi>a){
+          links.push({a:a,b:bi,t:rand(0,1),speed:rand(0.0020,0.0050)});
+        }
+      }
+    }
+  }
+
+  function hexToRgb(h){
+    h=h.replace('#','');
+    if(h.length===3) h=h.split('').map(function(x){return x+x;}).join('');
+    var n=parseInt(h,16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  function rgba(hex,a){ var c=hexToRgb(hex); return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+
+  var t=0;
+  function frame(){
+    t+=1;
+    ctx.clearRect(0,0,W,H);
+
+    for(var i=0;i<nodes.length;i++){
+      var n=nodes[i];
+      n.x+=n.vx*SPEED; n.y+=n.vy*SPEED;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+      n.x=Math.max(0,Math.min(W,n.x));
+      n.y=Math.max(0,Math.min(H,n.y));
+      if(mouse.active){
+        var dx=mouse.x-n.x, dy=mouse.y-n.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<190 && d>0.01){
+          var f=(190-d)/190*0.07;
+          n.x+=dx/d*f; n.y+=dy/d*f;
+        }
+      }
+    }
+
+    for(var li=0;li<links.length;li++){
+      var L=links[li], A=nodes[L.a], B=nodes[L.b];
+      var dx=B.x-A.x, dy=B.y-A.y, dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>340) continue;
+
+      var mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+      var near=0;
+      if(mouse.active){
+        var mdx=mouse.x-mx, mdy=mouse.y-my, md=Math.sqrt(mdx*mdx+mdy*mdy);
+        near=md<230 ? (230-md)/230 : 0;
+      }
+      var baseA=0.085 + near*0.30;
+      ctx.beginPath();
+      ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y);
+      ctx.strokeStyle=rgba(A.c, baseA);
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      L.t+=L.speed*SPEED; if(L.t>1) L.t-=1;
+      var px=A.x+dx*L.t, py=A.y+dy*L.t;
+      var ux=dx/(dist||1), uy=dy/(dist||1);
+      var tailLen=Math.min(34, dist*0.34);
+      var tx=px-ux*tailLen, ty=py-uy*tailLen;
+      var trail=ctx.createLinearGradient(tx,ty,px,py);
+      trail.addColorStop(0, rgba(B.c, 0));
+      trail.addColorStop(1, rgba(B.c, 0.55+near*0.3));
+      ctx.beginPath();
+      ctx.moveTo(tx,ty); ctx.lineTo(px,py);
+      ctx.strokeStyle=trail; ctx.lineWidth=1.6;
+      ctx.stroke();
+
+      var pulse=0.5+0.5*Math.sin(t*0.05+li);
+      var pr=1.7+pulse*1.3;
+      var grad=ctx.createRadialGradient(px,py,0,px,py,pr*4.4);
+      grad.addColorStop(0, rgba(B.c, 0.95));
+      grad.addColorStop(1, rgba(B.c, 0));
+      ctx.beginPath();
+      ctx.fillStyle=grad;
+      ctx.arc(px,py,pr*4.4,0,Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle=rgba(B.c,0.98);
+      ctx.arc(px,py,pr*0.62,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    for(var k=0;k<nodes.length;k++){
+      var nd=nodes[k];
+      var glow=2.8+1.6*Math.sin(t*0.035+nd.phase);
+      var g=ctx.createRadialGradient(nd.x,nd.y,0,nd.x,nd.y,nd.r+glow*3);
+      g.addColorStop(0, rgba(nd.c,0.58));
+      g.addColorStop(1, rgba(nd.c,0));
+      ctx.beginPath();
+      ctx.fillStyle=g;
+      ctx.arc(nd.x,nd.y,nd.r+glow*3,0,Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle=rgba(nd.c,0.92);
+      ctx.arc(nd.x,nd.y,nd.r,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    raf=requestAnimationFrame(frame);
+  }
+
+  var raf=null;
+  function start(){ if(raf)cancelAnimationFrame(raf); raf=requestAnimationFrame(frame); }
+  function stop(){ if(raf){cancelAnimationFrame(raf);raf=null;} }
+
+  function init(){ build(); start(); }
+
+  window.addEventListener('mousemove',function(e){
+    var r=canvas.getBoundingClientRect();
+    mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; mouse.active=true;
+  });
+  window.addEventListener('mouseout',function(){ mouse.active=false; mouse.x=-9999; mouse.y=-9999; });
+
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden) stop(); else start();
+  });
+
+  var rt=null;
+  window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(init,200); });
+
+  function boot(){
+    if(canvas.getBoundingClientRect().width>0){ init(); }
+    else { requestAnimationFrame(boot); }
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

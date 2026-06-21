@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>认证说明 · Nexa·AI 文档</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="docs-shell.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="burger" aria-label="打开导航" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <a class="tb-brand" href="quickstart.html"><span class="m">N</span>Nexa·AI 文档</a>
+    <span class="tb-spacer"></span>
+    <a class="btn btn-glow" href="../console/dashboard.html">
+      进控制台
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+
+  <aside class="navtree">
+    <div class="nt-search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="搜索文档…" aria-label="搜索文档">
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">入门 · Getting Started</div>
+      <a class="nt-link" href="quickstart.html">快速开始</a>
+      <a class="nt-link is-current" href="authentication.html">认证说明</a>
+      <div class="nt-anchors">
+        <a class="nt-anchor" href="#keys">API Key 机制</a>
+        <a class="nt-anchor" href="#header">在请求头携带 Key</a>
+        <a class="nt-anchor" href="#scope">权限与限额</a>
+        <a class="nt-anchor" href="#security">安全建议</a>
+      </div>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">API 参考 · API Reference</div>
+      <a class="nt-link" href="chat-completions.html">聊天补全 API</a>
+      <a class="nt-link" href="models.html">模型列表 API</a>
+      <a class="nt-link" href="embeddings.html">嵌入 API</a>
+      <a class="nt-link" href="images.html">图像 API</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">运行约定 · Operations</div>
+      <a class="nt-link" href="errors.html">错误码参考</a>
+      <a class="nt-link" href="rate-limits.html">限流说明</a>
+    </div>
+
+    <div class="nt-group">
+      <div class="nt-overline">资源 · Resources</div>
+      <a class="nt-link" href="sdks.html">SDK 下载</a>
+      <a class="nt-link" href="changelog.html">更新日志</a>
+    </div>
+  </aside>
+
+  <main class="article">
+    <div class="article-inner">
+      <nav class="breadcrumb reveal">
+        <a href="quickstart.html">文档</a>
+        <span class="sep">/</span>
+        <span>入门</span>
+        <span class="sep">/</span>
+        <span>认证说明</span>
+      </nav>
+
+      <h1 class="reveal" id="top">认证说明</h1>
+      <p class="lede reveal">Nexa·AI 使用 API Key 进行身份认证。所有对 <code>https://api.nexa.ai/v1</code> 的请求都必须在 HTTP 请求头中携带有效的 Bearer Token。本页说明 Key 的获取、使用、权限模型与安全实践。</p>
+
+      <section class="reveal">
+        <h2 id="keys">API Key 机制</h2>
+        <p>在控制台创建的每个 API Key 形如 <code>sk-nexa-xxxxxxxxxxxxxxxxxxxx</code>。Key 一旦生成，完整明文仅展示一次，请立即妥善保存。Nexa 仅存储其哈希值，无法二次找回——遗失只能吊销重建。</p>
+        <ul>
+          <li>每个账户可同时持有多个 Key，便于按环境（生产 / 测试）或按服务隔离。</li>
+          <li>Key 可随时在控制台吊销，吊销后立即失效。</li>
+          <li>建议为每个 Key 配置标签与到期时间，便于审计与轮换。</li>
+        </ul>
+      </section>
+
+      <section class="reveal">
+        <h2 id="header">在请求头携带 Key</h2>
+        <p>认证方式为标准的 HTTP Bearer Token。在每个请求的 <code>Authorization</code> 头中传入 <code>Bearer</code> 前缀加你的 Key：</p>
+
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="curl" aria-selected="true">curl</button>
+            <button class="cb-tab" data-lang="python" aria-selected="false">Python</button>
+            <button class="cb-tab" data-lang="node" aria-selected="false">Node</button>
+            <button class="cb-tab" data-lang="go" aria-selected="false">Go</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="curl"><pre><code><span class="t-com"># 推荐用环境变量保存 Key，避免写入代码</span>
+<span class="t-key">export</span> NEXA_API_KEY<span class="t-pun">=</span><span class="t-str">"sk-nexa-..."</span>
+
+<span class="t-fn">curl</span> https://api.nexa.ai/v1/models <span class="t-pun">\</span>
+  <span class="t-key">-H</span> <span class="t-str">"Authorization: Bearer $NEXA_API_KEY"</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="python"><pre><code><span class="t-key">import</span> os
+<span class="t-key">from</span> openai <span class="t-key">import</span> OpenAI
+
+<span class="t-com"># 从环境变量读取，切勿硬编码到源码</span>
+client <span class="t-pun">=</span> <span class="t-fn">OpenAI</span><span class="t-pun">(</span>
+    base_url<span class="t-pun">=</span><span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">,</span>
+    api_key<span class="t-pun">=</span>os<span class="t-pun">.</span>environ<span class="t-pun">[</span><span class="t-str">"NEXA_API_KEY"</span><span class="t-pun">],</span>
+<span class="t-pun">)</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="node"><pre><code><span class="t-key">import</span> OpenAI <span class="t-key">from</span> <span class="t-str">"openai"</span><span class="t-pun">;</span>
+
+<span class="t-com">// 从 process.env 读取，绝不写入前端代码</span>
+<span class="t-key">const</span> client <span class="t-pun">=</span> <span class="t-key">new</span> <span class="t-fn">OpenAI</span><span class="t-pun">({</span>
+  baseURL<span class="t-pun">:</span> <span class="t-str">"https://api.nexa.ai/v1"</span><span class="t-pun">,</span>
+  apiKey<span class="t-pun">:</span> process<span class="t-pun">.</span>env<span class="t-pun">.</span>NEXA_API_KEY<span class="t-pun">,</span>
+<span class="t-pun">});</span></code></pre></div>
+
+            <div class="cb-pane" data-lang="go"><pre><code><span class="t-key">package</span> main
+
+<span class="t-key">import</span> <span class="t-pun">(</span>
+    <span class="t-str">"os"</span>
+
+    <span class="t-str">"github.com/sashabaranov/go-openai"</span>
+<span class="t-pun">)</span>
+
+<span class="t-key">func</span> <span class="t-fn">newClient</span><span class="t-pun">()</span> <span class="t-pun">*</span>openai<span class="t-pun">.</span>Client <span class="t-pun">{</span>
+    cfg <span class="t-pun">:=</span> openai<span class="t-pun">.</span><span class="t-fn">DefaultConfig</span><span class="t-pun">(</span>os<span class="t-pun">.</span><span class="t-fn">Getenv</span><span class="t-pun">(</span><span class="t-str">"NEXA_API_KEY"</span><span class="t-pun">))</span>
+    cfg<span class="t-pun">.</span>BaseURL <span class="t-pun">=</span> <span class="t-str">"https://api.nexa.ai/v1"</span>
+    <span class="t-key">return</span> openai<span class="t-pun">.</span><span class="t-fn">NewClientWithConfig</span><span class="t-pun">(</span>cfg<span class="t-pun">)</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+
+        <p>若 Key 缺失、格式错误或已吊销，网关将返回 <code>401 Unauthorized</code>：</p>
+        <div class="codeblock">
+          <div class="cb-bar">
+            <button class="cb-tab is-active" data-lang="json" aria-selected="true">401 响应</button>
+            <button class="cb-copy" aria-label="复制代码">
+              <svg class="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              <svg class="ic-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="cb-copy-label">复制</span>
+            </button>
+          </div>
+          <div class="cb-body">
+            <div class="cb-pane is-active" data-lang="json"><pre><code><span class="t-pun">{</span>
+  <span class="t-str">"error"</span><span class="t-pun">:</span> <span class="t-pun">{</span>
+    <span class="t-str">"message"</span><span class="t-pun">:</span> <span class="t-str">"Incorrect API key provided."</span><span class="t-pun">,</span>
+    <span class="t-str">"type"</span><span class="t-pun">:</span> <span class="t-str">"invalid_request_error"</span><span class="t-pun">,</span>
+    <span class="t-str">"code"</span><span class="t-pun">:</span> <span class="t-str">"invalid_api_key"</span>
+  <span class="t-pun">}</span>
+<span class="t-pun">}</span></code></pre></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="scope">权限与限额</h2>
+        <p>每个 API Key 可在控制台配置独立的权限范围与用量上限，便于细粒度管控：</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>配置项</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="pn">允许模型</td><td>限制该 Key 可调用的模型族，例如仅允许 <code>gpt-*</code> 或 <code>claude-*</code>。</td></tr>
+              <tr><td class="pn">月度额度</td><td>设定该 Key 的消费上限（按美元或 token 计），超出后自动拒绝请求。</td></tr>
+              <tr><td class="pn">速率限制</td><td>每个 Key 独立的 RPM / TPM 上限，详见 <a class="inline" href="rate-limits.html">限流说明</a>。</td></tr>
+              <tr><td class="pn">IP 白名单</td><td>可选，限定仅来自指定 IP 段的请求携带此 Key 时才被接受。</td></tr>
+              <tr><td class="pn">到期时间</td><td>可设定 Key 自动失效时间，过期后需手动续期或重建。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="reveal">
+        <h2 id="security">安全建议</h2>
+        <div class="callout warn">
+          <svg viewBox="0 0 24 24"><path d="M12 3 2.5 19.5h19L12 3Z"/><path d="M12 10v4M12 17v.5"/></svg>
+          <div class="co-body"><strong>切勿在前端或客户端暴露 API Key。</strong>浏览器、移动 App 等客户端代码可被任意用户查看，一旦泄露将被滥用并产生费用。请始终在受信任的服务端发起请求，由后端代理转发，或通过 BFF 模式中转。</div>
+        </div>
+        <ul>
+          <li><strong>使用环境变量</strong>：不要把 Key 硬编码进源码或提交到版本库；用 <code>.env</code> 配合密钥管理服务注入。</li>
+          <li><strong>定期轮换</strong>：为 Key 设置到期时间并周期性更换；轮换时先创建新 Key、灰度切换、再吊销旧 Key。</li>
+          <li><strong>最小权限</strong>：按服务拆分多个 Key，各自仅授予必要的模型与额度。</li>
+          <li><strong>监控异常</strong>：在控制台开启用量告警，对突增的请求量或费用及时响应。</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <nav class="toc">
+    <div class="toc-title">本页目录</div>
+    <a href="#keys">API Key 机制</a>
+    <a href="#header">在请求头携带 Key</a>
+    <a href="#scope">权限与限额</a>
+    <a href="#security">安全建议</a>
+  </nav>
+
+</div>
+
+<script src="docs-shell.js"></script>
+</body>
+</html>

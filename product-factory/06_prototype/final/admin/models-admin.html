@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型/供应商 · Nexa·AI 管理后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<script src="admin-shell.js"></script>
+<style>
+  /* 模型/供应商专属 —— 全 token 驱动，零裸色值 */
+  /* Tab */
+  .tabs{display:flex;gap:var(--space-1);border-bottom:1px solid var(--color-border);margin-bottom:var(--space-4)}
+  .tab{height:40px;padding:0 var(--space-4);font-family:inherit;font-size:var(--text-body);
+    color:var(--color-text-secondary);background:transparent;border:none;border-bottom:2px solid transparent;
+    cursor:pointer;font-weight:var(--fw-medium)}
+  .tab:hover{color:var(--color-text)}
+  .tab.on{color:var(--color-primary-700);border-bottom-color:var(--color-primary-500)}
+  .pane{display:none} .pane.on{display:block}
+  /* 检测结果条 */
+  .detect-bar{display:none;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4);
+    padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);
+    background:var(--color-warning-bg);border:1px solid var(--color-warning-border)}
+  .detect-bar.on{display:flex}
+  .detect-bar .nx-ic{color:var(--color-warning);width:18px;height:18px;flex:none}
+  .detect-bar .txt{font-size:var(--text-body-sm);color:var(--color-warning-fg)}
+  .detect-bar .txt b{font-family:var(--font-mono)}
+  .detect-bar .grow{margin-left:auto}
+  /* 工具条 */
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}
+  .toolbar .sel,.toolbar .srch{height:36px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:inherit;font-size:var(--text-body-sm);padding:0 var(--space-3)}
+  .toolbar .srch{min-width:200px}
+  .toolbar .sel:focus,.toolbar .srch:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+  .toolbar .grow{margin-left:auto}
+  /* 表格 */
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .table-wrap{overflow-x:auto}
+  .table-wrap table{min-width:1340px}
+  .cellmono{font-family:var(--font-mono)}
+  .row-acts{display:flex;gap:var(--space-3);white-space:nowrap}
+  .row-acts a{font-size:var(--text-body-sm);color:var(--color-primary-500);cursor:pointer}
+  .row-acts a:hover{color:var(--color-primary-600)}
+  .row-acts a.dang{color:var(--color-danger)}
+  .caps{display:flex;flex-wrap:wrap;gap:4px}
+  .cap{font-size:var(--text-overline);font-family:var(--font-mono);padding:1px 7px;border-radius:var(--radius-xs);
+    background:var(--color-bg-subtle);color:var(--color-text-secondary)}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  /* Modal */
+  .modal-scrim{display:none;position:fixed;inset:0;z-index:60;
+    background:color-mix(in oklch,var(--color-surface-sunken) 72%,transparent)}
+  .modal-scrim.on{display:flex;align-items:center;justify-content:center;padding:var(--space-5)}
+  .modal{width:560px;max-width:96vw;max-height:88vh;display:flex;flex-direction:column;
+    background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .modal-title{font-family:var(--font-brand);font-size:var(--text-h4);font-weight:var(--fw-bold);color:var(--color-text);margin:0}
+  .modal-x{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:32px;height:32px;
+    border-radius:var(--radius-sm);font-size:var(--text-h5)}
+  .modal-x:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .modal-body{flex:1;overflow-y:auto;padding:var(--space-5)}
+  .modal-foot{display:flex;justify-content:flex-end;gap:var(--space-3);padding:var(--space-4) var(--space-5);
+    border-top:1px solid var(--color-border)}
+  .sync-sec{margin-bottom:var(--space-4)}
+  .sync-sec h5{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-body);
+    font-weight:var(--fw-semibold);color:var(--color-text);margin:0 0 var(--space-2)}
+  .sync-list{display:flex;flex-direction:column;gap:6px}
+  .sync-item{display:flex;align-items:center;justify-content:space-between;font-size:var(--text-body-sm);
+    font-family:var(--font-mono);color:var(--color-text-secondary);padding:var(--space-2) var(--space-3);
+    background:var(--color-surface-sunken);border-radius:var(--radius-sm)}
+  .sync-item .tag{font-size:var(--text-overline)}
+  .tag-add{color:var(--color-success)} .tag-upd{color:var(--color-info)} .tag-miss{color:var(--color-danger)}
+  /* 品质徽章（旗舰 teal / 增强 蓝 / 经济 灰） */
+  .tier{display:inline-flex;align-items:center;gap:5px;font-size:var(--text-overline);font-weight:var(--fw-semibold);
+    padding:2px 9px;border-radius:var(--radius-full)}
+  .tier .dot{width:6px;height:6px;border-radius:50%}
+  .tier-full{background:color-mix(in oklch,var(--color-primary-500) 16%,transparent);color:var(--color-primary-700)}
+  .tier-full .dot{background:var(--color-primary-500)}
+  .tier-enh{background:var(--color-warning-bg);color:var(--color-warning-fg)}
+  .tier-enh .dot{background:var(--color-warning)}
+  .tier-eco{background:var(--color-bg-subtle);color:var(--color-text-secondary)}
+  .tier-eco .dot{background:var(--color-text-muted)}
+  /* A 到 B 映射单元（B 不可见标注用） */
+  .maprow{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:var(--text-body-sm)}
+  .maprow .mapb{color:var(--color-text)}
+  .map-glyph{display:inline-flex;color:var(--color-text-muted)}.map-glyph .nx-ic{width:14px;height:14px}
+  .priv-tag{font-family:inherit;font-size:var(--text-overline);font-weight:var(--fw-semibold);padding:1px 7px;
+    border-radius:var(--radius-xs);background:var(--color-warning-bg);color:var(--color-warning-fg);white-space:nowrap}
+  .cost-warn{font-family:inherit;font-size:var(--text-overline);font-weight:var(--fw-semibold);padding:1px 7px;
+    border-radius:var(--radius-xs);background:var(--color-warning-bg);color:var(--color-warning-fg);white-space:nowrap}
+  .pricecell{display:flex;flex-direction:column;gap:1px;font-family:var(--font-mono);font-size:var(--text-body-sm);line-height:1.35}
+  .pricecell small{font-family:inherit;font-size:var(--text-overline);color:var(--color-text-muted)}
+  /* 供应渠道池单元 */
+  .chspool{display:flex;flex-direction:column;gap:2px;line-height:1.4}
+  .chs-cnt{font-family:var(--font-mono);font-size:var(--text-body-sm);font-weight:var(--fw-semibold);color:var(--color-primary-700)}
+  .chs-main{font-size:var(--text-overline);color:var(--color-text-secondary)}
+  /* 顶部说明条（中性 info） */
+  .note-bar{display:flex;align-items:flex-start;gap:var(--space-3);margin-bottom:var(--space-4);
+    padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);
+    background:var(--color-info-bg);border:1px solid var(--color-info-border)}
+  .note-bar .nx-ic{color:var(--color-info);width:18px;height:18px;flex:none;margin-top:1px}
+  .note-bar .txt{font-size:var(--text-body-sm);color:var(--color-info-fg);line-height:1.5}
+  .note-bar .txt b{font-weight:var(--fw-semibold)}
+  /* 成本分组表 */
+  .cost-grp{border-bottom:1px solid var(--color-border)}
+  .cost-grp:last-child{border-bottom:none}
+  .cost-grphead{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-5);
+    background:var(--color-bg-subtle)}
+  .cost-grphead .bname{font-family:var(--font-mono);font-size:var(--text-body);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .cost-grphead .meta{font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .cost-grphead .spread{margin-left:auto;font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .cost-grphead .spread b{font-family:var(--font-mono);color:var(--color-text)}
+  .costin{width:78px;height:30px;border-radius:var(--radius-sm);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:var(--font-mono);font-size:var(--text-body-sm);
+    padding:0 var(--space-2);text-align:right}
+  .costin:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+  .costin.unset{border-color:var(--color-warning-border);background:var(--color-warning-bg)}
+  /* 抽屉（照搬 channels 范式） */
+  .drawer-scrim{display:none;position:fixed;inset:0;z-index:60;background:color-mix(in oklch,var(--color-surface-sunken) 72%,transparent)}
+  .drawer-scrim.on{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:92vw;z-index:61;transform:translateX(100%);
+    background:var(--color-bg-elevated);border-left:1px solid var(--color-border);box-shadow:var(--shadow-lg);
+    display:flex;flex-direction:column;transition:transform var(--dur-2) var(--ease-out)}
+  .drawer.on{transform:none}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .drawer-title{font-family:var(--font-brand);font-size:var(--text-h4);font-weight:var(--fw-bold);color:var(--color-text);margin:0}
+  .drawer-x{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:32px;height:32px;
+    border-radius:var(--radius-sm);font-size:var(--text-h5)}
+  .drawer-x:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .drawer-body{flex:1;overflow-y:auto;padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4)}
+  .drawer-foot{display:flex;justify-content:flex-end;gap:var(--space-3);padding:var(--space-4) var(--space-5);
+    border-top:1px solid var(--color-border)}
+  .drawer-sec{padding-top:var(--space-3);border-top:1px solid var(--color-border)}
+  .drawer-sec:first-of-type{border-top:none;padding-top:0}
+  .sec-label{font-size:var(--text-overline);text-transform:uppercase;letter-spacing:var(--tracking-wide);
+    color:var(--color-text-muted);font-weight:var(--fw-semibold);margin:0 0 var(--space-3)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)}
+  .sw-row{display:flex;align-items:center;justify-content:space-between}
+  .field-hint{font-size:var(--text-caption);color:var(--color-text-muted);margin-top:var(--space-2)}
+  /* B 不可见醒目提示块 */
+  .priv-box{display:flex;align-items:flex-start;gap:var(--space-2);margin-top:var(--space-2);
+    padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);
+    background:var(--color-warning-bg);border:1px solid var(--color-warning-border)}
+  .priv-box .nx-ic{color:var(--color-warning);width:15px;height:15px;flex:none;margin-top:1px}
+  .priv-box .t{font-size:var(--text-caption);color:var(--color-warning-fg);line-height:1.5}
+  .priv-box .t b{font-weight:var(--fw-semibold)}
+  /* 渠道选择器（A→B→渠道池闭环） */
+  .priceref{display:flex;align-items:flex-start;gap:var(--space-2);margin-bottom:var(--space-3);
+    padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);
+    background:var(--color-info-bg);border:1px solid var(--color-info-border)}
+  .priceref .nx-ic{color:var(--color-info);width:15px;height:15px;flex:none;margin-top:1px}
+  .priceref .t{font-size:var(--text-caption);color:var(--color-info-fg);line-height:1.5}
+  .priceref .t b{font-family:var(--font-mono);font-weight:var(--fw-semibold)}
+  .lnk{background:none;border:none;color:var(--color-primary-500);font-family:inherit;font-size:var(--text-caption);
+    cursor:pointer;padding:0;margin-left:var(--space-2);text-decoration:underline}
+  .chs-picker{display:flex;flex-direction:column;gap:var(--space-2)}
+  .chs-row{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);
+    border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-surface-sunken)}
+  .chs-row.on{border-color:var(--color-primary-500);background:color-mix(in oklch,var(--color-primary-500) 8%,transparent)}
+  .chs-row .ck{flex:none}
+  .chs-row .nm{flex:1;font-size:var(--text-body-sm);color:var(--color-text);font-weight:var(--fw-medium)}
+  .chs-row .nm .ty{font-size:var(--text-overline);color:var(--color-text-muted);font-family:var(--font-mono);margin-left:6px}
+  .chs-row .ctl{display:flex;align-items:center;gap:4px}
+  .chs-row .ctl label{font-size:var(--text-overline);color:var(--color-text-muted)}
+  .chs-mini{width:46px;height:28px;border-radius:var(--radius-xs);border:1px solid var(--color-border);
+    background:var(--color-bg-elevated);color:var(--color-text);font-family:var(--font-mono);font-size:var(--text-caption);
+    padding:0 4px;text-align:center}
+  .chs-mini:disabled{opacity:.4}
+  .chs-summary{margin-top:var(--space-3);font-size:var(--text-caption);color:var(--color-text-secondary);
+    padding:var(--space-2) var(--space-3);background:var(--color-bg-subtle);border-radius:var(--radius-sm)}
+  .chs-summary b{font-family:var(--font-mono);color:var(--color-text)}
+  /* 品质拆分引导小提示 */
+  .split-hint{display:flex;align-items:flex-start;gap:var(--space-2);margin-top:var(--space-2);
+    padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);
+    background:color-mix(in oklch,var(--color-primary-500) 8%,transparent);
+    border:1px solid color-mix(in oklch,var(--color-primary-500) 28%,transparent)}
+  .split-hint .nx-ic{color:var(--color-primary-700);width:15px;height:15px;flex:none;margin-top:1px}
+  .split-hint .t{font-size:var(--text-caption);color:var(--color-primary-700);line-height:1.5}
+  @media (max-width:560px){.toolbar .srch{min-width:140px}}
+</style>
+</head>
+<body data-page="models" data-title="模型/供应商" data-crumb="管理后台|资源管理|模型/供应商"
+      data-actions='<button class="btn btn-sec btn-sm" id="detectBtn">缺失模型检测</button><button class="btn btn-primary" id="syncBtn">上游模型同步</button>'>
+
+  <!-- 检测结果条 -->
+  <section class="detect-bar" id="detectBar">
+    <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+    <span class="txt">缺失检测完成：上游存在 <b>6</b> 个本地未登记的模型，<b>2</b> 个本地模型在上游已下线。建议执行同步对齐。</span>
+    <span class="grow"></span>
+    <button class="btn btn-sec btn-sm" id="detectClose">关闭</button>
+  </section>
+
+  <!-- Tab -->
+  <div class="tabs">
+    <button class="tab on" data-tab="public">对外模型</button>
+    <button class="tab" data-tab="costs">供应商成本</button>
+    <button class="tab" data-tab="models">模型元数据</button>
+    <button class="tab" data-tab="vendors">供应商元数据</button>
+  </div>
+
+  <!-- ════ 对外模型 Tab（PublicModel：A / 品质 / 基准售价 / A 到 B 映射 B不可见 / 上下架） ════ -->
+  <div class="pane on" id="pane-public">
+    <section class="note-bar nx-fade">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span class="txt">对外模型即对客户售卖的商品（公开名 <b>A</b>）。基准售价对所有客户恒定、不随内部供应商切换波动；最终扣费 = 基准价 × 分组折扣系数。底仓映射 <b>A 到 B</b> 仅平台内部可见，<b>客户永不可见 B</b>。品质不同请拆成独立对外模型分别定价，切勿混入同一兜底池。</span>
+    </section>
+
+    <section class="toolbar nx-fade">
+      <select class="sel" id="pTier">
+        <option value="">全部品质</option>
+        <option value="full">旗舰</option><option value="enhanced">增强</option><option value="economy">经济</option>
+      </select>
+      <select class="sel" id="pFamily">
+        <option value="">全部家族</option>
+        <option>opus-4.8</option><option>gpt-4o</option><option>claude-3.5</option>
+        <option>gemini</option><option>deepseek</option>
+      </select>
+      <select class="sel" id="pState">
+        <option value="">全部状态</option><option>上架</option><option>下架</option>
+      </select>
+      <input class="srch" id="pSearch" type="search" placeholder="搜索对外名 / 展示名">
+      <span class="grow"></span>
+      <button class="btn btn-sec btn-sm" id="splitBtn">品质拆分引导</button>
+      <button class="btn btn-primary" id="newPub">新建对外模型</button>
+    </section>
+
+    <section class="table-card nx-fade">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>对外名 (A)</th><th>品质档</th><th>家族</th>
+              <th>基准售价（输入×输出倍率）</th><th>底仓映射 A 到 B（B 不可见）</th>
+              <th>供应渠道池</th><th>状态</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="pBody"></tbody>
+        </table>
+      </div>
+      <div class="pager"><span id="pInfo"></span></div>
+    </section>
+  </div>
+
+  <!-- ════ 供应商成本 Tab（ChannelModelCost：渠道×真实模型B 成本倍率手填，按 B 分组） ════ -->
+  <div class="pane" id="pane-costs">
+    <section class="note-bar nx-fade">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span class="txt">成本倍率挂在「供应商渠道 × 真实模型 <b>B</b>」上，<b>仅平台内部、手动填写</b>（成本 = tokens × 倍率，不乘分组折扣）。它只影响利润计算（利润 = 售价 − 成本），<b>不影响对客户售价</b>。同一真实模型 B 在多个供应商各记各的进货价，下方按 B 分组并排呈现成本差异。</span>
+    </section>
+
+    <section class="toolbar nx-fade">
+      <select class="sel" id="cChannel">
+        <option value="">全部供应商渠道</option>
+        <option>供应商X · 直连主通道</option><option>供应商Y · 聚合通道</option>
+        <option>供应商Z · 低价兜底</option><option>OpenAI 官方</option><option>Google Vertex</option>
+      </select>
+      <select class="sel" id="cModel">
+        <option value="">全部真实模型 B</option>
+        <option>claude-opus-4-8-full</option><option>gpt-4o-2024-11-20</option>
+        <option>gemini-2.0-flash-exp</option><option>deepseek-v3</option>
+      </select>
+      <label class="sw-row" style="gap:var(--space-2)">
+        <input type="checkbox" id="cUnset"><span style="font-size:var(--text-body-sm);color:var(--color-text-secondary)">仅看未配成本</span>
+      </label>
+      <span class="grow"></span>
+      <button class="btn btn-sec btn-sm" id="costMark">批量标记生效</button>
+    </section>
+
+    <section class="table-card nx-fade" id="costCard"></section>
+  </div>
+
+  <!-- 模型元数据 Tab -->
+  <div class="pane" id="pane-models">
+    <section class="toolbar nx-fade">
+      <select class="sel" id="fVendor">
+        <option value="">全部供应商</option>
+        <option>OpenAI</option><option>Anthropic</option><option>Google</option>
+        <option>DeepSeek</option><option>Mistral</option><option>Cohere</option>
+      </select>
+      <select class="sel" id="fState">
+        <option value="">全部状态</option><option>上架</option><option>下架</option><option>预发布</option>
+      </select>
+      <input class="srch" id="fSearch" type="search" placeholder="搜索模型名">
+      <span class="grow"></span>
+      <button class="btn btn-sec btn-sm">新增模型</button>
+    </section>
+
+    <section class="table-card nx-fade">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>模型名</th><th>供应商</th><th>上下文长度</th><th>状态</th>
+              <th>输入价</th><th>输出价</th><th>能力</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="mBody"></tbody>
+        </table>
+      </div>
+      <div class="pager"><span id="mInfo"></span></div>
+    </section>
+  </div>
+
+  <!-- 供应商元数据 Tab -->
+  <div class="pane" id="pane-vendors">
+    <section class="toolbar nx-fade">
+      <input class="srch" id="vSearch" type="search" placeholder="搜索供应商名">
+      <span class="grow"></span>
+      <button class="btn btn-sec btn-sm">新增供应商</button>
+    </section>
+
+    <section class="table-card nx-fade">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>供应商名称</th><th>官网</th><th>模型数</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody id="vBody"></tbody>
+        </table>
+      </div>
+      <div class="pager"><span id="vInfo"></span></div>
+    </section>
+  </div>
+
+  <!-- 对外模型 编辑/新建 抽屉 -->
+  <div class="drawer-scrim" id="pubScrim"></div>
+  <aside class="drawer" id="pubDrawer" aria-label="对外模型编辑">
+    <div class="drawer-head">
+      <h2 class="drawer-title" id="pubTitle">新建对外模型</h2>
+      <button class="drawer-x" id="pubX" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-sec">
+        <p class="sec-label">商品信息</p>
+        <div>
+          <label class="field-label">对外名 A <span class="field-req">*</span></label>
+          <input class="input cellmono" id="pfName" placeholder="例如：opus-4.8-经济">
+          <div class="field-hint">客户可见、用于定价的公开名；建后唯一不可改</div>
+        </div>
+        <div style="margin-top:var(--space-3)">
+          <label class="field-label">展示名</label>
+          <input class="input" id="pfDisplay" placeholder="例如：Claude Opus 4.8 经济版">
+        </div>
+        <div class="row2" style="margin-top:var(--space-3)">
+          <div>
+            <label class="field-label">品质档 <span class="field-req">*</span></label>
+            <select class="input" id="pfTier">
+              <option value="full">旗舰</option>
+              <option value="enhanced">增强</option>
+              <option value="economy" selected>经济</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">家族归属</label>
+            <input class="input cellmono" id="pfFamily" placeholder="例如：opus-4.8">
+          </div>
+        </div>
+        <div class="split-hint">
+          <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M6 8l6-5 6 5"/></svg>
+          <span class="t">同一 <b>family</b> 可建多个品质档（如 <b>opus-4.8</b> / <b>opus-4.8-增强</b> / <b>opus-4.8-经济</b>），各自独立定价、分别售卖。需要一键生成多档可用顶部「品质拆分引导」。</span>
+        </div>
+      </div>
+
+      <div class="drawer-sec">
+        <p class="sec-label">基准售价（DECISIONS §4：售价挂对外模型 A）</p>
+        <div class="priceref" id="priceRef">
+          <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span class="t">官方默认价 <b>输入 ×15.0 / 输出 ×75.0</b>（来源 anthropic.com/pricing，已自动带入下方，可改）<button type="button" class="lnk" id="useOfficial">恢复官方价</button></span>
+        </div>
+        <div class="row2">
+          <div>
+            <label class="field-label">基准输入价倍率</label>
+            <input class="input cellmono" id="pfIn" value="3.0">
+          </div>
+          <div>
+            <label class="field-label">基准输出价倍率</label>
+            <input class="input cellmono" id="pfOut" value="15.0">
+          </div>
+        </div>
+        <div class="field-hint">保存后即时生效，对所有客户恒定，不随内部供应商切换波动。</div>
+      </div>
+
+      <div class="drawer-sec">
+        <p class="sec-label">底仓映射 A 到 B（仅平台内部）</p>
+        <div>
+          <label class="field-label">映射目标 · 真实上游模型 B <span class="field-req">*</span></label>
+          <input class="input cellmono" id="pfMapB" list="bCandidates" placeholder="例如：claude-opus-4-8-eco">
+          <datalist id="bCandidates">
+            <option value="claude-opus-4-8-full"></option>
+            <option value="claude-opus-4-8-enh"></option>
+            <option value="claude-opus-4-8-eco"></option>
+            <option value="gpt-4o-2024-11-20"></option>
+            <option value="gemini-2.0-flash-exp"></option>
+            <option value="deepseek-v3"></option>
+          </datalist>
+        </div>
+        <div class="priv-box">
+          <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <span class="t">此映射 <b>客户不可见，仅平台内部</b>。真实上游模型 B 不出现在任何客户视图（模型列表 / 候选下拉 / 日志），客户永远只看到对外名 A。此处只挂 <b>同品质</b> 供应商；品质不同请拆成独立对外模型，切勿混入兜底池。</span>
+        </div>
+      </div>
+
+      <div class="drawer-sec">
+        <p class="sec-label">供应渠道池（A 方案：一对多渠道 · 优先级 + 权重 + 容灾切换）</p>
+        <div class="field-hint" style="margin-bottom:var(--space-3)">勾选哪些真实渠道为这个 B 供货。请求按 <b>优先级</b> 高者优先、同级按 <b>权重</b> 分流；主通道异常自动切下一优先级（new-api 原生重试逻辑）。每渠道单独记该 B 的成本倍率，进利润计算。</div>
+        <div class="chs-picker" id="chsPicker"></div>
+        <div class="chs-summary" id="chsSummary"></div>
+      </div>
+
+      <div class="drawer-sec">
+        <div class="sw-row">
+          <label class="field-label" style="margin:0">上架（对所有客户可见可用）</label>
+          <label class="switch"><input type="checkbox" id="pfOn" checked><span class="track"></span><span class="thumb"></span></label>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-ghost" id="pubCancel">取消</button>
+      <button class="btn btn-primary" id="pubSave">保存</button>
+    </div>
+  </aside>
+
+  <!-- 品质拆分引导 抽屉 -->
+  <div class="drawer-scrim" id="splitScrim"></div>
+  <aside class="drawer" id="splitDrawer" aria-label="品质拆分引导">
+    <div class="drawer-head">
+      <h2 class="drawer-title">品质拆分引导</h2>
+      <button class="drawer-x" id="splitX" aria-label="关闭">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="split-hint">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M6 8l6-5 6 5"/></svg>
+        <span class="t">把一个模型族（如 <b>opus-4.8</b>）拆成 旗舰 / 增强 / 经济 三条独立对外模型、三个价、各自映射不同的真实上游 B。<b>不同品质必须映射不同上游</b>，同档内渠道须同品质。</span>
+      </div>
+      <div class="drawer-sec">
+        <p class="sec-label">第 1 步 · 基底模型族</p>
+        <input class="input cellmono" value="opus-4.8" placeholder="例如：opus-4.8">
+      </div>
+      <div class="drawer-sec">
+        <p class="sec-label">第 2 步 · 选择要生成的品质档</p>
+        <div class="sw-row" style="margin-bottom:var(--space-2)">
+          <label class="field-label" style="margin:0">旗舰 <span class="cellmono muted">opus-4.8</span></label>
+          <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="sw-row" style="margin-bottom:var(--space-2)">
+          <label class="field-label" style="margin:0">增强 <span class="cellmono muted">opus-4.8-增强</span></label>
+          <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div class="sw-row">
+          <label class="field-label" style="margin:0">经济 <span class="cellmono muted">opus-4.8-经济</span></label>
+          <label class="switch"><input type="checkbox" checked><span class="track"></span><span class="thumb"></span></label>
+        </div>
+      </div>
+      <div class="drawer-sec">
+        <p class="sec-label">第 3 步 · 每档售价 + 映射真实模型 B</p>
+        <div class="field-hint">系统按命名约定预填对外名；逐档填基准价并选不同的 B（若两档选同一 B 将红色拦截）。</div>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-ghost" id="splitCancel">取消</button>
+      <button class="btn btn-primary" id="splitGen">生成 3 条对外模型</button>
+    </div>
+  </aside>
+
+  <!-- 同步预览 Modal -->
+  <div class="modal-scrim" id="syncScrim">
+    <div class="modal" role="dialog" aria-label="上游模型同步预览">
+      <div class="modal-head">
+        <h2 class="modal-title">上游模型同步预览</h2>
+        <button class="modal-x" id="syncX" aria-label="关闭">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="sync-sec">
+          <h5><span class="dot" style="background:var(--color-success)"></span>将新增（6）</h5>
+          <div class="sync-list">
+            <div class="sync-item"><span>gpt-4o-2024-11-20</span><span class="tag tag-add">NEW</span></div>
+            <div class="sync-item"><span>o1-mini</span><span class="tag tag-add">NEW</span></div>
+            <div class="sync-item"><span>claude-3-5-haiku</span><span class="tag tag-add">NEW</span></div>
+            <div class="sync-item"><span>gemini-2.0-flash</span><span class="tag tag-add">NEW</span></div>
+            <div class="sync-item"><span>deepseek-reasoner</span><span class="tag tag-add">NEW</span></div>
+            <div class="sync-item"><span>mistral-large-2411</span><span class="tag tag-add">NEW</span></div>
+          </div>
+        </div>
+        <div class="sync-sec">
+          <h5><span class="dot" style="background:var(--color-info)"></span>将更新（3）</h5>
+          <div class="sync-list">
+            <div class="sync-item"><span>gpt-4o · 上下文 128K -&gt; 256K</span><span class="tag tag-upd">UPD</span></div>
+            <div class="sync-item"><span>claude-3-5-sonnet · 输出价调整</span><span class="tag tag-upd">UPD</span></div>
+            <div class="sync-item"><span>gemini-1.5-pro · 能力新增 vision</span><span class="tag tag-upd">UPD</span></div>
+          </div>
+        </div>
+        <div class="sync-sec">
+          <h5><span class="dot" style="background:var(--color-danger)"></span>上游已缺失（2）</h5>
+          <div class="sync-list">
+            <div class="sync-item"><span>gpt-4-32k（拟下架）</span><span class="tag tag-miss">MISS</span></div>
+            <div class="sync-item"><span>claude-2.1（拟下架）</span><span class="tag tag-miss">MISS</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="syncCancel">取消</button>
+        <button class="btn btn-primary" id="syncConfirm">确认执行同步</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // ════ 对外模型（PublicModel：A / 品质 / 基准售价 / A 到 B 底仓映射，B 不可见）14+ 行 ════
+    var TIER={
+      full:    {cls:'tier-full', lab:'旗舰'},
+      enhanced:{cls:'tier-enh',  lab:'增强'},
+      economy: {cls:'tier-eco',  lab:'经济'}
+    };
+    function tierBadge(t){ var m=TIER[t]||TIER.economy; return '<span class="tier '+m.cls+'"><span class="dot"></span>'+m.lab+'</span>'; }
+    // A 到 B 映射单元：醒目箭头 SVG + B 不可见标注
+    function mapCell(b){
+      return '<div class="maprow">'+
+        '<span class="map-glyph"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>'+
+        '<span class="mapb">'+b+'</span>'+
+        '<span class="priv-tag">客户不可见</span></div>';
+    }
+    function priceCell(i,o){
+      return '<div class="pricecell"><span>输入 ×'+i+'</span><span>输出 ×'+o+'</span></div>';
+    }
+    // 供应渠道池单元：显示渠道数 + 主通道(优先级最高) + 成本极差，未配渠道则红字告警
+    function chsCell(chs){
+      if(!chs||!chs.length) return '<span class="cost-warn">未绑渠道</span>';
+      var sorted=chs.slice().sort(function(a,b){return b.pr-a.pr;});
+      var primary=sorted[0].n;
+      var backups=chs.length-1;
+      var costs=chs.filter(function(c){return c.cost!=='';}).map(function(c){return parseFloat(c.cost);});
+      var spread='';
+      if(costs.length>1){var mn=Math.min.apply(null,costs),mx=Math.max.apply(null,costs);spread='<span class="muted" style="font-size:var(--text-overline)">成本 '+mn.toFixed(2)+'~'+mx.toFixed(2)+'×</span>';}
+      var unset=chs.some(function(c){return c.cost==='';})?' <span class="cost-warn">缺成本</span>':'';
+      return '<div class="chspool">'+
+        '<span class="chs-cnt">'+chs.length+' 渠道</span>'+
+        '<span class="chs-main">主·'+primary+(backups?' +'+backups+'备':'')+'</span>'+
+        spread+unset+'</div>';
+    }
+    // opus-4.8 家族三档（来自 model-data.js 样板）+ 其余单档对外模型；含 1 条成本缺失告警
+    // chs = 供应渠道池：A→B 后从真实渠道（channels.html 实体）多选，每渠道带 优先级pr/权重wt/该B成本cost
+    // offIn/offOut = 该 B 的官方默认价（预置自 model-data.js），新建时自动带出
+    var pubs=[
+      {a:'opus-4.8',         disp:'Claude Opus 4.8',          tier:'full',     fam:'opus-4.8', in:'15.0', out:'75.0', b:'claude-opus-4-8-full',  offIn:'15.0',offOut:'75.0', on:true,  warn:false,
+        chs:[{n:'Anthropic 官方',pr:9,wt:6,cost:'2.0'},{n:'第三方聚合 A',pr:6,wt:4,cost:'1.8'},{n:'第三方聚合 B',pr:6,wt:3,cost:'0.1'}]},
+      {a:'opus-4.8-增强',     disp:'Claude Opus 4.8 增强版',    tier:'enhanced', fam:'opus-4.8', in:'9.0',  out:'45.0', b:'claude-opus-4-8-enh',   offIn:'15.0',offOut:'75.0', on:true,  warn:false,
+        chs:[{n:'第三方聚合 A',pr:6,wt:5,cost:'1.2'},{n:'第三方聚合 B',pr:6,wt:3,cost:'0.6'}]},
+      {a:'opus-4.8-经济',     disp:'Claude Opus 4.8 经济版',    tier:'economy',  fam:'opus-4.8', in:'3.0',  out:'15.0', b:'claude-opus-4-8-eco',   offIn:'15.0',offOut:'75.0', on:true,  warn:true,
+        chs:[{n:'第三方聚合 B',pr:6,wt:5,cost:''},{n:'Bedrock Claude',pr:5,wt:3,cost:'0.9'}]},
+      {a:'gpt-4o',           disp:'GPT-4o',                   tier:'full',     fam:'gpt-4o',   in:'2.5',  out:'10.0', b:'gpt-4o-2024-11-20',     offIn:'2.5', offOut:'10.0', on:true,  warn:false,
+        chs:[{n:'OpenAI 主通道',pr:10,wt:8,cost:'1.0'},{n:'Azure OpenAI',pr:9,wt:7,cost:'0.95'},{n:'第三方聚合 A',pr:6,wt:4,cost:'0.85'}]},
+      {a:'gpt-4o-mini',      disp:'GPT-4o mini',              tier:'economy',  fam:'gpt-4o',   in:'0.15', out:'0.60', b:'gpt-4o-mini-2024',      offIn:'0.15',offOut:'0.60', on:true,  warn:false,
+        chs:[{n:'OpenAI 主通道',pr:10,wt:8,cost:'0.06'},{n:'Azure OpenAI',pr:9,wt:6,cost:'0.055'}]},
+      {a:'o1',               disp:'OpenAI o1',                tier:'full',     fam:'o1',       in:'15.0', out:'60.0', b:'o1-2024-12',            offIn:'15.0',offOut:'60.0', on:true,  warn:false,
+        chs:[{n:'OpenAI 主通道',pr:10,wt:8,cost:'6.0'},{n:'Azure OpenAI',pr:9,wt:6,cost:'5.8'}]},
+      {a:'o3-mini',          disp:'OpenAI o3-mini',           tier:'economy',  fam:'o3',       in:'1.1',  out:'4.4',  b:'o3-mini-2025',          offIn:'1.1', offOut:'4.4',  on:true,  warn:false,
+        chs:[{n:'OpenAI 主通道',pr:10,wt:8,cost:'0.45'}]},
+      {a:'claude-3.5-sonnet',disp:'Claude 3.5 Sonnet',        tier:'full',     fam:'claude-3.5',in:'3.0', out:'15.0', b:'claude-3-5-sonnet-lat', offIn:'3.0', offOut:'15.0', on:true,  warn:false,
+        chs:[{n:'Anthropic 官方',pr:9,wt:6,cost:'1.2'},{n:'Bedrock Claude',pr:6,wt:4,cost:'1.1'}]},
+      {a:'claude-3.5-haiku', disp:'Claude 3.5 Haiku',         tier:'economy',  fam:'claude-3.5',in:'0.8', out:'4.0',  b:'claude-3-5-haiku-lat',  offIn:'0.8', offOut:'4.0',  on:true,  warn:false,
+        chs:[{n:'Anthropic 官方',pr:9,wt:6,cost:'0.32'}]},
+      {a:'gemini-2.0-flash', disp:'Gemini 2.0 Flash',         tier:'enhanced', fam:'gemini',   in:'0.10', out:'0.40', b:'gemini-2.0-flash-exp',  offIn:'0.10',offOut:'0.40', on:true,  warn:false,
+        chs:[{n:'Google Vertex',pr:8,wt:5,cost:'0.05'},{n:'第三方聚合 A',pr:6,wt:3,cost:'0.04'}]},
+      {a:'gemini-1.5-pro',   disp:'Gemini 1.5 Pro',           tier:'full',     fam:'gemini',   in:'1.25', out:'5.0',  b:'gemini-1-5-pro-002',    offIn:'1.25',offOut:'5.0',  on:true,  warn:false,
+        chs:[{n:'Google Vertex',pr:8,wt:5,cost:'0.6'}]},
+      {a:'deepseek-v3',      disp:'DeepSeek V3',              tier:'enhanced', fam:'deepseek', in:'0.20', out:'0.80', b:'deepseek-v3-0324',      offIn:'0.20',offOut:'0.80', on:true,  warn:false,
+        chs:[{n:'DeepSeek 直连',pr:6,wt:4,cost:'0.10'},{n:'Together AI',pr:5,wt:3,cost:'0.12'}]},
+      {a:'deepseek-r1',      disp:'DeepSeek R1',              tier:'full',     fam:'deepseek', in:'0.70', out:'2.5',  b:'deepseek-r1-0528',      offIn:'0.70',offOut:'2.5',  on:true,  warn:true,
+        chs:[{n:'DeepSeek 直连',pr:6,wt:4,cost:''},{n:'第三方聚合 B',pr:6,wt:3,cost:'0.3'}]},
+      {a:'mistral-large',    disp:'Mistral Large',            tier:'enhanced', fam:'mistral',  in:'2.0',  out:'6.0',  b:'mistral-large-2411',    offIn:'2.0', offOut:'6.0',  on:false, warn:false,
+        chs:[{n:'Mistral 直连',pr:5,wt:3,cost:'1.0'}]},
+      {a:'grok-2',           disp:'Grok 2',                   tier:'full',     fam:'grok',     in:'2.0',  out:'10.0', b:'grok-2-1212',           offIn:'2.0', offOut:'10.0', on:false, warn:false,
+        chs:[]}
+    ];
+    function pubStateBadge(on){
+      return on
+        ? '<span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>上架</span>'
+        : '<span class="badge b-dan"><span class="dot" style="background:var(--color-text-muted)"></span>下架</span>';
+    }
+    document.getElementById('pBody').innerHTML=pubs.map(function(r){
+      var warn=r.warn?' <span class="cost-warn">成本未配</span>':'';
+      return '<tr>'+
+        '<td class="cellmono">'+r.a+'<div class="muted" style="font-family:var(--font-base);font-size:var(--text-overline)">'+r.disp+'</div></td>'+
+        '<td>'+tierBadge(r.tier)+'</td>'+
+        '<td class="cellmono muted">'+r.fam+'</td>'+
+        '<td>'+priceCell(r.in,r.out)+'</td>'+
+        '<td>'+mapCell(r.b)+warn+'</td>'+
+        '<td>'+chsCell(r.chs)+'</td>'+
+        '<td>'+pubStateBadge(r.on)+'</td>'+
+        '<td><div class="row-acts"><a class="editPub">编辑</a><a>'+(r.on?'下架':'上架')+'</a><a class="dang">删除</a></div></td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('pInfo').textContent='共 '+pubs.length+' 个对外模型（含 opus-4.8 家族 3 档）';
+
+    // 对外模型抽屉
+    var pubScrim=document.getElementById('pubScrim');
+    var pubDrawer=document.getElementById('pubDrawer');
+    // 真实渠道列表（与 channels.html 渠道实体对齐）—— 渠道池从这里多选
+    var REAL_CHANNELS=[
+      {n:'OpenAI 主通道',ty:'OpenAI 官方'},{n:'Azure OpenAI',ty:'Azure'},{n:'Anthropic 官方',ty:'Anthropic'},
+      {n:'Google Vertex',ty:'Vertex'},{n:'第三方聚合 A',ty:'OpenAI 兼容'},{n:'第三方聚合 B',ty:'OpenAI 兼容'},
+      {n:'Bedrock Claude',ty:'Anthropic'},{n:'DeepSeek 直连',ty:'OpenAI 兼容'},{n:'Together AI',ty:'OpenAI 兼容'},
+      {n:'Mistral 直连',ty:'Mistral'},{n:'Groq 高速',ty:'OpenAI 兼容'}
+    ];
+    // 渲染渠道池选择器：勾选 + 优先级 + 权重 + 该B成本；勾上才可编辑数值
+    function renderChsPicker(selected){
+      selected=selected||[];
+      var byName={}; selected.forEach(function(c){byName[c.n]=c;});
+      document.getElementById('chsPicker').innerHTML=REAL_CHANNELS.map(function(ch){
+        var s=byName[ch.n]; var on=!!s;
+        return '<div class="chs-row'+(on?' on':'')+'" data-ch="'+ch.n+'">'+
+          '<input type="checkbox" class="ck" '+(on?'checked':'')+'>'+
+          '<span class="nm">'+ch.n+'<span class="ty">'+ch.ty+'</span></span>'+
+          '<div class="ctl"><label>优先级</label><input class="chs-mini pr" value="'+(on?s.pr:'')+'" '+(on?'':'disabled')+'></div>'+
+          '<div class="ctl"><label>权重</label><input class="chs-mini wt" value="'+(on?s.wt:'')+'" '+(on?'':'disabled')+'></div>'+
+          '<div class="ctl"><label>成本×</label><input class="chs-mini cost" value="'+(on?s.cost:'')+'" placeholder="未配" '+(on?'':'disabled')+'></div>'+
+        '</div>';
+      }).join('');
+      // 勾选联动启用/禁用 + 更新摘要
+      document.querySelectorAll('#chsPicker .chs-row').forEach(function(row){
+        var ck=row.querySelector('.ck');
+        ck.addEventListener('change',function(){
+          row.classList.toggle('on',ck.checked);
+          row.querySelectorAll('.chs-mini').forEach(function(inp){inp.disabled=!ck.checked;});
+          updateChsSummary();
+        });
+        row.querySelectorAll('.chs-mini').forEach(function(inp){inp.addEventListener('input',updateChsSummary);});
+      });
+      updateChsSummary();
+    }
+    function updateChsSummary(){
+      var rows=document.querySelectorAll('#chsPicker .chs-row');
+      var picked=[],costs=[];
+      rows.forEach(function(row){
+        if(row.querySelector('.ck').checked){
+          var nm=row.dataset.ch, pr=row.querySelector('.pr').value, c=row.querySelector('.cost').value;
+          picked.push({nm:nm,pr:parseInt(pr)||0,c:c});
+          if(c!=='') costs.push(parseFloat(c));
+        }
+      });
+      var el=document.getElementById('chsSummary');
+      if(!picked.length){ el.innerHTML='<span class="cost-warn">未选任何渠道 —— 该对外模型暂无法供货</span>'; return; }
+      picked.sort(function(a,b){return b.pr-a.pr;});
+      var main=picked[0].nm, bks=picked.length-1;
+      var costTxt='';
+      if(costs.length>1){var mn=Math.min.apply(null,costs),mx=Math.max.apply(null,costs);costTxt='，成本极差 <b>'+mn.toFixed(2)+'~'+mx.toFixed(2)+'×</b>（'+(mx/mn).toFixed(1)+'x 差异）';}
+      var miss=picked.filter(function(p){return p.c==='';}).length;
+      el.innerHTML='已选 <b>'+picked.length+'</b> 渠道：主通道 <b>'+main+'</b>'+(bks?'，'+bks+' 个备用容灾':'')+costTxt+(miss?'，<span class="cost-warn">'+miss+' 个渠道缺成本</span>':'');
+    }
+    function openPub(t,row){ document.getElementById('pubTitle').textContent=t||'新建对外模型';
+      // 带出官方价 + 渠道池（编辑时回填，新建时空）
+      if(row){
+        document.getElementById('pfIn').value=row.in; document.getElementById('pfOut').value=row.out;
+        document.getElementById('priceRef').querySelector('.t').innerHTML='官方默认价 <b>输入 ×'+row.offIn+' / 输出 ×'+row.offOut+'</b>（预置自 model-data.js，可改）<button type="button" class="lnk" id="useOfficial">恢复官方价</button>';
+        document.getElementById('useOfficial').addEventListener('click',function(){document.getElementById('pfIn').value=row.offIn;document.getElementById('pfOut').value=row.offOut;});
+        renderChsPicker(row.chs);
+      } else { renderChsPicker([]); }
+      pubScrim.classList.add('on'); pubDrawer.classList.add('on'); }
+    function closePub(){ pubScrim.classList.remove('on'); pubDrawer.classList.remove('on'); }
+    document.getElementById('newPub').addEventListener('click', function(){ openPub('新建对外模型'); });
+    document.getElementById('pubX').addEventListener('click', closePub);
+    document.getElementById('pubCancel').addEventListener('click', closePub);
+    document.getElementById('pubSave').addEventListener('click', closePub);
+    pubScrim.addEventListener('click', closePub);
+    document.querySelectorAll('.editPub').forEach(function(a,i){ a.addEventListener('click', function(){ openPub('编辑对外模型', pubs[i]); }); });
+
+    // 品质拆分引导抽屉
+    var splitScrim=document.getElementById('splitScrim');
+    var splitDrawer=document.getElementById('splitDrawer');
+    function openSplit(){ splitScrim.classList.add('on'); splitDrawer.classList.add('on'); }
+    function closeSplit(){ splitScrim.classList.remove('on'); splitDrawer.classList.remove('on'); }
+    document.getElementById('splitBtn').addEventListener('click', openSplit);
+    document.getElementById('splitX').addEventListener('click', closeSplit);
+    document.getElementById('splitCancel').addEventListener('click', closeSplit);
+    document.getElementById('splitGen').addEventListener('click', closeSplit);
+    splitScrim.addEventListener('click', closeSplit);
+
+    // ════ 供应商成本（ChannelModelCost：渠道×真实模型B 成本倍率手填，按 B 分组）14+ 行 ════
+    // 每组 = 一个真实模型 B；组内多个供应商渠道各自成本不同（呼应 opus 满血2x/残血0.1x 痛点）
+    var costGroups=[
+      {b:'claude-opus-4-8-full', official:'$15.0/$75.0', a:['opus-4.8'], rows:[
+        {ch:'供应商X · 直连主通道', cost:'2.0',  upd:'2026-06-19 14:02', on:true,  unset:false},
+        {ch:'供应商Y · 聚合通道',   cost:'1.8',  upd:'2026-06-18 09:41', on:true,  unset:false},
+        {ch:'供应商Z · 低价兜底',   cost:'0.1',  upd:'2026-06-15 22:10', on:true,  unset:false}
+      ]},
+      {b:'claude-opus-4-8-enh', official:'$9.0/$45.0', a:['opus-4.8-增强'], rows:[
+        {ch:'供应商Y · 聚合通道',   cost:'1.2',  upd:'2026-06-19 10:30', on:true,  unset:false},
+        {ch:'供应商Z · 低价兜底',   cost:'0.6',  upd:'2026-06-17 18:55', on:true,  unset:false}
+      ]},
+      {b:'claude-opus-4-8-eco', official:'$3.0/$15.0', a:['opus-4.8-经济'], rows:[
+        {ch:'供应商Z · 低价兜底',   cost:'',     upd:'—',                 on:false, unset:true},
+        {ch:'供应商X · 直连主通道', cost:'0.9',  upd:'2026-06-16 08:20', on:true,  unset:false}
+      ]},
+      {b:'gpt-4o-2024-11-20', official:'$2.5/$10.0', a:['gpt-4o'], rows:[
+        {ch:'OpenAI 官方',          cost:'1.0',  upd:'2026-06-20 07:00', on:true,  unset:false},
+        {ch:'供应商Y · 聚合通道',   cost:'0.85', upd:'2026-06-19 16:12', on:true,  unset:false}
+      ]},
+      {b:'gemini-2.0-flash-exp', official:'$0.1/$0.4', a:['gemini-2.0-flash'], rows:[
+        {ch:'Google Vertex',        cost:'1.0',  upd:'2026-06-20 06:30', on:true,  unset:false},
+        {ch:'供应商Y · 聚合通道',   cost:'0.7',  upd:'2026-06-18 11:48', on:true,  unset:false}
+      ]},
+      {b:'deepseek-r1-0528', official:'$0.7/$2.5', a:['deepseek-r1'], rows:[
+        {ch:'供应商X · 直连主通道', cost:'',     upd:'—',                 on:false, unset:true},
+        {ch:'供应商Z · 低价兜底',   cost:'0.3',  upd:'2026-06-14 20:05', on:true,  unset:false}
+      ]}
+    ];
+    function costRowHtml(){ /* 已由 renderCosts 内联渲染替代 */ return ''; }
+    // 渲染分组卡：组头(B + 官方价 + 关联A + 成本极差) + 组内每渠道一行
+    function renderCosts(){
+      var html='';
+      costGroups.forEach(function(g){
+        var nums=g.rows.filter(function(r){return !r.unset && r.cost!=='';}).map(function(r){return parseFloat(r.cost);});
+        var spread='';
+        if(nums.length>1){
+          var mn=Math.min.apply(null,nums), mx=Math.max.apply(null,nums);
+          spread='成本极差 <b>'+mn.toFixed(2)+'</b> ~ <b>'+mx.toFixed(2)+'</b>（'+(mx/mn).toFixed(1)+'x 差异）';
+        } else { spread='待补全更多供应商成本'; }
+        var rowsHtml=g.rows.map(function(r){
+          var inp='<input class="costin'+(r.unset?' unset':'')+'" value="'+r.cost+'" placeholder="未配" aria-label="成本倍率">';
+          var st=r.unset
+            ? '<span class="cost-warn">未配成本，利润无法计算</span>'
+            : (r.on
+                ? '<span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>已配</span>'
+                : '<span class="badge b-info"><span class="dot" style="background:var(--color-info)"></span>已停用</span>');
+          return '<tr>'+
+            '<td>'+r.ch+'</td>'+
+            '<td>'+inp+'</td>'+
+            '<td class="cellmono muted">'+g.official+'</td>'+
+            '<td class="muted">'+r.upd+'</td>'+
+            '<td>'+st+'</td>'+
+            '<td><div class="row-acts"><a>保存</a><a>'+(r.on?'停用':'启用')+'</a><a class="dang">删除</a></div></td>'+
+          '</tr>';
+        }).join('');
+        html+='<div class="cost-grp">'+
+          '<div class="cost-grphead">'+
+            '<span class="bname">'+g.b+'</span>'+
+            '<span class="priv-tag">真实模型 B · 客户不可见</span>'+
+            '<span class="meta">关联对外模型：'+g.a.join('、')+'</span>'+
+            '<span class="spread">'+spread+'</span>'+
+          '</div>'+
+          '<div class="table-wrap"><table>'+
+            '<thead><tr><th>供应商渠道</th><th>成本倍率（手填）</th><th>对标官方价</th><th>最后更新</th><th>状态</th><th>操作</th></tr></thead>'+
+            '<tbody>'+rowsHtml+'</tbody>'+
+          '</table></div>'+
+        '</div>';
+      });
+      var totalRows=costGroups.reduce(function(s,g){return s+g.rows.length;},0);
+      html+='<div class="pager"><span>共 '+costGroups.length+' 个真实模型 B、'+totalRows+' 条渠道成本配置</span></div>';
+      document.getElementById('costCard').innerHTML=html;
+    }
+    renderCosts();
+    var models=[
+      {nm:'gpt-4o',             ven:'OpenAI',    ctx:'128K', st:'on',  in:'$2.50', out:'$7.50', caps:['chat','vision','tools']},
+      {nm:'gpt-4o-mini',        ven:'OpenAI',    ctx:'128K', st:'on',  in:'$0.15', out:'$0.60', caps:['chat','tools']},
+      {nm:'o1-preview',         ven:'OpenAI',    ctx:'128K', st:'on',  in:'$7.50', out:'$30.0', caps:['chat','reason']},
+      {nm:'gpt-4-32k',          ven:'OpenAI',    ctx:'32K',  st:'off', in:'$30.0', out:'$60.0', caps:['chat']},
+      {nm:'claude-3-5-sonnet',  ven:'Anthropic', ctx:'200K', st:'on',  in:'$1.50', out:'$7.50', caps:['chat','vision','tools']},
+      {nm:'claude-3-opus',      ven:'Anthropic', ctx:'200K', st:'on',  in:'$7.50', out:'$37.5', caps:['chat','vision']},
+      {nm:'claude-2.1',         ven:'Anthropic', ctx:'200K', st:'off', in:'$8.00', out:'$24.0', caps:['chat']},
+      {nm:'gemini-1.5-pro',     ven:'Google',    ctx:'1M',   st:'on',  in:'$1.25', out:'$5.00', caps:['chat','vision']},
+      {nm:'gemini-1.5-flash',   ven:'Google',    ctx:'1M',   st:'on',  in:'$0.07', out:'$0.30', caps:['chat']},
+      {nm:'gemini-2.0-flash',   ven:'Google',    ctx:'1M',   st:'pre', in:'$0.10', out:'$0.40', caps:['chat','vision']},
+      {nm:'deepseek-chat',      ven:'DeepSeek',  ctx:'64K',  st:'on',  in:'$0.14', out:'$0.28', caps:['chat','tools']},
+      {nm:'deepseek-reasoner',  ven:'DeepSeek',  ctx:'64K',  st:'pre', in:'$0.55', out:'$2.19', caps:['chat','reason']},
+      {nm:'mistral-large',      ven:'Mistral',   ctx:'128K', st:'on',  in:'$2.00', out:'$6.00', caps:['chat','tools']},
+      {nm:'command-r-plus',     ven:'Cohere',    ctx:'128K', st:'on',  in:'$2.50', out:'$10.0', caps:['chat','rag']},
+      {nm:'text-embedding-3',   ven:'OpenAI',    ctx:'8K',   st:'on',  in:'$0.02', out:'—',     caps:['embed']}
+    ];
+    var stMap={
+      on: {cls:'b-suc',     tone:'--color-success',    lab:'上架'},
+      off:{cls:'b-dan',     tone:'--color-danger',     lab:'下架'},
+      pre:{cls:'b-warn',    tone:'--color-warning',    lab:'预发布'}
+    };
+    function stBadge(s){
+      var m=stMap[s];
+      return '<span class="badge '+m.cls+'"><span class="dot" style="background:var('+m.tone+')"></span>'+m.lab+'</span>';
+    }
+    function caps(arr){ return '<div class="caps">'+arr.map(function(c){return '<span class="cap">'+c+'</span>';}).join('')+'</div>'; }
+    document.getElementById('mBody').innerHTML=models.map(function(r){
+      return '<tr>'+
+        '<td class="cellmono">'+r.nm+'</td>'+
+        '<td class="muted">'+r.ven+'</td>'+
+        '<td class="cellmono">'+r.ctx+'</td>'+
+        '<td>'+stBadge(r.st)+'</td>'+
+        '<td class="cellmono">'+r.in+'</td>'+
+        '<td class="cellmono">'+r.out+'</td>'+
+        '<td>'+caps(r.caps)+'</td>'+
+        '<td><div class="row-acts"><a>编辑</a><a>'+(r.st==='on'?'下架':'上架')+'</a><a class="dang">删除</a></div></td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('mInfo').textContent='共 '+models.length+' 个模型';
+
+    // ════ 供应商元数据 ════
+    var vendors=[
+      {nm:'OpenAI',    site:'platform.openai.com', cnt:5, st:'on'},
+      {nm:'Anthropic', site:'console.anthropic.com',cnt:3, st:'on'},
+      {nm:'Google',    site:'ai.google.dev',        cnt:3, st:'on'},
+      {nm:'DeepSeek',  site:'platform.deepseek.com',cnt:2, st:'on'},
+      {nm:'Mistral',   site:'console.mistral.ai',   cnt:1, st:'on'},
+      {nm:'Cohere',    site:'dashboard.cohere.com', cnt:1, st:'off'}
+    ];
+    document.getElementById('vBody').innerHTML=vendors.map(function(v){
+      return '<tr>'+
+        '<td>'+v.nm+'</td>'+
+        '<td class="cellmono muted">'+v.site+'</td>'+
+        '<td class="cellmono">'+v.cnt+'</td>'+
+        '<td>'+stBadge(v.st)+'</td>'+
+        '<td><div class="row-acts"><a>编辑</a><a>'+(v.st==='on'?'禁用':'启用')+'</a><a class="dang">删除</a></div></td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('vInfo').textContent='共 '+vendors.length+' 个供应商';
+
+    // ════ Tab 切换 ════
+    var tabs=document.querySelectorAll('.tab');
+    tabs.forEach(function(t){
+      t.addEventListener('click', function(){
+        tabs.forEach(function(x){ x.classList.remove('on'); });
+        t.classList.add('on');
+        document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('on'); });
+        document.getElementById('pane-'+t.getAttribute('data-tab')).classList.add('on');
+      });
+    });
+
+    // ════ 缺失检测条 ════
+    var detectBar=document.getElementById('detectBar');
+    document.getElementById('detectBtn').addEventListener('click', function(){ detectBar.classList.add('on'); });
+    document.getElementById('detectClose').addEventListener('click', function(){ detectBar.classList.remove('on'); });
+
+    // ════ 同步 Modal ════
+    var scrim=document.getElementById('syncScrim');
+    function openM(){ scrim.classList.add('on'); }
+    function closeM(){ scrim.classList.remove('on'); }
+    document.getElementById('syncBtn').addEventListener('click', openM);
+    document.getElementById('syncX').addEventListener('click', closeM);
+    document.getElementById('syncCancel').addEventListener('click', closeM);
+    document.getElementById('syncConfirm').addEventListener('click', closeM);
+    scrim.addEventListener('click', function(e){ if(e.target===scrim) closeM(); });
+  })();
+  </script>
+</body>
+</html>

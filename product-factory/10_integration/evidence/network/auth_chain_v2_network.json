@@ -1,0 +1,98 @@
+{
+  "username": "qa_v2_0621104909@nexa-test.local",
+  "steps": {
+    "register": {
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 400 ()",
+          "location": "{'url': 'http://172.17.0.1:8080/api/user/register', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+        }
+      ],
+      "network": [
+        {
+          "url": "http://172.17.0.1:8080/api/user/register",
+          "status": 400,
+          "reqMethod": "POST",
+          "reqBody": "{\"username\":\"qa_v2_0621104909@nexa-test.local\",\"email\":\"qa_v2_0621104909@nexa-test.local\",\"password\":\"QaTest2026!xyz\"}",
+          "respBody": "{\"success\":false,\"message\":\"username length must be <= 20\"}"
+        }
+      ],
+      "url_after": "http://172.17.0.1:3100/register"
+    },
+    "login": {
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 400 ()",
+          "location": "{'url': 'http://172.17.0.1:8080/api/user/login', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+        }
+      ],
+      "network": [
+        {
+          "url": "http://172.17.0.1:8080/api/user/login",
+          "status": 400,
+          "reqMethod": "POST",
+          "reqBody": "{\"username\":\"qa_v2_0621104909@nexa-test.local\",\"password\":\"QaTest2026!xyz\"}",
+          "respBody": "{\"success\":false,\"message\":\"username length must be <= 20, got 32\"}"
+        }
+      ],
+      "url_after": "http://172.17.0.1:3100/login"
+    },
+    "dashboard": {
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()",
+          "location": "{'url': 'http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()",
+          "location": "{'url': 'http://172.17.0.1:8080/api/user/self', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()",
+          "location": "{'url': 'http://172.17.0.1:8080/api/user/self', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 403 ()",
+          "location": "{'url': 'http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000', 'line': 0, 'column': 0, 'lineNumber': 0, 'columnNumber': 0}"
+        }
+      ],
+      "network": [
+        {
+          "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        },
+        {
+          "url": "http://172.17.0.1:8080/api/user/self",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        },
+        {
+          "url": "http://172.17.0.1:8080/api/user/self",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        },
+        {
+          "url": "http://172.17.0.1:8080/api/log/self/stat?start_timestamp=1780272000",
+          "status": 403,
+          "reqMethod": "GET",
+          "reqBody": "",
+          "respBody": ""
+        }
+      ],
+      "url_after": "http://172.17.0.1:3100/dashboard"
+    }
+  }
+}

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的模型映射 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 我的模型映射（C 到 A）：说明条 / 作用域分段 / 映射表 / 新增行内编辑 + 开放输入候选下拉 —— 零裸色值 */
+  .note{display:flex;gap:var(--space-3);align-items:flex-start;padding:var(--space-4) var(--space-5);
+    background:color-mix(in oklch,var(--color-primary-500) 9%,var(--color-bg-elevated));
+    border:1px solid color-mix(in oklch,var(--color-primary-500) 28%,transparent);
+    border-radius:var(--radius-md);margin-bottom:var(--space-5);font-size:var(--text-body-sm);
+    color:var(--color-text-secondary);line-height:var(--leading-relaxed)}
+  .note .nx-ic{width:18px;height:18px;flex:none;color:var(--color-primary-700);margin-top:2px}
+  .note b{color:var(--color-text);font-weight:var(--fw-semibold)}
+
+  /* 闭环导航条 + 应用范围条 */
+  .loopnav{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);
+    font-size:var(--text-body-sm);color:var(--color-text-muted);flex-wrap:wrap}
+  .loopnav a{display:inline-flex;align-items:center;gap:6px;color:var(--color-text-secondary);
+    text-decoration:none;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);
+    border:1px solid var(--color-border);background:var(--color-bg-elevated)}
+  .loopnav a:hover{color:var(--color-text);border-color:var(--color-border-strong);background:var(--color-surface-sunken)}
+  .loopnav a.cur{border-color:var(--color-primary-500);
+    background:color-mix(in oklch,var(--color-primary-500) 12%,transparent);color:var(--color-primary-700)}
+  .loopnav .nx-ic{width:14px;height:14px}
+  .loopnav .sep{color:var(--color-text-muted)}
+  .applybar{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4);
+    padding:var(--space-3) var(--space-4);border-radius:var(--radius-sm);
+    background:var(--color-surface-sunken);border:1px solid var(--color-border);
+    font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .applybar .ab-ic{width:16px;height:16px;flex:none;color:var(--color-text-muted)}
+  .applybar b{color:var(--color-text);font-weight:var(--fw-semibold)}
+  .applybar .ab-chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:var(--radius-full);
+    font-size:var(--text-overline);font-weight:var(--fw-semibold);letter-spacing:var(--tracking-wide);text-transform:uppercase;
+    background:color-mix(in oklch,var(--color-primary-500) 16%,transparent);color:var(--color-primary-700)}
+  .applybar .ab-spacer{flex:1}
+  .applybar a{color:var(--color-primary-700);text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+  .applybar a:hover{text-decoration:underline}
+  .applybar a .nx-ic{width:14px;height:14px}
+
+  /* 作用域分段切换 */
+  .seg{display:inline-flex;background:var(--color-surface-sunken);border:1px solid var(--color-border);
+    border-radius:var(--radius-sm);padding:3px;gap:2px;margin-bottom:var(--space-4)}
+  .seg button{font-family:inherit;font-size:var(--text-body-sm);font-weight:var(--fw-medium);height:30px;
+    padding:0 var(--space-4);border:none;background:transparent;color:var(--color-text-secondary);
+    border-radius:var(--radius-xs);cursor:pointer}
+  .seg button.on{background:var(--color-bg-elevated);color:var(--color-text);box-shadow:var(--shadow-sm)}
+
+  .scopebar{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
+  .scope-hint{font-size:var(--text-caption);color:var(--color-text-muted)}
+
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:visible;margin-top:var(--space-3)}
+  .table-wrap{overflow-x:auto;overflow-y:visible}
+  th.sortable{cursor:pointer;user-select:none} th.sortable .nx-ic{width:12px;height:12px;vertical-align:middle;
+    margin-left:4px;color:var(--color-text-muted);transform:rotate(90deg);display:inline-block}
+  .mono{font-family:var(--font-mono);font-size:var(--text-body-sm)}
+  .c-name{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text);font-weight:var(--fw-medium)}
+  .a-name{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .arrow-cell{width:28px;text-align:center;color:var(--color-text-muted)}
+  .arrow-cell .nx-ic{width:16px;height:16px;vertical-align:middle}
+  .scope-tag{display:inline-flex;align-items:center;gap:6px;font-size:var(--text-caption);
+    color:var(--color-text-secondary)}
+  .scope-tag .ovr{font-size:var(--text-caption);color:var(--color-warning)}
+
+  .matched{display:inline-flex;align-items:center;gap:5px;color:var(--color-success)}
+  .matched .nx-ic{width:14px;height:14px}
+  .rowacts{display:flex;gap:var(--space-1)}
+  .iconact{background:transparent;border:none;color:var(--color-text-muted);cursor:pointer;width:30px;height:30px;
+    display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)}
+  .iconact:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+  .iconact.dan:hover{color:var(--color-danger)}
+  .inherit-row td{color:var(--color-text-muted)}
+  .inherit-row .c-name{color:var(--color-text-secondary)}
+
+  /* 新增映射 行内编辑区 */
+  .addrow{display:none}
+  .addrow.open{display:table-row}
+  .addrow > td{background:color-mix(in oklch,var(--color-primary-500) 6%,var(--color-bg-elevated));
+    vertical-align:top;padding-top:var(--space-3);padding-bottom:var(--space-3)}
+  .ed-field{display:flex;flex-direction:column;gap:4px}
+  .ed-field input{height:34px;font-family:var(--font-mono);font-size:var(--text-body-sm)}
+  .ed-label{font-size:var(--text-caption);color:var(--color-text-muted)}
+
+  /* 右侧「平台模型 A」开放输入 + 候选下拉 */
+  .combo{position:relative}
+  .combo-warn{font-size:var(--text-caption);line-height:var(--leading-snug);margin-top:2px;
+    color:color-mix(in oklch,var(--color-warning) 88%,var(--color-text));display:none}
+  .combo-warn.show{display:block}
+  .combo-ok{font-size:var(--text-caption);margin-top:2px;color:var(--color-success);display:none;align-items:center;gap:4px}
+  .combo-ok.show{display:inline-flex}
+  .combo-ok .nx-ic{width:13px;height:13px}
+  .dropdown{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;max-height:280px;overflow-y:auto;
+    background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-lg);display:none}
+  .dropdown.open{display:block}
+  .opt{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);cursor:pointer}
+  .opt:hover,.opt.active{background:var(--color-surface-sunken)}
+  .opt-main{flex:1;min-width:0}
+  .opt-name{font-family:var(--font-mono);font-size:var(--text-body-sm);color:var(--color-text);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .opt-name .hl{color:var(--color-primary-700);font-weight:var(--fw-semibold);background:color-mix(in oklch,var(--color-primary-500) 16%,transparent)}
+  .opt-sub{font-size:var(--text-caption);color:var(--color-text-muted);margin-top:1px}
+  .opt-price{font-family:var(--font-mono);font-size:var(--text-caption);color:var(--color-text-secondary);
+    white-space:nowrap;text-align:right;flex:none}
+  .tier{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:var(--radius-full);
+    font-size:var(--text-overline);font-weight:var(--fw-semibold);letter-spacing:var(--tracking-wide);flex:none}
+  .tier.flagship{background:color-mix(in oklch,var(--color-primary-500) 18%,transparent);color:var(--color-primary-700)}
+  .tier.enhanced{background:color-mix(in oklch,var(--color-info,var(--color-primary-500)) 16%,transparent);color:var(--color-text-secondary)}
+  .tier.economy{background:color-mix(in oklch,var(--color-success) 16%,transparent);color:var(--color-success)}
+  .opt-empty{padding:var(--space-3);font-size:var(--text-body-sm);color:var(--color-text-muted);line-height:var(--leading-relaxed)}
+
+  .ed-scope{display:flex;flex-direction:column;gap:4px}
+  .ed-scope select{height:34px;font-family:inherit;font-size:var(--text-body-sm);border-radius:var(--radius-sm);
+    border:1px solid var(--color-border);background:var(--color-bg-elevated);color:var(--color-text);padding:0 var(--space-2)}
+  .ed-acts{display:flex;gap:var(--space-2);padding-top:18px}
+  .ed-err{font-size:var(--text-caption);color:var(--color-danger);margin-top:2px;display:none}
+  .ed-err.show{display:block}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3) var(--space-5);
+    border-top:1px solid var(--color-border);font-size:var(--text-body-sm);color:var(--color-text-muted)}
+
+  /* 确认弹窗 */
+  .modal-scrim{display:none;position:fixed;inset:0;z-index:60;background:color-mix(in oklch,var(--color-surface-sunken) 78%,transparent);
+    align-items:center;justify-content:center}
+  .modal-scrim.open{display:flex}
+  .modal{width:400px;max-width:92vw;background:var(--color-bg-elevated);border:1px solid var(--color-border);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);padding:var(--space-6)}
+  .modal h3{margin:0 0 var(--space-3);font-size:var(--text-h4);color:var(--color-text)}
+  .modal p{margin:0 0 var(--space-5);color:var(--color-text-secondary);font-size:var(--text-body)}
+  .modal-acts{display:flex;gap:var(--space-3);justify-content:flex-end}
+</style>
+</head>
+<body data-page="model-map" data-title="我的模型映射" data-crumb="控制台|我的模型映射"
+      data-actions='<button class="btn btn-primary" id="btn-add">新增映射</button>'>
+
+  <!-- 闭环导航：API 密钥 ↔ 模型映射 ↔ 分组 -->
+  <div class="loopnav nx-fade">
+    <a href="keys.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7a4 4 0 1 1-3.5 6H7v3H4v-3l2-2a4 4 0 0 1 8-2z"/></svg>
+      API 密钥
+    </a>
+    <span class="sep">·</span>
+    <a class="cur" href="model-map.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg>
+      我的模型映射
+    </a>
+    <span class="sep">·</span>
+    <a href="recharge.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 12h2"/><path d="M3 7l13-3v3"/></svg>
+      分组与折扣
+    </a>
+  </div>
+
+  <!-- 应用范围条：这些映射会落到哪些 key / 分组 -->
+  <div class="applybar nx-fade" id="applybar">
+    <svg class="ab-ic nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>
+    <span id="apply-text"></span>
+    <span class="ab-spacer"></span>
+    <a href="keys.html">
+      <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      返回 API 密钥
+    </a>
+  </div>
+
+  <div class="note nx-fade">
+    <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/></svg>
+    <span>把你应用里用惯的模型名，映射到平台模型，<b>客户端零改动</b>。映射只是改名，所有平台模型对你全开。作用域分<b>仅本人（用户级）</b>与<b>整个分组（分组级）</b>，同名时<b>用户级优先</b>。</span>
+  </div>
+
+  <div class="scopebar nx-fade">
+    <div class="seg" id="scope-seg">
+      <button class="on" data-scope="user">用户级映射</button>
+      <button data-scope="group">分组级映射</button>
+    </div>
+    <span class="scope-hint" id="scope-hint">用户级映射仅对你自己生效，优先于同名的分组级映射。</span>
+  </div>
+
+  <div class="table-card nx-fade">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th class="sortable" style="min-width:160px">你的模型名 C <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></th>
+          <th class="arrow-cell"></th>
+          <th style="min-width:200px">映射到平台模型 A</th>
+          <th>作用域</th>
+          <th>状态</th>
+          <th style="width:96px">操作</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <span>共 <b style="color:var(--color-text)" id="cnt">0</b> 条映射</span>
+      <span class="scope-hint">A 不做白名单强校验：自由输入是产品决策，可先占位待平台后续上架。</span>
+    </div>
+  </div>
+
+  <!-- 删除确认弹窗 -->
+  <div class="modal-scrim" id="modal-scrim">
+    <div class="modal">
+      <h3 id="modal-title">删除映射？</h3>
+      <p id="modal-desc">删除后该模型名将不再被改写，按原名直接调用平台。</p>
+      <div class="modal-acts">
+        <button class="btn btn-sec" id="modal-cancel">取消</button>
+        <button class="btn btn-danger" id="modal-ok">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="console-shell.js"></script>
+  <script src="../assets/model-data.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+
+    // —— 候选源 = window.MODEL_PRICING 平台公开模型 A 全集（含 opus-4.8 三档），绝不含真实模型 B ——
+    var CANDIDATES = (window.MODEL_PRICING || []).map(function(m){
+      var price = (m.official_in!=null && m.official_out!=null)
+        ? ('$'+m.official_in+' / $'+m.official_out)
+        : '价待核';
+      return {
+        name: m.name,
+        vendor: m.vendor,
+        tier: m.tier || '',
+        tierLabel: m.tierLabel || '',
+        familyLabel: m.familyLabel || '',
+        price: price
+      };
+    });
+    var NAMESET = {}; CANDIDATES.forEach(function(c){ NAMESET[c.name]=true; });
+
+    // —— 预置示例映射（user / group 两作用域）——
+    var DATA = {
+      user: [
+        ['claude-3-5-sonnet','opus-4.8-经济',true],
+        ['my-gpt','gpt-4o',true],
+        ['gpt-4.5','gpt-4.5',false],
+        ['team-fast','gpt-4o-mini',true],
+        ['legacy-opus','opus-4.8',true]
+      ],
+      group: [
+        ['default-chat','opus-4.8-增强',true],
+        ['embed-model','gpt-4o-mini',true],
+        ['analytics-llm','deepseek-v3 (deepseek-chat)',true]
+      ]
+    };
+    var curScope = (location.hash==='#group') ? 'group' : 'user';
+
+    // 应用范围条：说明当前作用域映射会落到哪些 key / 分组
+    var applyTextEl = document.getElementById('apply-text');
+    function updateApplyBar(){
+      if(curScope==='user'){
+        applyTextEl.innerHTML = '<b>用户级映射</b>仅对你账户下的<b>全部 API 密钥</b>生效（含未来新建的 key），与分组无关；同名时优先于分组级。';
+      } else {
+        applyTextEl.innerHTML = '<b>分组级映射</b>对你当前分组 <span class="ab-chip">VIP</span> 下的所有成员与 key 生效；你的用户级同名映射会覆盖它。';
+      }
+    }
+
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    function svgCheck(){ return '<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'; }
+    function svgArrow(){ return '<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>'; }
+    function svgEdit(){ return '<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>'; }
+    function svgDel(){ return '<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 13h8l1-13"/></svg>'; }
+
+    var rowsEl = document.getElementById('rows');
+    var cntEl = document.getElementById('cnt');
+
+    function render(){
+      var list = DATA[curScope];
+      var html = list.map(function(r,i){
+        var c=r[0], a=r[1], matched=r[2];
+        var status = matched
+          ? '<span class="matched">'+svgCheck()+'已生效</span>'
+          : '<span class="badge b-warn"><span class="dot" style="background:var(--color-warning)"></span>平台未收录</span>';
+        var scopeTag = curScope==='user'
+          ? '<span class="scope-tag">仅本人</span>'
+          : '<span class="scope-tag">整个分组</span>';
+        // 用户级视图下，演示一条对分组级同名的覆盖标识
+        if(curScope==='user' && c==='claude-3-5-sonnet'){
+          scopeTag = '<span class="scope-tag">仅本人 <span class="ovr">· 覆盖分组级</span></span>';
+        }
+        return '<tr>'+
+          '<td class="c-name">'+esc(c)+'</td>'+
+          '<td class="arrow-cell">'+svgArrow()+'</td>'+
+          '<td class="a-name">'+esc(a)+'</td>'+
+          '<td>'+scopeTag+'</td>'+
+          '<td>'+status+'</td>'+
+          '<td><div class="rowacts">'+
+            '<button class="iconact" title="编辑">'+svgEdit()+'</button>'+
+            '<button class="iconact dan js-del" data-i="'+i+'" title="删除">'+svgDel()+'</button>'+
+          '</div></td></tr>';
+      }).join('');
+      // 新增行内编辑（追加在表末，默认隐藏）
+      html += buildAddRow();
+      rowsEl.innerHTML = html;
+      cntEl.textContent = list.length;
+      updateApplyBar();
+      bindDelete();
+      bindAdd();
+      if(addOpen) openAddRow(true);
+    }
+
+    function buildAddRow(){
+      return '<tr class="addrow'+(addOpen?' open':'')+'" id="addrow">'+
+        '<td>'+
+          '<div class="ed-field">'+
+            '<span class="ed-label">你的模型名 C</span>'+
+            '<input class="input" id="ed-c" placeholder="例如 gpt-4o" autocomplete="off">'+
+            '<span class="ed-err" id="ed-c-err">C 不可为空</span>'+
+          '</div>'+
+        '</td>'+
+        '<td class="arrow-cell">'+svgArrow()+'</td>'+
+        '<td>'+
+          '<div class="ed-field">'+
+            '<span class="ed-label">平台模型 A（可键入联想，也可自由输入）</span>'+
+            '<div class="combo">'+
+              '<input class="input" id="ed-a" placeholder="键入联想，如 opus / gpt-4o" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list">'+
+              '<div class="dropdown" id="ed-dd" role="listbox"></div>'+
+            '</div>'+
+            '<span class="combo-ok" id="ed-ok">'+svgCheck()+'已匹配平台模型</span>'+
+            '<span class="combo-warn" id="ed-warn">该名称不在平台模型列表中，调用时可能失败。</span>'+
+          '</div>'+
+        '</td>'+
+        '<td>'+
+          '<div class="ed-scope">'+
+            '<span class="ed-label">作用域</span>'+
+            '<select id="ed-scope">'+
+              '<option value="user">仅本人（用户级）</option>'+
+              '<option value="group">整个分组（分组级）</option>'+
+            '</select>'+
+            '<span class="combo-warn" id="ed-cover" style="color:color-mix(in oklch,var(--color-warning) 88%,var(--color-text))">将覆盖分组级同名映射。</span>'+
+          '</div>'+
+        '</td>'+
+        '<td></td>'+
+        '<td>'+
+          '<div class="ed-acts">'+
+            '<button class="btn btn-primary" id="ed-save" style="height:30px;padding:0 var(--space-3)">保存</button>'+
+            '<button class="iconact" id="ed-cancel" title="取消">'+
+              '<svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"/></svg>'+
+            '</button>'+
+          '</div>'+
+        '</td></tr>';
+    }
+
+    // —— 删除 ——
+    var pendingDel = null;
+    var ms = document.getElementById('modal-scrim');
+    function openM(o){ ms.classList.toggle('open',o); }
+    function bindDelete(){
+      rowsEl.querySelectorAll('.js-del').forEach(function(b){
+        b.addEventListener('click',function(){ pendingDel = parseInt(b.getAttribute('data-i'),10); openM(true); });
+      });
+    }
+    document.getElementById('modal-cancel').addEventListener('click',function(){ openM(false); });
+    document.getElementById('modal-ok').addEventListener('click',function(){
+      if(pendingDel!=null){ DATA[curScope].splice(pendingDel,1); pendingDel=null; render(); }
+      openM(false);
+    });
+    ms.addEventListener('click',function(e){ if(e.target===ms) openM(false); });
+
+    // —— 作用域切换 ——
+    var seg = document.getElementById('scope-seg');
+    var hint = document.getElementById('scope-hint');
+    seg.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click',function(){
+        seg.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); });
+        b.classList.add('on');
+        curScope = b.getAttribute('data-scope');
+        hint.textContent = curScope==='user'
+          ? '用户级映射仅对你自己生效，优先于同名的分组级映射。'
+          : '分组级映射对整个分组生效；用户级同名映射会覆盖它。';
+        addOpen = false;
+        render();
+      });
+    });
+
+    // 初始化：若从 keys 页带 #group 锚点进入，默认切到分组级视图
+    seg.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-scope')===curScope); });
+    hint.textContent = curScope==='user'
+      ? '用户级映射仅对你自己生效，优先于同名的分组级映射。'
+      : '分组级映射对整个分组生效；用户级同名映射会覆盖它。';
+
+    // —— 新增映射：行内编辑 + 开放输入候选下拉 ——
+    var addOpen = false;
+    document.getElementById('btn-add').addEventListener('click',function(){
+      addOpen = true; render();
+      var c = document.getElementById('ed-c'); if(c) c.focus();
+    });
+
+    function openAddRow(o){
+      var r = document.getElementById('addrow');
+      if(r) r.classList.toggle('open',o);
+    }
+
+    function bindAdd(){
+      var elC = document.getElementById('ed-c');
+      var elA = document.getElementById('ed-a');
+      var dd  = document.getElementById('ed-dd');
+      var ok  = document.getElementById('ed-ok');
+      var warn= document.getElementById('ed-warn');
+      var cErr= document.getElementById('ed-c-err');
+      var scp = document.getElementById('ed-scope');
+      var cover = document.getElementById('ed-cover');
+      var save= document.getElementById('ed-save');
+      var cancel = document.getElementById('ed-cancel');
+      if(!elA) return;
+
+      scp.value = curScope;
+      var activeIdx = -1;
+      var filtered = [];
+
+      function tierEl(o){
+        if(!o.tier) return '';
+        return '<span class="tier '+o.tier+'">'+esc(o.tierLabel||o.tier)+'</span>';
+      }
+      function highlight(name, q){
+        if(!q) return esc(name);
+        var lo = name.toLowerCase(), lq = q.toLowerCase();
+        var idx = lo.indexOf(lq);
+        if(idx<0) return esc(name);
+        return esc(name.slice(0,idx))+'<span class="hl">'+esc(name.slice(idx,idx+q.length))+'</span>'+esc(name.slice(idx+q.length));
+      }
+
+      function syncState(){
+        var v = elA.value.trim();
+        if(v===''){ ok.classList.remove('show'); warn.classList.remove('show'); return; }
+        if(NAMESET[v]){ ok.classList.add('show'); warn.classList.remove('show'); }
+        else { ok.classList.remove('show'); warn.classList.add('show'); }
+      }
+
+      function renderDD(){
+        var q = elA.value.trim();
+        if(q===''){ filtered = CANDIDATES.slice(); }
+        else {
+          var lq = q.toLowerCase();
+          filtered = CANDIDATES.filter(function(c){ return c.name.toLowerCase().indexOf(lq)>=0; });
+          // 排序：名字以 q 开头的优先（前缀匹配），其次按匹配位置靠前、名字更短的优先。
+          // 这样输入 opus 时 opus-4.8 三档排在 claude-3-opus 前面。
+          filtered.sort(function(a,b){
+            var la=a.name.toLowerCase(), lb=b.name.toLowerCase();
+            var pa=la.indexOf(lq), pb=lb.indexOf(lq);
+            if(pa!==pb) return pa-pb;                 // 匹配位置靠前优先（前缀=0 最优）
+            return la.length-lb.length;               // 同位置时短名优先
+          });
+        }
+        activeIdx = -1;
+        if(filtered.length===0){
+          dd.innerHTML = '<div class="opt-empty">无匹配的平台模型，可直接保存为自定义名（调用时可能失败）。</div>';
+        } else {
+          dd.innerHTML = filtered.map(function(c,i){
+            var sub = c.vendor + (c.familyLabel? ' · '+c.familyLabel : '');
+            return '<div class="opt" data-i="'+i+'" role="option">'+
+              '<div class="opt-main">'+
+                '<div class="opt-name">'+highlight(c.name,q)+'</div>'+
+                '<div class="opt-sub">'+esc(sub)+'</div>'+
+              '</div>'+
+              tierEl(c)+
+              '<div class="opt-price">'+esc(c.price)+'</div>'+
+            '</div>';
+          }).join('');
+          dd.querySelectorAll('.opt').forEach(function(o){
+            o.addEventListener('mousedown',function(e){
+              e.preventDefault();
+              pick(filtered[parseInt(o.getAttribute('data-i'),10)]);
+            });
+          });
+        }
+      }
+
+      function openDD(o){ dd.classList.toggle('open',o); elA.setAttribute('aria-expanded', o?'true':'false'); }
+      function pick(c){ elA.value = c.name; openDD(false); syncState(); }
+
+      function setActive(n){
+        var opts = dd.querySelectorAll('.opt');
+        if(!opts.length) return;
+        activeIdx = (n+opts.length)%opts.length;
+        opts.forEach(function(o,i){ o.classList.toggle('active', i===activeIdx); });
+        opts[activeIdx].scrollIntoView({block:'nearest'});
+      }
+
+      elA.addEventListener('focus',function(){ renderDD(); openDD(true); });
+      elA.addEventListener('input',function(){ renderDD(); openDD(true); syncState(); });
+      elA.addEventListener('blur',function(){ setTimeout(function(){ openDD(false); },120); });
+      // 键盘可达：上/下选候选（监听 ArrowUp/ArrowDown，视觉箭头用 SVG）、Enter 确认、Esc 关下拉
+      elA.addEventListener('keydown',function(e){
+        if(e.key==='ArrowDown'){ e.preventDefault(); if(!dd.classList.contains('open')){ renderDD(); openDD(true); } setActive(activeIdx+1); }
+        else if(e.key==='ArrowUp'){ e.preventDefault(); if(!dd.classList.contains('open')){ renderDD(); openDD(true); } setActive(activeIdx-1); }
+        else if(e.key==='Enter'){
+          if(dd.classList.contains('open') && activeIdx>=0 && filtered[activeIdx]){ e.preventDefault(); pick(filtered[activeIdx]); }
+          else { openDD(false); }
+        }
+        else if(e.key==='Escape'){ openDD(false); }
+      });
+
+      scp.addEventListener('change',function(){
+        cover.classList.toggle('show', scp.value==='user');
+      });
+
+      cancel.addEventListener('click',function(){ addOpen=false; render(); });
+
+      save.addEventListener('click',function(){
+        var c = elC.value.trim();
+        var a = elA.value.trim();
+        cErr.classList.remove('show');
+        if(c===''){ cErr.classList.add('show'); elC.focus(); return; }
+        var target = scp.value;
+        // 同作用域 C 唯一：重复则覆盖（提示后覆盖）
+        var idx = DATA[target].findIndex(function(r){ return r[0]===c; });
+        var matched = !!NAMESET[a];
+        var rec = [c, a, matched];
+        if(idx>=0){ DATA[target][idx] = rec; }
+        else { DATA[target].unshift(rec); }
+        addOpen = false;
+        curScope = target;
+        seg.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-scope')===target); });
+        render();
+      });
+    }
+
+    render();
+  })();
+  </script>
+</body>
+</html>

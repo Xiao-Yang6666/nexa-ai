@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运维监控 · Nexa·AI 管理后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<script src="admin-shell.js"></script>
+<style>
+  /* 运维监控专属 —— 全 token 驱动，零裸色值 */
+  .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--space-4);margin-bottom:var(--space-5)}
+  .kpi{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-4) var(--space-5);box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:var(--space-4)}
+  .kpi .meta{flex:1;min-width:0}
+  .kpi-label{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-bottom:var(--space-2)}
+  .kpi-val{font-family:var(--font-brand);font-size:var(--text-h4);font-weight:var(--fw-bold);
+    color:var(--color-text);line-height:var(--lh-tight);letter-spacing:var(--tracking-tight)}
+  .kpi-delta{font-size:var(--text-caption);margin-top:var(--space-1)}
+  .kpi-delta.up{color:var(--color-success)} .kpi-delta.down{color:var(--color-danger)}
+  .kpi-delta.flat{color:var(--color-text-muted)}
+  .ring{width:52px;height:52px;flex:none}
+  /* 图表 */
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-5)}
+  .chart-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm)}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4)}
+  .chart-title{font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text);margin:0}
+  .chart-sub{font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .legend{display:flex;flex-wrap:wrap;gap:var(--space-3);margin-top:var(--space-3);font-size:var(--text-body-sm);
+    color:var(--color-text-secondary)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:10px;height:10px;border-radius:var(--radius-xs);display:inline-block}
+  .ax-txt{font-family:var(--font-mono);font-size:var(--text-overline);fill:var(--color-text-muted)}
+  /* 下半区：日志 + 健康 */
+  .lower-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--space-4)}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden}
+  .th-bar{display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .table-wrap{overflow-x:auto}
+  .cellmono{font-family:var(--font-mono)}
+  .row-acts{display:flex;gap:var(--space-3);white-space:nowrap}
+  .row-acts a{font-size:var(--text-body-sm);color:var(--color-primary-500);cursor:pointer}
+  .row-acts a:hover{color:var(--color-primary-600)}
+  .row-acts a.dang{color:var(--color-danger)}
+  /* 健康状态卡 */
+  .health-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);padding:var(--space-5)}
+  .health-list{display:flex;flex-direction:column;gap:var(--space-3);margin-top:var(--space-4)}
+  .health-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;
+    border-bottom:1px solid var(--color-border)}
+  .health-item:last-child{border-bottom:none}
+  .health-item .nm{flex:1;font-size:var(--text-body);color:var(--color-text)}
+  .health-item .sub{font-size:var(--text-caption);color:var(--color-text-muted);font-family:var(--font-mono)}
+  @media (max-width:1280px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:1024px){.chart-grid,.lower-grid{grid-template-columns:1fr}}
+  @media (max-width:560px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body data-page="ops" data-title="运维监控" data-crumb="管理后台|系统|运维监控"
+      data-actions='<button class="btn btn-sec btn-sm" id="refreshBtn">刷新指标</button>'>
+
+  <!-- KPI 顶行 6 卡（CPU/内存 带环形进度） -->
+  <section class="kpi-row">
+    <div class="kpi nx-fade">
+      <svg class="ring" id="ringCpu" viewBox="0 0 52 52" aria-hidden="true"></svg>
+      <div class="meta">
+        <div class="kpi-label">CPU 使用率</div>
+        <div class="kpi-val" data-count="63" data-suffix="%">0</div>
+        <div class="kpi-delta flat">8 核 · 负载 4.1</div>
+      </div>
+    </div>
+    <div class="kpi nx-fade">
+      <svg class="ring" id="ringMem" viewBox="0 0 52 52" aria-hidden="true"></svg>
+      <div class="meta">
+        <div class="kpi-label">内存</div>
+        <div class="kpi-val" data-count="71" data-suffix="%">0</div>
+        <div class="kpi-delta flat">22.7 / 32 GB</div>
+      </div>
+    </div>
+    <div class="kpi nx-fade">
+      <svg class="ring" id="ringDisk" viewBox="0 0 52 52" aria-hidden="true"></svg>
+      <div class="meta">
+        <div class="kpi-label">磁盘使用</div>
+        <div class="kpi-val" data-count="48" data-suffix="%">0</div>
+        <div class="kpi-delta flat">236 / 512 GB</div>
+      </div>
+    </div>
+    <div class="kpi nx-fade">
+      <div class="meta">
+        <div class="kpi-label">GC 次数（近1h）</div>
+        <div class="kpi-val" data-count="184">0</div>
+        <div class="kpi-delta up">平均停顿 12ms</div>
+      </div>
+    </div>
+    <div class="kpi nx-fade">
+      <div class="meta">
+        <div class="kpi-label">在线连接数</div>
+        <div class="kpi-val" data-count="3412">0</div>
+        <div class="kpi-delta up">较 5 分钟前 +86</div>
+      </div>
+    </div>
+    <div class="kpi nx-fade">
+      <div class="meta">
+        <div class="kpi-label">QPS</div>
+        <div class="kpi-val" data-count="1247">0</div>
+        <div class="kpi-delta up">峰值 1,580</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 图表区 1：CPU/内存近1h 双折线 + 磁盘分区横向柱状 -->
+  <section class="chart-grid">
+    <div class="chart-card nx-fade">
+      <div class="chart-head">
+        <div>
+          <h3 class="chart-title">CPU / 内存 近 1 小时趋势</h3>
+          <div class="chart-sub">单位：% · 按分钟采样</div>
+        </div>
+      </div>
+      <svg id="cpuMem" viewBox="0 0 560 260" width="100%" role="img" aria-label="CPU内存近1小时双折线图"></svg>
+      <div class="legend" id="cpuMem-legend"></div>
+    </div>
+
+    <div class="chart-card nx-fade">
+      <div class="chart-head">
+        <div>
+          <h3 class="chart-title">磁盘各分区使用</h3>
+          <div class="chart-sub">已用 / 总量 · 单位 GB</div>
+        </div>
+      </div>
+      <svg id="disk" viewBox="0 0 560 260" width="100%" role="img" aria-label="磁盘各分区使用横向柱状图"></svg>
+    </div>
+  </section>
+
+  <!-- 图表区 2：QPS 实时趋势 + GC 停顿时间分布 -->
+  <section class="chart-grid">
+    <div class="chart-card nx-fade">
+      <div class="chart-head">
+        <div>
+          <h3 class="chart-title">QPS 实时趋势</h3>
+          <div class="chart-sub">近 1 小时 · 每分钟</div>
+        </div>
+      </div>
+      <svg id="qps" viewBox="0 0 560 260" width="100%" role="img" aria-label="QPS实时趋势折线图"></svg>
+    </div>
+
+    <div class="chart-card nx-fade">
+      <div class="chart-head">
+        <div>
+          <h3 class="chart-title">GC 停顿时间分布</h3>
+          <div class="chart-sub">近 1 小时 · 单位 ms</div>
+        </div>
+      </div>
+      <svg id="gc" viewBox="0 0 560 260" width="100%" role="img" aria-label="GC停顿时间分布柱状图"></svg>
+    </div>
+  </section>
+
+  <!-- 下半区：日志列表 + 健康状态 -->
+  <section class="lower-grid">
+    <div class="table-card nx-fade">
+      <div class="th-bar">
+        <h3 class="chart-title">日志文件</h3>
+        <button class="btn btn-sec btn-sm">归档全部</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>文件名</th><th>大小</th><th>最后写入</th><th>操作</th></tr></thead>
+          <tbody id="logs"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="health-card nx-fade">
+      <h3 class="chart-title">系统健康状态</h3>
+      <div class="chart-sub" style="margin-top:var(--space-1)">各组件运行状态</div>
+      <div class="health-list" id="health"></div>
+    </div>
+  </section>
+
+  <script src="admin-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+    NexaShell.countAll('[data-count]');
+    var cssvar = NexaShell.cssvar;
+
+    // ════ 环形进度（KPI 内 CPU/内存/磁盘） ════
+    function ringChart(id, pct, tone){
+      var svg=document.getElementById(id);
+      var cx=26,cy=26,r=21, circ=2*Math.PI*r;
+      var off=circ*(1-pct/100);
+      var col=cssvar(tone), track=cssvar('--color-surface-sunken');
+      svg.innerHTML=
+        '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+track+'" stroke-width="5"/>'+
+        '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="5" '+
+          'stroke-linecap="round" stroke-dasharray="'+circ+'" stroke-dashoffset="'+off+'" '+
+          'transform="rotate(-90 '+cx+' '+cy+')"/>'+
+        '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="13" '+
+          'font-family="var(--font-mono)" fill="var(--color-text)" font-weight="600">'+pct+'</text>';
+    }
+    ringChart('ringCpu', 63, '--chart-1');
+    ringChart('ringMem', 71, '--chart-3');
+    ringChart('ringDisk', 48, '--chart-5');
+
+    // ════ 图表 1：CPU / 内存近1h 双折线 ════
+    (function(){
+      var cpu=[48,52,55,61,58,63,67,62,59,66,71,68,63,60,64,69,72,66,61,63];
+      var mem=[64,66,65,68,70,69,71,73,72,70,71,74,73,71,70,72,73,72,71,71];
+      var W=560,H=260,pad={l:40,r:14,t:16,b:30};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, max=100, min=0;
+      var xs=function(i){return pad.l+i*(iw/(cpu.length-1));};
+      var ys=function(v){return pad.t+ih-(v-min)/(max-min)*ih;};
+      var svg=document.getElementById('cpuMem'), g='';
+      var c1=cssvar('--chart-1'), c3=cssvar('--chart-3'), grid=cssvar('--chart-grid');
+      for(var t=0;t<=4;t++){
+        var v=max*t/4, y=ys(v);
+        g+='<line x1="'+pad.l+'" y1="'+y+'" x2="'+(W-pad.r)+'" y2="'+y+'" stroke="'+grid+'" stroke-width="1"/>';
+        g+='<text class="ax-txt" x="'+(pad.l-7)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>';
+      }
+      for(var d=0;d<cpu.length;d+=4){
+        g+='<text class="ax-txt" x="'+xs(d)+'" y="'+(H-9)+'" text-anchor="middle">-'+(60-d*3)+'m</text>';
+      }
+      g+='<polyline points="'+cpu.map(function(v,i){return xs(i)+','+ys(v);}).join(' ')+'" fill="none" stroke="'+c1+'" stroke-width="2.2" stroke-linejoin="round"/>';
+      g+='<polyline points="'+mem.map(function(v,i){return xs(i)+','+ys(v);}).join(' ')+'" fill="none" stroke="'+c3+'" stroke-width="2.2" stroke-linejoin="round"/>';
+      svg.innerHTML=g;
+      document.getElementById('cpuMem-legend').innerHTML=
+        '<span><i style="background:var(--chart-1)"></i>CPU</span>'+
+        '<span><i style="background:var(--chart-3)"></i>内存</span>';
+    })();
+
+    // ════ 图表 2：磁盘各分区使用（横向柱状，已用占比） ════
+    (function(){
+      var rows=[
+        {name:'/ (系统)',   used:42,  total:80,  col:'--chart-1'},
+        {name:'/data',      used:128, total:256, col:'--chart-2'},
+        {name:'/var/log',   used:38,  total:64,  col:'--chart-3'},
+        {name:'/backup',    used:28,  total:112, col:'--chart-5'}
+      ];
+      var W=560,H=260,pad={l:84,r:80,t:14,b:24};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, max=256;
+      var svg=document.getElementById('disk'), g='';
+      var grid=cssvar('--chart-grid'), track=cssvar('--color-surface-sunken');
+      for(var t=0;t<=4;t++){
+        var v=max*t/4, x=pad.l+v/max*iw;
+        g+='<line x1="'+x+'" y1="'+pad.t+'" x2="'+x+'" y2="'+(pad.t+ih)+'" stroke="'+grid+'" stroke-width="1"/>';
+        g+='<text class="ax-txt" x="'+x+'" y="'+(H-8)+'" text-anchor="middle">'+v+'</text>';
+      }
+      var gh=ih/rows.length, bh=18;
+      rows.forEach(function(r,i){
+        var cy=pad.t+gh*i+gh/2, col=cssvar(r.col);
+        var wTot=r.total/max*iw, wUse=r.used/max*iw;
+        g+='<text class="ax-txt" x="'+(pad.l-10)+'" y="'+(cy+4)+'" text-anchor="end" style="fill:var(--color-text-secondary)">'+r.name+'</text>';
+        g+='<rect x="'+pad.l+'" y="'+(cy-bh/2)+'" width="'+wTot+'" height="'+bh+'" rx="4" fill="'+track+'"/>';
+        g+='<rect x="'+pad.l+'" y="'+(cy-bh/2)+'" width="'+wUse+'" height="'+bh+'" rx="4" fill="'+col+'"/>';
+        g+='<text class="ax-txt" x="'+(pad.l+wTot+8)+'" y="'+(cy+4)+'" text-anchor="start" style="fill:var(--color-text)">'+r.used+'/'+r.total+'G</text>';
+      });
+      svg.innerHTML=g;
+    })();
+
+    // ════ 图表 3：QPS 实时趋势（面积折线） ════
+    (function(){
+      var data=[980,1010,1042,1120,1180,1240,1310,1280,1230,1190,1247,1320,1410,1380,1290,1250,1247,1310,1360,1247];
+      var W=560,H=260,pad={l:46,r:14,t:16,b:30};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, max=1600, min=0;
+      var xs=function(i){return pad.l+i*(iw/(data.length-1));};
+      var ys=function(v){return pad.t+ih-(v-min)/(max-min)*ih;};
+      var svg=document.getElementById('qps'), g='';
+      var c2=cssvar('--chart-2'), grid=cssvar('--chart-grid');
+      for(var t=0;t<=4;t++){
+        var v=max*t/4, y=ys(v);
+        g+='<line x1="'+pad.l+'" y1="'+y+'" x2="'+(W-pad.r)+'" y2="'+y+'" stroke="'+grid+'" stroke-width="1"/>';
+        g+='<text class="ax-txt" x="'+(pad.l-7)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>';
+      }
+      for(var d=0;d<data.length;d+=4){
+        g+='<text class="ax-txt" x="'+xs(d)+'" y="'+(H-9)+'" text-anchor="middle">-'+(60-d*3)+'m</text>';
+      }
+      var area='M'+pad.l+' '+ys(0);
+      data.forEach(function(v,i){ area+=' L'+xs(i)+' '+ys(v); });
+      area+=' L'+xs(data.length-1)+' '+ys(0)+' Z';
+      g+='<defs><linearGradient id="qg" x1="0" y1="0" x2="0" y2="1">'+
+         '<stop offset="0%" stop-color="'+c2+'" stop-opacity="0.26"/>'+
+         '<stop offset="100%" stop-color="'+c2+'" stop-opacity="0"/></linearGradient></defs>';
+      g+='<path d="'+area+'" fill="url(#qg)"/>';
+      g+='<polyline points="'+data.map(function(v,i){return xs(i)+','+ys(v);}).join(' ')+'" fill="none" stroke="'+c2+'" stroke-width="2.3" stroke-linejoin="round"/>';
+      g+='<circle cx="'+xs(data.length-1)+'" cy="'+ys(data[data.length-1])+'" r="3.5" fill="'+c2+'"/>';
+      svg.innerHTML=g;
+    })();
+
+    // ════ 图表 4：GC 停顿时间分布（柱状直方图） ════
+    (function(){
+      var bins=[
+        {lab:'0-5',  val:62},
+        {lab:'5-10', val:48},
+        {lab:'10-15',val:36},
+        {lab:'15-20',val:18},
+        {lab:'20-30',val:11},
+        {lab:'30-50',val:6},
+        {lab:'50+',  val:3}
+      ];
+      var W=560,H=260,pad={l:40,r:14,t:16,b:34};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, max=70;
+      var svg=document.getElementById('gc'), g='';
+      var c4=cssvar('--chart-4'), grid=cssvar('--chart-grid');
+      for(var t=0;t<=4;t++){
+        var v=max*t/4, y=pad.t+ih-v/max*ih;
+        g+='<line x1="'+pad.l+'" y1="'+y+'" x2="'+(W-pad.r)+'" y2="'+y+'" stroke="'+grid+'" stroke-width="1"/>';
+        g+='<text class="ax-txt" x="'+(pad.l-7)+'" y="'+(y+3)+'" text-anchor="end">'+v+'</text>';
+      }
+      var gw=iw/bins.length, bw=gw*0.6;
+      bins.forEach(function(b,i){
+        var x=pad.l+gw*i+(gw-bw)/2;
+        var h=b.val/max*ih, y=pad.t+ih-h;
+        g+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+c4+'"/>';
+        g+='<text class="ax-txt" x="'+(x+bw/2)+'" y="'+(H-10)+'" text-anchor="middle">'+b.lab+'</text>';
+      });
+      svg.innerHTML=g;
+    })();
+
+    // ════ 日志文件列表 ════
+    var logs=[
+      {f:'app-2026-06-20.log',     sz:'412 MB', ts:'06-20 05:28:40'},
+      {f:'access-2026-06-20.log',  sz:'1.2 GB', ts:'06-20 05:28:39'},
+      {f:'error-2026-06-20.log',   sz:'38 MB',  ts:'06-20 05:21:12'},
+      {f:'gc-2026-06-20.log',      sz:'94 MB',  ts:'06-20 05:28:31'},
+      {f:'audit-2026-06-19.log',   sz:'256 MB', ts:'06-19 23:59:58'},
+      {f:'slow-query-2026-06-20.log', sz:'8.6 MB', ts:'06-20 05:14:03'}
+    ];
+    document.getElementById('logs').innerHTML=logs.map(function(l){
+      return '<tr><td class="cellmono">'+l.f+'</td>'+
+        '<td class="cellmono">'+l.sz+'</td>'+
+        '<td class="cellmono muted">'+l.ts+'</td>'+
+        '<td><div class="row-acts"><a>下载</a><a class="dang">清理</a></div></td></tr>';
+    }).join('');
+
+    // ════ 系统健康状态卡 ════
+    var comps=[
+      {nm:'API 网关',       sub:'p99 142ms · 99.99%', st:'up'},
+      {nm:'PostgreSQL 主库', sub:'连接 86/200',        st:'up'},
+      {nm:'Redis 缓存',     sub:'命中率 97.2%',        st:'up'},
+      {nm:'任务队列 Worker', sub:'8 节点活跃',          st:'up'},
+      {nm:'对象存储 S3',     sub:'延迟略高 218ms',      st:'warn'},
+      {nm:'计费同步服务',    sub:'上次同步失败',         st:'down'}
+    ];
+    var stTone={up:'--color-success', warn:'--color-warning', down:'--color-danger'};
+    var stLab={up:'正常', warn:'告警', down:'异常'};
+    var stCls={up:'b-suc', warn:'b-warn', down:'b-dan'};
+    document.getElementById('health').innerHTML=comps.map(function(c){
+      return '<div class="health-item">'+
+        '<span class="dot" style="background:var('+stTone[c.st]+')"></span>'+
+        '<span class="nm">'+c.nm+'<br><span class="sub">'+c.sub+'</span></span>'+
+        '<span class="badge '+stCls[c.st]+'">'+stLab[c.st]+'</span></div>';
+    }).join('');
+  })();
+  </script>
+</body>
+</html>

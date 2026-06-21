@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-scheme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账单与计费 · Nexa·AI 控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  /* 账单与计费页：余额大卡 / 计费说明 / 账单历史 / 充值记录 —— 零裸色值 */
+  .top-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:var(--space-4);margin-bottom:var(--space-5)}
+  .bal-card{background:linear-gradient(135deg,color-mix(in oklch,var(--color-primary-500) 22%,var(--color-bg-elevated)),
+    var(--color-bg-elevated));border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-6);box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+  .bal-lbl{font-size:var(--text-body-sm);color:var(--color-text-secondary);margin-bottom:var(--space-2)}
+  .bal-val{font-family:var(--font-brand);font-size:var(--text-display);font-weight:var(--fw-bold);
+    color:var(--color-text);line-height:var(--lh-tight);letter-spacing:var(--tracking-tight)}
+  .bal-sub{font-size:var(--text-body-sm);color:var(--color-text-muted);margin:var(--space-2) 0 var(--space-5)}
+  .bal-meta{display:flex;gap:var(--space-6);margin-top:auto;padding-top:var(--space-4);border-top:1px solid var(--color-border)}
+  .bal-meta div{font-size:var(--text-body-sm);color:var(--color-text-muted)}
+  .bal-meta b{display:block;font-family:var(--font-mono);font-size:var(--text-body-lg);color:var(--color-text);
+    font-weight:var(--fw-semibold);margin-top:2px}
+  .info-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:var(--space-5);box-shadow:var(--shadow-sm)}
+  .info-card h3{margin:0 0 var(--space-4);font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .rate-tbl{width:100%;font-size:var(--text-body-sm)}
+  .rate-tbl td{padding:var(--space-2) 0;border-bottom:1px solid var(--color-border)}
+  .rate-tbl tr:last-child td{border-bottom:none}
+  .rate-tbl td:last-child{text-align:right;font-family:var(--font-mono);color:var(--color-text)}
+  .note{display:flex;gap:var(--space-2);margin-top:var(--space-4);padding:var(--space-3);border-radius:var(--radius-sm);
+    background:var(--color-info-bg);color:var(--color-info-fg);font-size:var(--text-body-sm)}
+  .note .nx-ic{flex:none;width:18px;height:18px;margin-top:1px}
+  .table-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:var(--space-5)}
+  .th-bar{display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-5);
+    border-bottom:1px solid var(--color-border)}
+  .th-bar h3{margin:0;font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .table-wrap{overflow-x:auto}
+  .table-wrap td,.table-wrap th{padding:var(--space-3) var(--space-5)}
+  td.num,th.num{text-align:right;font-family:var(--font-mono)}
+  .inv-link{display:inline-flex;align-items:center;gap:5px;color:var(--color-primary-500);cursor:pointer;font-size:var(--text-body-sm)}
+  .inv-link:hover{color:var(--color-primary-600)} .inv-link .nx-ic{width:15px;height:15px}
+  .trend-card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);
+    box-shadow:var(--shadow-sm);padding:var(--space-5);margin-bottom:var(--space-5)}
+  .trend-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:var(--space-4)}
+  .trend-head h3{margin:0;font-size:var(--text-h5);font-weight:var(--fw-semibold);color:var(--color-text)}
+  .trend-head .sub{font-size:var(--text-body-sm);color:var(--color-text-muted);margin-top:2px}
+  .ax-txt{font-family:var(--font-mono);font-size:var(--text-overline);fill:var(--color-text-muted)}
+  .legend{display:flex;gap:var(--space-3);font-size:var(--text-body-sm);color:var(--color-text-secondary)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:10px;height:10px;border-radius:var(--radius-xs);display:inline-block}
+  @media (max-width:1024px){.top-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="billing" data-title="账单与计费" data-crumb="控制台|账单与计费"
+      data-actions='<a class="btn btn-primary" href="recharge.html">立即充值</a>'>
+
+  <section class="top-grid">
+    <div class="bal-card nx-fade">
+      <div class="bal-lbl">当前余额</div>
+      <div class="bal-val" data-count="128.50" data-dec="2" data-prefix="$">$0.00</div>
+      <div class="bal-sub">约可支撑 11 天（按近 7 日均消费估算）</div>
+      <div class="bal-meta">
+        <div>本月已消费<b>$2,841.76</b></div>
+        <div>赠送余额<b>$15.00</b></div>
+        <div>累计充值<b>$5,200.00</b></div>
+      </div>
+    </div>
+    <div class="info-card nx-fade">
+      <h3>计费方式</h3>
+      <table class="rate-tbl">
+        <tr><td>计费模型</td><td>按 Token 用量实时扣费</td></tr>
+        <tr><td>结算货币</td><td>USD（美元）</td></tr>
+        <tr><td>GPT-4o 输入 / 输出</td><td>$2.50 / $10.00 每百万</td></tr>
+        <tr><td>Claude 3.5 输入 / 输出</td><td>$3.00 / $15.00 每百万</td></tr>
+        <tr><td>平台倍率</td><td>1.00x（标准用户）</td></tr>
+        <tr><td>计费精度</td><td>精确到 0.0001 USD</td></tr>
+      </table>
+      <div class="note">
+        <svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+        <span>价格 = 模型基础单价 × 平台倍率。VIP 用户倍率低至 0.85x，可在「分销推广」升级。</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="trend-card nx-fade">
+    <div class="trend-head">
+      <div><h3>近 6 个月消费趋势</h3><div class="sub">单位：USD · 按月汇总</div></div>
+      <div class="legend"><span><i style="background:var(--chart-1)"></i>月消费</span></div>
+    </div>
+    <svg id="spend" viewBox="0 0 720 220" width="100%" role="img" aria-label="近6个月消费趋势柱图"></svg>
+  </section>
+
+  <section class="table-card nx-fade">
+    <div class="th-bar"><h3>账单历史</h3><span class="muted" style="font-size:var(--text-body-sm)">按月出具</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>账单周期</th><th class="num">消费金额</th><th>状态</th><th>发票</th></tr></thead>
+        <tbody id="bills"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="table-card nx-fade">
+    <div class="th-bar"><h3>充值记录</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>时间</th><th class="num">充值金额</th><th class="num">赠送</th><th>支付方式</th><th>状态</th></tr></thead>
+        <tbody id="recharges"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="console-shell.js"></script>
+  <script>
+  (function(){
+    NexaShell.mount();
+    NexaShell.countAll('[data-count]');
+    function cssvar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+    // ════ 近 6 个月消费趋势柱图 ════
+    (function(){
+      var labels=['4月','5月','6月','7月','8月','9月'];
+      var vals=[1742.18,1742.18,1990.44,2488.91,2612.03,2841.76];
+      var W=720,H=220,pad={l:54,r:14,t:14,b:30};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, max=3200;
+      var svg=document.getElementById('spend'),g='',c1=cssvar('--chart-1'),grid=cssvar('--chart-grid');
+      for(var t=0;t<=4;t++){var v=max*t/4,y=pad.t+ih-v/max*ih;
+        g+='<line x1="'+pad.l+'" y1="'+y+'" x2="'+(W-pad.r)+'" y2="'+y+'" stroke="'+grid+'" stroke-width="1"/>';
+        g+='<text class="ax-txt" x="'+(pad.l-8)+'" y="'+(y+3)+'" text-anchor="end">$'+Math.round(v)+'</text>';
+      }
+      var gw=iw/labels.length,bw=Math.min(40,gw*0.5);
+      labels.forEach(function(lb,i){
+        var cx=pad.l+gw*i+gw/2,h=vals[i]/max*ih;
+        g+='<rect x="'+(cx-bw/2)+'" y="'+(pad.t+ih-h)+'" width="'+bw+'" height="'+h+'" rx="3" fill="'+c1+'"/>';
+        g+='<text class="ax-txt" x="'+cx+'" y="'+(H-9)+'" text-anchor="middle">'+lb+'</text>';
+      });
+      svg.innerHTML=g;
+    })();
+
+    var bills=[
+      ['2025-09','$2,841.76','paid'],
+      ['2025-08','$2,612.03','paid'],
+      ['2025-07','$2,488.91','paid'],
+      ['2025-06','$1,990.44','paid'],
+      ['2025-05','$1,742.18','paid'],
+      ['2025-09（当期）','$1,204.66','open']
+    ];
+    var bst={paid:['b-suc','已结清','--color-success'],open:['b-warn','计费中','--color-warning']};
+    document.getElementById('bills').innerHTML=bills.map(function(r){
+      var s=bst[r[2]];
+      var inv=r[2]==='paid'?
+        '<span class="inv-link"><svg class="nx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg>下载 PDF</span>':
+        '<span class="muted">—</span>';
+      return '<tr><td style="color:var(--color-text);font-weight:var(--fw-medium)">'+r[0]+'</td>'+
+        '<td class="num">'+r[1]+'</td>'+
+        '<td><span class="badge '+s[0]+'"><span class="dot" style="background:var('+s[2]+')"></span>'+s[1]+'</span></td>'+
+        '<td>'+inv+'</td></tr>';
+    }).join('');
+
+    var rc=[
+      ['2025-09-15 14:22','$500.00','+$50.00','支付宝','suc'],
+      ['2025-08-28 09:10','$100.00','+$5.00','微信支付','suc'],
+      ['2025-08-02 16:48','$500.00','+$50.00','对公转账','suc'],
+      ['2025-07-19 11:05','$50.00','+$0.00','支付宝','suc'],
+      ['2025-07-01 20:33','$100.00','+$5.00','微信支付','suc'],
+      ['2025-06-21 13:17','$500.00','+$50.00','对公转账','suc']
+    ];
+    document.getElementById('recharges').innerHTML=rc.map(function(r){
+      return '<tr><td class="mono-num">'+r[0]+'</td>'+
+        '<td class="num" style="color:var(--color-text)">'+r[1]+'</td>'+
+        '<td class="num" style="color:var(--color-success)">'+r[2]+'</td>'+
+        '<td>'+r[3]+'</td>'+
+        '<td><span class="badge b-suc"><span class="dot" style="background:var(--color-success)"></span>成功</span></td></tr>';
+    }).join('');
+  })();
+  </script>
+</body>
+</html>
