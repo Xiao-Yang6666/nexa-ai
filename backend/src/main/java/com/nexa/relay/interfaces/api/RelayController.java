@@ -1,10 +1,14 @@
 package com.nexa.relay.interfaces.api;
 
+import com.nexa.relay.application.RelayAuthContext;
+import com.nexa.relay.application.RelayForwardResult;
 import com.nexa.relay.application.RelayForwardUseCase;
 import com.nexa.relay.domain.vo.RelayDispatch;
 import com.nexa.relay.domain.vo.RelayMode;
 import com.nexa.relay.interfaces.api.dto.ErrorResponse;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
+import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
+import com.nexa.shared.security.interfaces.annotation.CurrentActor;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,8 +55,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/chat/completions")
-    public ResponseEntity<?> chatCompletions(@RequestBody byte[] body) {
-        return forwardRelay("/v1/chat/completions", body);
+    public ResponseEntity<?> chatCompletions(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/chat/completions", body, actor);
     }
 
     /**
@@ -60,8 +64,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/completions")
-    public ResponseEntity<?> completions(@RequestBody byte[] body) {
-        return forwardRelay("/v1/completions", body);
+    public ResponseEntity<?> completions(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/completions", body, actor);
     }
 
     /**
@@ -69,8 +73,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/messages")
-    public ResponseEntity<?> messages(@RequestBody byte[] body) {
-        return forwardRelay("/v1/messages", body);
+    public ResponseEntity<?> messages(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/messages", body, actor);
     }
 
     /**
@@ -88,8 +92,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/embeddings")
-    public ResponseEntity<?> embeddings(@RequestBody byte[] body) {
-        return forwardRelay("/v1/embeddings", body);
+    public ResponseEntity<?> embeddings(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/embeddings", body, actor);
     }
 
     /**
@@ -97,8 +101,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/responses/compact")
-    public ResponseEntity<?> responsesCompact(@RequestBody byte[] body) {
-        return forwardRelay("/v1/responses/compact", body);
+    public ResponseEntity<?> responsesCompact(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/responses/compact", body, actor);
     }
 
     /**
@@ -106,8 +110,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/responses")
-    public ResponseEntity<?> responses(@RequestBody byte[] body) {
-        return forwardRelay("/v1/responses", body);
+    public ResponseEntity<?> responses(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/responses", body, actor);
     }
 
     /**
@@ -115,8 +119,8 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/edits")
-    public ResponseEntity<?> edits(@RequestBody byte[] body) {
-        return forwardRelay("/v1/edits", body);
+    public ResponseEntity<?> edits(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+        return forwardRelay("/v1/edits", body, actor);
     }
 
     /**
@@ -124,14 +128,14 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/images/variations")
-    public ResponseEntity<?> imageVariations(@RequestBody byte[] body) {
+    public ResponseEntity<?> imageVariations(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
         RelayDispatch dispatch = useCase.resolveDispatch("/v1/images/variations");
         if (dispatch.mode() == RelayMode.NOT_IMPLEMENTED) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
                     .body(Map.of("error", ErrorResponse.of("not_implemented",
                             "/v1/images/variations is not implemented", "RELAY_NOT_IMPLEMENTED")));
         }
-        return forwardRelay("/v1/images/variations", body);
+        return forwardRelay("/v1/images/variations", body, actor);
     }
 
     /**
@@ -149,15 +153,23 @@ public class RelayController {
     }
 
     /**
-     * 统一 relay 转发入口（占位，待注入 HTTP client + 流式 SSE，TODO W3+）。
+     * 统一 relay 转发入口：构造鉴权上下文 → 调主干编排 → 透传上游 status + headers + body。
+     *
+     * <p>从 {@link AuthenticatedActor} 取 userId/username 构造 {@link RelayAuthContext}；
+     * group/tokenId/tokenName 依赖 TokenAuth 中间件（key 鉴权）落地——本期以缺省 group 占位。
+     * 业务/集成异常由 {@code RelayExceptionHandler} 统一翻译为错误信封，本方法不写 try/catch。</p>
+     *
+     * @param path  对外端点路径（RL-2 分发用）
+     * @param body  客户原始请求体字节
+     * @param actor 当前认证操作者
+     * @return 透传上游响应的 {@code ResponseEntity}
      */
-    private ResponseEntity<?> forwardRelay(String path, byte[] body) {
-        RelayDispatch dispatch = useCase.resolveDispatch(path);
-        // TODO(W3+): 执行完整 RL-1/RL-7 链路（两层映射→鉴权→预扣→选渠→协议转换→调上游→计费→落 Log）
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body(Map.of("error", ErrorResponse.of("not_implemented",
-                        "relay forwarding not yet wired (W3+ TODO)", null),
-                        "relay_mode", dispatch.mode().name(),
-                        "protocol", dispatch.format().wireValue()));
+    private ResponseEntity<?> forwardRelay(String path, byte[] body, AuthenticatedActor actor) {
+        // TODO REQ-06: group/tokenId/tokenName 暂以缺省占位，待 TokenAuth（key 鉴权）接线后由真实 token 注入。
+        RelayAuthContext authContext = new RelayAuthContext(
+                actor.userId(), actor.username(), null, null, null);
+        RelayForwardResult result = useCase.forward(path, body, authContext);
+        return ResponseEntity.status(result.statusCode())
+                .body(result.body());
     }
 }
