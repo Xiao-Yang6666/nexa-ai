@@ -382,7 +382,7 @@ public class RelayForwardUseCase {
         info.setUserId(authContext.userId());
         info.setUsername(authContext.username());
         info.setTokenId(authContext.tokenId());
-        info.setTokenName(authContext.tokenName());
+        info.setTokenName(authContext.tokenName() != null ? authContext.tokenName() : "");
         info.setUsingGroup(authContext.group());
         info.setRequestedModel(resolution.requested());
         info.setResolvedPublicModel(resolution.resolvedPublic());
@@ -469,8 +469,18 @@ public class RelayForwardUseCase {
         info.setUpstreamModelName(resolution.upstream());
         info.setChannelId(channel.id());
         info.setInboundFormat(dispatch.format());
+        info.setTargetProtocol(dispatch.format());
+        info.computePassthrough();
+        // NOT NULL 兜底（logs.token_name/ip/user_agent NOT NULL；token 上下文/请求头可能缺失时补空串）。
+        info.setTokenId(authContext.tokenId());
+        if (info.tokenName() == null) {
+            info.setTokenName(authContext.tokenName() != null ? authContext.tokenName() : "");
+        }
         if (info.ip() == null) {
             info.setIp("");
+        }
+        if (info.userAgent() == null) {
+            info.setUserAgent("");
         }
         RelayLog log = RelayLog.error(info, maskedContent, statusCode, System.currentTimeMillis() / 1000L);
         logRepo.save(log);
