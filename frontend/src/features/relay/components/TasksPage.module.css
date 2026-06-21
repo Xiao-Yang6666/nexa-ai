@@ -1,0 +1,239 @@
+/* TasksPage — 异步任务页样式。迁移自 S6 console/tasks.html，token 化零裸色值。 */
+
+.intro {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-5);
+}
+.intro svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--color-primary-700);
+  margin-top: 2px;
+}
+.intro p {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--lh-normal);
+}
+.intro b {
+  color: var(--color-text);
+}
+
+.filterbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg button {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  transition: background var(--dur-1), color var(--dur-1);
+}
+.seg button.on {
+  background: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+  color: var(--color-primary-700);
+}
+.seg button:hover:not(.on) {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.select {
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.spacer {
+  flex: 1;
+}
+
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap td,
+.tableWrap th {
+  padding: var(--space-3) var(--space-5);
+}
+.tid {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.prog {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 130px;
+}
+.progTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-sunken);
+  overflow: hidden;
+}
+.progFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-500);
+}
+.progFill.fail {
+  background: var(--color-danger);
+}
+.progTxt {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.resultDl {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-primary-500);
+  font-size: var(--text-body-sm);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0;
+}
+.resultDl:hover {
+  color: var(--color-primary-600);
+  text-decoration: underline;
+}
+.resultDl svg {
+  width: 14px;
+  height: 14px;
+}
+.resultErr {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-danger);
+  font-size: var(--text-body-sm);
+}
+.resultErr svg {
+  width: 14px;
+  height: 14px;
+}
+.rowacts {
+  display: flex;
+  gap: var(--space-1);
+}
+.iconact {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.iconact svg {
+  width: 18px;
+  height: 18px;
+}
+.iconact:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.iconact.dan:hover {
+  color: var(--color-danger);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.pagerBtns {
+  display: flex;
+  gap: var(--space-1);
+}
+.pgbtn {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-body-sm);
+}
+.pgbtn.on {
+  background: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+  color: var(--color-primary-700);
+  border-color: var(--color-primary-500);
+}
+.pgbtn:hover:not(.on) {
+  background: var(--color-surface-sunken);
+}
+
+/* 状态：加载 / 错误 / 空 */
+.stateBox {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-10) var(--space-4);
+}
+.stateBox .t {
+  font-size: var(--text-h6);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+.skRow {
+  height: 44px;
+  margin: var(--space-2) var(--space-5);
+  background: linear-gradient(90deg, var(--color-bg-subtle) 25%, var(--color-surface-sunken) 50%, var(--color-bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: sk 1.4s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes sk {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

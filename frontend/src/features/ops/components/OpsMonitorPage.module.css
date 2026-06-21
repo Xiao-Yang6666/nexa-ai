@@ -1,0 +1,210 @@
+/* ============================================================================
+   OpsMonitorPage — 运维监控样式。迁移自 S6 admin/ops.html，全 token 驱动，零裸色值。
+   ============================================================================ */
+
+/* ── KPI 顶行 6 卡 ── */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.kpi {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.kpi .meta {
+  flex: 1;
+  min-width: 0;
+}
+.kpiLabel {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+.kpiVal {
+  font-family: var(--font-brand);
+  font-size: var(--text-h4);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.kpiDelta {
+  font-size: var(--text-caption);
+  margin-top: var(--space-1);
+}
+.kpiDelta.up {
+  color: var(--color-success);
+}
+.kpiDelta.down {
+  color: var(--color-danger);
+}
+.kpiDelta.flat {
+  color: var(--color-text-muted);
+}
+.ring {
+  width: 52px;
+  height: 52px;
+  flex: none;
+}
+
+/* ── 图表 ── */
+.chartGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.chartCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.chartTitle {
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+.chartSub {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+}
+.axTxt {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+  fill: var(--color-text-muted);
+}
+
+/* ── 下半区：日志 + 健康 ── */
+.lowerGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--space-4);
+}
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.thBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap td,
+.tableWrap th {
+  padding: var(--space-3) var(--space-5);
+}
+.cellmono {
+  font-family: var(--font-mono);
+}
+.rowActs {
+  display: flex;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+.rowActs a {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary-500);
+  cursor: pointer;
+}
+.rowActs a:hover {
+  color: var(--color-primary-600);
+}
+.rowActs a.dang {
+  color: var(--color-danger);
+}
+
+/* ── 健康状态卡 ── */
+.healthCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+.healthList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.healthItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.healthItem:last-child {
+  border-bottom: none;
+}
+.healthItem .nm {
+  flex: 1;
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+.healthItem .sub {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 1280px) {
+  .kpiRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 1024px) {
+  .chartGrid,
+  .lowerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

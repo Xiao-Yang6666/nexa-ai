@@ -1,0 +1,272 @@
+/* ReferralPage — 分销推广页样式。迁移自 S6 console/referral.html，token 化零裸色值。 */
+
+.top {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 860px) {
+  .top {
+    grid-template-columns: 1fr;
+  }
+}
+.card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.card h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.linkRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.linkBox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hint {
+  margin-top: var(--space-3);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  line-height: var(--lh-normal);
+}
+.hint b {
+  color: var(--color-primary-700);
+}
+.qrWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+.qr {
+  width: 120px;
+  height: 120px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+}
+.qr svg {
+  width: 80px;
+  height: 80px;
+}
+.qrMeta p {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.qrMeta .code {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-h6);
+}
+
+/* KPI */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 860px) {
+  .kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .kpiRow {
+    grid-template-columns: 1fr;
+  }
+}
+.kpi {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.kpiLabel {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+.kpiVal {
+  font-family: var(--font-brand);
+  font-size: var(--text-h2);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.kpiVal.accent {
+  color: var(--color-primary-700);
+}
+.kpiSub {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+}
+
+/* 返佣规则 */
+.rules {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 860px) {
+  .rules {
+    grid-template-columns: 1fr;
+  }
+}
+.rule {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+.ruleTier {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+  color: var(--color-primary-700);
+}
+.ruleTier b {
+  font-family: var(--font-brand);
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+}
+.ruleTier small {
+  font-size: var(--text-caption);
+}
+.ruleBody h4 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-h6);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.ruleBody p {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--lh-normal);
+}
+.rulePct {
+  font-family: var(--font-mono);
+  color: var(--color-primary-700);
+  font-weight: var(--fw-semibold);
+}
+
+/* 图表 + 表卡 */
+.chartCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-5);
+}
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.chartTitle {
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+.chartSub {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.axTxt {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+  fill: var(--color-text-muted);
+}
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.thBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.thBar h3 {
+  margin: 0;
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap td,
+.tableWrap th {
+  padding: var(--space-3) var(--space-5);
+}
+.commissionCell {
+  color: var(--color-primary-700);
+  font-weight: var(--fw-medium);
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-bg-subtle) 25%, var(--color-surface-sunken) 50%, var(--color-bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: sk 1.4s infinite;
+  border-radius: var(--radius-md);
+  height: 120px;
+}
+@keyframes sk {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

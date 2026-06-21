@@ -1,0 +1,386 @@
+/* ============================================================================
+   ProfitPage — 利润分析看板样式。迁移自 S6 admin/profit.html，全 token 驱动，零裸色值。
+   管理端视图：售价/成本/利润三段式，按对外模型/供应商/分组多维拆解。
+   ============================================================================ */
+
+/* ── 时间范围切换段 ── */
+.rangeBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+}
+.rangeSeg {
+  display: inline-flex;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+}
+.rangeSeg button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  transition: background var(--dur-1), color var(--dur-1);
+}
+.rangeSeg button.on {
+  background: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+  color: var(--color-primary-700);
+}
+.rangeSeg button:hover:not(.on) {
+  color: var(--color-text);
+}
+.rangeNote {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+/* ── 经营洞察提示条 ── */
+.insights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.insight {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+.insight.good {
+  border-left-color: var(--color-success);
+}
+.insight.warn {
+  border-left-color: var(--color-warning);
+}
+.insight.info {
+  border-left-color: var(--color-info);
+}
+.insightIc {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.insight.good .insightIc {
+  background: var(--color-success-bg);
+  color: var(--color-success-fg);
+}
+.insight.warn .insightIc {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-fg);
+}
+.insight.info .insightIc {
+  background: var(--color-info-bg);
+  color: var(--color-info-fg);
+}
+.insightIc svg {
+  width: 18px;
+  height: 18px;
+}
+.insightBody {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--lh-normal);
+}
+.insightBody b {
+  color: var(--color-text);
+  font-weight: var(--fw-semibold);
+}
+
+/* ── KPI 顶行 ── */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.kpi {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.kpiLabel {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.kpiVal {
+  font-family: var(--font-brand);
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.kpiVal.profit {
+  color: var(--color-success);
+}
+.kpiVal.rateOk {
+  color: var(--color-success);
+}
+.kpiVal.rateLow {
+  color: var(--color-warning);
+}
+.kpiDelta {
+  font-size: var(--text-caption);
+  margin-top: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.kpiDelta svg {
+  width: 13px;
+  height: 13px;
+}
+.kpiDelta.up {
+  color: var(--color-success);
+}
+.kpiDelta.down {
+  color: var(--color-danger);
+}
+.kpiDelta.flat {
+  color: var(--color-text-muted);
+}
+
+/* ── 图表 ── */
+.chartGrid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.chartGridFull {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.chartCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.chartTitle {
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+.chartSub {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+}
+.axTxt {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+  fill: var(--color-text-muted);
+}
+
+/* ── 明细表区 + Tab 切换 ── */
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+}
+.thBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+.tabs {
+  display: inline-flex;
+  gap: var(--space-1);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+.tabs button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  transition: background var(--dur-1), color var(--dur-1);
+}
+.tabs button.on {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  box-shadow: var(--shadow-xs);
+}
+.tabs button:hover:not(.on) {
+  color: var(--color-text);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tableWrap th {
+  text-align: left;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--fw-semibold);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.tableWrap th.num,
+.tableWrap td.num {
+  text-align: right;
+}
+.tableWrap td {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+.tableWrap tr:last-child td {
+  border-bottom: none;
+}
+.tableWrap tr.loss {
+  background: var(--color-danger-bg);
+}
+.monoNum {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.cellName {
+  color: var(--color-text);
+  font-weight: var(--fw-medium);
+}
+.profitPos {
+  font-family: var(--font-mono);
+  color: var(--color-success);
+}
+.profitNeg {
+  font-family: var(--font-mono);
+  color: var(--color-danger);
+}
+.ratePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+.ratePill.ok {
+  background: var(--color-success-bg);
+  color: var(--color-success-fg);
+}
+.ratePill.mid {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-fg);
+}
+.ratePill.bad {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
+}
+.tipTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-caption);
+  color: var(--color-danger);
+}
+.tipTag svg {
+  width: 12px;
+  height: 12px;
+}
+.tipTag.suggest {
+  color: var(--color-success);
+}
+.headSort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.headSort svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.7;
+}
+
+@media (max-width: 1280px) {
+  .kpiRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .insights {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 1024px) {
+  .chartGrid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .kpiRow {
+    grid-template-columns: 1fr;
+  }
+}

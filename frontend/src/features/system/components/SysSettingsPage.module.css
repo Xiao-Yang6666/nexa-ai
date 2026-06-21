@@ -1,0 +1,241 @@
+/* ============================================================================
+   SysSettingsPage — 系统设置样式。迁移自 S6 admin/sys-settings.html，
+   全 token 驱动，零裸色值。
+   ============================================================================ */
+
+/* ── 超管横幅 ── */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+}
+.banner .nxIc {
+  color: var(--color-info);
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.banner .txt {
+  font-size: var(--text-body-sm);
+  color: var(--color-info-fg);
+}
+
+/* ── 布局 ── */
+.layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* ── 左侧子 Tab ── */
+.nav {
+  position: sticky;
+  top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-sm);
+}
+.nav button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 38px;
+  padding: 0 var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--text-body);
+  text-align: left;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: var(--fw-medium);
+}
+.nav button:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.nav button.on {
+  background: color-mix(in oklch, var(--color-primary-500) 12%, transparent);
+  color: var(--color-primary-700);
+}
+.nav button .nxIc {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── 区块 ── */
+.pane {
+  display: none;
+}
+.pane.on {
+  display: block;
+}
+.card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.card h3 {
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-1);
+}
+.card .desc {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-4);
+}
+
+/* ── 字段 ── */
+.field {
+  margin-bottom: var(--space-4);
+}
+.field:last-child {
+  margin-bottom: 0;
+}
+.field2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.textarea {
+  height: 72px;
+  padding: var(--space-2) var(--space-3);
+}
+.textareaTall {
+  height: 64px;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ── 开关行 ── */
+.swRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.swRow:last-child {
+  border-bottom: none;
+}
+.swRow .swInfo .t {
+  font-size: var(--text-body);
+  color: var(--color-text);
+  font-weight: var(--fw-medium);
+}
+.swRow .swInfo .d {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ── Logo ── */
+.logoBox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.logoSq {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: var(--color-primary-fg);
+  font-family: var(--font-brand);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-h4);
+}
+
+/* ── 危险区 ── */
+.dangerZone {
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+.dangerZone h3 {
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  font-weight: var(--fw-bold);
+  color: var(--color-danger-fg);
+  margin: 0 0 var(--space-3);
+}
+.dangerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-danger-border);
+}
+.dangerItem:last-child {
+  border-bottom: none;
+}
+.dangerItem .diInfo .t {
+  font-size: var(--text-body);
+  color: var(--color-text);
+  font-weight: var(--fw-medium);
+}
+.dangerItem .diInfo .d {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ── 保存栏 ── */
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.saveBar .hint {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.saveBar .grow {
+  margin-left: auto;
+}
+
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .field2 {
+    grid-template-columns: 1fr;
+  }
+}

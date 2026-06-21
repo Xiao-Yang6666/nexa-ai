@@ -1,0 +1,261 @@
+/* ============================================================================
+   RechargePage — 余额充值样式。迁移自 S6 console/recharge.html，全 token 驱动。
+   ============================================================================ */
+
+.payGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+.payLeft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.panel {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.panel h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.stepNo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklch, var(--color-primary-500) 18%, transparent);
+  color: var(--color-primary-700);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-caption);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-mono);
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+.tier {
+  position: relative;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  cursor: pointer;
+  text-align: center;
+  background: transparent;
+  transition: border-color var(--dur-1), background var(--dur-1);
+}
+.tier:hover {
+  border-color: var(--color-border-strong);
+}
+.tier.on {
+  border-color: var(--color-primary-500);
+  background: color-mix(in oklch, var(--color-primary-500) 10%, transparent);
+}
+.tierAmt {
+  font-family: var(--font-brand);
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+.tierGift {
+  font-size: var(--text-caption);
+  color: var(--color-success);
+  margin-top: var(--space-1);
+}
+.tick {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  color: var(--color-primary-500);
+  opacity: 0;
+}
+.tier.on .tick {
+  opacity: 1;
+}
+
+.custom {
+  margin-top: var(--space-4);
+}
+.amtInput {
+  position: relative;
+}
+.amtInput span {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+.amtInput input {
+  height: 48px;
+  font-size: var(--text-h4);
+  font-family: var(--font-mono);
+  padding-left: 32px;
+  width: 100%;
+}
+.giftNote {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-success-bg);
+  color: var(--color-success-fg);
+  font-size: var(--text-body-sm);
+}
+.giftNote svg {
+  flex: none;
+  margin-top: 1px;
+}
+.giftNote ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+.giftNote li {
+  margin-bottom: 2px;
+}
+
+.pays {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pay {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: border-color var(--dur-1), background var(--dur-1);
+}
+.pay:hover {
+  border-color: var(--color-border-strong);
+}
+.pay.on {
+  border-color: var(--color-primary-500);
+  background: color-mix(in oklch, var(--color-primary-500) 8%, transparent);
+}
+.payName {
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+}
+.payDesc {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.payRadio {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border-strong);
+  flex: none;
+  position: relative;
+}
+.pay.on .payRadio {
+  border-color: var(--color-primary-500);
+}
+.pay.on .payRadio::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--color-primary-500);
+}
+
+/* 订单摘要 */
+.summary {
+  position: sticky;
+  top: 72px;
+}
+.sumRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-body);
+}
+.sumRow:last-of-type {
+  border-bottom: none;
+}
+.sumRow .k {
+  color: var(--color-text-secondary);
+}
+.sumRow .v {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.sumRow.gift .v {
+  color: var(--color-success);
+}
+.sumTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--color-border-strong);
+}
+.sumTotal .k {
+  color: var(--color-text-secondary);
+}
+.sumTotal .v {
+  font-family: var(--font-brand);
+  font-size: var(--text-h2);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+.sumBtn {
+  width: 100%;
+  margin-top: var(--space-5);
+  justify-content: center;
+}
+.sumFine {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-align: center;
+  margin-top: var(--space-3);
+}
+.successBox {
+  text-align: center;
+  padding: var(--space-6);
+}
+.successBox svg {
+  color: var(--color-success);
+  margin-bottom: var(--space-4);
+}
+.successBox h3 {
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .payGrid {
+    grid-template-columns: 1fr;
+  }
+  .tiers {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .summary {
+    position: static;
+  }
+}

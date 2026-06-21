@@ -1,0 +1,422 @@
+/*
+ * features/account auth.global.css — 账号域（登录/注册）表单的共享深色门面样式。
+ *
+ * 从 06_prototype/final/web-public/{home,login,register}.html 的认证表单 1:1 工程化抽取：
+ * field / inp / ctrl / eye / oauth / check / divider / foot / meter / pw-strength /
+ * btn-glow / shake / auth-card / auth-brand / auth-title / auth-sub / row-between / link / agree。
+ *
+ * 全局样式（非 CSS Module），直接用原型同名 class，使 LoginForm / RegisterForm / AuthField /
+ * OAuthRow 复用原型 markup 的 className（工程化复用而非重画）。色值全走 tokens.css 的
+ * var(--token)/color-mix，不写死 hex（设计 token 纪律）。由 AuthSplitLayout import 一次即生效。
+ */
+
+/* ── 表单字段 ── */
+.field {
+  margin-bottom: var(--space-4);
+}
+.field label {
+  display: block;
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-medium);
+  color: color-mix(in oklch, var(--hd-text) 78%, transparent);
+  margin-bottom: var(--space-2);
+}
+.ctrl {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.inp {
+  width: 100%;
+  height: 50px;
+  background: color-mix(in oklch, var(--hd-text) 4%, transparent);
+  border: 1px solid var(--hd-line);
+  border-radius: var(--radius-md);
+  color: var(--hd-text);
+  font-family: 'Inter', var(--font-sans);
+  font-size: var(--text-body-lg);
+  padding: 0 var(--space-4);
+  transition: border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), background var(--dur-2);
+}
+.inp::placeholder {
+  color: color-mix(in oklch, var(--hd-muted) 80%, transparent);
+}
+.inp:focus {
+  outline: none;
+  border-color: color-mix(in oklch, var(--color-primary-300) 70%, transparent);
+  background: color-mix(in oklch, var(--hd-text) 6%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-primary-500) 16%, transparent),
+    0 0 22px -4px color-mix(in oklch, var(--color-primary-500) 40%, transparent);
+}
+.ctrl.has-eye .inp {
+  padding-right: 46px;
+}
+
+/* ── 密码显隐眼睛 ── */
+.eye {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--hd-muted);
+  transition: color var(--dur-1);
+}
+.eye:hover {
+  color: var(--hd-text);
+}
+.eye svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.eye .off {
+  display: none;
+}
+.eye.is-on .on {
+  display: none;
+}
+.eye.is-on .off {
+  display: block;
+}
+
+/* ── 校验态：红边 + 抖动 ── */
+.inp.err {
+  border-color: color-mix(in oklch, var(--color-danger) 80%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-danger) 16%, transparent);
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+.shake {
+  animation: shake 0.4s var(--ease-in-out);
+}
+
+/* ── 密码强度（home 抽屉版 pw-strength + register 页版 meter，两套都落以兼容复用） ── */
+.pw-strength {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+.pw-strength i {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in oklch, var(--hd-text) 12%, transparent);
+  transition: background var(--dur-2);
+}
+.pw-strength.s1 i:nth-child(1) {
+  background: var(--color-danger);
+}
+.pw-strength.s2 i:nth-child(-n + 2) {
+  background: var(--color-warning);
+}
+.pw-strength.s3 i {
+  background: var(--color-success);
+}
+.pw-strength .pw-label {
+  margin-left: 6px;
+  font-size: var(--text-caption);
+  color: var(--hd-muted);
+  min-width: 48px;
+}
+.meter {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+.meter .seg {
+  flex: 1;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklch, var(--hd-text) 12%, transparent);
+  transition: background var(--dur-2) var(--ease-out);
+}
+.meter[data-lv='1'] .seg:nth-child(1) {
+  background: var(--color-danger);
+}
+.meter[data-lv='2'] .seg:nth-child(-n + 2) {
+  background: var(--color-warning);
+}
+.meter[data-lv='3'] .seg {
+  background: linear-gradient(90deg, var(--color-primary-500), var(--hd-mint));
+}
+.meter-label {
+  font-size: var(--text-body-sm);
+  margin-top: 6px;
+  color: var(--hd-muted);
+  min-height: 1.1em;
+}
+.meter-label b {
+  font-weight: var(--fw-semibold);
+}
+.meter-label[data-lv='1'] b {
+  color: var(--color-danger);
+}
+.meter-label[data-lv='2'] b {
+  color: var(--color-warning);
+}
+.meter-label[data-lv='3'] b {
+  color: var(--hd-mint);
+}
+
+/* ── 记住我 / 协议复选 ── */
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-2) 0 var(--space-5);
+}
+.agree {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-5);
+}
+.check {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+  color: color-mix(in oklch, var(--hd-text) 76%, transparent);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+}
+.check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.check .box {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  flex: none;
+  margin-top: 1px;
+  border: 1px solid color-mix(in oklch, var(--hd-text) 28%, transparent);
+  background: color-mix(in oklch, var(--hd-text) 4%, transparent);
+  display: grid;
+  place-items: center;
+  transition: border-color var(--dur-1), background var(--dur-1);
+}
+.check .box svg {
+  width: 13px;
+  height: 13px;
+  stroke: var(--color-primary-fg);
+  fill: none;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--dur-1);
+}
+.check input:checked + .box {
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  border-color: color-mix(in oklch, var(--color-primary-300) 70%, transparent);
+}
+.check input:checked + .box svg {
+  opacity: 1;
+}
+.check input:focus-visible + .box {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary-500) 24%, transparent);
+}
+.check.err .box {
+  border-color: color-mix(in oklch, var(--color-danger) 80%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 16%, transparent);
+}
+.check a {
+  color: var(--hd-mint);
+}
+.check a:hover {
+  color: var(--color-primary-300);
+}
+.link {
+  color: var(--hd-mint);
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-medium);
+  transition: color var(--dur-1);
+}
+.link:hover {
+  color: var(--color-primary-300);
+}
+
+/* ── 主按钮 ── */
+.btn {
+  font-family: inherit;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: transform var(--dur-1) var(--ease-snap), box-shadow var(--dur-2),
+    background var(--dur-2), border-color var(--dur-2);
+}
+.btn-glow {
+  width: 100%;
+  height: 52px;
+  font-size: var(--text-body-lg);
+  font-weight: var(--fw-semibold);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  color: var(--color-primary-fg);
+  box-shadow: 0 10px 28px -10px var(--color-primary-500);
+}
+.btn-glow:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px -10px var(--color-primary-500);
+}
+.btn-glow:active {
+  transform: translateY(0);
+}
+.btn-glow:disabled {
+  opacity: 0.66;
+  cursor: progress;
+  transform: none;
+}
+
+/* ── 分隔线 + 表单消息 ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-5);
+  color: var(--hd-muted);
+  font-size: var(--text-body-sm);
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hd-line);
+}
+.form-msg {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-body-sm);
+}
+.form-msg.err {
+  color: color-mix(in oklch, var(--color-danger) 90%, var(--hd-text));
+}
+.form-msg.ok {
+  color: var(--hd-mint);
+}
+
+/* ── 第三方登录横排 ── */
+.oauth {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+.oauth a {
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  backdrop-filter: blur(8px);
+  color: color-mix(in oklch, var(--hd-text) 82%, transparent);
+  transition: transform var(--dur-1) var(--ease-snap), border-color var(--dur-2),
+    background var(--dur-2), color var(--dur-2);
+}
+.oauth a:hover {
+  transform: translateY(-2px);
+  background: var(--hd-glass-strong);
+  border-color: color-mix(in oklch, var(--color-primary-300) 50%, transparent);
+  color: var(--hd-text);
+}
+.oauth a svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── 底部切换链接 ── */
+.foot {
+  text-align: center;
+  margin-top: var(--space-6);
+  color: var(--hd-muted);
+  font-size: var(--text-body);
+}
+.foot a {
+  color: var(--hd-mint);
+  font-weight: var(--fw-medium);
+  transition: color var(--dur-1);
+}
+.foot a:hover {
+  color: var(--color-primary-300);
+}
+
+/* ── 抽屉版表单卡品牌头（home 抽屉 LoginForm 复用；独立页用 .card h1，不冲突） ── */
+.auth-card[hidden] {
+  display: none;
+}
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-brand);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-h5);
+  color: var(--hd-text);
+  margin-bottom: var(--space-6);
+}
+.auth-brand .m {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, var(--color-primary-500), var(--hd-mint));
+  color: var(--color-primary-fg);
+  font-weight: var(--fw-bold);
+  font-size: 0.9rem;
+}
+.auth-title {
+  font-family: var(--font-brand);
+  font-size: var(--text-h2);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-2);
+  color: var(--hd-text);
+}
+.auth-sub {
+  color: var(--hd-muted);
+  font-size: var(--text-body);
+  margin: 0 0 var(--space-6);
+}

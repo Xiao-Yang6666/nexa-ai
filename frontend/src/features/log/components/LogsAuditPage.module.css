@@ -1,0 +1,360 @@
+/* ============================================================================
+   LogsAuditPage — 全局调用明细审计样式。迁移自 S6 admin/logs.html，全 token 驱动，零裸色值。
+   管理端全局视图：展示所有用户每次调用 + 计费明细（成本/利润仅管理侧可见）。
+   ============================================================================ */
+
+/* ── 统计小卡片 ── */
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.stat {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.statLabel {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+.statVal {
+  font-family: var(--font-brand);
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+}
+.statVal.dang {
+  color: var(--color-danger);
+}
+.statVal.ok {
+  color: var(--color-success);
+}
+
+/* ── FilterBar ── */
+.filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.sel,
+.srch,
+.dt {
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  padding: 0 var(--space-3);
+}
+.srch {
+  min-width: 180px;
+}
+.dt {
+  font-family: var(--font-mono);
+}
+.sel:focus,
+.srch:focus,
+.dt:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: var(--focus-ring);
+}
+.grow {
+  margin-left: auto;
+}
+.sep {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-sm);
+}
+
+/* ── 全局范围说明条 ── */
+.scopeNote {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+}
+.scopeNote svg {
+  color: var(--color-info);
+  flex: none;
+}
+.scopeNote .t {
+  font-size: var(--text-body-sm);
+  color: var(--color-info-fg);
+}
+.scopeNote .t b {
+  font-weight: var(--fw-semibold);
+}
+
+/* ── 表格 ── */
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap table {
+  min-width: 1500px;
+  width: 100%;
+  border-collapse: collapse;
+}
+.tableWrap th {
+  text-align: left;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  font-weight: var(--fw-semibold);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.tableWrap td {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.arr {
+  display: inline-flex;
+  vertical-align: middle;
+  color: var(--color-text-muted);
+  margin-left: 4px;
+}
+.cellmono {
+  font-family: var(--font-mono);
+}
+.muted {
+  color: var(--color-text-muted);
+}
+.typeBadge {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+}
+.rowActs {
+  display: flex;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+.rowActs a {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary-500);
+  cursor: pointer;
+}
+.rowActs a:hover {
+  color: var(--color-primary-600);
+}
+
+/* ── 模型单元：客户请求模型 → 实际落到模型（一个值，不展示底仓/链路） ── */
+.modelcell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+.modelcell .req {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: var(--color-text);
+}
+.modelcell .land {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.modelcell .land svg {
+  color: var(--color-text-muted);
+}
+
+/* ── 计费模式 / 费用 / IP / UA ── */
+.billBadge {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+}
+.money {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.feeCol {
+  color: var(--color-text);
+}
+.ipcell {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.uacell {
+  font-size: var(--text-overline);
+  color: var(--color-text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 详情展开 ── */
+.detailRow td {
+  background: var(--color-surface-sunken);
+  padding: var(--space-4) var(--space-5);
+}
+.detSection {
+  margin-bottom: var(--space-4);
+}
+.detSection:last-child {
+  margin-bottom: 0;
+}
+.detSection h4 {
+  font-family: var(--font-brand);
+  font-size: var(--text-body);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3) var(--space-5);
+  font-size: var(--text-body-sm);
+}
+.detailGrid dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  margin-bottom: 2px;
+}
+.detailGrid dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+.detMoney {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: var(--space-2) var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  align-items: baseline;
+  justify-content: start;
+}
+.detMoney .k {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.profitPos {
+  color: var(--color-success);
+}
+.profitNeg {
+  color: var(--color-danger);
+  font-weight: var(--fw-medium);
+}
+.adminNote {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+}
+.adminNote svg {
+  color: var(--color-text-muted);
+}
+.detModel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+}
+.detModel .node {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+.detModel .node .lbl {
+  display: block;
+  font-size: var(--text-overline);
+  color: var(--color-text-muted);
+  margin-bottom: 1px;
+}
+.detModel .arrX {
+  color: var(--color-text-muted);
+}
+
+/* ── 分页 ── */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.pg {
+  display: flex;
+  gap: var(--space-1);
+}
+.pg button {
+  min-width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0 var(--space-2);
+}
+.pg button.on {
+  background: var(--color-primary-500);
+  color: var(--color-primary-fg);
+  border-color: var(--color-primary-500);
+}
+
+.emptyRow {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 1280px) {
+  .statRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .srch {
+    min-width: 130px;
+  }
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}

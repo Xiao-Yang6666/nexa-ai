@@ -1,0 +1,46 @@
+/* 全局样式：导入设计系统 token（DESIGN-SYSTEM 唯一可执行版本）+ 字体。 */
+@import '../shared/ui/styles/tokens.css';
+
+/* 账号域（登录/注册）表单的深色门面全局样式。
+   表单组件复用 06_prototype 的原型同名 class（.field/.inp/.oauth/.check/...），
+   全局 CSS 需在此层引入（Next 仅允许根 layout 链路引入非 module 全局样式）。 */
+@import '../features/account/components/auth.global.css';
+
+/* 文档站（api-docs）三栏壳全局样式。来自 06_prototype/final/api-docs/docs-shell.css，
+   零裸色值、全 token 化；docs 路由组在 body 上挂 data-docs='1' 切深色文档底。 */
+@import '../features/docs/styles/docs-shell.css';
+
+/* 品牌字体：Space Grotesk（巨字）+ Inter（正文）。
+   非阻塞加载已由 next/font 处理则此处可移除；保留 @import 供 CDP/独立预览回退。 */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+/* 链接默认不带下划线（tokens.css 已设色），由组件自管 */
+a {
+  text-decoration: none;
+}
+
+/* ── 公开站（web-public）共享布局工具 ──
+   .wrap：与原型一致的居中容器（max 1180，左右 24px gutter）。
+   公开站深色门面：在 body 上挂 data-public 时切深色底（hd-bg），
+   各公开页 RootLayout 不动浅色 token，深色由公开页布局自管。 */
+.wrap {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+body[data-public='1'] {
+  background: var(--hd-bg);
+  color: var(--hd-text);
+  overflow-x: hidden;
+  font-family: 'Inter', var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

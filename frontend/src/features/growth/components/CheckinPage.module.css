@@ -1,0 +1,375 @@
+/* CheckinPage — 每日签到页样式。迁移自 S6 console/checkin.html 内联样式，token 化零裸色值。 */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
+.card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+.streak {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+.streakRing {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex: none;
+}
+.streakRingInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.streakNum {
+  font-family: var(--font-brand);
+  font-size: var(--text-h1);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  line-height: 1;
+}
+.streakUnit {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+.streakMeta h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.streakMeta p {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--lh-normal);
+}
+.hl {
+  color: var(--color-primary-700);
+  font-weight: var(--fw-semibold);
+}
+.today {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+.todayLabel {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.todayReward {
+  font-family: var(--font-brand);
+  font-size: var(--text-h3);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+.cur {
+  color: var(--color-primary-700);
+}
+.btnBig {
+  height: 52px;
+  font-size: var(--text-body-lg);
+  font-weight: var(--fw-semibold);
+  width: 100%;
+  justify-content: center;
+}
+.sectionTitle {
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-4);
+}
+
+/* 日历 */
+.calWrap {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
+  align-items: stretch;
+}
+@media (max-width: 760px) {
+  .calWrap {
+    grid-template-columns: 1fr;
+  }
+}
+.calCard {
+  padding: var(--space-4) var(--space-5);
+}
+.calPanel {
+  max-width: 300px;
+}
+@media (max-width: 760px) {
+  .calPanel {
+    max-width: none;
+  }
+}
+.calHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+.calMonth {
+  font-size: var(--text-body);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  grid-auto-rows: 34px;
+  align-items: stretch;
+}
+.calDow {
+  font-size: var(--text-overline);
+  color: var(--color-text-muted);
+  text-align: center;
+  padding-bottom: 2px;
+  font-weight: var(--fw-medium);
+}
+.calCell {
+  position: relative;
+  height: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  font-size: var(--text-caption);
+  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  transition: background var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.calCell.normal:hover {
+  background: var(--color-surface-sunken);
+  transform: translateY(-1px);
+}
+.calCell.empty {
+  background: transparent;
+}
+.calCell.done {
+  background: color-mix(in oklch, var(--color-primary-500) 16%, transparent);
+  color: var(--color-primary-700);
+  font-weight: var(--fw-medium);
+}
+.calCell.done:hover {
+  background: color-mix(in oklch, var(--color-primary-500) 24%, transparent);
+}
+.calCell.today {
+  border-color: var(--color-primary-500);
+  box-shadow: var(--focus-ring);
+  color: var(--color-text);
+  font-weight: var(--fw-semibold);
+}
+.calCell.future {
+  color: var(--color-text-muted);
+}
+.calTick {
+  width: 9px;
+  height: 9px;
+  margin-top: 1px;
+  color: var(--color-primary-700);
+}
+.calLegend {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  font-size: var(--text-overline);
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+.calLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.calLegend i {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+}
+.legDone {
+  background: color-mix(in oklch, var(--color-primary-500) 24%, transparent);
+}
+.legToday {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-primary-500);
+}
+.legFuture {
+  background: var(--color-surface-sunken);
+}
+
+/* 右侧状态卡 */
+.calStatus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+}
+.calStat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.calStat:last-of-type {
+  border-bottom: none;
+}
+.calStat .k {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.calStat .v {
+  font-family: var(--font-brand);
+  font-size: var(--text-h6);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.calStat .v.hl {
+  color: var(--color-primary-700);
+}
+.calStatusNote {
+  margin-top: auto;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--lh-normal);
+}
+
+/* 奖励阶梯 */
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+@media (max-width: 860px) {
+  .ladder {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .ladder {
+    grid-template-columns: 1fr;
+  }
+}
+.lad {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.lad.reached {
+  border-color: var(--color-primary-500);
+  background: color-mix(in oklch, var(--color-primary-500) 8%, var(--color-bg-elevated));
+}
+.ladDays {
+  font-family: var(--font-brand);
+  font-size: var(--text-h4);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+}
+.ladDays small {
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-regular);
+  color: var(--color-text-muted);
+}
+.ladReward {
+  margin-top: var(--space-2);
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+}
+.ladReward b {
+  font-family: var(--font-mono);
+  color: var(--color-primary-700);
+  font-weight: var(--fw-semibold);
+}
+.ladState {
+  margin-top: var(--space-3);
+}
+
+/* 记录表卡 */
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.thBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.thBar h3 {
+  margin: 0;
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap td,
+.tableWrap th {
+  padding: var(--space-3) var(--space-5);
+}
+.rewardCell {
+  color: var(--color-primary-700);
+  font-weight: var(--fw-medium);
+}
+
+/* 状态：加载 / 错误 / 空 */
+.stateBox {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-10) var(--space-4);
+}
+.stateBox .t {
+  font-size: var(--text-h6);
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-bg-subtle) 25%, var(--color-surface-sunken) 50%, var(--color-bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: sk 1.4s infinite;
+  border-radius: var(--radius-md);
+  height: 140px;
+}
+@keyframes sk {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

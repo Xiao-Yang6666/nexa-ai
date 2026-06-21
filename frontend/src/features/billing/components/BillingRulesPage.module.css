@@ -1,0 +1,242 @@
+/* ============================================================================
+   BillingRulesPage — 计费规则样式。迁移自 S6 admin/billing-rules.html，
+   全 token 驱动，零裸色值。
+   ============================================================================ */
+
+/* ── 说明 ── */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+}
+.notice .nxIc {
+  color: var(--color-info);
+  width: 20px;
+  height: 20px;
+  flex: none;
+  margin-top: 2px;
+}
+.notice .txt {
+  font-size: var(--text-body-sm);
+  color: var(--color-info-fg);
+  line-height: var(--lh-normal);
+}
+.notice .txt b {
+  font-weight: var(--fw-semibold);
+}
+
+/* ── 合规闸门 ── */
+.gate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+}
+.gate.pending {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+}
+.gate.confirmed {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+}
+.gate .nxIc {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.gate.pending .nxIc {
+  color: var(--color-danger);
+}
+.gate.confirmed .nxIc {
+  color: var(--color-success);
+}
+.gate .txt {
+  font-size: var(--text-body-sm);
+}
+.gate.pending .txt {
+  color: var(--color-danger-fg);
+}
+.gate.confirmed .txt {
+  color: var(--color-success-fg);
+}
+.gate .grow {
+  margin-left: auto;
+}
+
+/* ── 工具条 ── */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.sel,
+.srch {
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  padding: 0 var(--space-3);
+}
+.srch {
+  min-width: 200px;
+}
+.sel:focus,
+.srch:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: var(--focus-ring);
+}
+.toolbar .grow {
+  margin-left: auto;
+}
+
+/* ── 表格 ── */
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap table {
+  min-width: 1080px;
+}
+.numIn {
+  width: 78px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  padding: 0 var(--space-2);
+  text-align: right;
+}
+.numIn:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: var(--focus-ring);
+}
+.rowActs {
+  display: flex;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+.rowActs a {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary-500);
+  cursor: pointer;
+}
+.rowActs a:hover {
+  color: var(--color-primary-600);
+}
+
+/* ── 阶梯计费区块 ── */
+.tierGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.tierCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+.tierCard h4 {
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+.tierCard .desc {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+.tierExpr {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  line-height: var(--lh-relaxed);
+}
+.tierRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.tierRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-body-sm);
+}
+.tierRow .rng {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+}
+.tierRow .rate {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-weight: var(--fw-medium);
+}
+
+/* ── 图表 ── */
+.chartCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.chartTitle {
+  font-size: var(--text-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+.chartSub {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+.axTxt {
+  font-family: var(--font-mono);
+  font-size: var(--text-overline);
+  fill: var(--color-text-muted);
+}
+
+@media (max-width: 1024px) {
+  .tierGrid {
+    grid-template-columns: 1fr;
+  }
+}

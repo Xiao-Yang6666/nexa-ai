@@ -1,0 +1,37 @@
+# =============================================================================
+# 集成测试 profile（UserControllerIT 用）。
+# Flyway 启动建表 + JPA validate 校验映射 + 真实 HTTP 往返。
+# 数据库连接由环境变量注入（CI / 本地各自配置一个测试库）；集成测试用例自身负责清理插入的测试数据。
+# 默认指向本地测试库，绝不连生产/共享库。
+# =============================================================================
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:postgresql://localhost:5432/nexa_test}
+    username: ${TEST_DB_USERNAME:postgres}
+    password: ${TEST_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+  threads:
+    virtual:
+      enabled: true
+
+account:
+  register-enabled: true
+  quota-for-new-user: 100
+
+jwt:
+  secret: ${TEST_JWT_SECRET:nexa-it-test-secret-key-at-least-32-bytes-long-0123456789}
+  ttl-seconds: 3600

@@ -1,0 +1,188 @@
+/* ============================================================================
+   Nexa·AI — 设计系统可执行 token（DESIGN-SYSTEM.md 的唯一可执行版本）
+   ----------------------------------------------------------------------------
+   纪律：所有页面 @import 本文件，页内一律 var(--token)，禁裸色值。
+   遮罩/叠层用 color-mix(in oklch, var(--token) x%, transparent)，不写裸 oklch()/hex。
+   单主题：品牌主色固定 teal #0E7C86，换肤框架已移除（全站统一公开站深色）。
+   深色应用底：data-scheme=dark 切深色工作台底（console/admin/api-docs 全深色）。
+   ============================================================================ */
+
+/* ── 主色块（单主题：teal。换肤框架已移除，全站统一公开站深色 teal） ───────── */
+:root{
+  --color-primary-50:#E6F4F5; --color-primary-100:#C2E5E8; --color-primary-200:#9AD4DA;
+  --color-primary-300:#5FB9C2; --color-primary-400:#2E9AA3;
+  --color-primary-500:#0E7C86; --color-primary-600:#0A6770; --color-primary-700:#075058;
+  --color-primary-800:#053A40; --color-primary-fg:#FBFEFE;
+  --focus-ring:0 0 0 3px color-mix(in oklch, var(--color-primary-500) 35%, transparent);
+  --chart-1:#0E7C86;
+}
+
+:root{
+  /* ── 中性灰阶（tinted slate，色相微调 200，禁纯黑白；跨主题稳定） ───────── */
+  --color-bg:#FCFDFD; --color-bg-subtle:#F4F6F7; --color-bg-elevated:#FFFFFE;
+  --color-surface-sunken:#EEF1F2; --color-border:#DEE3E5; --color-border-strong:#C5CCCF;
+  --color-text-muted:#5E6A6E; --color-text-secondary:#3D484C; --color-text:#161C1E;
+  --color-text-inverse:#F7FAFA; --color-disabled:#8A9498; --color-disabled-bg:#EBEEEF;
+
+  /* ── 语义色（success/warning/danger/info；跨主题不变） ──────────────────── */
+  --color-success:#1F8F5F; --color-success-bg:#E7F5EE; --color-success-fg:#0C3D29; --color-success-border:#A9DcC4;
+  --color-warning:#B5740A; --color-warning-bg:#FBF1DF; --color-warning-fg:#5A3A04; --color-warning-border:#EBCF95;
+  --color-danger:#D14A33;  --color-danger-bg:#FCEDE9;  --color-danger-fg:#5E1B0E;  --color-danger-border:#F0BCAE;
+  --color-info:#1E6FD9;    --color-info-bg:#E8F0FC;    --color-info-fg:#0E2F5E;    --color-info-border:#AECCF2;
+
+  /* ── 图表离散序列（chart-1 由主题给；2-8 跨主题稳定，色盲可分） ─────────── */
+  --chart-2:#1E6FD9; --chart-3:#B5740A; --chart-4:#7A4FB5; --chart-5:#1F8F5F;
+  --chart-6:#C0497F; --chart-7:#3D9AA0; --chart-8:#6B7780;
+  --chart-grid:color-mix(in oklch, var(--color-text) 8%, transparent);
+  --chart-axis:var(--color-text-muted);
+  --chart-area-stop:color-mix(in oklch, var(--chart-1) 18%, transparent);
+  --chart-area-stop0:color-mix(in oklch, var(--chart-1) 0%, transparent);
+
+  /* ── 字体栈 ─────────────────────────────────────────────────────────────── */
+  --font-sans:'Inter','Noto Sans SC',-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-brand:'Space Grotesk','Inter Tight',var(--font-sans);
+  --font-mono:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,ui-monospace,monospace;
+
+  /* ── 字阶（相邻级比 ≥1.2；display..overline 全覆盖） ─────────────────────── */
+  --text-display:3.5rem; --text-h1:2.5rem; --text-h2:1.875rem; --text-h3:1.5rem;
+  --text-h4:1.25rem; --text-h5:1.0625rem; --text-h6:.9375rem;
+  --text-body-lg:1.0625rem; --text-body:.9375rem; --text-body-sm:.8125rem;
+  --text-caption:.75rem; --text-overline:.6875rem; --text-code:.844rem;
+  --lh-tight:1.15; --lh-snug:1.3; --lh-normal:1.55; --lh-relaxed:1.7;
+  --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+  --tracking-tight:-.04em; --tracking-snug:-.01em; --tracking-wide:.08em;
+
+  /* ── 巨字品牌字阶（hero 专用，clamp 自适应视口） ─────────────────────────── */
+  --text-mega:clamp(3.2rem,12vw,9rem);
+
+  /* ── 间距尺 ─────────────────────────────────────────────────────────────── */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+  --space-6:32px; --space-7:40px; --space-8:48px; --space-10:64px; --space-12:96px;
+  --container-max:1200px; --container-prose:68ch; --gutter:24px;
+
+  /* ── 圆角 ───────────────────────────────────────────────────────────────── */
+  --radius-xs:4px; --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --radius-xl:24px; --radius-full:9999px;
+
+  /* ── 阴影 / elevation 阶（卡片=sm，弹层=md，模态/抽屉=lg；色相微调 200） ── */
+  --shadow-xs:0 1px 2px 0 color-mix(in oklch, var(--color-text) 6%, transparent);
+  --shadow-sm:0 1px 3px 0 color-mix(in oklch, var(--color-text) 8%, transparent),0 1px 2px -1px color-mix(in oklch, var(--color-text) 6%, transparent);
+  --shadow-md:0 4px 12px -2px color-mix(in oklch, var(--color-text) 10%, transparent),0 2px 6px -2px color-mix(in oklch, var(--color-text) 7%, transparent);
+  --shadow-lg:0 12px 32px -6px color-mix(in oklch, var(--color-text) 16%, transparent),0 6px 14px -6px color-mix(in oklch, var(--color-text) 10%, transparent);
+  --shadow-glow:0 8px 24px -8px var(--color-primary-500);
+
+  /* ── 动效语言（缓动 / 时长 / stagger；全站复用，含登录/注册） ──────────── */
+  --ease-out:cubic-bezier(.16,1,.3,1);      /* 主力出场曲线（弹性收尾） */
+  --ease-in-out:cubic-bezier(.65,0,.35,1);  /* 往复 / 呼吸 / aurora 漂移 */
+  --ease-snap:cubic-bezier(.34,1.56,.64,1); /* 轻回弹（图标/按钮/chip） */
+  --dur-1:.15s; --dur-2:.3s; --dur-3:.55s; --dur-4:.75s; --dur-5:1.1s;
+  --stagger-step:.06s;                       /* 逐元素 / 逐字错位步长 */
+  --motion-speed:1;                          /* reduced-motion 减速因子（不冻结） */
+
+  /* ── 深色 Hero / 品牌区色族（promote 成全局 token，供门面页 + 预览复用） ── */
+  --hd-bg:#06100F; --hd-bg2:#0A1A1B; --hd-text:#F4FBFB; --hd-muted:#8AA3A6;
+  --hd-cyan:#2BB7C2; --hd-blue:#1E6FD9; --hd-mint:#5FD4DE; --hd-lav:#7AA2F7;
+  --hd-line:color-mix(in oklch, var(--hd-text) 12%, transparent);
+  --hd-glass:color-mix(in oklch, var(--hd-text) 6%, transparent);
+  --hd-glass-strong:color-mix(in oklch, var(--hd-text) 10%, transparent);
+  /* aurora 三团辉光配方 */
+  --glow-a:color-mix(in oklch, var(--color-primary-500) 60%, transparent);
+  --glow-b:color-mix(in oklch, var(--hd-cyan) 48%, transparent);
+  --glow-c:color-mix(in oklch, var(--hd-blue) 32%, transparent);
+}
+
+/* ── 深色应用底（控制台/管理台 dark；与 data-theme 正交，挂 data-scheme=dark） ── */
+:root[data-scheme="dark"]{
+  --color-bg:#0E1416; --color-bg-subtle:#151D20; --color-bg-elevated:#1B2528;
+  --color-surface-sunken:#0A1012; --color-border:#2A3539; --color-border-strong:#3A474C;
+  --color-text:#E8EEEF; --color-text-secondary:#B8C2C5; --color-text-muted:#8A989C;
+  --color-disabled:#5A6669; --color-disabled-bg:#1E282B;
+  --color-primary-500:#2BB7C2; --color-primary-600:#46C5CF; --color-primary-700:#62D2DA;
+  --color-primary-fg:#06181A; --color-info:#7AA2F7;
+  --chart-grid:color-mix(in oklch, var(--color-text) 12%, transparent);
+}
+
+/* ============================================================================
+   基础重置 + 通用类（原型页共用，减少重复，全 token 驱动）
+   ============================================================================ */
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+  font-size:var(--text-body);line-height:var(--lh-normal);-webkit-font-smoothing:antialiased}
+a{color:var(--color-primary-500);text-decoration:none}
+code,kbd,.mono{font-family:var(--font-mono);font-size:var(--text-code)}
+
+/* 按钮系统 */
+.btn{font-family:inherit;border:none;border-radius:var(--radius-sm);height:40px;padding:0 var(--space-4);
+  font-size:var(--text-body);font-weight:var(--fw-medium);cursor:pointer;display:inline-flex;align-items:center;gap:var(--space-2);
+  transition:transform var(--dur-1) var(--ease-snap),box-shadow var(--dur-2),background var(--dur-2),border-color var(--dur-2),color var(--dur-2)}
+.btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.btn-primary{background:var(--color-primary-500);color:var(--color-primary-fg);box-shadow:var(--shadow-xs)}
+.btn-primary:hover{background:var(--color-primary-600)} .btn-primary:active{background:var(--color-primary-700)}
+.btn-sec{background:var(--color-bg-elevated);color:var(--color-text);border:1px solid var(--color-border);box-shadow:var(--shadow-xs)}
+.btn-sec:hover{background:var(--color-bg-subtle);border-color:var(--color-border-strong)}
+.btn-ghost{background:transparent;color:var(--color-text-secondary)} .btn-ghost:hover{background:var(--color-bg-subtle);color:var(--color-text)}
+.btn-danger{background:var(--color-danger);color:#FFF7F5;box-shadow:var(--shadow-xs)}
+.btn-danger:hover{background:color-mix(in oklch, var(--color-danger) 88%, var(--color-text))}
+.btn-link{background:transparent;color:var(--color-primary-500);height:auto;padding:0}
+.btn-link:hover{color:var(--color-primary-600);text-decoration:underline}
+.btn:disabled,.btn[disabled]{background:var(--color-disabled-bg);color:var(--color-disabled);cursor:not-allowed;box-shadow:none;border-color:var(--color-border)}
+.btn-sm{height:32px;padding:0 var(--space-3);font-size:var(--text-body-sm)}
+.btn-lg{height:48px;padding:0 var(--space-5);font-size:var(--text-body-lg)}
+/* 深色门面专用按钮 */
+.btn-glow{background:linear-gradient(135deg,var(--color-primary-500),var(--color-primary-600));color:var(--color-primary-fg);box-shadow:var(--shadow-glow)}
+.btn-glow:hover{transform:translateY(-1px);box-shadow:0 12px 30px -8px var(--color-primary-500)}
+.btn-glass{background:var(--hd-glass);color:var(--hd-text);border:1px solid var(--hd-line);backdrop-filter:blur(8px)}
+.btn-glass:hover{background:var(--hd-glass-strong);border-color:color-mix(in oklch, var(--hd-text) 24%, transparent)}
+
+/* 卡片 / 表面 */
+.card{background:var(--color-bg-elevated);border:1px solid var(--color-border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);padding:var(--space-5)}
+.glass{background:var(--hd-glass);border:1px solid var(--hd-line);border-radius:var(--radius-lg);backdrop-filter:blur(12px)}
+
+/* 表单 */
+.field-label{display:block;font-size:var(--text-body-sm);font-weight:var(--fw-medium);color:var(--color-text-secondary);margin-bottom:var(--space-2)}
+.field-req{color:var(--color-danger)}
+.input{font-family:inherit;font-size:var(--text-body);height:40px;padding:0 var(--space-3);border-radius:var(--radius-sm);
+  border:1px solid var(--color-border);background:var(--color-bg-elevated);color:var(--color-text);width:100%;transition:border-color var(--dur-1),box-shadow var(--dur-1)}
+.input::placeholder{color:var(--color-text-muted)}
+.input:focus{outline:none;border-color:var(--color-primary-500);box-shadow:var(--focus-ring)}
+.input:disabled{background:var(--color-disabled-bg);color:var(--color-disabled);cursor:not-allowed}
+.input.err{background:var(--color-danger-bg);border-color:var(--color-danger)}
+.input.err:focus{box-shadow:0 0 0 3px color-mix(in oklch, var(--color-danger) 28%, transparent)}
+.field-hint{font-size:var(--text-caption);color:var(--color-text-muted);margin-top:var(--space-1)}
+.field-err{font-size:var(--text-caption);color:var(--color-danger-fg);margin-top:var(--space-1);display:flex;align-items:center;gap:4px}
+/* 开关 */
+.switch{position:relative;display:inline-block;width:38px;height:22px}
+.switch input{display:none}
+.switch .track{position:absolute;inset:0;background:var(--color-border-strong);border-radius:var(--radius-full);transition:background var(--dur-2)}
+.switch .thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:var(--color-bg-elevated);border-radius:50%;transition:transform var(--dur-2) var(--ease-snap);box-shadow:var(--shadow-xs)}
+.switch input:checked + .track{background:var(--color-primary-500)}
+.switch input:checked + .track + .thumb{transform:translateX(16px)}
+
+/* 徽章 / 标签 */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--text-body-sm);font-weight:var(--fw-medium);padding:2px 10px;border-radius:var(--radius-full)}
+.b-suc{background:var(--color-success-bg);color:var(--color-success-fg)} .b-warn{background:var(--color-warning-bg);color:var(--color-warning-fg)}
+.b-dan{background:var(--color-danger-bg);color:var(--color-danger-fg)} .b-info{background:var(--color-info-bg);color:var(--color-info-fg)}
+.b-neutral{background:var(--color-bg-subtle);color:var(--color-text-secondary)}
+.dot{width:7px;height:7px;border-radius:50%}
+
+/* 文本工具 */
+.muted{color:var(--color-text-muted)} .mono-num{font-family:var(--font-mono)}
+
+/* 表格 */
+table{border-collapse:collapse;width:100%;font-size:var(--text-body-sm)}
+th{text-align:left;font-weight:var(--fw-semibold);color:var(--color-text-secondary);padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-border-strong);position:sticky;top:0;background:var(--color-bg-elevated)}
+td{padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--color-border)}
+tbody tr:nth-child(even){background:var(--color-bg-subtle)}
+tbody tr:hover{background:var(--color-surface-sunken)}
+
+/* 状态：空 / 加载骨架 */
+.empty{text-align:center;color:var(--color-text-muted);padding:var(--space-10) var(--space-4)}
+.skeleton{background:linear-gradient(90deg,var(--color-bg-subtle) 25%,var(--color-surface-sunken) 50%,var(--color-bg-subtle) 75%);background-size:200% 100%;animation:sk 1.4s infinite;border-radius:var(--radius-sm)}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* reduced-motion：减速不冻结（hero 背景靠 JS 读 --motion-speed；装饰动效降级，内容必现） */
+@media (prefers-reduced-motion: reduce){
+  :root{--motion-speed:.35}
+  .skeleton{animation-duration:2.6s}
+  *{scroll-behavior:auto}
+}

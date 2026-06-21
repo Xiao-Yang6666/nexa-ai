@@ -1,0 +1,405 @@
+/*
+ * HomeHero.module.css — 公开站首页 hero 区样式。
+ *
+ * 从 06_prototype/final/web-public/home.html 的 hero/巨字 mega/slogan/ask/chips/trust
+ * 1:1 工程化迁移。全屏固定光束 canvas（FlowingThreads fixed）+ aurora 辉光 + 细网格，
+ * 巨字 Nexa·AI 含呼吸 teal 光点，只读打字机 ask 框（登录入口），底部信任行。
+ * 色值全走 tokens.css 的 var(--token)/color-mix，不写死 hex。
+ *
+ * 导航/页脚由 PublicShell 统一提供（工程化收敛）；本组件只负责 hero 主体。
+ */
+
+.stage {
+  --glow-a: color-mix(in oklch, var(--color-primary-500) 62%, transparent);
+  --glow-b: color-mix(in oklch, var(--hd-cyan) 48%, transparent);
+  --glow-c: color-mix(in oklch, var(--hd-blue) 32%, transparent);
+  position: relative;
+  min-height: calc(100svh - 74px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(
+    120% 80% at 50% -12%,
+    color-mix(in oklch, var(--hd-bg2) 55%, transparent),
+    transparent 60%
+  );
+}
+/* 顶部柔光团 */
+.stage::before {
+  content: '';
+  position: absolute;
+  inset: -22% -10% auto -10%;
+  height: 92%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 52% at 26% 14%, var(--glow-a), transparent 70%),
+    radial-gradient(42% 46% at 80% 24%, var(--glow-b), transparent 72%),
+    radial-gradient(52% 60% at 54% 88%, var(--glow-c), transparent 70%);
+  filter: blur(22px);
+  animation: aurora 20s var(--ease-in-out) infinite alternate;
+}
+/* 细网格，被径向 mask 收口 */
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  background-image: linear-gradient(var(--hd-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hd-line) 1px, transparent 1px);
+  background-size: 60px 60px;
+  -webkit-mask-image: radial-gradient(78% 70% at 50% 38%, var(--hd-text) 26%, transparent 78%);
+  mask-image: radial-gradient(78% 70% at 50% 38%, var(--hd-text) 26%, transparent 78%);
+}
+@keyframes aurora {
+  0% {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(3%, 2%, 0) scale(1.1);
+  }
+}
+
+/* ─────────── hero 主体：垂直居中 ─────────── */
+.hero {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8) 0 var(--space-10);
+}
+.heroInner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 15px;
+  border-radius: var(--radius-full);
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  backdrop-filter: blur(8px);
+  font-size: var(--text-body-sm);
+  color: var(--hd-muted);
+  margin-bottom: var(--space-7);
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.1s var(--ease-out) forwards;
+}
+.pill .live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-success) 30%, transparent);
+  animation: breath 2.4s var(--ease-in-out) infinite;
+}
+.pill b {
+  color: color-mix(in oklch, var(--hd-text) 88%, transparent);
+  font-weight: var(--fw-semibold);
+}
+
+/* ═══════════ 巨字品牌 Nexa·AI ═══════════ */
+.mega {
+  font-family: var(--font-brand);
+  font-size: var(--text-mega);
+  line-height: 0.92;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 var(--space-5);
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.18s var(--ease-out) forwards;
+}
+.word {
+  color: var(--hd-text);
+  text-shadow: 0 0 38px color-mix(in oklch, var(--color-primary-500) 30%, transparent);
+}
+.dot {
+  display: inline-block;
+  position: relative;
+  width: 0.13em;
+  height: 0.13em;
+  margin: 0 0.14em;
+  border-radius: 50%;
+  align-self: center;
+  background: radial-gradient(
+    circle at 50% 42%,
+    color-mix(in oklch, var(--hd-mint) 96%, transparent) 0%,
+    var(--color-primary-500) 50%,
+    color-mix(in oklch, var(--color-primary-600) 82%, transparent) 100%
+  );
+  box-shadow: 0 0 10px 1px color-mix(in oklch, var(--hd-mint) 55%, transparent),
+    0 0 24px 3px color-mix(in oklch, var(--color-primary-500) 48%, transparent);
+  animation: dotBreath 2.8s var(--ease-in-out) infinite;
+  transform: translateY(-0.06em);
+}
+.dot::after {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--hd-mint) 45%, transparent);
+  animation: dotRipple 2.8s var(--ease-in-out) infinite;
+}
+.ai {
+  font-size: 0.62em;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: color-mix(in oklch, var(--hd-text) 52%, transparent);
+  align-self: center;
+  margin-left: 0.06em;
+}
+@keyframes dotBreath {
+  0%,
+  100% {
+    transform: translateY(-0.06em) scale(1);
+    box-shadow: 0 0 10px 1px color-mix(in oklch, var(--hd-mint) 52%, transparent),
+      0 0 22px 3px color-mix(in oklch, var(--color-primary-500) 44%, transparent);
+  }
+  50% {
+    transform: translateY(-0.06em) scale(1.1);
+    box-shadow: 0 0 14px 2px color-mix(in oklch, var(--hd-mint) 72%, transparent),
+      0 0 32px 5px color-mix(in oklch, var(--color-primary-500) 58%, transparent);
+  }
+}
+@keyframes dotRipple {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* slogan */
+.slogan {
+  font-size: clamp(1.15rem, 2.4vw, 1.62rem);
+  font-weight: var(--fw-medium);
+  color: color-mix(in oklch, var(--hd-text) 80%, transparent);
+  letter-spacing: 0.01em;
+  margin: 0 0 var(--space-8);
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.5s var(--ease-out) forwards;
+}
+.accent {
+  background: linear-gradient(100deg, var(--color-primary-300), var(--hd-mint));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  font-weight: var(--fw-bold);
+}
+
+/* chat 输入框（只读打字机 → 登录入口） */
+.ask {
+  width: 100%;
+  max-width: 660px;
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.66s var(--ease-out) forwards;
+}
+.askShell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  border-radius: var(--radius-full);
+  padding: 8px 8px 8px var(--space-5);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 60px -22px var(--glow-a);
+  cursor: pointer;
+  transition: border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-snap);
+}
+.askShell:hover {
+  border-color: color-mix(in oklch, var(--color-primary-300) 50%, transparent);
+  box-shadow: 0 22px 66px -16px var(--glow-a),
+    0 0 0 4px color-mix(in oklch, var(--color-primary-500) 14%, transparent);
+}
+.askShell input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--hd-muted);
+  font-family: 'Inter', var(--font-sans);
+  font-size: var(--text-body-lg);
+  height: 46px;
+  cursor: pointer;
+  caret-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+.askShell input::placeholder {
+  color: var(--hd-muted);
+}
+.send {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  flex: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, var(--color-primary-500), var(--color-primary-600));
+  color: var(--color-primary-fg);
+  box-shadow: 0 8px 20px -6px var(--color-primary-500);
+  transition: transform var(--dur-1) var(--ease-snap), box-shadow var(--dur-2);
+}
+.send:hover {
+  transform: translateY(-1px) scale(1.06);
+}
+.send svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2.2;
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+.chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  backdrop-filter: blur(8px);
+  color: var(--hd-muted);
+  font-size: var(--text-body-sm);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color var(--dur-1), border-color var(--dur-1),
+    transform var(--dur-1) var(--ease-snap);
+}
+.chip:hover {
+  color: var(--hd-text);
+  border-color: color-mix(in oklch, var(--color-primary-300) 55%, transparent);
+  transform: translateY(-1px);
+}
+
+/* 底部信任行 */
+.trust {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  padding: 0 var(--space-5) var(--space-8);
+  color: var(--hd-muted);
+  font-size: var(--text-body-sm);
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.82s var(--ease-out) forwards;
+}
+.trust .lbl {
+  color: color-mix(in oklch, var(--hd-muted) 80%, transparent);
+}
+.vendors {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.vendors span {
+  color: color-mix(in oklch, var(--hd-text) 64%, transparent);
+  font-weight: var(--fw-medium);
+}
+.vendors .d {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--hd-line);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes breath {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.65;
+  }
+}
+
+@media (max-width: 760px) {
+  .trust {
+    gap: var(--space-3);
+  }
+  .trust .lbl {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .slogan,
+  .ask,
+  .trust,
+  .mega {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .stage::before {
+    animation-duration: 36s !important;
+  }
+  .dot {
+    animation-duration: 5.6s !important;
+  }
+  .dot::after {
+    animation: none !important;
+  }
+}
+.mega,
+.mega * {
+  outline: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent;
+}

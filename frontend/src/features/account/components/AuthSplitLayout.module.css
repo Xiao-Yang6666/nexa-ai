@@ -1,0 +1,367 @@
+/*
+ * AuthSplitLayout.module.css — 登录/注册独立页的左右分栏壳样式。
+ *
+ * 从 06_prototype/final/web-public/{login,register}.html 的 .auth/.brand/.panel/.card/
+ * .mark/.tagline/.points 1:1 工程化迁移。左栏深色光束品牌区（复用首页 stage 辉光配方 +
+ * FlowingThreads canvas），右栏玻璃表单容器。移动端（≤860）上下堆叠。
+ * 色值全走 tokens.css 的 var(--token)/color-mix，不写死 hex。
+ *
+ * 表单字段细节样式（field/inp/oauth/check/...）由 account/auth.module.css 的 :global 提供，
+ * 本文件只管分栏布局 + 品牌侧的视觉与动效。
+ */
+
+.auth {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  min-height: 100svh;
+}
+
+/* ════════════ 左栏：深色光束品牌区 ════════════ */
+.brand {
+  --glow-a: color-mix(in oklch, var(--color-primary-500) 62%, transparent);
+  --glow-b: color-mix(in oklch, var(--hd-cyan) 48%, transparent);
+  --glow-c: color-mix(in oklch, var(--hd-blue) 32%, transparent);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-8);
+  background: radial-gradient(120% 80% at 30% -12%, var(--hd-bg2), var(--hd-bg) 60%);
+}
+/* aurora 三团辉光 */
+.brand::before {
+  content: '';
+  position: absolute;
+  inset: -22% -10% auto -10%;
+  height: 92%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 52% at 26% 14%, var(--glow-a), transparent 70%),
+    radial-gradient(42% 46% at 80% 24%, var(--glow-b), transparent 72%),
+    radial-gradient(52% 60% at 54% 88%, var(--glow-c), transparent 70%);
+  filter: blur(22px);
+  animation: aurora 20s var(--ease-in-out) infinite alternate;
+}
+/* 细网格，被径向 mask 收口 */
+.brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: linear-gradient(var(--hd-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hd-line) 1px, transparent 1px);
+  background-size: 60px 60px;
+  -webkit-mask-image: radial-gradient(80% 72% at 40% 40%, var(--hd-text) 26%, transparent 80%);
+  mask-image: radial-gradient(80% 72% at 40% 40%, var(--hd-text) 26%, transparent 80%);
+}
+@keyframes aurora {
+  0% {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(3%, 2%, 0) scale(1.1);
+  }
+}
+
+/* 品牌区内容层 */
+.brandTop {
+  position: relative;
+  z-index: 2;
+}
+.brandMid {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  margin-bottom: auto;
+  max-width: 440px;
+}
+.brandBottom {
+  position: relative;
+  z-index: 2;
+  color: var(--hd-muted);
+  font-size: var(--text-body-sm);
+}
+
+/* 左上角 logo（点回首页） */
+.brandLogo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-brand);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-h5);
+  color: var(--hd-text);
+  letter-spacing: -0.01em;
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.1s var(--ease-out) forwards;
+}
+.brandLogo .mark1 {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, var(--color-primary-500), var(--hd-mint));
+  color: var(--color-primary-fg);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-brand);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--hd-mint) 40%, transparent),
+    0 8px 26px -8px var(--color-primary-500);
+}
+
+/* 中等字号品牌字 Nexa·AI（同首页 dot/ai 处理） */
+.mark {
+  font-family: var(--font-brand);
+  font-size: clamp(2.6rem, 5.4vw, 4.4rem);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  display: inline-flex;
+  align-items: baseline;
+  user-select: none;
+  -webkit-user-select: none;
+  margin: 0 0 var(--space-5);
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.2s var(--ease-out) forwards;
+}
+.word {
+  color: var(--hd-text);
+  text-shadow: 0 0 38px color-mix(in oklch, var(--color-primary-500) 30%, transparent);
+}
+.dot {
+  display: inline-block;
+  position: relative;
+  width: 0.13em;
+  height: 0.13em;
+  margin: 0 0.14em;
+  border-radius: 50%;
+  align-self: center;
+  background: radial-gradient(
+    circle at 50% 42%,
+    color-mix(in oklch, var(--hd-mint) 96%, transparent) 0%,
+    var(--color-primary-500) 50%,
+    color-mix(in oklch, var(--color-primary-600) 82%, transparent) 100%
+  );
+  box-shadow: 0 0 10px 1px color-mix(in oklch, var(--hd-mint) 55%, transparent),
+    0 0 24px 3px color-mix(in oklch, var(--color-primary-500) 48%, transparent);
+  animation: dotBreath 2.8s var(--ease-in-out) infinite;
+  transform: translateY(-0.06em);
+}
+.dot::after {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--hd-mint) 45%, transparent);
+  animation: dotRipple 2.8s var(--ease-in-out) infinite;
+}
+.ai {
+  font-size: 0.62em;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: color-mix(in oklch, var(--hd-text) 52%, transparent);
+  align-self: center;
+  margin-left: 0.06em;
+}
+@keyframes dotBreath {
+  0%,
+  100% {
+    transform: translateY(-0.06em) scale(1);
+    box-shadow: 0 0 10px 1px color-mix(in oklch, var(--hd-mint) 52%, transparent),
+      0 0 22px 3px color-mix(in oklch, var(--color-primary-500) 44%, transparent);
+  }
+  50% {
+    transform: translateY(-0.06em) scale(1.1);
+    box-shadow: 0 0 14px 2px color-mix(in oklch, var(--hd-mint) 72%, transparent),
+      0 0 32px 5px color-mix(in oklch, var(--color-primary-500) 58%, transparent);
+  }
+}
+@keyframes dotRipple {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* 价值主张 */
+.tagline {
+  font-size: clamp(1.15rem, 2.2vw, 1.62rem);
+  font-weight: var(--fw-medium);
+  color: color-mix(in oklch, var(--hd-text) 82%, transparent);
+  letter-spacing: 0.01em;
+  margin: 0 0 var(--space-6);
+  line-height: 1.4;
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.34s var(--ease-out) forwards;
+}
+.accent {
+  background: linear-gradient(100deg, var(--color-primary-300), var(--hd-mint));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  font-weight: var(--fw-bold);
+}
+
+/* 极简卖点 */
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.points li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: color-mix(in oklch, var(--hd-text) 76%, transparent);
+  font-size: var(--text-body-lg);
+  opacity: 0;
+  animation: fadeUp var(--dur-4) var(--ease-out) forwards;
+}
+.points li:nth-child(1) {
+  animation-delay: 0.46s;
+}
+.points li:nth-child(2) {
+  animation-delay: 0.54s;
+}
+.points li:nth-child(3) {
+  animation-delay: 0.62s;
+}
+.ic {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  backdrop-filter: blur(8px);
+  color: var(--hd-mint);
+}
+.ic svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ════════════ 右栏：玻璃表单区 ════════════ */
+.panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-6);
+  background: radial-gradient(120% 90% at 80% 0%, var(--hd-bg2), var(--hd-bg) 70%);
+}
+.card {
+  width: 100%;
+  max-width: 430px;
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: var(--space-8) var(--space-8) var(--space-6);
+  box-shadow: 0 30px 80px -30px color-mix(in oklch, var(--color-primary-500) 30%, transparent);
+  opacity: 0;
+  animation: fadeUp var(--dur-4) 0.26s var(--ease-out) forwards;
+}
+/* 卡内标题/副标题由表单组件用全局 .auth-title / .auth-sub 渲染（见 auth.module.css），
+   保持登录/注册标题视觉与 home 抽屉版一致，故此处不再定义 .card h1 / .card .sub。 */
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ════════════ 移动端（≤860px）：上下堆叠 ════════════ */
+@media (max-width: 860px) {
+  .auth {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: 100svh;
+  }
+  .brand {
+    padding: var(--space-6) var(--space-5) var(--space-8);
+    min-height: auto;
+  }
+  .brandMid {
+    margin: var(--space-6) 0 0;
+    max-width: none;
+  }
+  .points {
+    display: none;
+  }
+  .mark {
+    font-size: clamp(2.2rem, 11vw, 3.2rem);
+    margin-bottom: var(--space-3);
+  }
+  .tagline {
+    font-size: clamp(1rem, 4.6vw, 1.3rem);
+    margin-bottom: 0;
+  }
+  .brandBottom {
+    display: none;
+  }
+  .panel {
+    padding: var(--space-6) var(--space-5) var(--space-8);
+    align-items: flex-start;
+  }
+  .card {
+    max-width: 560px;
+    padding: var(--space-6) var(--space-5);
+    backdrop-filter: blur(16px);
+  }
+}
+
+/* prefers-reduced-motion：不冻结背景，温和降速续跑 */
+@media (prefers-reduced-motion: reduce) {
+  .brandLogo,
+  .mark,
+  .tagline,
+  .points li,
+  .card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .brand::before {
+    animation-duration: 36s !important;
+  }
+  .dot {
+    animation-duration: 5.6s !important;
+  }
+  .dot::after {
+    animation: none !important;
+  }
+}
+.mark,
+.mark * {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}

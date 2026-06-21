@@ -1,0 +1,198 @@
+/**
+ * LegalDoc.module.css — 法律文档样式（agreement.html / privacy.html 1:1 工程化迁移）。
+ * 颜色全部走 token，无裸 hex。
+ */
+
+.page {
+  position: relative;
+}
+
+.docHead {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: var(--space-12) 0 var(--space-7);
+}
+.docPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 15px;
+  border-radius: var(--radius-full);
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  backdrop-filter: blur(8px);
+  font-size: var(--text-body-sm);
+  color: var(--hd-muted);
+  margin-bottom: var(--space-5);
+}
+.docPill svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--hd-mint);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.docHead h1 {
+  font-family: var(--font-brand);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-h1);
+  margin: 0 0 var(--space-3);
+  letter-spacing: -0.02em;
+  color: var(--hd-text);
+}
+.docSub {
+  color: var(--hd-muted);
+  font-size: var(--text-body-lg);
+  margin: 0 auto;
+  max-width: 60ch;
+  line-height: var(--lh-normal);
+}
+.docMeta {
+  margin-top: var(--space-4);
+  font-size: var(--text-body-sm);
+  color: color-mix(in oklch, var(--hd-text) 55%, transparent);
+}
+
+.docLayout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+  padding-bottom: var(--space-12);
+}
+.toc {
+  position: sticky;
+  top: 88px;
+  align-self: start;
+}
+.tocTitle {
+  font-size: var(--text-overline);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--hd-muted);
+  margin: 0 0 var(--space-3);
+  font-weight: var(--fw-semibold);
+}
+.toc nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-left: 1px solid var(--hd-line);
+  padding-left: var(--space-3);
+}
+.toc nav a {
+  color: color-mix(in oklch, var(--hd-text) 64%, transparent);
+  text-decoration: none;
+  font-size: var(--text-body);
+  padding: 7px 0 7px var(--space-3);
+  margin-left: -1px;
+  border-left: 2px solid transparent;
+  line-height: var(--lh-snug);
+  transition: color var(--dur-1), border-color var(--dur-1);
+}
+.toc nav a:hover {
+  color: var(--hd-text);
+  border-left-color: var(--color-primary-400);
+}
+
+.prose {
+  max-width: var(--container-prose);
+  font-size: var(--text-body-lg);
+  line-height: var(--lh-relaxed);
+}
+.prose section {
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid color-mix(in oklch, var(--hd-line) 55%, transparent);
+}
+.prose section:last-of-type {
+  border-bottom: none;
+}
+.prose h2 {
+  font-family: var(--font-brand);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-h3);
+  color: var(--hd-text);
+  margin: 0 0 var(--space-3);
+  scroll-margin-top: 88px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  letter-spacing: -0.01em;
+}
+.num {
+  font-size: var(--text-body);
+  color: var(--hd-mint);
+  font-family: var(--font-mono);
+  font-weight: var(--fw-medium);
+  min-width: 1.6em;
+}
+.prose p {
+  margin: 0 0 var(--space-3);
+  color: color-mix(in oklch, var(--hd-text) 90%, transparent);
+}
+.prose p:last-child {
+  margin-bottom: 0;
+}
+.prose ul {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+  color: color-mix(in oklch, var(--hd-text) 82%, transparent);
+}
+.prose li {
+  margin-bottom: var(--space-2);
+}
+.prose li::marker {
+  color: var(--hd-mint);
+}
+.prose strong {
+  color: var(--hd-text);
+  font-weight: var(--fw-semibold);
+}
+.prose a {
+  color: var(--hd-mint);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklch, var(--hd-mint) 40%, transparent);
+}
+.prose a:hover {
+  border-bottom-color: var(--hd-mint);
+}
+.callout {
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  border-left: 2px solid var(--color-primary-500);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  margin: var(--space-4) 0;
+  font-size: var(--text-body);
+  color: color-mix(in oklch, var(--hd-text) 78%, transparent);
+}
+
+@media (max-width: 860px) {
+  .docLayout {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+  .toc {
+    position: static;
+  }
+  .toc nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-left: none;
+    padding-left: 0;
+    gap: var(--space-2);
+  }
+  .toc nav a {
+    border-left: none;
+    padding: 5px 10px;
+    border-radius: var(--radius-full);
+    background: var(--hd-glass);
+    border: 1px solid var(--hd-line);
+    font-size: var(--text-body-sm);
+  }
+}
