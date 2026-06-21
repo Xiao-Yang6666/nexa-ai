@@ -1,5 +1,6 @@
 package com.nexa.model.application;
 
+import com.nexa.model.application.port.RefreshPricingPort;
 import com.nexa.model.domain.exception.InvalidModelParameterException;
 import com.nexa.model.domain.exception.PublicModelNotFoundException;
 import com.nexa.model.domain.model.PublicModel;
@@ -25,10 +26,15 @@ import java.util.Optional;
 public class ManagePublicModelUseCase {
 
     private final PublicModelRepository repository;
+    private final RefreshPricingPort refreshPricing;
 
-    /** @param repository 对外模型仓储 */
-    public ManagePublicModelUseCase(PublicModelRepository repository) {
+    /**
+     * @param repository     对外模型仓储
+     * @param refreshPricing 定价缓存刷新端口（PublicModel 改价后必须触发，F-6001 对齐 ML-1）
+     */
+    public ManagePublicModelUseCase(PublicModelRepository repository, RefreshPricingPort refreshPricing) {
         this.repository = repository;
+        this.refreshPricing = refreshPricing;
     }
 
     /**
@@ -79,7 +85,9 @@ public class ManagePublicModelUseCase {
         repository.findByPublicName(model.publicName()).ifPresent(existing -> {
             throw new InvalidModelParameterException("对外模型名已存在");
         });
-        return repository.save(model);
+        PublicModel saved = repository.save(model);
+        refreshPricing.refresh();
+        return saved;
     }
 
     /**
@@ -107,7 +115,9 @@ public class ManagePublicModelUseCase {
         Optional<PublicModel> existing = repository.findById(id);
         PublicModel model = existing.orElseThrow(() -> new PublicModelNotFoundException(id));
         model.update(qualityTier, basePriceRatio, usePrice, basePrice, enabled, displayName, sortOrder);
-        return repository.save(model);
+        PublicModel saved = repository.save(model);
+        refreshPricing.refresh();
+        return saved;
     }
 
     /**
@@ -122,5 +132,6 @@ public class ManagePublicModelUseCase {
             throw new PublicModelNotFoundException(id);
         }
         repository.deleteById(id);
+        refreshPricing.refresh();
     }
 }

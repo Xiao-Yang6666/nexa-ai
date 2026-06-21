@@ -6,6 +6,7 @@ import {
   useModelAliases,
   useAliasCandidates,
   useCreateAlias,
+  useUpdateAlias,
   useDeleteAlias,
   type AliasScope,
   type AliasVM,
@@ -90,11 +91,16 @@ export function ModelMapPage() {
   const { data: aliases, isLoading, isError, refetch } = useModelAliases();
   const { data: candidates } = useAliasCandidates();
   const createMut = useCreateAlias();
+  const updateMut = useUpdateAlias();
   const deleteMut = useDeleteAlias();
 
   const [scope, setScope] = useState<AliasScope>('user');
   const [adding, setAdding] = useState(false);
   const [pendingDel, setPendingDel] = useState<AliasVM | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTarget, setEditTarget] = useState('');
+  const [editEnabled, setEditEnabled] = useState(true);
+  const [editDdOpen, setEditDdOpen] = useState(false);
 
   // 新增表单态
   const [newAlias, setNewAlias] = useState('');
@@ -132,6 +138,7 @@ export function ModelMapPage() {
     setNewTarget('');
     setDdOpen(false);
     setAliasErr(false);
+    setEditingId(null);
   }
 
   function handleSave() {
@@ -145,6 +152,45 @@ export function ModelMapPage() {
       { onSuccess: resetAdd },
     );
   }
+
+  function startEdit(r: AliasVM) {
+    setEditingId(r.id);
+    setEditTarget(r.target);
+    setEditEnabled(r.enabled);
+    setAdding(false);
+    setEditDdOpen(false);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditTarget('');
+    setEditEnabled(true);
+    setEditDdOpen(false);
+  }
+
+  function submitEdit() {
+    if (editingId == null) return;
+    const t = editTarget.trim();
+    if (!t) return;
+    updateMut.mutate(
+      { id: editingId, payload: { target: t, enabled: editEnabled } },
+      { onSuccess: cancelEdit },
+    );
+  }
+
+  const editFiltered = useMemo(() => {
+    const list = candidates ?? [];
+    const q = editTarget.trim().toLowerCase();
+    if (!q) return list;
+    return list
+      .filter((c) => c.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const pa = a.toLowerCase().indexOf(q);
+        const pb = b.toLowerCase().indexOf(q);
+        if (pa !== pb) return pa - pb;
+        return a.length - b.length;
+      });
+  }, [candidates, editTarget]);
 
   const actions = (
     <button
@@ -258,6 +304,66 @@ export function ModelMapPage() {
               ) : (
                 rows.map((r) => {
                   const overrides = scope === 'user' && r.alias === 'claude-3-5-sonnet';
+                  const isEditing = editingId === r.id;
+                  if (isEditing) {
+                    return (
+                      <tr key={r.id} className={styles.addrow}>
+                        <td className={styles.cName}>{r.alias}</td>
+                        <td className={styles.arrowCell}><NxIc>{Ic.arrow}</NxIc></td>
+                        <td>
+                          <div className={styles.edField}>
+                            <div className={styles.combo}>
+                              <input
+                                className="input"
+                                placeholder="平台模型 A"
+                                autoFocus
+                                value={editTarget}
+                                onFocus={() => setEditDdOpen(true)}
+                                onChange={(e) => { setEditTarget(e.target.value); setEditDdOpen(true); }}
+                                onBlur={() => setTimeout(() => setEditDdOpen(false), 120)}
+                              />
+                              {editDdOpen && (
+                                <div className={styles.dropdown} role="listbox">
+                                  {editFiltered.length === 0 ? (
+                                    <div className={styles.optEmpty}>无匹配的平台模型</div>
+                                  ) : editFiltered.slice(0, 20).map((c) => (
+                                    <div
+                                      key={c}
+                                      className={styles.opt}
+                                      onMouseDown={(e) => { e.preventDefault(); setEditTarget(c); setEditDdOpen(false); }}
+                                    >
+                                      <div className={styles.optName}>{c}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 'var(--text-caption)' }}>
+                              <input type="checkbox" checked={editEnabled} onChange={(e) => setEditEnabled(e.target.checked)} />
+                              启用该映射
+                            </label>
+                          </div>
+                        </td>
+                        <td><span className={styles.scopeTag}>{scope === 'user' ? '仅本人' : '整个分组'}</span></td>
+                        <td />
+                        <td>
+                          <div className={styles.edActs}>
+                            <button
+                              className="btn btn-primary"
+                              style={{ height: 30, padding: '0 var(--space-3)' }}
+                              disabled={updateMut.isPending}
+                              onClick={submitEdit}
+                            >
+                              {updateMut.isPending ? '保存中…' : '保存'}
+                            </button>
+                            <button className={styles.iconact} type="button" title="取消" onClick={cancelEdit}>
+                              <NxIc><path d="M6 6l12 12M18 6L6 18" /></NxIc>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
                   return (
                     <tr key={r.id}>
                       <td className={styles.cName}>{r.alias}</td>
@@ -285,7 +391,7 @@ export function ModelMapPage() {
                       </td>
                       <td>
                         <div className={styles.rowacts}>
-                          <button className={styles.iconact} type="button" title="编辑">
+                          <button className={styles.iconact} type="button" title="编辑" onClick={() => startEdit(r)}>
                             <NxIc>{Ic.edit}</NxIc>
                           </button>
                           <button

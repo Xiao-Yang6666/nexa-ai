@@ -24,3 +24,11 @@ export interface OptionItem {
 export function getOptions(): Promise<OptionItem[]> {
   return http.get<OptionItem[]>('/api/option/');
 }
+
+/**
+ * 更新单个选项键值。
+ * openapi: PUT /api/option/ (F-4018, rootAuth) → ApiResponse
+ */
+export function updateOption(key: string, value: string): Promise<void> {
+  return http.put<void>('/api/option/', { json: { key, value } });
+}

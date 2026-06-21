@@ -151,7 +151,7 @@ export function useToggleToken() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, enable }: { id: number; enable: boolean }) =>
-      updateToken(id, { status_only: true, name: '', ...(enable ? {} : {}) }),
+      updateToken(id, { status_only: true, status: enable ? 1 : 2 }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['token', 'list'] }),
   });
 }
