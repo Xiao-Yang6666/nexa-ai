@@ -11,12 +11,15 @@
 import { http } from '@/shared/api';
 import type {
   PublicModelAdminView,
+  PublicModelCreateRequest,
+  PublicModelUpdateRequest,
   ModelMetaAdminView,
   VendorAdminView,
   ChannelModelCostAdminView,
   ChannelPoolMember,
   PlatformModelMappingAdminView,
   ModelSyncDiff,
+  ModelSyncResult,
 } from '@/shared/api';
 
 /* ── 对外模型 ─────────────────────────────────────────────────────────── */
@@ -29,6 +32,21 @@ export function getPublicModels(page = 1, pageSize = 50): Promise<PublicModelLis
   return http.get<PublicModelListResponse>('/api/public_models', {
     query: { p: page, page_size: pageSize },
   });
+}
+
+/** POST /api/public_models (F-6001) 创建对外模型。 */
+export function createPublicModel(req: PublicModelCreateRequest): Promise<PublicModelAdminView> {
+  return http.post<PublicModelAdminView>('/api/public_models', { json: req });
+}
+
+/** PUT /api/public_models (F-6001/F-6004) 更新对外模型（A 不可改）。 */
+export function updatePublicModel(req: PublicModelUpdateRequest): Promise<PublicModelAdminView> {
+  return http.put<PublicModelAdminView>('/api/public_models', { json: req });
+}
+
+/** DELETE /api/public_models/{id} (F-6001) 删除对外模型。 */
+export function deletePublicModel(id: number): Promise<void> {
+  return http.delete<void>(`/api/public_models/${id}`);
 }
 
 /* ── A→B 底仓映射 ─────────────────────────────────────────────────────── */
@@ -107,6 +125,11 @@ export function previewModelSync(locale?: string): Promise<ModelSyncDiff> {
   return http.post<ModelSyncDiff>('/api/models/sync/preview', {
     json: locale ? { locale } : {},
   });
+}
+
+/** POST /api/models/sync (F-3019) 执行上游同步。models 为空=全量。 */
+export function executeModelSync(req: { overwrite?: boolean; models?: string[] } = {}): Promise<ModelSyncResult> {
+  return http.post<ModelSyncResult>('/api/models/sync', { json: req });
 }
 
 /* ── 供应商元数据 ─────────────────────────────────────────────────────── */

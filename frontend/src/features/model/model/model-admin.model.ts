@@ -10,6 +10,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   PublicModelAdminView,
+  PublicModelCreateRequest,
+  PublicModelUpdateRequest,
   ModelMetaAdminView,
   VendorAdminView,
   ChannelModelCostAdminView,
@@ -18,12 +20,16 @@ import type {
 } from '@/shared/api';
 import {
   getPublicModels,
+  createPublicModel,
+  updatePublicModel,
+  deletePublicModel,
   getModelMappings,
   getChannelPool,
   getChannelModelCosts,
   getModelMetas,
   getMissingModels,
   previewModelSync,
+  executeModelSync,
   getVendors,
 } from '../api/model-admin.api';
 
@@ -55,6 +61,12 @@ export interface PublicModelVM {
   tierLabel: string;
   /** 基准价倍率文案 */
   priceRatio: string;
+  /** 基准价倍率原值（编辑用） */
+  priceRatioNum: number;
+  /** 排序（编辑用） */
+  sortOrder: number;
+  /** 描述（编辑用） */
+  description: string;
   /** 映射到的真实上游 B（来自 platform_model_mappings，可能多个取首个 + 计数） */
   b: string;
   bCount: number;
@@ -85,6 +97,9 @@ export function toPublicModelVM(
     tier,
     tierLabel: TIER_LABEL[tier] ?? tier,
     priceRatio: view.base_price_ratio != null ? `×${Number(view.base_price_ratio).toFixed(2)}` : '—',
+    priceRatioNum: view.base_price_ratio != null ? Number(view.base_price_ratio) : 1,
+    sortOrder: view.sort_order ?? 0,
+    description: view.description || '',
     b: bList[0] ?? '',
     bCount: bList.length,
     poolCount: myPool.length,
@@ -249,7 +264,7 @@ export function useVendors() {
   });
 }
 
-/* ── 缺失检测 / 同步预览 ──────────────────────────────────────────────── */
+/* ── 缺失检测 / 同步预览 / 同步执行 ──────────────────────────────────── */
 
 /** 缺失模型检测 mutation（按需触发）。 */
 export function useMissingModels() {
@@ -259,6 +274,44 @@ export function useMissingModels() {
 /** 上游同步预览 mutation。 */
 export function useModelSyncPreview() {
   return useMutation({ mutationFn: (locale?: string) => previewModelSync(locale) });
+}
+
+/** 上游同步执行 mutation。成功后刷新模型管理域。 */
+export function useModelSyncExecute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (req: { overwrite?: boolean; models?: string[] } = {}) => executeModelSync(req),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin'] }),
+  });
+}
+
+/* ── 对外模型写操作 ───────────────────────────────────────────────────── */
+
+/** 创建对外模型 mutation。 */
+export function useCreatePublicModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (req: PublicModelCreateRequest) => createPublicModel(req),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin', 'public-models'] }),
+  });
+}
+
+/** 更新对外模型 mutation（含上下架切换）。 */
+export function useUpdatePublicModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (req: PublicModelUpdateRequest) => updatePublicModel(req),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin', 'public-models'] }),
+  });
+}
+
+/** 删除对外模型 mutation。 */
+export function useDeletePublicModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deletePublicModel(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin', 'public-models'] }),
+  });
 }
 
 /** 用于 invalidate 全模型管理域缓存。 */

@@ -11,6 +11,10 @@ import {
   useVendors,
   useMissingModels,
   useModelSyncPreview,
+  useModelSyncExecute,
+  useCreatePublicModel,
+  useUpdatePublicModel,
+  useDeletePublicModel,
   TIER_LABEL,
   MODEL_STATE_MAP,
   type PublicModelVM,
@@ -18,6 +22,7 @@ import {
   type ModelMetaVM,
   type VendorVM,
   type ModelState,
+  type Tier,
 } from '../model/model-admin.model';
 import styles from './ModelsAdminPage.module.css';
 
@@ -164,10 +169,30 @@ export function ModelsAdminPage() {
   const metasQuery = useModelMetas();
   const vendorsQuery = useVendors();
 
-  /* 缺失检测 + 同步预览 */
+  /* 缺失检测 + 同步预览/执行 */
   const missingMutation = useMissingModels();
   const syncMutation = useModelSyncPreview();
+  const syncExecMutation = useModelSyncExecute();
   const [syncOpen, setSyncOpen] = useState(false);
+
+  /* 对外模型写操作 */
+  const createPub = useCreatePublicModel();
+  const updatePub = useUpdatePublicModel();
+  const deletePub = useDeletePublicModel();
+
+  /* 对外模型编辑抽屉 */
+  const [pubDrawerOpen, setPubDrawerOpen] = useState(false);
+  const [pubEditId, setPubEditId] = useState<number | null>(null);
+  const [pubForm, setPubForm] = useState({
+    public_name: '',
+    display_name: '',
+    quality_tier: 'air' as Tier,
+    base_price_ratio: '1',
+    sort_order: '0',
+    description: '',
+    enabled: true,
+  });
+  const [pubErr, setPubErr] = useState<string | null>(null);
 
   /* 对外模型筛选 */
   const [pTier, setPTier] = useState('');
@@ -244,6 +269,74 @@ export function ModelsAdminPage() {
     setSyncOpen(true);
     if (!syncMutation.data) await syncMutation.mutateAsync(undefined);
   }
+  async function handleSyncExecute() {
+    await syncExecMutation.mutateAsync({});
+    setSyncOpen(false);
+  }
+
+  /* ── 对外模型抽屉 ── */
+  function openPubNew() {
+    setPubEditId(null);
+    setPubErr(null);
+    setPubForm({ public_name: '', display_name: '', quality_tier: 'air', base_price_ratio: '1', sort_order: '0', description: '', enabled: true });
+    setPubDrawerOpen(true);
+  }
+  function openPubEdit(r: PublicModelVM) {
+    setPubEditId(r.id);
+    setPubErr(null);
+    setPubForm({
+      public_name: r.a,
+      display_name: r.disp,
+      quality_tier: (r.tier as Tier) || 'air',
+      base_price_ratio: String(r.priceRatioNum),
+      sort_order: String(r.sortOrder),
+      description: r.description,
+      enabled: r.on,
+    });
+    setPubDrawerOpen(true);
+  }
+  async function handlePubSave() {
+    setPubErr(null);
+    const a = pubForm.public_name.trim();
+    if (!a) { setPubErr('对外名 A 必填'); return; }
+    const ratio = Number(pubForm.base_price_ratio);
+    if (Number.isNaN(ratio) || ratio < 0) { setPubErr('基准价倍率非法'); return; }
+    const sort = Number(pubForm.sort_order) || 0;
+    try {
+      if (pubEditId == null) {
+        await createPub.mutateAsync({
+          public_name: a,
+          display_name: pubForm.display_name.trim() || undefined,
+          quality_tier: pubForm.quality_tier,
+          base_price_ratio: ratio,
+          sort_order: sort,
+          description: pubForm.description.trim() || undefined,
+          enabled: pubForm.enabled,
+        });
+      } else {
+        // A 不可改，更新不传 public_name
+        await updatePub.mutateAsync({
+          id: pubEditId,
+          quality_tier: pubForm.quality_tier,
+          base_price_ratio: ratio,
+          sort_order: sort,
+          display_name: pubForm.display_name.trim() || undefined,
+          enabled: pubForm.enabled,
+        });
+      }
+      setPubDrawerOpen(false);
+    } catch (e) {
+      setPubErr(e instanceof ApiError ? e.message : '保存失败，请稍后重试');
+    }
+  }
+  async function handlePubToggle(r: PublicModelVM) {
+    await updatePub.mutateAsync({ id: r.id, enabled: !r.on });
+  }
+  async function handlePubDelete(r: PublicModelVM) {
+    await deletePub.mutateAsync(r.id);
+  }
+  const pubSaving = createPub.isPending || updatePub.isPending;
+
 
   return (
     <AdminShell
@@ -306,6 +399,7 @@ export function ModelsAdminPage() {
             <input className={styles.srch} type="search" placeholder="搜索对外名 / 展示名"
               value={pSearch} onChange={(e) => setPSearch(e.target.value)} />
             <span className={styles.grow} />
+            <Button variant="primary" size="sm" onClick={openPubNew}>新建对外模型</Button>
           </section>
 
           <section className={`${styles.tableCard} nx-fade`}>
@@ -315,11 +409,11 @@ export function ModelsAdminPage() {
                   <tr>
                     <th>对外名 (A)</th><th>品质档</th>
                     <th>基准售价倍率</th><th>底仓映射 A 到 B（B 不可见）</th>
-                    <th>供应渠道池</th><th>状态</th>
+                    <th>供应渠道池</th><th>状态</th><th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <StateRow colSpan={6} loading={pubsQuery.isLoading} error={pubsQuery.error} empty={filteredPubs.length === 0} />
+                  <StateRow colSpan={7} loading={pubsQuery.isLoading} error={pubsQuery.error} empty={filteredPubs.length === 0} />
                   {filteredPubs.map((r) => (
                     <tr key={r.id}>
                       <td className={styles.cellmono}>
@@ -331,6 +425,13 @@ export function ModelsAdminPage() {
                       <td><MapCell b={r.b} count={r.bCount} /></td>
                       <td><PoolCell count={r.poolCount} main={r.poolMain} /></td>
                       <td><PubStateBadge on={r.on} /></td>
+                      <td>
+                        <div className={styles.rowActs}>
+                          <a onClick={() => openPubEdit(r)}>编辑</a>
+                          <a onClick={() => handlePubToggle(r)}>{r.on ? '下架' : '上架'}</a>
+                          <a className={styles.dang} onClick={() => handlePubDelete(r)}>删除</a>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -517,6 +618,103 @@ export function ModelsAdminPage() {
         </div>
       )}
 
+      {/* ════ 对外模型 编辑/新建 抽屉 ════ */}
+      <div className={`${styles.drawerScrim}${pubDrawerOpen ? ' ' + styles.on : ''}`} onClick={() => setPubDrawerOpen(false)} />
+      <aside className={`${styles.drawer}${pubDrawerOpen ? ' ' + styles.on : ''}`} aria-label="对外模型编辑">
+        <div className={styles.drawerHead}>
+          <h2 className={styles.drawerTitle}>{pubEditId == null ? '新建对外模型' : '编辑对外模型'}</h2>
+          <button className={styles.drawerX} onClick={() => setPubDrawerOpen(false)} aria-label="关闭">×</button>
+        </div>
+        <div className={styles.drawerBody}>
+          <div>
+            <label className="field-label">对外名 A <span className="field-req">*</span></label>
+            <input
+              className={`input ${styles.cellmono}`}
+              placeholder="例如：opus-4.8-经济"
+              value={pubForm.public_name}
+              disabled={pubEditId != null}
+              onChange={(e) => setPubForm((f) => ({ ...f, public_name: e.target.value }))}
+            />
+            {pubEditId != null && <div className={styles.fieldHint}>对外名 A 建后不可改</div>}
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label className="field-label">展示名</label>
+            <input
+              className="input"
+              placeholder="例如：Claude Opus 4.8 经济版"
+              value={pubForm.display_name}
+              onChange={(e) => setPubForm((f) => ({ ...f, display_name: e.target.value }))}
+            />
+          </div>
+          <div className={styles.row2} style={{ marginTop: 'var(--space-3)' }}>
+            <div>
+              <label className="field-label">品质档</label>
+              <select
+                className="input"
+                value={pubForm.quality_tier}
+                onChange={(e) => setPubForm((f) => ({ ...f, quality_tier: e.target.value as Tier }))}
+              >
+                <option value="full">旗舰</option>
+                <option value="max">增强</option>
+                <option value="air">经济</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label">基准价倍率</label>
+              <input
+                className={`input ${styles.cellmono}`}
+                value={pubForm.base_price_ratio}
+                inputMode="decimal"
+                onChange={(e) => setPubForm((f) => ({ ...f, base_price_ratio: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label className="field-label">排序</label>
+            <input
+              className={`input ${styles.cellmono}`}
+              value={pubForm.sort_order}
+              inputMode="numeric"
+              onChange={(e) => setPubForm((f) => ({ ...f, sort_order: e.target.value }))}
+            />
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label className="field-label">描述</label>
+            <input
+              className="input"
+              value={pubForm.description}
+              onChange={(e) => setPubForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div className={styles.swRow} style={{ marginTop: 'var(--space-4)' }}>
+            <label className="field-label" style={{ margin: 0 }}>上架（对所有客户可见可用）</label>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={pubForm.enabled}
+                onChange={(e) => setPubForm((f) => ({ ...f, enabled: e.target.checked }))}
+              />
+              <span className="track" />
+              <span className="thumb" />
+            </label>
+          </div>
+          <div className={styles.fieldHint} style={{ marginTop: 'var(--space-3)' }}>
+            底仓映射 A→B 与供应渠道池在「平台映射 / 渠道池」中单独维护，此处仅管理对外商品本身。
+          </div>
+          {pubErr && (
+            <div className={styles.fieldHint} style={{ marginTop: 'var(--space-3)', color: 'var(--color-danger)' }}>
+              {pubErr}
+            </div>
+          )}
+        </div>
+        <div className={styles.drawerFoot}>
+          <Button variant="ghost" onClick={() => setPubDrawerOpen(false)}>取消</Button>
+          <Button variant="primary" onClick={handlePubSave} disabled={pubSaving}>
+            {pubSaving ? '保存中…' : '保存'}
+          </Button>
+        </div>
+      </aside>
+
       {/* ════ 同步预览 Modal ════ */}
       <div className={`${styles.modalScrim}${syncOpen ? ' ' + styles.on : ''}`}
         onClick={(e) => { if (e.target === e.currentTarget) setSyncOpen(false); }}>
@@ -573,8 +771,24 @@ export function ModelsAdminPage() {
             )}
           </div>
           <div className={styles.modalFoot}>
+            {syncExecMutation.isError && (
+              <span className="field-hint" style={{ color: 'var(--color-danger)', marginRight: 'auto' }}>
+                {syncExecMutation.error instanceof ApiError ? syncExecMutation.error.message : '同步失败'}
+              </span>
+            )}
+            {syncExecMutation.isSuccess && (
+              <span className="field-hint" style={{ color: 'var(--color-success)', marginRight: 'auto' }}>
+                同步完成：新增 {syncExecMutation.data.created_models ?? 0} 模型 / {syncExecMutation.data.created_vendors ?? 0} 供应商，更新 {syncExecMutation.data.updated_models ?? 0}，跳过 {syncExecMutation.data.skipped_models ?? 0}。
+              </span>
+            )}
             <Button variant="ghost" onClick={() => setSyncOpen(false)}>关闭</Button>
-            <span className="field-hint" style={{ marginLeft: 'auto' }}>同步执行（写库）将在后续接入，此处仅预览差异。</span>
+            <Button
+              variant="primary"
+              onClick={handleSyncExecute}
+              disabled={syncExecMutation.isPending || syncMutation.isPending || !syncDiff}
+            >
+              {syncExecMutation.isPending ? '同步中…' : '确认执行同步'}
+            </Button>
           </div>
         </div>
       </div>

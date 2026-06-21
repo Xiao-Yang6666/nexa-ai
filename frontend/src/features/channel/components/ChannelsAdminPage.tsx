@@ -8,6 +8,8 @@ import {
   useChannels,
   useDeleteChannel,
   useBatchOperateChannels,
+  useCreateChannel,
+  useUpdateChannel,
   TYPE_OPTIONS,
   type ChannelStatus,
   type ChannelRowVM,
@@ -85,7 +87,9 @@ export function ChannelsAdminPage() {
   // 抽屉
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'new' | 'edit'>('new');
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<DrawerForm>(INIT_FORM);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
 
   // API Key 标签
   const [keys, setKeys] = useState<string[]>([]);
@@ -106,6 +110,8 @@ export function ChannelsAdminPage() {
 
   const deleteMutation = useDeleteChannel();
   const batchMutation = useBatchOperateChannels();
+  const createMutation = useCreateChannel();
+  const updateMutation = useUpdateChannel();
 
   /* ── 客户端过滤（type/search 在当前页过滤；status 已下推后端） ── */
   const filtered = useMemo(() => {
@@ -151,7 +157,9 @@ export function ChannelsAdminPage() {
   /* ── 抽屉 ── */
   function openDrawer(mode: 'new' | 'edit', row?: ChannelRowVM) {
     setDrawerMode(mode);
+    setSaveErr(null);
     if (mode === 'edit' && row) {
+      setEditId(row.id);
       setForm({
         name: row.name,
         type: row.type,
@@ -162,12 +170,48 @@ export function ChannelsAdminPage() {
         enabled: row.st === 'on',
       });
     } else {
+      setEditId(null);
       setForm(INIT_FORM);
     }
     setKeys([]);
     setDrawerOpen(true);
   }
   function closeDrawer() { setDrawerOpen(false); }
+
+  /* ── 保存渠道（新建 POST / 编辑 PUT，覆盖式；key 留空=保留原 key） ── */
+  async function handleSave() {
+    setSaveErr(null);
+    const name = form.name.trim();
+    if (!name) { setSaveErr('请填写渠道名'); return; }
+    const typeCode = TYPE_OPTIONS.find((t) => t.label === form.type)?.code ?? 1;
+    const keyStr = keys.join('\n');
+    const priority = Number(form.priority) || 0;
+    const weight = Number(form.weight) || 0;
+    // status 由 enabled 决定：编辑时启用=1，禁用=2（手动）；后端覆盖式更新接受 type/models 等
+    const base = {
+      type: typeCode,
+      name,
+      group: 'default',
+      base_url: form.baseUrl.trim() || undefined,
+      models: form.modelMap.trim() || '',
+      model_mapping: form.modelMap.trim() || undefined,
+      priority,
+      weight,
+      auto_ban: 1,
+    };
+    try {
+      if (drawerMode === 'new') {
+        if (!keyStr) { setSaveErr('新建渠道必须填写至少一个 API Key'); return; }
+        await createMutation.mutateAsync({ ...base, key: keyStr });
+      } else if (editId != null) {
+        // 编辑：key 留空表示保留原 key（后端聚合处理）
+        await updateMutation.mutateAsync({ id: editId, ...base, key: keyStr || undefined } as Parameters<typeof updateMutation.mutateAsync>[0]);
+      }
+      setDrawerOpen(false);
+    } catch (e) {
+      setSaveErr(e instanceof ApiError ? e.message : '保存失败，请稍后重试');
+    }
+  }
 
   /* ── Key 标签输入 ── */
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -409,14 +453,27 @@ export function ChannelsAdminPage() {
               <span className="thumb" />
             </label>
           </div>
-          <div className="field-hint" style={{ marginTop: 'var(--space-3)' }}>
-            渠道创建/编辑的完整提交（含多 Key 写入）将在后续接入；当前抽屉用于查看与字段编辑。
-          </div>
+          {drawerMode === 'edit' && (
+            <div className="field-hint" style={{ marginTop: 'var(--space-3)' }}>
+              API Key 留空表示保留原有 Key；填入则覆盖。
+            </div>
+          )}
+          {saveErr && (
+            <div className="field-hint" style={{ marginTop: 'var(--space-3)', color: 'var(--color-danger)' }}>
+              {saveErr}
+            </div>
+          )}
         </div>
 
         <div className={styles.drawerFoot}>
           <Button variant="ghost" onClick={closeDrawer}>取消</Button>
-          <Button variant="primary" onClick={closeDrawer}>保存渠道</Button>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={createMutation.isPending || updateMutation.isPending}
+          >
+            {createMutation.isPending || updateMutation.isPending ? '保存中…' : '保存渠道'}
+          </Button>
         </div>
       </aside>
     </AdminShell>
