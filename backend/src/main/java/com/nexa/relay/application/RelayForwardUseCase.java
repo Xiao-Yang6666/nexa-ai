@@ -20,6 +20,7 @@ import com.nexa.relay.domain.service.RelayPathResolver;
 import com.nexa.relay.domain.service.TwoLayerModelResolver;
 import com.nexa.relay.domain.vo.AliasScope;
 import com.nexa.relay.domain.vo.BillingResult;
+import com.nexa.routing.application.SelectRelayChannelUseCase;
 import com.nexa.relay.domain.vo.ModelResolution;
 import com.nexa.relay.domain.vo.RelayDispatch;
 import com.nexa.relay.domain.vo.RelayInfo;
@@ -44,19 +45,25 @@ public class RelayForwardUseCase {
     private final UpstreamHttpPort upstreamHttpPort;
     private final ChannelRepository channelRepo;
     private final ObjectMapper objectMapper;
+    private final KeyLimitGuard keyLimitGuard;
+    private final SelectRelayChannelUseCase selectRelayChannelUseCase;
 
     public RelayForwardUseCase(PlatformModelMappingRepository l2Repo,
                                UserModelAliasRepository l1Repo,
                                RelayLogRepository logRepo,
                                UpstreamHttpPort upstreamHttpPort,
                                ChannelRepository channelRepo,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               KeyLimitGuard keyLimitGuard,
+                               SelectRelayChannelUseCase selectRelayChannelUseCase) {
         this.l2Repo = l2Repo;
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
         this.upstreamHttpPort = upstreamHttpPort;
         this.channelRepo = channelRepo;
         this.objectMapper = objectMapper;
+        this.keyLimitGuard = keyLimitGuard;
+        this.selectRelayChannelUseCase = selectRelayChannelUseCase;
     }
 
     /**
@@ -119,12 +126,16 @@ public class RelayForwardUseCase {
                 resolveModel(requestedModel, authContext.userId(), authContext.group());
         String upstreamModel = resolution.upstream(); // B：真实上游模型名
 
-        // ③ key 减法校验（ModelLimits 对 A / EndpointLimits 对 inFmt）。
-        // TODO REQ-06: 接入 Token.modelLimits/endpointLimits 减法校验（默认全开放行）。
+        // ③ key 减法校验（ModelLimits 对 A / EndpointLimits 对 inFmt，默认全开放行）。
+        // REQ-06: 接入 KeyLimitGuard（tokenId 为空时——token 鉴权未接线——按默认全开放行）。
+        if (authContext.tokenId() != null) {
+            keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
+        }
 
         // ④ 选渠（group×B → Ability 加权随机 + CH-4 亲和 + CH-5 重试）。
-        // TODO REQ-03: 接入 ResolveChannelRouteUseCase（AbilityBackedChannelSelectionAdapter）替换以下占位选渠。
-        Channel channel = selectChannelPlaceholder(authContext.group(), upstreamModel);
+        // REQ-03: 经 SelectRelayChannelUseCase 按 Ability 表 group×B 加权随机选中完整 Channel 聚合；
+        //         无候选抛 NoAvailableChannelException。CH-4 亲和 / CH-5 重试循环由 REQ-09/10 接入。
+        Channel channel = selectRelayChannelUseCase.selectChannel(authContext.group(), upstreamModel);
 
         // ⑤ 协议转换 + 调上游（RL-6 头尾决策 + RL-7 第⑤步）。
         // TODO REQ-04: 接入 ProtocolRegistry 做 inFmt==targetProto passthrough / 否则 IR 转换；

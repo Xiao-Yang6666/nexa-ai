@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -44,9 +45,30 @@ public class AbilityBackedChannelSelectionAdapter implements ChannelSelectionPor
     /** {@inheritDoc} */
     @Override
     public ChannelCandidate selectChannel(String group, String model, int priorityRetry) {
+        return selectChannel(group, model, priorityRetry, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>排除集语义（CH-5 重试切换）：在 Ability 候选拉取后、分层抽签前，先剔除
+     * {@code excludeChannelIds} 内的渠道；剔除后为空即视为该 (group, model) 已无可用渠道返回 null。
+     * 优先级分层/加权随机算法与无排除路径完全一致——排除只缩小候选池，不改变分层与权重语义。</p>
+     */
+    @Override
+    public ChannelCandidate selectChannel(String group, String model, int priorityRetry,
+                                          Set<Long> excludeChannelIds) {
         if (group == null || model == null) return null;
         List<AbilityJpaEntity> satisfied = abilityRepository.findSatisfied(group, model);
         if (satisfied.isEmpty()) return null;
+
+        // CH-5 重试切换：剔除已尝试（失败）渠道，避免重选同一坏渠道。
+        if (excludeChannelIds != null && !excludeChannelIds.isEmpty()) {
+            satisfied = satisfied.stream()
+                    .filter(a -> !excludeChannelIds.contains(a.getChannelId()))
+                    .toList();
+            if (satisfied.isEmpty()) return null;
+        }
 
         // 按 priority 降序分桶（TreeMap 反序 = 高优先级在前）。
         TreeMap<Long, List<AbilityJpaEntity>> tiers = new TreeMap<>(Comparator.reverseOrder());
