@@ -260,7 +260,7 @@ public class RelayForwardUseCase {
         settle(authContext.userId(), billing);
 
         // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段（inFmt/targetProto/converted）+ channel_id + 三金额。
-        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing);
+        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, false);
 
         // 透传上游 status + headers + 回转后 body（非流式）。
         return new RelayForwardResult(
@@ -369,7 +369,7 @@ public class RelayForwardUseCase {
             BillingResult billing = DualPriceBilling.compute(
                     usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
             settle(authContext.userId(), billing);
-            recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing);
+            recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, true);
             return;
         }
     }
@@ -708,8 +708,9 @@ public class RelayForwardUseCase {
     /** 落一条消费 Log（RL-7 第⑨步，Type=2 Consume）：三段模型 + 协议三字段 + channel_id + 三金额 + 真实 usage。 */
     private void recordConsumeLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
                                   ProtocolFormat targetProto, RelayAuthContext authContext,
-                                  UsageIR usage, BillingResult billing) {
+                                  UsageIR usage, BillingResult billing, boolean stream) {
         RelayInfo info = new RelayInfo();
+        info.setStream(stream);
         info.setUserId(authContext.userId());
         info.setUsername(authContext.username());
         info.setTokenId(authContext.tokenId());
