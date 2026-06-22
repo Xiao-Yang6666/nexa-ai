@@ -9,7 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UserView, LoginPayload, RegisterPayload, UserSetting } from '@/shared/api';
 import { ApiError } from '@/shared/api';
-import { getSelf, login, register, saveSetting } from '../api/account.api';
+import { getSelf, login, logout, register, saveSetting } from '../api/account.api';
 
 /**
  * 角色编码（与后端 domain/vo/Role 对齐：数值大小即权限高低）。
@@ -99,6 +99,20 @@ export function useLogin() {
 export function useRegister() {
   return useMutation<unknown, ApiError, RegisterPayload>({
     mutationFn: (payload) => register(payload),
+  });
+}
+
+/**
+ * 登出 mutation：清后端会话（GET /api/user/logout）。
+ * 无论请求成败都清空 React Query 缓存（含 self），杜绝登出后残留态被下个用户看到。
+ */
+export function useLogout() {
+  const qc = useQueryClient();
+  return useMutation<unknown, ApiError, void>({
+    mutationFn: () => logout(),
+    onSettled: () => {
+      qc.removeQueries();
+    },
   });
 }
 
