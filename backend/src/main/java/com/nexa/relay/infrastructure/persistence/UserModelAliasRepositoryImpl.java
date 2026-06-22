@@ -66,7 +66,14 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
 
     private UserModelAlias toDomain(UserModelAliasJpaEntity e) {
         AliasScope scope = new AliasScope(AliasScope.ScopeType.fromWire(e.getScopeType()), e.getScopeId());
-        return UserModelAlias.rehydrate(e.getId(), scope, e.getAlias(), e.getTarget(),
-                e.isEnabled(), e.getCreatedTime(), e.getUpdatedTime());
+        return UserModelAlias.builder()
+                .id(e.getId())
+                .scope(scope)
+                .alias(e.getAlias())
+                .target(e.getTarget())
+                .enabled(e.isEnabled())
+                .createdTime(e.getCreatedTime())
+                .updatedTime(e.getUpdatedTime())
+                .build();
     }
 }

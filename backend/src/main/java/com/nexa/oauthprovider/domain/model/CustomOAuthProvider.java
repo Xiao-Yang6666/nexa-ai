@@ -118,8 +118,118 @@ public class CustomOAuthProvider {
     public static CustomOAuthProvider rehydrate(Long id, String name, String clientId, String clientSecret,
                                                 OAuthEndpoints endpoints, String scopes, boolean enabled,
                                                 Instant createdAt, Instant updatedAt) {
-        return new CustomOAuthProvider(id, name, clientId, clientSecret, endpoints,
-                scopes, enabled, createdAt, updatedAt);
+        // 委托 Builder 装配：字段名自解释、null 归一逻辑（如 enabled）收敛在 Builder 一处。
+        return builder()
+                .id(id)
+                .name(name)
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .endpoints(endpoints)
+                .scopes(scopes)
+                .enabled(enabled)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （两个相邻 {@link Instant}（createdAt/updatedAt）位置参数极易写反，Builder 一目了然）。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建不变量与时间打点，纯还原已存状态。</p>
+     *
+     * @return 新的 provider 重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 自定义 OAuth provider 聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：{@code boolean enabled} 的 setter 接受<b>包装类型</b>并把 {@code null} 归一为
+     * false——这样 JPA 实体里可空列的兜底逻辑全部收敛在此，{@code CustomOAuthProviderRepositoryImpl.toDomain}
+     * 不再散落 {@code ?:} 三元。值对象 {@link OAuthEndpoints} 与 {@link Instant} 时间整体接收，不拆解。
+     * 装配委托私有构造器以兼容 final 字段。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private String name;
+        private String clientId;
+        private String clientSecret;
+        private OAuthEndpoints endpoints;
+        private String scopes;
+        private boolean enabled;
+        private Instant createdAt;
+        private Instant updatedAt;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（provider_id，未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param name provider 路由标识/展示名 */
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        /** @param clientId OAuth client id */
+        public Builder clientId(String clientId) {
+            this.clientId = clientId;
+            return this;
+        }
+
+        /** @param clientSecret OAuth client secret（敏感） */
+        public Builder clientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+            return this;
+        }
+
+        /** @param endpoints 端点三元组值对象 */
+        public Builder endpoints(OAuthEndpoints endpoints) {
+            this.endpoints = endpoints;
+            return this;
+        }
+
+        /** @param scopes scope 串，可为 null */
+        public Builder scopes(String scopes) {
+            this.scopes = scopes;
+            return this;
+        }
+
+        /** @param enabled 是否启用（null 归一为 false） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled != null && enabled;
+            return this;
+        }
+
+        /** @param createdAt 创建时间 */
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        /** @param updatedAt 最近更新时间 */
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的 provider 聚合（不触发创建不变量与时间打点）。
+         *
+         * @return 重建的 provider 聚合
+         */
+        public CustomOAuthProvider build() {
+            return new CustomOAuthProvider(id, name, clientId, clientSecret, endpoints,
+                    scopes, enabled, createdAt, updatedAt);
+        }
     }
 
     /**

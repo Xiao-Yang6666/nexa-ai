@@ -163,23 +163,26 @@ public class UserRepositoryImpl implements UserRepository {
         Email email = (e.getEmail() == null || e.getEmail().isBlank())
                 ? null
                 : Email.of(e.getEmail());
-        return User.rehydrate(
-                e.getId(),
-                Username.of(e.getUsername()),
-                e.getPassword(),
-                email,
-                Role.fromCode(e.getRole() == null ? Role.COMMON.code() : e.getRole()),
-                UserStatus.fromCode(e.getStatus() == null ? UserStatus.ENABLED.code() : e.getStatus()),
-                e.getQuota() == null ? 0L : e.getQuota(),
-                e.getAffCode(),
-                e.getInviterId() == null ? 0L : e.getInviterId(),
-                e.getLastLoginAt() == null ? 0L : e.getLastLoginAt(),
-                e.getDisplayName(),
-                e.getSetting(),
-                e.getGroup(),
-                e.getRemark(),
-                e.getUsedQuota() == null ? 0L : e.getUsedQuota(),
-                e.getRequestCount() == null ? 0L : e.getRequestCount(),
-                e.getCreatedAt() == null ? 0L : e.getCreatedAt());
+        // 数值列的 null 兜底（quota/inviterId/lastLoginAt/usedQuota/requestCount/createdAt → 0）
+        // 与 group 空白归一 default，统一收敛在 User.Builder 内，这里只做枚举解析与 email 归一。
+        return User.builder()
+                .id(e.getId())
+                .username(Username.of(e.getUsername()))
+                .passwordHash(e.getPassword())
+                .email(email)
+                .role(Role.fromCode(e.getRole() == null ? Role.COMMON.code() : e.getRole()))
+                .status(UserStatus.fromCode(e.getStatus() == null ? UserStatus.ENABLED.code() : e.getStatus()))
+                .quota(e.getQuota())
+                .affCode(e.getAffCode())
+                .inviterId(e.getInviterId())
+                .lastLoginAt(e.getLastLoginAt())
+                .displayName(e.getDisplayName())
+                .setting(e.getSetting())
+                .group(e.getGroup())
+                .remark(e.getRemark())
+                .usedQuota(e.getUsedQuota())
+                .requestCount(e.getRequestCount() == null ? null : e.getRequestCount().longValue())
+                .createdAt(e.getCreatedAt())
+                .build();
     }
 }

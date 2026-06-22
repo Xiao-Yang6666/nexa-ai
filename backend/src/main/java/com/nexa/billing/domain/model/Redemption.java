@@ -102,8 +102,126 @@ public final class Redemption {
     public static Redemption rehydrate(Long id, Integer creatorUserId, String key, RedemptionStatus status,
                                        String name, Quota quota, Long createdTime, Long redeemedTime,
                                        Integer usedUserId, Long expiredTime) {
-        return new Redemption(id, creatorUserId, key, status, name, quota,
-                createdTime, redeemedTime, usedUserId, expiredTime);
+        // 委托 Builder 装配：字段名自解释、过期时间 null→0（永不过期）的归一收敛在 Builder 一处。
+        return builder()
+                .id(id)
+                .creatorUserId(creatorUserId)
+                .key(key)
+                .status(status)
+                .name(name)
+                .quota(quota)
+                .createdTime(createdTime)
+                .redeemedTime(redeemedTime)
+                .usedUserId(usedUserId)
+                .expiredTime(expiredTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （兑换码 10 个重建参数里第 7/8/10 个都是 {@code Long} 时间戳，位置参数极易串位，Builder 一目了然）。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发生成不变量与状态机，纯还原已存状态。</p>
+     *
+     * @return 新的兑换码重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 兑换码聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：{@link #expiredTime(Long)} 把 {@code null} 归一为 {@code 0L}（永不过期，
+     * 与 {@link #create} 语义一致）——这样 JPA 实体里可空 {@code expired_time} 列的兜底逻辑
+     * 收敛在此，{@code RedemptionRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。
+     * 其余可空列（{@code redeemedTime}/{@code usedUserId}）保持 {@code null} 语义（未核销）。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private Integer creatorUserId;
+        private String key;
+        private RedemptionStatus status;
+        private String name;
+        private Quota quota;
+        private Long createdTime;
+        private Long redeemedTime;
+        private Integer usedUserId;
+        private Long expiredTime = 0L;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param creatorUserId 创建者用户 id */
+        public Builder creatorUserId(Integer creatorUserId) {
+            this.creatorUserId = creatorUserId;
+            return this;
+        }
+
+        /** @param key 兑换码明文 */
+        public Builder key(String key) {
+            this.key = key;
+            return this;
+        }
+
+        /** @param status 当前状态 */
+        public Builder status(RedemptionStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        /** @param name 名称/批次标识，可为 null */
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        /** @param quota 面额额度值对象 */
+        public Builder quota(Quota quota) {
+            this.quota = quota;
+            return this;
+        }
+
+        /** @param createdTime 创建时间（epoch 秒） */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param redeemedTime 核销时间（epoch 秒），未核销为 null */
+        public Builder redeemedTime(Long redeemedTime) {
+            this.redeemedTime = redeemedTime;
+            return this;
+        }
+
+        /** @param usedUserId 核销人用户 id，未核销为 null */
+        public Builder usedUserId(Integer usedUserId) {
+            this.usedUserId = usedUserId;
+            return this;
+        }
+
+        /** @param expiredTime 过期时间（epoch 秒，null 归一为 0=永不过期） */
+        public Builder expiredTime(Long expiredTime) {
+            this.expiredTime = expiredTime == null ? 0L : expiredTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的兑换码聚合（不触发生成不变量与状态机）。
+         *
+         * @return 重建的兑换码聚合
+         */
+        public Redemption build() {
+            return new Redemption(id, creatorUserId, key, status, name, quota,
+                    createdTime, redeemedTime, usedUserId, expiredTime);
+        }
     }
 
     /**

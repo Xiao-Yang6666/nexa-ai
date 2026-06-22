@@ -180,6 +180,10 @@ public class Channel {
     /**
      * 基础设施层持久化重建专用工厂：从已存数据装配聚合（不触发创建不变量与时间打点）。
      *
+     * <p>方法体委托 {@link #builder()} 链式装配：散落在此处的 null/空白归一逻辑（baseUrl/models/
+     * group/balance/statusCodeMapping/channelInfo 的兜底，type/status 的枚举/值对象解析）全部收敛进
+     * {@link Builder} 对应 setter，本方法只做参数透传。签名保留以兼容既有调用点与单测。</p>
+     *
      * @return 重建的聚合（参数语义见各字段注释）
      */
     public static Channel rehydrate(Long id, int type, String key, int status, String name,
@@ -188,13 +192,223 @@ public class Channel {
                                     Integer responseTime, Long testTime, String modelMapping,
                                     String statusCodeMapping, String tag, String setting,
                                     ChannelInfo channelInfo, Long createdTime) {
-        return new Channel(
-                id, new ChannelType(type), key, ChannelStatus.fromCode(status), name, weight,
-                baseUrl == null ? "" : baseUrl, models == null ? "" : models,
-                group == null ? "default" : group, priority, autoBan,
-                balance == null ? BigDecimal.ZERO : balance, usedQuota, responseTime, testTime,
-                modelMapping, statusCodeMapping == null ? "" : statusCodeMapping, tag, setting,
-                channelInfo == null ? ChannelInfo.single() : channelInfo, createdTime);
+        return builder()
+                .id(id)
+                .type(type)
+                .key(key)
+                .status(status)
+                .name(name)
+                .weight(weight)
+                .baseUrl(baseUrl)
+                .models(models)
+                .group(group)
+                .priority(priority)
+                .autoBan(autoBan)
+                .balance(balance)
+                .usedQuota(usedQuota)
+                .responseTime(responseTime)
+                .testTime(testTime)
+                .modelMapping(modelMapping)
+                .statusCodeMapping(statusCodeMapping)
+                .tag(tag)
+                .setting(setting)
+                .channelInfo(channelInfo)
+                .createdTime(createdTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的 21 个位置参数：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （第 N 个 {@code ""}/{@code 0L} 到底落在哪个字段，位置参数看不出，Builder 一目了然）。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建不变量与 createdTime 打点，纯还原已存状态。</p>
+     *
+     * @return 新的渠道重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 渠道聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：把 {@link #rehydrate} 里散落的兜底逻辑收敛到对应 setter——
+     * <ul>
+     *   <li>原始类型列（weight/priority/autoBan/usedQuota）的 setter 接受<b>包装类型</b>并把 null 归一为 0；
+     *       注意 {@code autoBan} 沿用 rehydrate 语义只做 null→0，<b>不</b>套用 {@code create} 的
+     *       {@code normalizeAutoBan}（非 0 归一为 1）逻辑，以保持重建语义完全一致。</li>
+     *   <li>{@code type}/{@code status} 接受整数库值并解析为值对象（{@link ChannelType} /
+     *       {@link ChannelStatus#fromCode(int)}）。</li>
+     *   <li>{@code baseUrl}/{@code models}/{@code statusCodeMapping} 的 null 归一为空串，
+     *       {@code group} 的 null 归一为 {@code "default"}（与 rehydrate 一致，不做 trim/长度校验），
+     *       {@code balance} 的 null 归一为 {@link BigDecimal#ZERO}，
+     *       {@code channelInfo} 的 null 归一为 {@link ChannelInfo#single()}。</li>
+     * </ul>
+     * 这样 {@code ChannelRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private ChannelType type;
+        private String key;
+        private ChannelStatus status;
+        private String name;
+        private int weight;
+        private String baseUrl = "";
+        private String models = "";
+        private String group = "default";
+        private long priority;
+        private int autoBan;
+        private BigDecimal balance = BigDecimal.ZERO;
+        private long usedQuota;
+        private Integer responseTime;
+        private Long testTime;
+        private String modelMapping;
+        private String statusCodeMapping = "";
+        private String tag;
+        private String setting;
+        private ChannelInfo channelInfo = ChannelInfo.single();
+        private Long createdTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（新建未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param type 渠道 type 整数库值，解析为 {@link ChannelType} 值对象 */
+        public Builder type(int type) {
+            this.type = new ChannelType(type);
+            return this;
+        }
+
+        /** @param key 上游凭证（敏感） */
+        public Builder key(String key) {
+            this.key = key;
+            return this;
+        }
+
+        /** @param status 渠道 status 整数库值，解析为 {@link ChannelStatus}（{@link ChannelStatus#fromCode(int)}） */
+        public Builder status(int status) {
+            this.status = ChannelStatus.fromCode(status);
+            return this;
+        }
+
+        /** @param name 渠道名，可为 null */
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        /** @param weight 权重（null 归一为 0） */
+        public Builder weight(Integer weight) {
+            this.weight = weight == null ? 0 : weight;
+            return this;
+        }
+
+        /** @param baseUrl 上游 BaseURL（null 归一为空串） */
+        public Builder baseUrl(String baseUrl) {
+            this.baseUrl = baseUrl == null ? "" : baseUrl;
+            return this;
+        }
+
+        /** @param models 支持模型集逗号分隔串（null 归一为空串） */
+        public Builder models(String models) {
+            this.models = models == null ? "" : models;
+            return this;
+        }
+
+        /** @param group 分组（null 归一为 {@code "default"}，重建语义不做 trim/长度校验） */
+        public Builder group(String group) {
+            this.group = group == null ? "default" : group;
+            return this;
+        }
+
+        /** @param priority 优先级（null 归一为 0） */
+        public Builder priority(Long priority) {
+            this.priority = priority == null ? 0L : priority;
+            return this;
+        }
+
+        /** @param autoBan 自动禁用开关（null 归一为 0；重建不套 create 的非 0→1 归一） */
+        public Builder autoBan(Integer autoBan) {
+            this.autoBan = autoBan == null ? 0 : autoBan;
+            return this;
+        }
+
+        /** @param balance 余额（null 归一为 {@link BigDecimal#ZERO}） */
+        public Builder balance(BigDecimal balance) {
+            this.balance = balance == null ? BigDecimal.ZERO : balance;
+            return this;
+        }
+
+        /** @param usedQuota 已用配额（null 归一为 0） */
+        public Builder usedQuota(Long usedQuota) {
+            this.usedQuota = usedQuota == null ? 0L : usedQuota;
+            return this;
+        }
+
+        /** @param responseTime 最近测试响应耗时 ms，可为 null */
+        public Builder responseTime(Integer responseTime) {
+            this.responseTime = responseTime;
+            return this;
+        }
+
+        /** @param testTime 最近测试时间 epoch 秒，可为 null */
+        public Builder testTime(Long testTime) {
+            this.testTime = testTime;
+            return this;
+        }
+
+        /** @param modelMapping 模型映射 JSON，可为 null */
+        public Builder modelMapping(String modelMapping) {
+            this.modelMapping = modelMapping;
+            return this;
+        }
+
+        /** @param statusCodeMapping 状态码映射 JSON（null 归一为空串） */
+        public Builder statusCodeMapping(String statusCodeMapping) {
+            this.statusCodeMapping = statusCodeMapping == null ? "" : statusCodeMapping;
+            return this;
+        }
+
+        /** @param tag 标签，可为 null */
+        public Builder tag(String tag) {
+            this.tag = tag;
+            return this;
+        }
+
+        /** @param setting 附加设置 JSON，可为 null */
+        public Builder setting(String setting) {
+            this.setting = setting;
+            return this;
+        }
+
+        /** @param channelInfo 多 Key 信息（null 归一为 {@link ChannelInfo#single()}） */
+        public Builder channelInfo(ChannelInfo channelInfo) {
+            this.channelInfo = channelInfo == null ? ChannelInfo.single() : channelInfo;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的渠道聚合（不触发创建不变量与 createdTime 打点）。
+         *
+         * @return 重建的渠道聚合
+         */
+        public Channel build() {
+            return new Channel(id, type, key, status, name, weight, baseUrl, models, group,
+                    priority, autoBan, balance, usedQuota, responseTime, testTime, modelMapping,
+                    statusCodeMapping, tag, setting, channelInfo, createdTime);
+        }
     }
 
     /**

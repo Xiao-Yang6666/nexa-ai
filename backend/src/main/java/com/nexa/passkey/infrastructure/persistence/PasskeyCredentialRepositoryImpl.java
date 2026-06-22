@@ -109,17 +109,18 @@ public class PasskeyCredentialRepositoryImpl implements PasskeyCredentialReposit
                 Boolean.TRUE.equals(e.getUserVerified()),
                 Boolean.TRUE.equals(e.getBackupEligible()),
                 Boolean.TRUE.equals(e.getBackupState()));
-        return PasskeyCredential.rehydrate(
-                e.getId(),
-                e.getUserId(),
-                CredentialId.of(e.getCredentialId()),
-                e.getPublicKey(),
-                e.getAttestationType(),
-                e.getAaguid(),
-                signCount,
-                Boolean.TRUE.equals(e.getCloneWarning()),
-                flags,
-                e.getTransports(),
-                e.getAttachment());
+        return PasskeyCredential.builder()
+                .id(e.getId())
+                .userId(e.getUserId())
+                .credentialId(CredentialId.of(e.getCredentialId()))
+                .publicKey(e.getPublicKey())
+                .attestationType(e.getAttestationType())
+                .aaguid(e.getAaguid())
+                .signCount(signCount)
+                .cloneWarning(e.getCloneWarning())
+                .flags(flags)
+                .transports(e.getTransports())
+                .attachment(e.getAttachment())
+                .build();
     }
 }

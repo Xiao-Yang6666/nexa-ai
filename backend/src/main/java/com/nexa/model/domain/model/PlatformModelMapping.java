@@ -78,15 +78,107 @@ public class PlatformModelMapping {
     public static PlatformModelMapping rehydrate(Long id, String publicName, String upstreamName,
                                                  Boolean enabled, String remark,
                                                  Long createdTime, Long updatedTime) {
-        PlatformModelMapping m = new PlatformModelMapping();
-        m.id = id;
-        m.publicName = publicName;
-        m.upstreamName = upstreamName;
-        m.enabled = enabled == null || enabled;
-        m.remark = remark == null ? "" : remark;
-        m.createdTime = createdTime;
-        m.updatedTime = updatedTime;
-        return m;
+        // 委托 Builder 装配：enabled null→true、remark null→空串 等兜底逻辑收敛在 build() 一处。
+        return builder()
+                .id(id)
+                .publicName(publicName)
+                .upstreamName(upstreamName)
+                .enabled(enabled)
+                .remark(remark)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建校验，纯还原已存状态。</p>
+     *
+     * @return 新的底仓映射重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 底仓映射聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：{@link #enabled(Boolean)} 把 {@code null} 归一为 true，{@link #remark(String)}
+     * 把 {@code null} 归一为空串——可空列兜底逻辑全部收敛在此，
+     * {@code PlatformModelMappingRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private String publicName;
+        private String upstreamName;
+        private boolean enabled = true;
+        private String remark = "";
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param publicName 对外名 A */
+        public Builder publicName(String publicName) {
+            this.publicName = publicName;
+            return this;
+        }
+
+        /** @param upstreamName 真实上游名 B（客户绝不可见） */
+        public Builder upstreamName(String upstreamName) {
+            this.upstreamName = upstreamName;
+            return this;
+        }
+
+        /** @param enabled 是否启用（null 归一为 true） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled == null || enabled;
+            return this;
+        }
+
+        /** @param remark 备注（null 归一为空串） */
+        public Builder remark(String remark) {
+            this.remark = remark == null ? "" : remark;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间 epoch 秒，可为 null */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的底仓映射聚合（不触发创建校验）。
+         *
+         * @return 重建的聚合
+         */
+        public PlatformModelMapping build() {
+            PlatformModelMapping m = new PlatformModelMapping();
+            m.id = id;
+            m.publicName = publicName;
+            m.upstreamName = upstreamName;
+            m.enabled = enabled;
+            m.remark = remark;
+            m.createdTime = createdTime;
+            m.updatedTime = updatedTime;
+            return m;
+        }
     }
 
     /**

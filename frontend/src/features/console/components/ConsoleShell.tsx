@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSelf, isAdminRole } from '@/features/account/model/account.model';
 import styles from './ConsoleShell.module.css';
 
 /* ── 线性 stroke 图标库（24x24，stroke:currentColor）。迁移自 S6 console-shell.js ── */
@@ -17,6 +18,7 @@ const ICONS: Record<string, ReactNode> = {
   share: (<><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="6" r="2.5" /><circle cx="18" cy="18" r="2.5" /><path d="M8.2 11l7.6-4" /><path d="M8.2 13l7.6 4" /></>),
   settings: (<><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" /></>),
   bell: (<><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7z" /><path d="M10.5 19a1.7 1.7 0 0 0 3 0" /></>),
+  grid: (<><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>),
   chevron: (<path d="M9 6l6 6-6 6" />),
 };
 
@@ -95,7 +97,7 @@ export interface ConsoleShellProps {
   actions?: ReactNode;
   /** 顶栏展示的余额文案（来自 self 接口，客户视图，非成本） */
   balance?: string;
-  /** 顶栏展示的用户名 */
+  /** 顶栏展示的用户名（缺省取 self 接口的真实用户名） */
   userName?: string;
   children: ReactNode;
 }
@@ -107,6 +109,8 @@ export interface ConsoleShellProps {
  * 改为 React 组件，导航树静态声明、激活态由 props.activeId 驱动、
  * 移动端汉堡抽屉用受控 state。样式全部来自 ConsoleShell.module.css（token 化）。
  *
+ * 顶栏用户名取 self 接口的真实登录用户；管理员/超管(role≥admin)额外显示「管理后台」入口，
+ * 方便从用户视图切回管理视图（与 AdminShell 顶栏「用户视图」对称）。
  * 每个控制台页面用 <ConsoleShell activeId title crumb actions>{页面主区}</ConsoleShell> 包裹。
  */
 export function ConsoleShell({
@@ -115,11 +119,16 @@ export function ConsoleShell({
   crumb,
   actions,
   balance = '$128.50',
-  userName = 'morgan.li',
+  userName,
   children,
 }: ConsoleShellProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const self = useSelf();
+
+  // 真实登录用户：props 显式传入优先，否则取 self；都没有时给安全兜底。
+  const displayName = userName ?? self.data?.displayName ?? self.data?.username ?? '用户';
+  const canEnterAdmin = isAdminRole(self.data?.role ?? 0);
 
   return (
     <>
@@ -139,13 +148,18 @@ export function ConsoleShell({
           <span className={styles.bal}>
             余额 <b>{balance}</b>
           </span>
+          {canEnterAdmin ? (
+            <Link className={styles.iconBtn} href="/admin" aria-label="进入管理后台" title="进入管理后台">
+              <Icon name="grid" />
+            </Link>
+          ) : null}
           <button className={styles.iconBtn} aria-label="通知">
             <Icon name="bell" />
             <span className={styles.dotMark} />
           </button>
           <button className={styles.user} type="button">
-            <span className={styles.avatar}>{userName.charAt(0).toUpperCase()}</span>
-            <span className={styles.userName}>{userName}</span>
+            <span className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</span>
+            <span className={styles.userName}>{displayName}</span>
             <Icon name="chevron" />
           </button>
         </div>

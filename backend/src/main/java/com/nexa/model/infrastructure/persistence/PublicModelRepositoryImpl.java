@@ -108,9 +108,19 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
     }
 
     private PublicModel toDomain(PublicModelJpaEntity e) {
-        return PublicModel.rehydrate(e.getId(), e.getPublicName(), e.getQualityTier(),
-                e.getBasePriceRatio(), e.getUsePrice(), e.getBasePrice(), e.getEnabled(),
-                e.getDisplayName(), e.getSortOrder(), e.getDescription(),
-                e.getCreatedTime(), e.getUpdatedTime());
+        return PublicModel.builder()
+                .id(e.getId())
+                .publicName(e.getPublicName())
+                .qualityTier(e.getQualityTier())
+                .basePriceRatio(e.getBasePriceRatio())
+                .usePrice(e.getUsePrice())
+                .basePrice(e.getBasePrice())
+                .enabled(e.getEnabled())
+                .displayName(e.getDisplayName())
+                .sortOrder(e.getSortOrder())
+                .description(e.getDescription())
+                .createdTime(e.getCreatedTime())
+                .updatedTime(e.getUpdatedTime())
+                .build();
     }
 }

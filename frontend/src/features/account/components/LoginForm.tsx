@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthField } from './AuthField';
 import { OAuthRow } from './OAuthRow';
-import { useLogin, type AccountVM } from '../model/account.model';
+import { useLogin, isAdminRole, type AccountVM } from '../model/account.model';
 
 /**
  * LoginForm — 登录表单（深色门面玻璃风，独立 /login 页用）。
@@ -17,7 +17,7 @@ import { useLogin, type AccountVM } from '../model/account.model';
  * 接 openapi mock（POST /api/user/login，F-1002）：空值抖动校验 → loading → 成功/失败。
  * 客户端零泄露：成功只拿裁剪过的 AccountVM（成本/利润/上游模型 B/供应商不进客户端）。
  *
- * @param onSuccess 登录成功回调；省略则默认跳 /console
+ * @param onSuccess 登录成功回调；省略则按角色默认跳转（≥admin→/admin，普通→/dashboard）
  * @param registerHref 注册入口链接，默认 /register
  */
 export interface LoginFormProps {
@@ -63,7 +63,8 @@ export function LoginForm({ onSuccess, registerHref = '/register' }: LoginFormPr
       {
         onSuccess: (user) => {
           if (onSuccess) onSuccess(user);
-          else router.push('/dashboard');
+          // 按角色分流：管理员/超管进管理后台，普通用户进控制台。
+          else router.push(isAdminRole(user.role) ? '/admin' : '/dashboard');
         },
       },
     );

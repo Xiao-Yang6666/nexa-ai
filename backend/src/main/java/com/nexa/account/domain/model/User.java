@@ -843,25 +843,198 @@ public class User {
                                  long inviterId, long lastLoginAt, String displayName, String setting,
                                  String group, String remark, long usedQuota, long requestCount,
                                  long createdAt) {
-        User u = new User();
-        u.id = id;
-        u.username = username;
-        u.passwordHash = passwordHash;
-        u.email = email;
-        u.role = role;
-        u.status = status;
-        u.quota = quota;
-        u.affCode = affCode;
-        u.inviterId = inviterId;
-        u.lastLoginAt = lastLoginAt;
-        u.displayName = displayName;
-        u.setting = setting;
-        u.group = (group == null || group.isBlank()) ? DEFAULT_GROUP : group;
-        u.remark = remark;
-        u.usedQuota = usedQuota;
-        u.requestCount = requestCount;
-        u.createdAt = createdAt;
-        return u;
+        // 委托 Builder 装配：字段名自解释、null/空白归一逻辑（如 group→default）收敛在 Builder 一处。
+        return builder()
+                .id(id)
+                .username(username)
+                .passwordHash(passwordHash)
+                .email(email)
+                .role(role)
+                .status(status)
+                .quota(quota)
+                .affCode(affCode)
+                .inviterId(inviterId)
+                .lastLoginAt(lastLoginAt)
+                .displayName(displayName)
+                .setting(setting)
+                .group(group)
+                .remark(remark)
+                .usedQuota(usedQuota)
+                .requestCount(requestCount)
+                .createdAt(createdAt)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （第 9 个 {@code 0L} 到底是 inviterId 还是 lastLoginAt，位置参数看不出，Builder 一目了然）。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发注册不变量与领域事件，纯还原已存状态。</p>
+     *
+     * @return 新的用户重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 用户聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：数值列的 setter 接受<b>包装类型</b>并把 {@code null} 归一为 0，
+     * {@link #group(String)} 把 null/空白归一为 {@link #DEFAULT_GROUP}——这样 JPA 实体里
+     * 可空列的兜底逻辑全部收敛在此，{@code UserRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private Username username;
+        private String passwordHash;
+        private Email email;
+        private Role role;
+        private UserStatus status;
+        private long quota;
+        private String affCode;
+        private long inviterId;
+        private long lastLoginAt;
+        private String displayName;
+        private String setting;
+        private String group = DEFAULT_GROUP;
+        private String remark;
+        private long usedQuota;
+        private long requestCount;
+        private long createdAt;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（新建未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param username 用户名值对象 */
+        public Builder username(Username username) {
+            this.username = username;
+            return this;
+        }
+
+        /** @param passwordHash 密码哈希（落库值） */
+        public Builder passwordHash(String passwordHash) {
+            this.passwordHash = passwordHash;
+            return this;
+        }
+
+        /** @param email 邮箱值对象，可为 null */
+        public Builder email(Email email) {
+            this.email = email;
+            return this;
+        }
+
+        /** @param role 角色 */
+        public Builder role(Role role) {
+            this.role = role;
+            return this;
+        }
+
+        /** @param status 账号状态 */
+        public Builder status(UserStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        /** @param quota 当前额度（null 归一为 0） */
+        public Builder quota(Long quota) {
+            this.quota = quota == null ? 0L : quota;
+            return this;
+        }
+
+        /** @param affCode 个人邀请码 */
+        public Builder affCode(String affCode) {
+            this.affCode = affCode;
+            return this;
+        }
+
+        /** @param inviterId 邀请人 id（null 归一为 0） */
+        public Builder inviterId(Long inviterId) {
+            this.inviterId = inviterId == null ? 0L : inviterId;
+            return this;
+        }
+
+        /** @param lastLoginAt 最近登录时间 epoch 秒（null 归一为 0） */
+        public Builder lastLoginAt(Long lastLoginAt) {
+            this.lastLoginAt = lastLoginAt == null ? 0L : lastLoginAt;
+            return this;
+        }
+
+        /** @param displayName 展示名，可为 null */
+        public Builder displayName(String displayName) {
+            this.displayName = displayName;
+            return this;
+        }
+
+        /** @param setting 个人设置 JSON，可为 null */
+        public Builder setting(String setting) {
+            this.setting = setting;
+            return this;
+        }
+
+        /** @param group 分组标识（null/空白归一为 {@link #DEFAULT_GROUP}） */
+        public Builder group(String group) {
+            this.group = (group == null || group.isBlank()) ? DEFAULT_GROUP : group;
+            return this;
+        }
+
+        /** @param remark 管理员备注，可为 null */
+        public Builder remark(String remark) {
+            this.remark = remark;
+            return this;
+        }
+
+        /** @param usedQuota 已用额度（null 归一为 0） */
+        public Builder usedQuota(Long usedQuota) {
+            this.usedQuota = usedQuota == null ? 0L : usedQuota;
+            return this;
+        }
+
+        /** @param requestCount 请求计数（null 归一为 0） */
+        public Builder requestCount(Long requestCount) {
+            this.requestCount = requestCount == null ? 0L : requestCount;
+            return this;
+        }
+
+        /** @param createdAt 创建时间 epoch 秒（null 归一为 0） */
+        public Builder createdAt(Long createdAt) {
+            this.createdAt = createdAt == null ? 0L : createdAt;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的用户聚合（不触发注册不变量与领域事件）。
+         *
+         * @return 重建的用户聚合
+         */
+        public User build() {
+            User u = new User();
+            u.id = id;
+            u.username = username;
+            u.passwordHash = passwordHash;
+            u.email = email;
+            u.role = role;
+            u.status = status;
+            u.quota = quota;
+            u.affCode = affCode;
+            u.inviterId = inviterId;
+            u.lastLoginAt = lastLoginAt;
+            u.displayName = displayName;
+            u.setting = setting;
+            u.group = group;
+            u.remark = remark;
+            u.usedQuota = usedQuota;
+            u.requestCount = requestCount;
+            u.createdAt = createdAt;
+            return u;
+        }
     }
 
     // ---- 只读访问器（聚合状态对外只读，不提供 setter，外部不能绕过行为方法改状态） ----

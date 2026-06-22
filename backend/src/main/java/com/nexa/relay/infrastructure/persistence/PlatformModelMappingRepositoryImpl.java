@@ -63,7 +63,14 @@ public class PlatformModelMappingRepositoryImpl implements PlatformModelMappingR
     }
 
     private PlatformModelMapping toDomain(PlatformModelMappingJpaEntity e) {
-        return PlatformModelMapping.rehydrate(e.getId(), e.getPublicName(), e.getUpstreamName(),
-                e.isEnabled(), e.getRemark(), e.getCreatedTime(), e.getUpdatedTime());
+        return PlatformModelMapping.builder()
+                .id(e.getId())
+                .publicName(e.getPublicName())
+                .upstreamName(e.getUpstreamName())
+                .enabled(e.isEnabled())
+                .remark(e.getRemark())
+                .createdTime(e.getCreatedTime())
+                .updatedTime(e.getUpdatedTime())
+                .build();
     }
 }

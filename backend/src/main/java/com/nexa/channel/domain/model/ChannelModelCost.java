@@ -80,24 +80,153 @@ public class ChannelModelCost {
 
     /**
      * 从持久化重建聚合（基础设施层用，绕过创建校验）。
+     *
+     * <p>方法体委托 {@link #builder()} 链式装配：原散落在此处的 null 归一兜底（成本/补全/进货价 →
+     * {@link BigDecimal#ZERO}、enabled→true、effectiveTime→0L、remark→空串）全部收敛进
+     * {@link Builder} 对应 setter。签名保留以兼容既有调用点与单测。</p>
      */
     public static ChannelModelCost rehydrate(Long id, Integer channelId, String upstreamModel,
                                              BigDecimal costRatio, BigDecimal completionCostRatio,
                                              Boolean enabled, Long effectiveTime, BigDecimal sourceUnitPrice,
                                              String remark, Long createdTime, Long updatedTime) {
-        ChannelModelCost c = new ChannelModelCost();
-        c.id = id;
-        c.channelId = channelId;
-        c.upstreamModel = upstreamModel;
-        c.costRatio = costRatio == null ? BigDecimal.ZERO : costRatio;
-        c.completionCostRatio = completionCostRatio == null ? BigDecimal.ZERO : completionCostRatio;
-        c.enabled = enabled == null || enabled;
-        c.effectiveTime = effectiveTime == null ? 0L : effectiveTime;
-        c.sourceUnitPrice = sourceUnitPrice == null ? BigDecimal.ZERO : sourceUnitPrice;
-        c.remark = remark == null ? "" : remark;
-        c.createdTime = createdTime;
-        c.updatedTime = updatedTime;
-        return c;
+        return builder()
+                .id(id)
+                .channelId(channelId)
+                .upstreamModel(upstreamModel)
+                .costRatio(costRatio)
+                .completionCostRatio(completionCostRatio)
+                .enabled(enabled)
+                .effectiveTime(effectiveTime)
+                .sourceUnitPrice(sourceUnitPrice)
+                .remark(remark)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的 11 个位置参数：调用处具名链式装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建校验，纯还原已存状态。</p>
+     *
+     * @return 新的成本配置重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 成本配置聚合的持久化重建构建器（聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：把 {@link #rehydrate} 里散落的兜底逻辑收敛到对应 setter——三个 {@link BigDecimal}
+     * 倍率/单价的 null 归一为 {@link BigDecimal#ZERO}，{@code enabled} 的 null 归一为 {@code true}
+     * （{@code enabled == null || enabled}，缺省启用），{@code effectiveTime} 的 null 归一为 0L，
+     * {@code remark} 的 null 归一为空串。这样 {@code ChannelModelCostRepositoryImpl.toDomain}
+     * 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private Integer channelId;
+        private String upstreamModel;
+        private BigDecimal costRatio = BigDecimal.ZERO;
+        private BigDecimal completionCostRatio = BigDecimal.ZERO;
+        private Boolean enabled = Boolean.TRUE;
+        private Long effectiveTime = 0L;
+        private BigDecimal sourceUnitPrice = BigDecimal.ZERO;
+        private String remark = "";
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param channelId 渠道 id（关联 Channel.Id） */
+        public Builder channelId(Integer channelId) {
+            this.channelId = channelId;
+            return this;
+        }
+
+        /** @param upstreamModel 真实上游模型 B（客户绝不可见） */
+        public Builder upstreamModel(String upstreamModel) {
+            this.upstreamModel = upstreamModel;
+            return this;
+        }
+
+        /** @param costRatio 成本倍率（null 归一为 {@link BigDecimal#ZERO}） */
+        public Builder costRatio(BigDecimal costRatio) {
+            this.costRatio = costRatio == null ? BigDecimal.ZERO : costRatio;
+            return this;
+        }
+
+        /** @param completionCostRatio 成本补全倍率（null 归一为 {@link BigDecimal#ZERO}） */
+        public Builder completionCostRatio(BigDecimal completionCostRatio) {
+            this.completionCostRatio = completionCostRatio == null ? BigDecimal.ZERO : completionCostRatio;
+            return this;
+        }
+
+        /** @param enabled 是否启用（null 归一为 true，缺省启用） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled == null || enabled;
+            return this;
+        }
+
+        /** @param effectiveTime 生效时间 epoch 秒（null 归一为 0L） */
+        public Builder effectiveTime(Long effectiveTime) {
+            this.effectiveTime = effectiveTime == null ? 0L : effectiveTime;
+            return this;
+        }
+
+        /** @param sourceUnitPrice 进货单价（null 归一为 {@link BigDecimal#ZERO}） */
+        public Builder sourceUnitPrice(BigDecimal sourceUnitPrice) {
+            this.sourceUnitPrice = sourceUnitPrice == null ? BigDecimal.ZERO : sourceUnitPrice;
+            return this;
+        }
+
+        /** @param remark 备注（null 归一为空串） */
+        public Builder remark(String remark) {
+            this.remark = remark == null ? "" : remark;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间 epoch 秒，可为 null */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的成本配置聚合（不触发创建校验）。
+         *
+         * @return 重建的成本配置聚合
+         */
+        public ChannelModelCost build() {
+            ChannelModelCost c = new ChannelModelCost();
+            c.id = id;
+            c.channelId = channelId;
+            c.upstreamModel = upstreamModel;
+            c.costRatio = costRatio;
+            c.completionCostRatio = completionCostRatio;
+            c.enabled = enabled;
+            c.effectiveTime = effectiveTime;
+            c.sourceUnitPrice = sourceUnitPrice;
+            c.remark = remark;
+            c.createdTime = createdTime;
+            c.updatedTime = updatedTime;
+            return c;
+        }
     }
 
     /**

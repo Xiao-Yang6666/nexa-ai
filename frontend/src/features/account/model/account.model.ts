@@ -12,6 +12,33 @@ import { ApiError } from '@/shared/api';
 import { getSelf, login, register, saveSetting } from '../api/account.api';
 
 /**
+ * 角色编码（与后端 domain/vo/Role 对齐：数值大小即权限高低）。
+ * 1=普通用户，10=管理员，100=超级管理员。护栏与菜单可见性都以此为准。
+ */
+export const ROLE = {
+  COMMON: 1,
+  ADMIN: 10,
+  ROOT: 100,
+} as const;
+
+/** 角色编码 → 中文文案（顶栏/标签展示用）。 */
+export function roleLabel(role: number): string {
+  if (role >= ROLE.ROOT) return '超级管理员';
+  if (role >= ROLE.ADMIN) return '管理员';
+  return '普通用户';
+}
+
+/** 是否具备管理后台访问权（≥admin）。登录分流 / 路由守卫的统一判定。 */
+export function isAdminRole(role: number): boolean {
+  return role >= ROLE.ADMIN;
+}
+
+/** 是否为超级管理员（root 专属菜单/操作的判定）。 */
+export function isRootRole(role: number): boolean {
+  return role >= ROLE.ROOT;
+}
+
+/**
  * 客户端可见的用户视图（零泄露白名单）。
  * 显式列举允许字段——成本(quota_cost)/利润(quota_profit)/上游模型 B/供应商一律不进此结构。
  */

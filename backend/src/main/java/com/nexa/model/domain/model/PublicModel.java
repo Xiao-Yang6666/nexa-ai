@@ -108,20 +108,154 @@ public class PublicModel {
                                         BigDecimal basePriceRatio, Boolean usePrice, BigDecimal basePrice,
                                         Boolean enabled, String displayName, Integer sortOrder,
                                         String description, Long createdTime, Long updatedTime) {
-        PublicModel m = new PublicModel();
-        m.id = id;
-        m.publicName = publicName;
-        m.qualityTier = qualityTier;
-        m.basePriceRatio = basePriceRatio == null ? BigDecimal.ZERO : basePriceRatio;
-        m.usePrice = usePrice != null && usePrice;
-        m.basePrice = basePrice == null ? BigDecimal.ZERO : basePrice;
-        m.enabled = enabled == null || enabled;
-        m.displayName = displayName == null ? "" : displayName;
-        m.sortOrder = sortOrder == null ? 0 : sortOrder;
-        m.description = description == null ? "" : description;
-        m.createdTime = createdTime;
-        m.updatedTime = updatedTime;
-        return m;
+        // 委托 Builder 装配：价格 null→0、usePrice null→false、enabled null→true、字符串 null→空串
+        // 等兜底逻辑收敛在 build() 一处。
+        return builder()
+                .id(id)
+                .publicName(publicName)
+                .qualityTier(qualityTier)
+                .basePriceRatio(basePriceRatio)
+                .usePrice(usePrice)
+                .basePrice(basePrice)
+                .enabled(enabled)
+                .displayName(displayName)
+                .sortOrder(sortOrder)
+                .description(description)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建校验，纯还原已存状态。</p>
+     *
+     * @return 新的对外模型重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 对外模型聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：价格列 setter 接受 {@link BigDecimal} 并把 {@code null} 归一为 {@link BigDecimal#ZERO}，
+     * {@link #usePrice(Boolean)} null 归一为 false、{@link #enabled(Boolean)} null 归一为 true（上架），
+     * 字符串列 null 归一为空串、{@link #sortOrder(Integer)} null 归一为 0——可空列兜底逻辑全部收敛在此，
+     * {@code PublicModelRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private String publicName;
+        private String qualityTier;
+        private BigDecimal basePriceRatio = BigDecimal.ZERO;
+        private boolean usePrice;
+        private BigDecimal basePrice = BigDecimal.ZERO;
+        private boolean enabled = true;
+        private String displayName = "";
+        private int sortOrder;
+        private String description = "";
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param publicName 对外名 A */
+        public Builder publicName(String publicName) {
+            this.publicName = publicName;
+            return this;
+        }
+
+        /** @param qualityTier 品质档 */
+        public Builder qualityTier(String qualityTier) {
+            this.qualityTier = qualityTier;
+            return this;
+        }
+
+        /** @param basePriceRatio 基准售价倍率（null 归一为 0） */
+        public Builder basePriceRatio(BigDecimal basePriceRatio) {
+            this.basePriceRatio = basePriceRatio == null ? BigDecimal.ZERO : basePriceRatio;
+            return this;
+        }
+
+        /** @param usePrice 是否按次固定价（null 归一为 false） */
+        public Builder usePrice(Boolean usePrice) {
+            this.usePrice = usePrice != null && usePrice;
+            return this;
+        }
+
+        /** @param basePrice 固定单价（null 归一为 0） */
+        public Builder basePrice(BigDecimal basePrice) {
+            this.basePrice = basePrice == null ? BigDecimal.ZERO : basePrice;
+            return this;
+        }
+
+        /** @param enabled 是否上架（null 归一为 true，上架即全员可用 F-6004） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled == null || enabled;
+            return this;
+        }
+
+        /** @param displayName 展示名（null 归一为空串） */
+        public Builder displayName(String displayName) {
+            this.displayName = displayName == null ? "" : displayName;
+            return this;
+        }
+
+        /** @param sortOrder 排序（null 归一为 0） */
+        public Builder sortOrder(Integer sortOrder) {
+            this.sortOrder = sortOrder == null ? 0 : sortOrder;
+            return this;
+        }
+
+        /** @param description 描述（null 归一为空串） */
+        public Builder description(String description) {
+            this.description = description == null ? "" : description;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间 epoch 秒，可为 null */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的对外模型聚合（不触发创建校验）。
+         *
+         * @return 重建的聚合
+         */
+        public PublicModel build() {
+            PublicModel m = new PublicModel();
+            m.id = id;
+            m.publicName = publicName;
+            m.qualityTier = qualityTier;
+            m.basePriceRatio = basePriceRatio;
+            m.usePrice = usePrice;
+            m.basePrice = basePrice;
+            m.enabled = enabled;
+            m.displayName = displayName;
+            m.sortOrder = sortOrder;
+            m.description = description;
+            m.createdTime = createdTime;
+            m.updatedTime = updatedTime;
+            return m;
+        }
     }
 
     /**

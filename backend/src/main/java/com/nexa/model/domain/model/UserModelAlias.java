@@ -98,16 +98,115 @@ public class UserModelAlias {
     public static UserModelAlias rehydrate(Long id, AliasScopeType scopeType, String scopeId,
                                            String alias, String target, Boolean enabled,
                                            Long createdTime, Long updatedTime) {
-        UserModelAlias a = new UserModelAlias();
-        a.id = id;
-        a.scopeType = scopeType;
-        a.scopeId = scopeId;
-        a.alias = alias;
-        a.target = target;
-        a.enabled = enabled == null || enabled;
-        a.createdTime = createdTime;
-        a.updatedTime = updatedTime;
-        return a;
+        // 委托 Builder 装配：enabled null→true 兜底逻辑收敛在 build() 一处。
+        return builder()
+                .id(id)
+                .scopeType(scopeType)
+                .scopeId(scopeId)
+                .alias(alias)
+                .target(target)
+                .enabled(enabled)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建校验，纯还原已存状态。</p>
+     *
+     * @return 新的客户层映射重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 客户层映射聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：{@link #enabled(Boolean)} 把 {@code null} 归一为 true——可空列兜底逻辑收敛在此，
+     * {@code UserModelAliasRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private AliasScopeType scopeType;
+        private String scopeId;
+        private String alias;
+        private String target;
+        private boolean enabled = true;
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param scopeType 作用域类型（user/group） */
+        public Builder scopeType(AliasScopeType scopeType) {
+            this.scopeType = scopeType;
+            return this;
+        }
+
+        /** @param scopeId 作用域 id */
+        public Builder scopeId(String scopeId) {
+            this.scopeId = scopeId;
+            return this;
+        }
+
+        /** @param alias 客户别名 C */
+        public Builder alias(String alias) {
+            this.alias = alias;
+            return this;
+        }
+
+        /** @param target 目标公开名 A */
+        public Builder target(String target) {
+            this.target = target;
+            return this;
+        }
+
+        /** @param enabled 是否启用（null 归一为 true） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled == null || enabled;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间 epoch 秒，可为 null */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的客户层映射聚合（不触发创建校验）。
+         *
+         * @return 重建的聚合
+         */
+        public UserModelAlias build() {
+            UserModelAlias a = new UserModelAlias();
+            a.id = id;
+            a.scopeType = scopeType;
+            a.scopeId = scopeId;
+            a.alias = alias;
+            a.target = target;
+            a.enabled = enabled;
+            a.createdTime = createdTime;
+            a.updatedTime = updatedTime;
+            return a;
+        }
     }
 
     /**

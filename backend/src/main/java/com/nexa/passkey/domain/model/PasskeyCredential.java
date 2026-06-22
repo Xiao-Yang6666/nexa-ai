@@ -151,8 +151,135 @@ public class PasskeyCredential {
                                               String attestationType, String aaguid, SignCount signCount,
                                               boolean cloneWarning, AuthenticatorFlags flags, String transports,
                                               String attachment) {
-        return new PasskeyCredential(id, userId, credentialId, publicKey, attestationType, aaguid,
-                signCount, cloneWarning, flags, transports, attachment);
+        // 委托 Builder 装配：字段名自解释、null 归一逻辑（如 userId/cloneWarning）收敛在 Builder 一处。
+        return builder()
+                .id(id)
+                .userId(userId)
+                .credentialId(credentialId)
+                .publicKey(publicKey)
+                .attestationType(attestationType)
+                .aaguid(aaguid)
+                .signCount(signCount)
+                .cloneWarning(cloneWarning)
+                .flags(flags)
+                .transports(transports)
+                .attachment(attachment)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （11 个位置参数里第 7 个 SignCount、第 8 个 boolean 看不出语义，Builder 一目了然）。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发注册不变量校验，纯还原已存状态。</p>
+     *
+     * @return 新的凭据重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Passkey 凭据聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：原始类型列的 setter 接受<b>包装类型</b>并把 {@code null} 归一为默认
+     * （{@code userId}→0、{@code cloneWarning}→false）——这样 JPA 实体里可空列的兜底逻辑
+     * 全部收敛在此，{@code PasskeyCredentialRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。
+     * 值对象（{@link CredentialId}/{@link SignCount}/{@link AuthenticatorFlags}）整体接收，不拆解。
+     * 装配委托私有构造器以兼容 final 字段。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private long userId;
+        private CredentialId credentialId;
+        private String publicKey;
+        private String attestationType;
+        private String aaguid;
+        private SignCount signCount;
+        private boolean cloneWarning;
+        private AuthenticatorFlags flags;
+        private String transports;
+        private String attachment;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param userId 凭据归属用户 id（null 归一为 0） */
+        public Builder userId(Long userId) {
+            this.userId = userId == null ? 0L : userId;
+            return this;
+        }
+
+        /** @param credentialId WebAuthn credential id 值对象 */
+        public Builder credentialId(CredentialId credentialId) {
+            this.credentialId = credentialId;
+            return this;
+        }
+
+        /** @param publicKey authenticator 公钥（base64，敏感） */
+        public Builder publicKey(String publicKey) {
+            this.publicKey = publicKey;
+            return this;
+        }
+
+        /** @param attestationType attestation 类型，可为 null */
+        public Builder attestationType(String attestationType) {
+            this.attestationType = attestationType;
+            return this;
+        }
+
+        /** @param aaguid authenticator AAGUID，可为 null */
+        public Builder aaguid(String aaguid) {
+            this.aaguid = aaguid;
+            return this;
+        }
+
+        /** @param signCount 签名计数器值对象 */
+        public Builder signCount(SignCount signCount) {
+            this.signCount = signCount;
+            return this;
+        }
+
+        /** @param cloneWarning 克隆告警标记（null 归一为 false） */
+        public Builder cloneWarning(Boolean cloneWarning) {
+            this.cloneWarning = cloneWarning != null && cloneWarning;
+            return this;
+        }
+
+        /** @param flags authenticator 行为标志 */
+        public Builder flags(AuthenticatorFlags flags) {
+            this.flags = flags;
+            return this;
+        }
+
+        /** @param transports transports（base64 串），可为 null */
+        public Builder transports(String transports) {
+            this.transports = transports;
+            return this;
+        }
+
+        /** @param attachment authenticator 连接形态，可为 null */
+        public Builder attachment(String attachment) {
+            this.attachment = attachment;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的凭据聚合（不触发注册不变量校验）。
+         *
+         * @return 重建的凭据聚合
+         */
+        public PasskeyCredential build() {
+            return new PasskeyCredential(id, userId, credentialId, publicKey, attestationType, aaguid,
+                    signCount, cloneWarning, flags, transports, attachment);
+        }
     }
 
     /**

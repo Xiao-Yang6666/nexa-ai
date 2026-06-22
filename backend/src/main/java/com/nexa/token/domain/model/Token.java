@@ -189,12 +189,196 @@ public class Token {
                                   long usedQuota, String group, boolean crossGroupRetry,
                                   boolean endpointLimitsEnabled, String endpointLimits,
                                   Long accessedTime, Long createdTime) {
-        return new Token(
-                id, userId, key, TokenStatus.fromCode(status), name == null ? "" : name,
-                expiredTime, remainQuota, unlimitedQuota, modelLimitsEnabled,
-                modelLimits, allowIps == null ? "" : allowIps, usedQuota,
-                group == null ? "" : group, crossGroupRetry, endpointLimitsEnabled,
-                endpointLimits == null ? "" : endpointLimits, accessedTime, createdTime);
+        // 委托 Builder 装配：字段名自解释、null 归一逻辑（name/allowIps/group/endpointLimits → ""）
+        // 收敛在 Builder 一处。状态由整数码经 TokenStatus.fromCode 解析后传入（脏码归并禁用）。
+        return builder()
+                .id(id)
+                .userId(userId)
+                .key(key)
+                .status(TokenStatus.fromCode(status))
+                .name(name)
+                .expiredTime(expiredTime)
+                .remainQuota(remainQuota)
+                .unlimitedQuota(unlimitedQuota)
+                .modelLimitsEnabled(modelLimitsEnabled)
+                .modelLimits(modelLimits)
+                .allowIps(allowIps)
+                .usedQuota(usedQuota)
+                .group(group)
+                .crossGroupRetry(crossGroupRetry)
+                .endpointLimitsEnabled(endpointLimitsEnabled)
+                .endpointLimits(endpointLimits)
+                .accessedTime(accessedTime)
+                .createdTime(createdTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表（18 个参数）：调用处以具名链式方法装配，
+     * 可读性与抗重构性更好（第 6 个 {@code long} 到底是 expiredTime 还是 remainQuota，
+     * 位置参数看不出，Builder 一目了然）。与 {@code rehydrate} 一致——本入口<b>不</b>触发
+     * 创建不变量与时间打点，纯还原已存状态。</p>
+     *
+     * @return 新的令牌重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 令牌聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：原始类型列的 setter 接受<b>包装类型</b>并把 {@code null} 归一为默认
+     * （数值→0、布尔→false）；name/allowIps/group/endpointLimits 把 {@code null} 归一为空串
+     * ——这些与原 {@code rehydrate} 构造器一致的兜底逻辑全部收敛在此，
+     * {@code TokenRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private long userId;
+        private String key;
+        private TokenStatus status;
+        private String name = "";
+        private long expiredTime;
+        private long remainQuota;
+        private boolean unlimitedQuota;
+        private boolean modelLimitsEnabled;
+        private String modelLimits;
+        private String allowIps = "";
+        private long usedQuota;
+        private String group = "";
+        private boolean crossGroupRetry;
+        private boolean endpointLimitsEnabled;
+        private String endpointLimits = "";
+        private Long accessedTime;
+        private Long createdTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（新建未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param userId 归属用户 id（null 归一为 0） */
+        public Builder userId(Long userId) {
+            this.userId = userId == null ? 0L : userId;
+            return this;
+        }
+
+        /** @param key 明文凭证 */
+        public Builder key(String key) {
+            this.key = key;
+            return this;
+        }
+
+        /** @param status 状态值对象 */
+        public Builder status(TokenStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        /** @param name 令牌名（null 归一为空串） */
+        public Builder name(String name) {
+            this.name = name == null ? "" : name;
+            return this;
+        }
+
+        /** @param expiredTime 过期时间 epoch 秒，-1=永不过期（null 归一为 0） */
+        public Builder expiredTime(Long expiredTime) {
+            this.expiredTime = expiredTime == null ? 0L : expiredTime;
+            return this;
+        }
+
+        /** @param remainQuota 剩余配额（null 归一为 0） */
+        public Builder remainQuota(Long remainQuota) {
+            this.remainQuota = remainQuota == null ? 0L : remainQuota;
+            return this;
+        }
+
+        /** @param unlimitedQuota 是否无限额度（null 归一为 false） */
+        public Builder unlimitedQuota(Boolean unlimitedQuota) {
+            this.unlimitedQuota = Boolean.TRUE.equals(unlimitedQuota);
+            return this;
+        }
+
+        /** @param modelLimitsEnabled 是否启用模型限制（null 归一为 false） */
+        public Builder modelLimitsEnabled(Boolean modelLimitsEnabled) {
+            this.modelLimitsEnabled = Boolean.TRUE.equals(modelLimitsEnabled);
+            return this;
+        }
+
+        /** @param modelLimits 允许模型 JSON 串，可为 null（与原 rehydrate 一致不归一空串） */
+        public Builder modelLimits(String modelLimits) {
+            this.modelLimits = modelLimits;
+            return this;
+        }
+
+        /** @param allowIps IP 白名单（null 归一为空串） */
+        public Builder allowIps(String allowIps) {
+            this.allowIps = allowIps == null ? "" : allowIps;
+            return this;
+        }
+
+        /** @param usedQuota 已用配额（null 归一为 0） */
+        public Builder usedQuota(Long usedQuota) {
+            this.usedQuota = usedQuota == null ? 0L : usedQuota;
+            return this;
+        }
+
+        /** @param group 调用分组（null 归一为空串） */
+        public Builder group(String group) {
+            this.group = group == null ? "" : group;
+            return this;
+        }
+
+        /** @param crossGroupRetry 跨组重试开关（null 归一为 false） */
+        public Builder crossGroupRetry(Boolean crossGroupRetry) {
+            this.crossGroupRetry = Boolean.TRUE.equals(crossGroupRetry);
+            return this;
+        }
+
+        /** @param endpointLimitsEnabled 是否启用端点级减法约束（null 归一为 false） */
+        public Builder endpointLimitsEnabled(Boolean endpointLimitsEnabled) {
+            this.endpointLimitsEnabled = Boolean.TRUE.equals(endpointLimitsEnabled);
+            return this;
+        }
+
+        /** @param endpointLimits 端点级减法约束 JSON 串（null 归一为空串） */
+        public Builder endpointLimits(String endpointLimits) {
+            this.endpointLimits = endpointLimits == null ? "" : endpointLimits;
+            return this;
+        }
+
+        /** @param accessedTime 最近访问时间 epoch 秒，可为 null */
+        public Builder accessedTime(Long accessedTime) {
+            this.accessedTime = accessedTime;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的令牌聚合（不触发创建不变量与时间打点）。
+         *
+         * @return 重建的令牌聚合
+         */
+        public Token build() {
+            return new Token(
+                    id, userId, key, status, name,
+                    expiredTime, remainQuota, unlimitedQuota,
+                    modelLimitsEnabled, modelLimits, allowIps, usedQuota,
+                    group, crossGroupRetry, endpointLimitsEnabled,
+                    endpointLimits, accessedTime, createdTime);
+        }
     }
 
     /**

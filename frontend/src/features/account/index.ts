@@ -16,5 +16,9 @@ export {
   useSelf,
   useSaveSetting,
   toAccountVM,
+  ROLE,
+  roleLabel,
+  isAdminRole,
+  isRootRole,
 } from './model/account.model';
 export type { AccountVM } from './model/account.model';

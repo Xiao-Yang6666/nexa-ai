@@ -158,27 +158,29 @@ public class TaskRepositoryImpl implements TaskRepository {
      * @return 重建的任务聚合
      */
     private Task toDomain(TaskJpaEntity e) {
-        return Task.rehydrate(
-                e.getId(),
-                e.getTaskId(),
-                TaskPlatform.fromWire(e.getPlatform()),
-                e.getUserId(),
-                e.getGroup(),
-                e.getChannelId(),
-                e.getQuota(),
-                e.getAction(),
-                TaskStatus.fromWire(e.getStatus()),
-                e.getFailReason(),
-                e.getSubmitTime(),
-                e.getStartTime(),
-                e.getFinishTime(),
-                e.getProgress(),
-                e.getProperties(),
-                e.getData(),
-                e.getPrivateData(),
-                extractBillingFromPrivateData(e.getPrivateData()),
-                e.getCreatedAt(),
-                e.getUpdatedAt());
+        // 具名链式装配：每个 getter 对位到自解释的 Builder 方法，避免 20 位位置参数误位。
+        return Task.builder()
+                .id(e.getId())
+                .taskId(e.getTaskId())
+                .platform(TaskPlatform.fromWire(e.getPlatform()))
+                .userId(e.getUserId())
+                .group(e.getGroup())
+                .channelId(e.getChannelId())
+                .quota(e.getQuota())
+                .action(e.getAction())
+                .status(TaskStatus.fromWire(e.getStatus()))
+                .failReason(e.getFailReason())
+                .submitTime(e.getSubmitTime())
+                .startTime(e.getStartTime())
+                .finishTime(e.getFinishTime())
+                .progress(e.getProgress())
+                .properties(e.getProperties())
+                .data(e.getData())
+                .privateData(e.getPrivateData())
+                .billingContext(extractBillingFromPrivateData(e.getPrivateData()))
+                .createdAt(e.getCreatedAt())
+                .updatedAt(e.getUpdatedAt())
+                .build();
     }
 
     /**

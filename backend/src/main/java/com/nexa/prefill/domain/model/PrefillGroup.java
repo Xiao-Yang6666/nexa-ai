@@ -84,7 +84,98 @@ public final class PrefillGroup {
      */
     public static PrefillGroup rehydrate(Long id, String name, PrefillType type, PrefillItems items,
                                          String description, Long createdTime, Long updatedTime) {
-        return new PrefillGroup(id, name, type, items, description, createdTime, updatedTime);
+        // 委托 Builder 装配：字段名自解释、抗重构（位置参数顺序看不出第 6 个是 createdTime 还是 updatedTime）。
+        return builder()
+                .id(id)
+                .name(name)
+                .type(type)
+                .items(items)
+                .description(description)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建不变量校验，纯还原已存状态（库中数据视为已合法）。</p>
+     *
+     * @return 新的预填分组重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 预填分组聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：与 {@link #rehydrate} 一致直接装配字段，不走 {@link #create} 的业务校验
+     * （库中数据视为已合法），使 {@code PrefillGroupRepositoryImpl.toDomain} 以具名链式方法装配。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private String name;
+        private PrefillType type;
+        private PrefillItems items;
+        private String description;
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param name 分组名称 */
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        /** @param type 分组类型 */
+        public Builder type(PrefillType type) {
+            this.type = type;
+            return this;
+        }
+
+        /** @param items 条目集合 */
+        public Builder items(PrefillItems items) {
+            this.items = items;
+            return this;
+        }
+
+        /** @param description 描述，可为 null */
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        /** @param createdTime 创建时间（epoch 秒） */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间（epoch 秒） */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的预填分组聚合（不触发创建不变量校验）。
+         *
+         * @return 重建的预填分组聚合
+         */
+        public PrefillGroup build() {
+            return new PrefillGroup(id, name, type, items, description, createdTime, updatedTime);
+        }
     }
 
     /**

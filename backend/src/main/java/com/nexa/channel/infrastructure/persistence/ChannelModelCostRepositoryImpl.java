@@ -128,8 +128,18 @@ public class ChannelModelCostRepositoryImpl implements ChannelModelCostRepositor
     }
 
     private ChannelModelCost toDomain(ChannelModelCostJpaEntity e) {
-        return ChannelModelCost.rehydrate(e.getId(), e.getChannelId(), e.getUpstreamModel(),
-                e.getCostRatio(), e.getCompletionCostRatio(), e.getEnabled(), e.getEffectiveTime(),
-                e.getSourceUnitPrice(), e.getRemark(), e.getCreatedTime(), e.getUpdatedTime());
+        return ChannelModelCost.builder()
+                .id(e.getId())
+                .channelId(e.getChannelId())
+                .upstreamModel(e.getUpstreamModel())
+                .costRatio(e.getCostRatio())
+                .completionCostRatio(e.getCompletionCostRatio())
+                .enabled(e.getEnabled())
+                .effectiveTime(e.getEffectiveTime())
+                .sourceUnitPrice(e.getSourceUnitPrice())
+                .remark(e.getRemark())
+                .createdTime(e.getCreatedTime())
+                .updatedTime(e.getUpdatedTime())
+                .build();
     }
 }

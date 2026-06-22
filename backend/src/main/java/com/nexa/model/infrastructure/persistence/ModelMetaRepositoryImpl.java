@@ -130,8 +130,19 @@ public class ModelMetaRepositoryImpl implements ModelMetaRepository {
     }
 
     private ModelMeta toDomain(ModelMetaJpaEntity e) {
-        return ModelMeta.rehydrate(e.getId(), e.getModelName(), e.getStatus(), e.getDescription(),
-                e.getIcon(), e.getTags(), e.getVendorId(), e.getEndpoints(), e.getNameRule(),
-                e.getSyncOfficial(), e.getCreatedTime(), e.getUpdatedTime());
+        return ModelMeta.builder()
+                .id(e.getId())
+                .modelName(e.getModelName())
+                .status(e.getStatus())
+                .description(e.getDescription())
+                .icon(e.getIcon())
+                .tags(e.getTags())
+                .vendorId(e.getVendorId())
+                .endpoints(e.getEndpoints())
+                .nameRule(e.getNameRule())
+                .syncOfficial(e.getSyncOfficial())
+                .createdTime(e.getCreatedTime())
+                .updatedTime(e.getUpdatedTime())
+                .build();
     }
 }

@@ -3,6 +3,10 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+// 直接从 account model 叶子模块导入（非 barrel）：打破 account↔admin 循环依赖。
+// barrel @/features/account 再导出了 UsersAdminPage → 依赖本 admin barrel，
+// 经 CJS 转译后 re-export 非活绑定，从 barrel 取 ROLE 在模块顶层(NAV)求值时会拿到 undefined。
+import { useSelf, roleLabel, ROLE } from '@/features/account/model/account.model';
 import styles from './AdminShell.module.css';
 
 /* ── 线性 stroke 图标库（24x24，stroke:currentColor）。迁移自 S6 admin-shell.js ── */
@@ -49,6 +53,8 @@ interface NavItem {
   /** 管理台路由 href（/admin 路由组 flat 路径） */
   href: string;
   ic: string;
+  /** 可见所需最低角色（缺省=admin）。root 专属项标 ROLE.ROOT。 */
+  minRole?: number;
 }
 
 interface NavGroup {
@@ -62,6 +68,10 @@ interface NavGroup {
  * 管理后台导航树。与 S6 admin-shell.js 的 NAV 同构，
  * href 改为 App Router flat 路径。用户区「仪表盘」回控制台 /dashboard。
  * 管理组带 admin:true（侧栏渲染「管理」徽章 + 分隔线）。
+ *
+ * 角色可见性：与后端鉴权对齐——运维监控(ops)/系统设置(sys) 后端为 @RequireRole(ROOT)，
+ * 故标 minRole=ROLE.ROOT（仅超管可见）；其余管理端均为 @RequireRole(ADMIN)，admin 即可见。
+ * 渲染时按当前登录用户角色过滤 minRole 不足的项。
  *
  * 注：本 wave 实现 admin-dashboard / channels / users / tasks / billing / ops 六页路由；
  * models/groups/profit/redeem/logs/sys 为后续 wave，导航项保留（用户可见完整菜单），
@@ -102,8 +112,8 @@ const NAV: NavGroup[] = [
     admin: true,
     items: [
       { id: 'logs', label: '日志审计', href: '/admin/logs', ic: 'file' },
-      { id: 'ops', label: '运维监控', href: '/admin/ops', ic: 'pulse' },
-      { id: 'sys', label: '系统设置', href: '/admin/sys-settings', ic: 'settings' },
+      { id: 'ops', label: '运维监控', href: '/admin/ops', ic: 'pulse', minRole: ROLE.ROOT },
+      { id: 'sys', label: '系统设置', href: '/admin/sys-settings', ic: 'settings', minRole: ROLE.ROOT },
     ],
   },
 ];
@@ -117,9 +127,9 @@ export interface AdminShellProps {
   crumb: string[];
   /** 顶部右侧操作区（页面级按钮，如「新增渠道」） */
   actions?: ReactNode;
-  /** 顶栏展示的管理员用户名 */
+  /** 顶栏展示的管理员用户名（缺省取 self 接口的真实用户名） */
   userName?: string;
-  /** 顶栏角色切换当前文案 */
+  /** 顶栏角色切换当前文案（缺省取 self 接口的真实角色文案） */
   role?: string;
   children: ReactNode;
 }
@@ -132,6 +142,8 @@ export interface AdminShellProps {
  * 顶栏多「角色切换」下拉（管理视图 ⇄ 用户视图），移动端汉堡抽屉用受控 state。
  * 样式全部来自 AdminShell.module.css（token 化）。
  *
+ * 顶栏用户名/角色文案与左侧菜单均由 self 接口的真实登录用户驱动：
+ * 超管(root) 额外可见 运维监控/系统设置，管理员(admin) 只见 admin 级项（与后端鉴权一致）。
  * AdminView 可展示全字段（成本/利润/上游 B/供应商）——管理端不受客户端零泄露约束。
  * 每个管理页用 <AdminShell activeId title crumb actions>{页面主区}</AdminShell> 包裹。
  */
@@ -140,13 +152,25 @@ export function AdminShell({
   title,
   crumb,
   actions,
-  userName = 'admin.root',
-  role = '管理视图',
+  userName,
+  role,
   children,
 }: AdminShellProps) {
   const [open, setOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
   const pathname = usePathname();
+  const self = useSelf();
+
+  // 真实登录用户：props 显式传入优先，否则取 self；都没有时给安全兜底。
+  const currentRole = self.data?.role ?? ROLE.ADMIN;
+  const displayName = userName ?? self.data?.displayName ?? self.data?.username ?? '管理员';
+  const roleText = role ?? roleLabel(currentRole);
+
+  // 按当前角色过滤菜单：去掉 minRole 高于本人的项，并丢弃过滤后变空的分组。
+  const nav = NAV.map((grp) => ({
+    ...grp,
+    items: grp.items.filter((it) => currentRole >= (it.minRole ?? ROLE.ADMIN) || !grp.admin),
+  })).filter((grp) => grp.items.length > 0);
 
   return (
     <>
@@ -173,13 +197,13 @@ export function AdminShell({
               onBlur={() => setTimeout(() => setRoleOpen(false), 120)}
             >
               <Icon name="swap" />
-              <span>{role}</span>
+              <span>{roleText}</span>
               <Icon name="chevron" />
             </button>
             <div className={`${styles.roleMenu} ${roleOpen ? styles.open : ''}`} role="menu">
               <button type="button" className={`${styles.roleOpt} ${styles.cur}`} role="menuitem">
                 <Icon name="swap" />
-                <span>管理视图</span>
+                <span>{roleText}</span>
               </button>
               <Link className={styles.roleOpt} role="menuitem" href="/dashboard">
                 <Icon name="gauge" />
@@ -192,15 +216,15 @@ export function AdminShell({
             <span className={styles.dotMark} />
           </button>
           <button className={styles.user} type="button">
-            <span className={styles.avatar}>{userName.charAt(0).toUpperCase()}</span>
-            <span className={styles.userName}>{userName}</span>
+            <span className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</span>
+            <span className={styles.userName}>{displayName}</span>
             <Icon name="chevron" />
           </button>
         </div>
       </header>
 
       <aside className={`${styles.side} ${open ? styles.open : ''}`}>
-        {NAV.map((grp) => (
+        {nav.map((grp) => (
           <div
             key={grp.group}
             className={`${styles.navGrp} ${grp.admin ? styles.navGrpAdmin : ''}`}

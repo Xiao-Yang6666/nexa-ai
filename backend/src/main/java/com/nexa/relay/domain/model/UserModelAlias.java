@@ -64,7 +64,99 @@ public class UserModelAlias {
     /** 从持久化重建。 */
     public static UserModelAlias rehydrate(Long id, AliasScope scope, String alias, String target,
                                            boolean enabled, Long createdTime, Long updatedTime) {
-        return new UserModelAlias(id, scope, alias, target, enabled, createdTime, updatedTime);
+        // 委托 Builder 装配：字段名自解释，enabled 的 null 归一逻辑收敛在 Builder 一处。
+        return builder()
+                .id(id)
+                .scope(scope)
+                .alias(alias)
+                .target(target)
+                .enabled(enabled)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>校验、不触发领域行为，纯还原已存状态。</p>
+     *
+     * @return 新的别名重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 客户层别名聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：原始类型列 {@link #enabled(Boolean)} 接受<b>包装类型</b>并把 {@code null} 归一为
+     * {@code false}——JPA 实体里可空列的兜底逻辑收敛在此，{@code UserModelAliasRepositoryImpl.toDomain}
+     * 不再散落 {@code ?:} 三元。{@code createdTime}/{@code updatedTime} 为 {@code Long} 包装类型，按原样透传可空。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private AliasScope scope;
+        private String alias;
+        private String target;
+        private boolean enabled;
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（新建未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param scope 作用域值对象（user/group + scopeId） */
+        public Builder scope(AliasScope scope) {
+            this.scope = scope;
+            return this;
+        }
+
+        /** @param alias C 客户别名 */
+        public Builder alias(String alias) {
+            this.alias = alias;
+            return this;
+        }
+
+        /** @param target A 目标公开名（不强制白名单） */
+        public Builder target(String target) {
+            this.target = target;
+            return this;
+        }
+
+        /** @param enabled 是否启用（null 归一为 false） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled != null && enabled;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间 epoch 秒，可为 null */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的别名聚合（不校验、不触发领域行为）。
+         *
+         * @return 重建的别名聚合
+         */
+        public UserModelAlias build() {
+            return new UserModelAlias(id, scope, alias, target, enabled, createdTime, updatedTime);
+        }
     }
 
     /** 改 target（A）。 */

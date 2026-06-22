@@ -108,8 +108,16 @@ public class CustomOAuthProviderRepositoryImpl implements CustomOAuthProviderRep
                 e.getAuthorizationEndpoint(), e.getTokenEndpoint(), e.getUserinfoEndpoint());
         Instant createdAt = e.getCreatedAt() == null ? Instant.now() : Instant.ofEpochSecond(e.getCreatedAt());
         Instant updatedAt = e.getUpdatedAt() == null ? createdAt : Instant.ofEpochSecond(e.getUpdatedAt());
-        return CustomOAuthProvider.rehydrate(
-                e.getId(), e.getName(), e.getClientId(), e.getClientSecret(),
-                endpoints, e.getScopes(), e.isEnabled(), createdAt, updatedAt);
+        return CustomOAuthProvider.builder()
+                .id(e.getId())
+                .name(e.getName())
+                .clientId(e.getClientId())
+                .clientSecret(e.getClientSecret())
+                .endpoints(endpoints)
+                .scopes(e.getScopes())
+                .enabled(e.isEnabled())
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
     }
 }

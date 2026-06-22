@@ -116,14 +116,15 @@ public class PrefillGroupRepositoryImpl implements PrefillGroupRepository {
      * @return 重建的预填分组聚合
      */
     private PrefillGroup toDomain(PrefillGroupJpaEntity e) {
-        return PrefillGroup.rehydrate(
-                e.getId(),
-                e.getName(),
-                PrefillType.fromWire(e.getType()),
-                deserializeItems(e.getItems()),
-                e.getDescription(),
-                e.getCreatedTime(),
-                e.getUpdatedTime());
+        return PrefillGroup.builder()
+                .id(e.getId())
+                .name(e.getName())
+                .type(PrefillType.fromWire(e.getType()))
+                .items(deserializeItems(e.getItems()))
+                .description(e.getDescription())
+                .createdTime(e.getCreatedTime())
+                .updatedTime(e.getUpdatedTime())
+                .build();
     }
 
     /**

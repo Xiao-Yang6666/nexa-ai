@@ -157,11 +157,118 @@ public class AffinityRule {
     public static AffinityRule rehydrate(boolean enabled, String name, String modelRegex, String pathRegex,
                                         List<KeySource> keySources, Map<String, String> passHeaders,
                                         boolean skipRetryOnFailure, long ttlSeconds, boolean builtIn) {
-        return new AffinityRule(
-                enabled, name, modelRegex, pathRegex,
-                keySources == null ? List.of() : List.copyOf(keySources),
-                passHeaders == null ? Map.of() : Map.copyOf(passHeaders),
-                skipRetryOnFailure, Math.max(0L, ttlSeconds), builtIn);
+        // 委托 Builder 装配：集合 null→空集合 + 防御性拷贝、ttl 钳为非负的归一逻辑收敛在 Builder 一处。
+        return builder()
+                .enabled(enabled)
+                .name(name)
+                .modelRegex(modelRegex)
+                .pathRegex(pathRegex)
+                .keySources(keySources)
+                .passHeaders(passHeaders)
+                .skipRetryOnFailure(skipRetryOnFailure)
+                .ttlSeconds(ttlSeconds)
+                .builtIn(builtIn)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （第 5、6 个参数是 keySources 还是 passHeaders，位置参数易错，Builder 一目了然）。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建不变量校验，纯还原已存状态。</p>
+     *
+     * @return 新的亲和规则重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 亲和规则聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：{@link #keySources(List)} 把 null 归一为空 List 并做 {@link List#copyOf} 防御性拷贝，
+     * {@link #passHeaders(Map)} 把 null 归一为空 Map 并做 {@link Map#copyOf} 防御性拷贝，
+     * {@link #ttlSeconds(long)} 把负值钳为 0——这些与原 {@code rehydrate} 完全一致的归一逻辑全部收敛在此，
+     * {@code AffinityRuleRepositoryImpl.toDomain} 不再散落兜底。</p>
+     */
+    public static final class Builder {
+        private boolean enabled;
+        private String name;
+        private String modelRegex;
+        private String pathRegex;
+        private List<KeySource> keySources = List.of();
+        private Map<String, String> passHeaders = Map.of();
+        private boolean skipRetryOnFailure;
+        private long ttlSeconds;
+        private boolean builtIn;
+
+        private Builder() {
+        }
+
+        /** @param enabled 是否启用（null 归一为 false） */
+        public Builder enabled(Boolean enabled) {
+            this.enabled = enabled != null && enabled;
+            return this;
+        }
+
+        /** @param name 规则名 */
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        /** @param modelRegex model 命中正则 */
+        public Builder modelRegex(String modelRegex) {
+            this.modelRegex = modelRegex;
+            return this;
+        }
+
+        /** @param pathRegex path 命中正则 */
+        public Builder pathRegex(String pathRegex) {
+            this.pathRegex = pathRegex;
+            return this;
+        }
+
+        /** @param keySources 会话键来源（null 归一为空 List，非空时做防御性拷贝，与原 rehydrate 一致） */
+        public Builder keySources(List<KeySource> keySources) {
+            this.keySources = keySources == null ? List.of() : List.copyOf(keySources);
+            return this;
+        }
+
+        /** @param passHeaders header 透传模板（null 归一为空 Map，非空时做防御性拷贝，与原 rehydrate 一致） */
+        public Builder passHeaders(Map<String, String> passHeaders) {
+            this.passHeaders = passHeaders == null ? Map.of() : Map.copyOf(passHeaders);
+            return this;
+        }
+
+        /** @param skipRetryOnFailure 命中失败是否跳重试（null 归一为 false） */
+        public Builder skipRetryOnFailure(Boolean skipRetryOnFailure) {
+            this.skipRetryOnFailure = skipRetryOnFailure != null && skipRetryOnFailure;
+            return this;
+        }
+
+        /** @param ttlSeconds 缓存 TTL 秒（null 归一为 0，负值钳为 0，与原 rehydrate 的 {@code Math.max(0L, ttl)} 一致） */
+        public Builder ttlSeconds(Long ttlSeconds) {
+            this.ttlSeconds = ttlSeconds == null ? 0L : Math.max(0L, ttlSeconds);
+            return this;
+        }
+
+        /** @param builtIn 是否内置规则（null 归一为 false） */
+        public Builder builtIn(Boolean builtIn) {
+            this.builtIn = builtIn != null && builtIn;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的亲和规则聚合（不触发创建不变量校验）。
+         *
+         * @return 重建的亲和规则聚合
+         */
+        public AffinityRule build() {
+            return new AffinityRule(enabled, name, modelRegex, pathRegex,
+                    keySources, passHeaders, skipRetryOnFailure, ttlSeconds, builtIn);
+        }
     }
 
     /**

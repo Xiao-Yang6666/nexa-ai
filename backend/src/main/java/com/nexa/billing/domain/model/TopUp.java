@@ -95,8 +95,126 @@ public final class TopUp {
     public static TopUp rehydrate(Long id, Integer userId, Quota amount, Money money, String tradeNo,
                                   String paymentMethod, String paymentProvider, Long createTime,
                                   Long completeTime, PaymentStatus status) {
-        return new TopUp(id, userId, amount, money, tradeNo, paymentMethod,
-                paymentProvider, createTime, completeTime, status);
+        // 委托 Builder 装配：字段名自解释，避免 10 个重建参数（含两段 String 支付方式/渠道）位置串位。
+        return builder()
+                .id(id)
+                .userId(userId)
+                .amount(amount)
+                .money(money)
+                .tradeNo(tradeNo)
+                .paymentMethod(paymentMethod)
+                .paymentProvider(paymentProvider)
+                .createTime(createTime)
+                .completeTime(completeTime)
+                .status(status)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好
+     * （{@code paymentMethod} 与 {@code paymentProvider} 两个相邻 {@code String} 极易串位，
+     * Builder 一目了然）。与 {@code rehydrate} 一致——本入口<b>不</b>触发下单不变量与状态机，
+     * 纯还原已存状态。</p>
+     *
+     * @return 新的充值订单重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 充值订单聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：值对象 {@code amount}/{@code money}、枚举 {@code status}、可空时间戳
+     * {@code completeTime}（未完成为 null）均原样装配，由调用方 {@code TopUpRepositoryImpl.toDomain}
+     * 在构造值对象时完成空值兜底（{@code Quota.of}/{@code Money.of}）。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private Integer userId;
+        private Quota amount;
+        private Money money;
+        private String tradeNo;
+        private String paymentMethod;
+        private String paymentProvider;
+        private Long createTime;
+        private Long completeTime;
+        private PaymentStatus status;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param userId 充值用户 id */
+        public Builder userId(Integer userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        /** @param amount 充值额度值对象（入账目标） */
+        public Builder amount(Quota amount) {
+            this.amount = amount;
+            return this;
+        }
+
+        /** @param money 支付金额值对象（真实货币） */
+        public Builder money(Money money) {
+            this.money = money;
+            return this;
+        }
+
+        /** @param tradeNo 商户订单号（幂等键） */
+        public Builder tradeNo(String tradeNo) {
+            this.tradeNo = tradeNo;
+            return this;
+        }
+
+        /** @param paymentMethod 支付方式 */
+        public Builder paymentMethod(String paymentMethod) {
+            this.paymentMethod = paymentMethod;
+            return this;
+        }
+
+        /** @param paymentProvider 支付渠道 */
+        public Builder paymentProvider(String paymentProvider) {
+            this.paymentProvider = paymentProvider;
+            return this;
+        }
+
+        /** @param createTime 创建时间（epoch 秒） */
+        public Builder createTime(Long createTime) {
+            this.createTime = createTime;
+            return this;
+        }
+
+        /** @param completeTime 完成时间（epoch 秒），未完成为 null */
+        public Builder completeTime(Long completeTime) {
+            this.completeTime = completeTime;
+            return this;
+        }
+
+        /** @param status 当前支付状态 */
+        public Builder status(PaymentStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的充值订单聚合（不触发下单不变量与状态机）。
+         *
+         * @return 重建的充值订单聚合
+         */
+        public TopUp build() {
+            return new TopUp(id, userId, amount, money, tradeNo, paymentMethod,
+                    paymentProvider, createTime, completeTime, status);
+        }
     }
 
     /**

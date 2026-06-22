@@ -111,11 +111,17 @@ public class AffinityRuleRepositoryImpl implements AffinityRuleRepository {
     }
 
     private AffinityRule toDomain(AffinityRuleJpaEntity e) {
-        return AffinityRule.rehydrate(
-                e.isEnabled(), e.getName(), e.getModelRegex(), e.getPathRegex(),
-                deserializeKeySources(e.getKeySources()),
-                deserializePassHeaders(e.getPassHeaders()),
-                e.isSkipRetryOnFailure(), e.getTtlSeconds(), e.isBuiltIn());
+        return AffinityRule.builder()
+                .enabled(e.isEnabled())
+                .name(e.getName())
+                .modelRegex(e.getModelRegex())
+                .pathRegex(e.getPathRegex())
+                .keySources(deserializeKeySources(e.getKeySources()))
+                .passHeaders(deserializePassHeaders(e.getPassHeaders()))
+                .skipRetryOnFailure(e.isSkipRetryOnFailure())
+                .ttlSeconds(e.getTtlSeconds())
+                .builtIn(e.isBuiltIn())
+                .build();
     }
 
     private String serializeKeySources(List<KeySource> keySources) {

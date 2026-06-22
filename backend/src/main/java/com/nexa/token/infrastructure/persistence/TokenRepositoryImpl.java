@@ -3,6 +3,7 @@ package com.nexa.token.infrastructure.persistence;
 import com.nexa.token.domain.model.Token;
 import com.nexa.token.domain.repository.TokenRepository;
 import com.nexa.token.domain.vo.Pagination;
+import com.nexa.token.domain.vo.TokenStatus;
 import com.nexa.token.infrastructure.persistence.entity.TokenJpaEntity;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -153,25 +154,29 @@ public class TokenRepositoryImpl implements TokenRepository {
     }
 
     private Token toDomain(TokenJpaEntity e) {
-        return Token.rehydrate(
-                e.getId(),
-                e.getUserId() == null ? 0L : e.getUserId().longValue(),
-                e.getKey(),
-                e.getStatus(),
-                e.getName(),
-                e.getExpiredTime(),
-                e.getRemainQuota(),
-                e.isUnlimitedQuota(),
-                e.isModelLimitsEnabled(),
-                e.getModelLimits() == null ? "" : e.getModelLimits(),
-                e.getAllowIps(),
-                e.getUsedQuota(),
-                e.getGroup(),
-                e.isCrossGroupRetry(),
-                e.isEndpointLimitsEnabled(),
-                e.getEndpointLimits() == null ? "" : e.getEndpointLimits(),
-                e.getAccessedTime(),
-                e.getCreatedTime());
+        // 数值列 null 兜底（userId/expiredTime/remainQuota/usedQuota → 0）与 name/allowIps/group/
+        // endpointLimits 的 null 归一空串，统一收敛在 Token.Builder 内，这里只做状态码解析与
+        // modelLimits 空串归一（其余直传）。
+        return Token.builder()
+                .id(e.getId())
+                .userId(e.getUserId() == null ? null : e.getUserId().longValue())
+                .key(e.getKey())
+                .status(TokenStatus.fromCode(e.getStatus()))
+                .name(e.getName())
+                .expiredTime(e.getExpiredTime())
+                .remainQuota(e.getRemainQuota())
+                .unlimitedQuota(e.isUnlimitedQuota())
+                .modelLimitsEnabled(e.isModelLimitsEnabled())
+                .modelLimits(e.getModelLimits() == null ? "" : e.getModelLimits())
+                .allowIps(e.getAllowIps())
+                .usedQuota(e.getUsedQuota())
+                .group(e.getGroup())
+                .crossGroupRetry(e.isCrossGroupRetry())
+                .endpointLimitsEnabled(e.isEndpointLimitsEnabled())
+                .endpointLimits(e.getEndpointLimits())
+                .accessedTime(e.getAccessedTime())
+                .createdTime(e.getCreatedTime())
+                .build();
     }
 
     /**

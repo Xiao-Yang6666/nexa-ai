@@ -77,16 +77,18 @@ public class TopUpRepositoryImpl implements TopUpRepository {
      * @return 重建的充值订单聚合
      */
     private static TopUp toDomain(TopUpJpaEntity e) {
-        return TopUp.rehydrate(
-                e.getId(),
-                e.getUserId(),
-                Quota.of(e.getAmount() == null ? 0L : e.getAmount()),
-                Money.of(e.getMoney() == null ? BigDecimal.ZERO : e.getMoney()),
-                e.getTradeNo(),
-                e.getPaymentMethod(),
-                e.getPaymentProvider(),
-                e.getCreateTime(),
-                e.getCompleteTime(),
-                PaymentStatus.fromCode(e.getStatus() == null ? PaymentStatus.PENDING.code() : e.getStatus()));
+        // 值对象构造期的空值兜底（Quota.of/Money.of）留在此处，状态/字段装配走 Builder 具名链式。
+        return TopUp.builder()
+                .id(e.getId())
+                .userId(e.getUserId())
+                .amount(Quota.of(e.getAmount() == null ? 0L : e.getAmount()))
+                .money(Money.of(e.getMoney() == null ? BigDecimal.ZERO : e.getMoney()))
+                .tradeNo(e.getTradeNo())
+                .paymentMethod(e.getPaymentMethod())
+                .paymentProvider(e.getPaymentProvider())
+                .createTime(e.getCreateTime())
+                .completeTime(e.getCompleteTime())
+                .status(PaymentStatus.fromCode(e.getStatus() == null ? PaymentStatus.PENDING.code() : e.getStatus()))
+                .build();
     }
 }

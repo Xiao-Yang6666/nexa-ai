@@ -174,9 +174,210 @@ public final class Task {
                                  Long submitTime, Long startTime, Long finishTime, String progress,
                                  String properties, String data, String privateData, BillingContext billingContext,
                                  Long createdAt, Long updatedAt) {
-        return new Task(id, taskId, platform, userId, group, channelId, quota, action, status, failReason,
-                submitTime, startTime, finishTime, progress, properties, data, privateData, billingContext,
-                createdAt, updatedAt);
+        // 委托 Builder 装配：20 个字段以具名链式方法对位，避免长位置参数列表（第 11 个 Long 到底是
+        // submitTime 还是 startTime，位置参数难辨，Builder 一目了然）。语义与原构造器逐字段一致——
+        // 纯还原已存状态，不触发任何业务校验/不变量，statusBeforeAdvance 由构造器同步为 status。
+        return builder()
+                .id(id)
+                .taskId(taskId)
+                .platform(platform)
+                .userId(userId)
+                .group(group)
+                .channelId(channelId)
+                .quota(quota)
+                .action(action)
+                .status(status)
+                .failReason(failReason)
+                .submitTime(submitTime)
+                .startTime(startTime)
+                .finishTime(finishTime)
+                .progress(progress)
+                .properties(properties)
+                .data(data)
+                .privateData(privateData)
+                .billingContext(billingContext)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的 20 位长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发业务校验与状态机不变量，纯还原已存状态。</p>
+     *
+     * @return 新的任务重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 任务聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：聚合多数字段为 {@code final}（taskId/platform/userId/group/channelId/quota/action/
+     * submitTime/billingContext/createdAt），故 {@link #build()} <b>委托私有全参构造器</b>装配，
+     * final 字段在构造器内一次性赋值。与 {@link User} 不同，本聚合字段全为包装类型（{@code Long}/
+     * {@code Integer}），无原始类型字段，重建时<b>不做 null→默认归一</b>——保持与原构造器逐字段一致的
+     * 还原语义（计费上下文等可空字段允许为 null）。{@code statusBeforeAdvance} 由构造器同步为
+     * {@code status}，无需在此重复设置。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private String taskId;
+        private TaskPlatform platform;
+        private Integer userId;
+        private String group;
+        private Integer channelId;
+        private Long quota;
+        private String action;
+        private TaskStatus status;
+        private String failReason;
+        private Long submitTime;
+        private Long startTime;
+        private Long finishTime;
+        private String progress;
+        private String properties;
+        private String data;
+        private String privateData;
+        private BillingContext billingContext;
+        private Long createdAt;
+        private Long updatedAt;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param taskId 上游任务 ID */
+        public Builder taskId(String taskId) {
+            this.taskId = taskId;
+            return this;
+        }
+
+        /** @param platform 任务平台 */
+        public Builder platform(TaskPlatform platform) {
+            this.platform = platform;
+            return this;
+        }
+
+        /** @param userId 归属用户 id */
+        public Builder userId(Integer userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        /** @param group 用户分组（可空） */
+        public Builder group(String group) {
+            this.group = group;
+            return this;
+        }
+
+        /** @param channelId 渠道 id（可空） */
+        public Builder channelId(Integer channelId) {
+            this.channelId = channelId;
+            return this;
+        }
+
+        /** @param quota 预扣配额（可空） */
+        public Builder quota(Long quota) {
+            this.quota = quota;
+            return this;
+        }
+
+        /** @param action 任务动作 */
+        public Builder action(String action) {
+            this.action = action;
+            return this;
+        }
+
+        /** @param status 当前状态 */
+        public Builder status(TaskStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        /** @param failReason 失败原因（可空） */
+        public Builder failReason(String failReason) {
+            this.failReason = failReason;
+            return this;
+        }
+
+        /** @param submitTime 提交时间 epoch 秒（可空） */
+        public Builder submitTime(Long submitTime) {
+            this.submitTime = submitTime;
+            return this;
+        }
+
+        /** @param startTime 开始时间 epoch 秒（可空） */
+        public Builder startTime(Long startTime) {
+            this.startTime = startTime;
+            return this;
+        }
+
+        /** @param finishTime 完成时间 epoch 秒（可空） */
+        public Builder finishTime(Long finishTime) {
+            this.finishTime = finishTime;
+            return this;
+        }
+
+        /** @param progress 进度（如 {@code "0%"}/{@code "100%"}，可空） */
+        public Builder progress(String progress) {
+            this.progress = progress;
+            return this;
+        }
+
+        /** @param properties 公开元信息 JSON（可空） */
+        public Builder properties(String properties) {
+            this.properties = properties;
+            return this;
+        }
+
+        /** @param data 产物 JSON（可空，已脱敏） */
+        public Builder data(String data) {
+            this.data = data;
+            return this;
+        }
+
+        /** @param privateData 隐私 JSON（含 Key，禁下发，可空） */
+        public Builder privateData(String privateData) {
+            this.privateData = privateData;
+            return this;
+        }
+
+        /** @param billingContext 计费上下文（退款依据，可空） */
+        public Builder billingContext(BillingContext billingContext) {
+            this.billingContext = billingContext;
+            return this;
+        }
+
+        /** @param createdAt 创建时间 epoch 秒（可空） */
+        public Builder createdAt(Long createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        /** @param updatedAt 更新时间 epoch 秒（可空） */
+        public Builder updatedAt(Long updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的任务聚合（委托私有全参构造器，不触发业务校验与状态机不变量）。
+         *
+         * @return 重建的任务聚合
+         */
+        public Task build() {
+            return new Task(id, taskId, platform, userId, group, channelId, quota, action, status, failReason,
+                    submitTime, startTime, finishTime, progress, properties, data, privateData, billingContext,
+                    createdAt, updatedAt);
+        }
     }
 
     // ---- 行为方法（充血，状态机由聚合守护） ----

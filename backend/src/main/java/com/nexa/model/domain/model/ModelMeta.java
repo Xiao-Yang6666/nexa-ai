@@ -131,20 +131,152 @@ public class ModelMeta {
                                       String icon, String tags, Long vendorId, String endpoints,
                                       String nameRule, int syncOfficial,
                                       Long createdTime, Long updatedTime) {
-        ModelMeta m = new ModelMeta();
-        m.id = id;
-        m.modelName = modelName;
-        m.status = ModelStatus.fromCode(status);
-        m.description = description;
-        m.icon = icon;
-        m.tags = tags;
-        m.vendorId = vendorId;
-        m.endpoints = endpoints;
-        m.nameRule = nameRule;
-        m.syncOfficial = syncOfficial;
-        m.createdTime = createdTime;
-        m.updatedTime = updatedTime;
-        return m;
+        // 委托 Builder 装配：字段名自解释、状态码 fromCode 归一逻辑收敛在 build() 一处。
+        return builder()
+                .id(id)
+                .modelName(modelName)
+                .status(status)
+                .description(description)
+                .icon(icon)
+                .tags(tags)
+                .vendorId(vendorId)
+                .endpoints(endpoints)
+                .nameRule(nameRule)
+                .syncOfficial(syncOfficial)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
+
+    /**
+     * 持久化重建构建器入口（基础设施层 {@code toDomain} 专用）。
+     *
+     * <p>替代 {@link #rehydrate} 的长位置参数列表：调用处以具名链式方法装配，可读性与抗重构性更好。
+     * 与 {@code rehydrate} 一致——本入口<b>不</b>触发创建校验，纯还原已存状态。</p>
+     *
+     * @return 新的模型元数据重建构建器
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * 模型元数据聚合的持久化重建构建器（充血聚合状态对外只读，仅基础设施层重建时经此装配）。
+     *
+     * <p>设计要点：状态码 setter 接受<b>包装类型</b>并把 {@code null} 归一为 0，
+     * build() 内经 {@link ModelStatus#fromCode(int)} 转值对象；同步来源标记同样 null 归一为 0。
+     * 这样 JPA 实体里可空列的兜底逻辑全部收敛在此，{@code ModelMetaRepositoryImpl.toDomain} 不再散落 {@code ?:} 三元。</p>
+     */
+    public static final class Builder {
+        private Long id;
+        private String modelName;
+        private int status;
+        private String description;
+        private String icon;
+        private String tags;
+        private Long vendorId;
+        private String endpoints;
+        private String nameRule;
+        private int syncOfficial;
+        private Long createdTime;
+        private Long updatedTime;
+
+        private Builder() {
+        }
+
+        /** @param id 主键（未持久化为 null） */
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        /** @param modelName 模型名（幂等键） */
+        public Builder modelName(String modelName) {
+            this.modelName = modelName;
+            return this;
+        }
+
+        /** @param status 状态码（null 归一为 0，build() 经 fromCode 转值对象） */
+        public Builder status(Integer status) {
+            this.status = status == null ? 0 : status;
+            return this;
+        }
+
+        /** @param description 描述，可为 null */
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        /** @param icon 图标，可为 null */
+        public Builder icon(String icon) {
+            this.icon = icon;
+            return this;
+        }
+
+        /** @param tags 标签串，可为 null */
+        public Builder tags(String tags) {
+            this.tags = tags;
+            return this;
+        }
+
+        /** @param vendorId 归属供应商 id，可为 null */
+        public Builder vendorId(Long vendorId) {
+            this.vendorId = vendorId;
+            return this;
+        }
+
+        /** @param endpoints 支持端点串，可为 null */
+        public Builder endpoints(String endpoints) {
+            this.endpoints = endpoints;
+            return this;
+        }
+
+        /** @param nameRule 命名规则，可为 null */
+        public Builder nameRule(String nameRule) {
+            this.nameRule = nameRule;
+            return this;
+        }
+
+        /** @param syncOfficial 同步来源标记（null 归一为 0，即本地自建） */
+        public Builder syncOfficial(Integer syncOfficial) {
+            this.syncOfficial = syncOfficial == null ? 0 : syncOfficial;
+            return this;
+        }
+
+        /** @param createdTime 创建时间 epoch 秒，可为 null */
+        public Builder createdTime(Long createdTime) {
+            this.createdTime = createdTime;
+            return this;
+        }
+
+        /** @param updatedTime 更新时间 epoch 秒，可为 null */
+        public Builder updatedTime(Long updatedTime) {
+            this.updatedTime = updatedTime;
+            return this;
+        }
+
+        /**
+         * 装配并返回重建的模型元数据聚合（不触发创建校验）。
+         *
+         * @return 重建的聚合
+         */
+        public ModelMeta build() {
+            ModelMeta m = new ModelMeta();
+            m.id = id;
+            m.modelName = modelName;
+            m.status = ModelStatus.fromCode(status);
+            m.description = description;
+            m.icon = icon;
+            m.tags = tags;
+            m.vendorId = vendorId;
+            m.endpoints = endpoints;
+            m.nameRule = nameRule;
+            m.syncOfficial = syncOfficial;
+            m.createdTime = createdTime;
+            m.updatedTime = updatedTime;
+            return m;
+        }
     }
 
     /**

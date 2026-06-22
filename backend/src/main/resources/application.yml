@@ -20,6 +20,15 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    # --- HikariCP 连接池：生产 PG 共用，max_connections 有限，须严格约束单实例占用 ---
+    # 防止反复启停 / 多实例把 PG 连接吃满（FATAL: too many clients already）。
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:5}      # 单实例最大连接数，避免吃满 PG 的 max_connections
+      minimum-idle: 1                          # 空闲时最少保留 1 条
+      idle-timeout: 60000                       # 空闲 60s 即回收，防止僵尸 idle 连接堆积
+      max-lifetime: 600000                      # 连接最长存活 10min，强制轮换
+      keepalive-time: 30000                     # 30s 探活，及时剔除已断连接
+      connection-timeout: 30000                 # 取连接超时 30s
 
   # --- JPA / Hibernate ---
   jpa:

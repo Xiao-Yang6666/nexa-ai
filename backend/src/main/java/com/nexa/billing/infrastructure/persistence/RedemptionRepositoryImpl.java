@@ -102,16 +102,18 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
      * @return 重建的兑换码聚合
      */
     private static Redemption toDomain(RedemptionJpaEntity e) {
-        return Redemption.rehydrate(
-                e.getId(),
-                e.getUserId(),
-                e.getKey() == null ? null : e.getKey().trim(),  // char(32) 定长右补空格，去尾
-                RedemptionStatus.fromCode(e.getStatus() == null ? RedemptionStatus.UNUSED.code() : e.getStatus()),
-                e.getName(),
-                Quota.of(e.getQuota() == null ? 0L : e.getQuota()),
-                e.getCreatedTime(),
-                e.getRedeemedTime(),
-                e.getUsedUserId(),
-                e.getExpiredTime() == null ? 0L : e.getExpiredTime());
+        // 过期时间 null→0（永不过期）的兜底已收敛进 Redemption.Builder.expiredTime，此处不再三元。
+        return Redemption.builder()
+                .id(e.getId())
+                .creatorUserId(e.getUserId())
+                .key(e.getKey() == null ? null : e.getKey().trim())  // char(32) 定长右补空格，去尾
+                .status(RedemptionStatus.fromCode(e.getStatus() == null ? RedemptionStatus.UNUSED.code() : e.getStatus()))
+                .name(e.getName())
+                .quota(Quota.of(e.getQuota() == null ? 0L : e.getQuota()))
+                .createdTime(e.getCreatedTime())
+                .redeemedTime(e.getRedeemedTime())
+                .usedUserId(e.getUsedUserId())
+                .expiredTime(e.getExpiredTime())
+                .build();
     }
 }
