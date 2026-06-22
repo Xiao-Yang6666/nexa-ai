@@ -34,6 +34,9 @@ spring:
 account:
   register-enabled: true
   quota-for-new-user: 100
+  # 集成测试无 Redis：验证码/密码重置/OAuth state 用内存桩（不创建 Redis 实现 bean，不连 Redis）。
+  store:
+    type: memory
 
 jwt:
   secret: ${TEST_JWT_SECRET:nexa-it-test-secret-key-at-least-32-bytes-long-0123456789}
