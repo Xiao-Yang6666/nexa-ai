@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 // 从 account model 叶子模块导入（非 barrel）：打破 account↔shell 循环依赖。
-import { useSelf, ROLE } from '@/features/account/model/account.model';
+import { useSelf, useLogout, ROLE } from '@/features/account/model/account.model';
 import { NAV } from '../nav-tree';
 import styles from './AppShell.module.css';
 
@@ -30,6 +30,7 @@ const ICONS: Record<string, ReactNode> = {
   file: (<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M8 13h8M8 17h5" /></>),
   pulse: (<path d="M3 12h4l2-6 4 12 2-6h6" />),
   chevron: (<path d="M9 6l6 6-6 6" />),
+  out: (<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>),
 };
 
 /** 渲染指定名称的线性图标 SVG。 */
@@ -75,8 +76,30 @@ export interface AppShellProps {
  */
 export function AppShell({ activeId, title, crumb, actions, userName, children }: AppShellProps) {
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const userRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const self = useSelf();
+  const logout = useLogout();
+
+  // 账号下拉外部点击关闭。
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDown(e: MouseEvent) {
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [menuOpen]);
+
+  // 退出登录：清后端会话 + 缓存（hook onSettled removeQueries），完成后跳登录页。
+  function handleLogout() {
+    setMenuOpen(false);
+    logout.mutate(undefined, {
+      onSettled: () => router.replace('/login'),
+    });
+  }
 
   // 角色兜底 COMMON：refetch 瞬间 self.data undefined 时绝不升格为 admin/root。
   const currentRole = self.data?.role ?? ROLE.COMMON;
@@ -106,11 +129,33 @@ export function AppShell({ activeId, title, crumb, actions, userName, children }
             <Icon name="bell" />
             <span className={styles.dotMark} />
           </button>
-          <button className={styles.user} type="button">
-            <span className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</span>
-            <span className={styles.userName}>{displayName}</span>
-            <Icon name="chevron" />
-          </button>
+          <div className={styles.userWrap} ref={userRef}>
+            <button
+              className={styles.user}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <span className={styles.avatar}>{displayName.charAt(0).toUpperCase()}</span>
+              <span className={styles.userName}>{displayName}</span>
+              <Icon name="chevron" />
+            </button>
+            {menuOpen ? (
+              <div className={styles.menu} role="menu">
+                <button
+                  className={styles.menuItem}
+                  type="button"
+                  role="menuitem"
+                  onClick={handleLogout}
+                  disabled={logout.isPending}
+                >
+                  <Icon name="out" className={styles.menuIc} />
+                  <span>{logout.isPending ? '退出中…' : '退出登录'}</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
