@@ -82,7 +82,9 @@ class RelayForwardUseCaseRetryTest {
         useCase = new RelayForwardUseCase(l2Repo, l1Repo, logRepo, upstreamHttpPort, channelRepo,
                 new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
                 // 模型组定价端口：返回 empty → 售价倍率回落 1.0（保持本测试原有计费口径不变）。
-                groupCode -> java.util.Optional.empty());
+                groupCode -> java.util.Optional.empty(),
+                // 模型组访问端口：恒放行 → 不拦截（保持本测试原有放行行为）。
+                (groupCode, userId, tokenId) -> true);
         // tokenId=null → 跳过 KeyLimitGuard 校验（鉴权未接线占位）。
         auth = new RelayAuthContext(7L, "alice", "default", null, null);
     }

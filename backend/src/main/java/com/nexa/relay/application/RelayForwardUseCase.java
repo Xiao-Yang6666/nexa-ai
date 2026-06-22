@@ -12,12 +12,14 @@ import com.nexa.channel.domain.repository.ChannelRepository;
 import com.nexa.model.domain.model.PublicModel;
 import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.exception.InvalidRelayParameterException;
+import com.nexa.relay.domain.exception.ModelGroupAccessDeniedException;
 import com.nexa.relay.domain.exception.NoAvailableChannelException;
 import com.nexa.relay.domain.exception.UpstreamException;
 import com.nexa.relay.domain.ir.ChatIR;
 import com.nexa.relay.domain.ir.ChatRespIR;
 import com.nexa.relay.domain.ir.UsageIR;
 import com.nexa.relay.domain.model.RelayLog;
+import com.nexa.relay.domain.port.ModelGroupAccessPort;
 import com.nexa.relay.domain.port.ModelGroupPricingPort;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
 import com.nexa.relay.domain.port.UpstreamRequest;
@@ -68,6 +70,7 @@ public class RelayForwardUseCase {
     private final ChannelModelCostRepository channelModelCostRepo;
     private final UserQuotaAccount userQuotaAccount;
     private final ModelGroupPricingPort modelGroupPricingPort;
+    private final ModelGroupAccessPort modelGroupAccessPort;
 
     public RelayForwardUseCase(PlatformModelMappingRepository l2Repo,
                                UserModelAliasRepository l1Repo,
@@ -80,7 +83,8 @@ public class RelayForwardUseCase {
                                PublicModelRepository publicModelRepo,
                                ChannelModelCostRepository channelModelCostRepo,
                                UserQuotaAccount userQuotaAccount,
-                               ModelGroupPricingPort modelGroupPricingPort) {
+                               ModelGroupPricingPort modelGroupPricingPort,
+                               ModelGroupAccessPort modelGroupAccessPort) {
         this.l2Repo = l2Repo;
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
@@ -93,6 +97,7 @@ public class RelayForwardUseCase {
         this.channelModelCostRepo = channelModelCostRepo;
         this.userQuotaAccount = userQuotaAccount;
         this.modelGroupPricingPort = modelGroupPricingPort;
+        this.modelGroupAccessPort = modelGroupAccessPort;
     }
 
     /**
@@ -159,6 +164,9 @@ public class RelayForwardUseCase {
         if (authContext.tokenId() != null) {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
+
+        // ③' 模型组访问闸门（REQ-05）：私有模型组未授权 → 403，挡在选渠/计费之前（不放行、不扣费）。
+        enforceModelGroupAccess(authContext);
 
         // ④⑤ 选渠 + 协议转换 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
         // 计费⑥⑦/结算⑦'/消费 Log⑨ 仅在最终成功的渠道上执行（循环外成功路径），
@@ -292,6 +300,9 @@ public class RelayForwardUseCase {
         if (authContext.tokenId() != null) {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
+
+        // ③' 模型组访问闸门（REQ-05）：私有模型组未授权 → 403（流式同样在写出任何 chunk 前拦截）。
+        enforceModelGroupAccess(authContext);
 
         ProtocolFormat inFmt = dispatch.format();
         java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
@@ -640,6 +651,27 @@ public class RelayForwardUseCase {
             return BigDecimal.ONE;
         }
         return modelGroupPricingPort.priceRatioOf(group).orElse(BigDecimal.ONE);
+    }
+
+    /**
+     * 模型组访问闸门（REQ-05）：私有模型组未授权 → 抛 403，挡在选渠/计费/转发之前。
+     *
+     * <p>调 {@link ModelGroupAccessPort} 判定调用方（user/token）是否有权使用其分组 code 对应的模型组。
+     * 公开/自动策略与无对应模型组的分组放行，私有组仅显式授权放行。端口为 {@code null}（防御性，理论上
+     * Spring 必注入）时不拦截（保持旧行为）。</p>
+     *
+     * @param authContext 调用方上下文（提供 group/userId/tokenId）
+     * @throws ModelGroupAccessDeniedException 私有组且无授权（→403）
+     */
+    private void enforceModelGroupAccess(RelayAuthContext authContext) {
+        if (modelGroupAccessPort == null) {
+            return;
+        }
+        boolean allowed = modelGroupAccessPort.isAccessible(
+                authContext.group(), authContext.userId(), authContext.tokenId());
+        if (!allowed) {
+            throw new ModelGroupAccessDeniedException(authContext.group());
+        }
     }
 
     /**
