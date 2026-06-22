@@ -341,6 +341,12 @@ public class RelayForwardUseCase {
                     retryCount++;
                     continue;
                 }
+                // 已向客户写出 chunk 后上游中断（客户断连/上游断流）：token 已交付，必须落一条
+                // is_stream=true 计费 Log（按已累计 usage 计，缺失按 0），否则漏钱（流式主力场景）。
+                if (handler.hasWritten()) {
+                    billStreamConsume(dispatch, resolution, channel, targetProto, authContext,
+                            upstreamModel, handler.cumulativeUsage());
+                }
                 return;
             }
 
@@ -362,16 +368,30 @@ public class RelayForwardUseCase {
             }
 
             // 成功：流已逐 chunk 写出，按累计 usage 走双价记账落 Log（REQ-05）。
-            UsageIR usage = handler.cumulativeUsage();
-            BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
-            BigDecimal groupRatio = resolveGroupRatio(authContext.group());
-            BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel);
-            BillingResult billing = DualPriceBilling.compute(
-                    usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
-            settle(authContext.userId(), billing);
-            recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, true);
+            billStreamConsume(dispatch, resolution, channel, targetProto, authContext,
+                    upstreamModel, handler.cumulativeUsage());
             return;
         }
+    }
+
+    /**
+     * 流式调用结束的双价记账 + 结算 + 落 is_stream=true 消费 Log（REQ-05/REQ-08）。
+     *
+     * <p>无论流是正常结束（onComplete）还是已写出 chunk 后中途上游断流，只要 token 已交付给客户就必须
+     * 落一条 {@code is_stream=true} 的 Type=2 消费 Log（防漏钱）。usage 缺失（上游未回 usage / 解析失败）时
+     * {@code cumulativeUsage} 为 {@link UsageIR#ZERO}，按 0 token 计费——仍落 Log（金额 0 不阻断），保证流式
+     * 链路结束必有一条计费记录。</p>
+     */
+    private void billStreamConsume(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
+                                   ProtocolFormat targetProto, RelayAuthContext authContext,
+                                   String upstreamModel, UsageIR usage) {
+        BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
+        BigDecimal groupRatio = resolveGroupRatio(authContext.group());
+        BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel);
+        BillingResult billing = DualPriceBilling.compute(
+                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
+        settle(authContext.userId(), billing);
+        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, true);
     }
 
     /**
@@ -401,10 +421,16 @@ public class RelayForwardUseCase {
         public void onChunk(byte[] rawChunk) {
             try {
                 if (passthrough) {
-                    // 同协议直转，但仍解析以累计 usage 供计费（OpenAI/Claude 均可）。
+                    // 同协议直转：原始块逐字转发给客户（这是 passthrough 的契约，绝不能被 usage 解析打断）。
+                    // 累计 usage 仅为流末计费的「副作用」——上游若发来非标/控制块导致 codec 解析失败，
+                    // 不能让其阻断转发或吞掉计费（防漏钱）：故 usage 解析尽力而为，异常吞掉只丢本块 usage。
                     ProtocolAdapter target = ProtocolRegistry.get(targetProto).orElse(null);
                     if (target != null) {
-                        target.parseStreamChunk(rawChunk, upstreamState); // 仅为累计 usage 副作用
+                        try {
+                            target.parseStreamChunk(rawChunk, upstreamState); // 仅为累计 usage 副作用
+                        } catch (RuntimeException ignored) {
+                            // 单块 usage 解析失败不阻断转发/计费（流末按已累计 usage 计，缺失按 0）。
+                        }
                     }
                     sink.write(rawChunk);
                     sink.flush();
