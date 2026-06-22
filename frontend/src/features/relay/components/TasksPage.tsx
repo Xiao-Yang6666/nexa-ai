@@ -1,6 +1,6 @@
 'use client';
 
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useSelfTasks, type TaskUiStatus, type TaskVM } from '../model/relay.model';
 import styles from './TasksPage.module.css';
 
@@ -34,7 +34,7 @@ export function TasksPage() {
   const { data, isLoading, isError, refetch } = useSelfTasks();
 
   return (
-    <ConsoleShell activeId="tasks" title="异步任务" crumb={['控制台', '异步任务']}>
+    <AppShell activeId="tasks" title="异步任务" crumb={['控制台', '异步任务']}>
       <div className={`${styles.intro} nx-fade`}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6}>
           <circle cx="12" cy="12" r="9" />
@@ -159,6 +159,6 @@ export function TasksPage() {
           </div>
         </div>
       )}
-    </ConsoleShell>
+    </AppShell>
   );
 }

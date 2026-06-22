@@ -1,156 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { useMemo, useState } from 'react';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
+import { ApiError } from '@/shared/api';
+import {
+  useProfitDashboard,
+  type ProfitRow,
+  type ProfitBarItem,
+  type RevCostPoint,
+} from '../model/profit.model';
 import styles from './ProfitPage.module.css';
 
-/* ════════════════════════════════════════════════════════════════════════
-   静态数据（迁移自 S6 admin/profit.html script，演示用）
-   管理端视图：可展示成本/利润/上游供应商，不受客户端零泄露约束。
-   ════════════════════════════════════════════════════════���═══════════════ */
-
-/** 时间范围切换选项 */
-const RANGES: { id: string; lab: string }[] = [
-  { id: 'today', lab: '今日' },
-  { id: '7d', lab: '近 7 日' },
-  { id: '30d', lab: '近 30 日' },
-  { id: 'custom', lab: '自定义' },
+/* 时间范围切换 → 区间天数 */
+const RANGES: { id: string; lab: string; days: number }[] = [
+  { id: 'today', lab: '今日', days: 1 },
+  { id: '7d', lab: '近 7 日', days: 7 },
+  { id: '30d', lab: '近 30 日', days: 30 },
 ];
 
-/** 经营洞察提示条 */
-type InsightTone = 'good' | 'warn' | 'info';
-const INSIGHTS: { tone: InsightTone; body: React.ReactNode }[] = [
-  {
-    tone: 'warn',
-    body: (
-      <>
-        供应商 <b>满血直采 B</b> 的 <b>claude-opus</b> 利润率仅 <b>6%</b>，进货成本 2.0/M
-        偏高，建议复议采购价或下调其在该模型下的权重。
-      </>
-    ),
-  },
-  {
-    tone: 'good',
-    body: (
-      <>
-        对外模型 <b>gpt-4o</b> 利润率高达 <b>62%</b>，需求旺、毛利厚，可考虑导入更多流量或上调展示权重。
-      </>
-    ),
-  },
-  {
-    tone: 'info',
-    body: (
-      <>
-        <b>vip</b> 分组贡献 <b>45%</b> 利润，是利润主力；<b>svip</b> 折扣最深、利润最薄属预期，但需持续盯防转负。
-      </>
-    ),
-  },
-];
-
-/** KPI 顶行 4 卡 */
-const KPIS: {
-  label: string;
-  val: string;
-  valCls?: 'profit' | 'rateOk' | 'rateLow';
-  delta: string;
-  tone: 'up' | 'down' | 'flat';
-}[] = [
-  { label: '总营收（售价合计）', val: '$48,720.50', delta: '较上期 +8.4%', tone: 'up' },
-  { label: '总成本（进货合计）', val: '$22,184.20', delta: '较上期 +5.1%', tone: 'up' },
-  { label: '总利润', val: '$26,536.30', valCls: 'profit', delta: '较上期 +11.2%', tone: 'up' },
-  { label: '整体利润率', val: '54.5%', valCls: 'rateOk', delta: '较上期 +1.6pt', tone: 'up' },
-];
-
-/** 图表 1：近 30 天 营收 / 成本 双折线（按日聚合） */
-const REV = [
-  1240, 1188, 1305, 1352, 1290, 1410, 1466, 1402, 1520, 1588, 1545, 1632, 1690, 1648, 1720, 1788,
-  1742, 1830, 1896, 1854, 1928, 2002, 1968, 2050, 2118, 2086, 2164, 2232, 2198, 2280,
-];
-const COST = [
-  560, 542, 598, 612, 588, 640, 668, 642, 690, 720, 705, 742, 770, 752, 786, 818, 800, 836, 866,
-  850, 882, 916, 902, 938, 968, 956, 990, 1020, 1008, 1042,
-];
-
-/** 图表 2：利润按对外模型（横向柱状，亏损标红） */
-const PROFIT_BY_MODEL: { name: string; val: number }[] = [
-  { name: 'gpt-4o', val: 9480 },
-  { name: 'claude-sonnet', val: 6240 },
-  { name: 'gpt-4o-mini', val: 4120 },
-  { name: 'gemini-1.5-pro', val: 2980 },
-  { name: 'claude-opus', val: 1860 },
-  { name: 'gpt-3.5-turbo', val: -640 },
-];
-
-/** 图表 3：利润按供应商（横向柱状，亏损标红） */
-const PROFIT_BY_VENDOR: { name: string; val: number }[] = [
-  { name: '残血聚合 A（成本0.1）', val: 11240 },
-  { name: '第三方聚合 B', val: 7860 },
-  { name: 'Azure OpenAI', val: 5120 },
-  { name: 'Google Vertex', val: 3340 },
-  { name: '满血直采 A（成本1.6）', val: 1180 },
-  { name: '满血直采 B（成本2.0）', val: -820 },
-];
-
-/* ── 明细表维度数据 ── */
-type ModelRow = { name: string; calls: number; rev: number; cost: number };
-const TBL_MODEL: ModelRow[] = [
-  { name: 'gpt-4o', calls: 842150, rev: 15280.4, cost: 5806.55 },
-  { name: 'claude-sonnet', calls: 512300, rev: 11420.8, cost: 5180.3 },
-  { name: 'gpt-4o-mini', calls: 1284600, rev: 6240.1, cost: 2120.4 },
-  { name: 'gemini-1.5-pro', calls: 248900, rev: 5860.0, cost: 2880.0 },
-  { name: 'claude-opus', calls: 96400, rev: 8120.2, cost: 7260.8 },
-  { name: 'gpt-3.5-turbo', calls: 418200, rev: 1798.0, cost: 2438.0 },
-];
-const TBL_VENDOR: ModelRow[] = [
-  { name: '残血聚合 A（成本0.1）', calls: 986400, rev: 14820.0, cost: 3580.0 },
-  { name: '第三方聚合 B', calls: 642300, rev: 12640.0, cost: 4780.0 },
-  { name: 'Azure OpenAI', calls: 418900, rev: 9860.0, cost: 4740.0 },
-  { name: 'Google Vertex', calls: 248900, rev: 5860.0, cost: 2520.0 },
-  { name: '满血直采 A（成本1.6）', calls: 62400, rev: 4180.0, cost: 3000.0 },
-  { name: '满血直采 B（成本2.0）', calls: 38200, rev: 3560.0, cost: 4380.0 },
-];
-type GroupRow = { name: string; users: number; calls: number; rev: number; cost: number };
-const TBL_GROUP: GroupRow[] = [
-  { name: 'free', users: 9820, calls: 486200, rev: 4280.0, cost: 2680.0 },
-  { name: 'vip', users: 2140, calls: 1024800, rev: 24180.5, cost: 10240.2 },
-  { name: 'svip', users: 520, calls: 642100, rev: 20260.0, cost: 9264.0 },
-];
-
-/* ════════════════════════════════════════════════════════════════════════
-   工具函数 + 小图标
-   ════════════════════════════════════════════════════════════════════════ */
-
-/** 金额格式化（千分位 + 两位小数，负数前置 -$）。 */
+/* ── 工具函数 ── */
 function money(v: number): string {
   const abs = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (v < 0 ? '-$' : '$') + abs;
 }
-
-/** 整数千分位格式化。 */
-function intFmt(v: number): string {
-  return v.toLocaleString('en-US');
-}
-
-/** 利润率 pill 的色档：<0 亏损红、<20 薄利黄、其余绿。 */
 function rateClass(rate: number): 'ok' | 'mid' | 'bad' {
   if (rate < 0) return 'bad';
   if (rate < 20) return 'mid';
   return 'ok';
 }
 
-/** 上箭头图标（KPI delta / 表头排序用）。 */
-const UpArrow = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 14l7-7 7 7" />
-  </svg>
-);
-const DownArrowSmall = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 5v14" />
-    <path d="M6 13l6 6 6-6" />
-  </svg>
-);
+/* ── 小图标 ── */
 const WarnIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 9v4" />
@@ -172,44 +52,28 @@ const InfoIcon = () => (
   </svg>
 );
 
-const INSIGHT_ICON: Record<InsightTone, () => JSX.Element> = {
-  good: GoodIcon,
-  warn: WarnIcon,
-  info: InfoIcon,
-};
-
-/* ════════════════════════════════════════════════════════════════════════
-   SVG 图表组件
-   ════════════════════════════════════════════════════════════════════════ */
+type InsightTone = 'good' | 'warn' | 'info';
+const INSIGHT_ICON: Record<InsightTone, () => JSX.Element> = { good: GoodIcon, warn: WarnIcon, info: InfoIcon };
 
 /**
- * RevCostTrend — 近 30 天营收 vs 成本双折线，两线之间填充为利润。
- * 营收线 chart-1，成本线 warning，填充渐变取营收色低透明度。
+ * RevCostTrend — 营收按日折线（来自 /api/data 的 quota→USD）。
+ * 契约 /api/data 不提供按日成本拆分，故此处仅绘营收线（成本/利润趋势无端点支撑）。
  */
-function RevCostTrend() {
+function RevCostTrend({ data }: { data: RevCostPoint[] }) {
   const W = 760, H = 280;
   const pad = { l: 54, r: 18, t: 18, b: 32 };
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
-  const max = Math.max(...REV) * 1.08;
-  const min = 0;
-  const xs = (i: number) => pad.l + i * (iw / (REV.length - 1));
-  const ys = (v: number) => pad.t + ih - ((v - min) / (max - min)) * ih;
+  if (data.length === 0) return <div className={styles.chartSub}>暂无营收数据</div>;
+  const max = Math.max(1, ...data.map((d) => d.rev)) * 1.08;
+  const n = data.length;
+  const xs = (i: number) => pad.l + (n === 1 ? iw / 2 : i * (iw / (n - 1)));
+  const ys = (v: number) => pad.t + ih - (v / max) * ih;
 
-  // 利润填充：沿营收线正向 + 沿成本线逆向闭合
-  let fill = `M${xs(0)} ${ys(REV[0])}`;
-  REV.forEach((v, i) => {
-    fill += ` L${xs(i)} ${ys(v)}`;
-  });
-  for (let k = COST.length - 1; k >= 0; k--) {
-    fill += ` L${xs(k)} ${ys(COST[k])}`;
-  }
-  fill += ' Z';
-
-  const revPts = REV.map((v, i) => `${xs(i)},${ys(v)}`).join(' ');
-  const costPts = COST.map((v, i) => `${xs(i)},${ys(v)}`).join(' ');
+  const revPts = data.map((d, i) => `${xs(i)},${ys(d.rev)}`).join(' ');
+  const area = `M${xs(0)} ${ys(0)} ${data.map((d, i) => `L${xs(i)} ${ys(d.rev)}`).join(' ')} L${xs(n - 1)} ${ys(0)} Z`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="近30天营收与成本双折线图，中间填充为利润">
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="近期营收按日折线图">
       <defs>
         <linearGradient id="profitFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.22} />
@@ -222,54 +86,48 @@ function RevCostTrend() {
         return (
           <g key={t}>
             <line x1={pad.l} y1={y} x2={W - pad.r} y2={y} stroke="var(--chart-grid)" strokeWidth={1} />
-            <text className={styles.axTxt} x={pad.l - 8} y={y + 3} textAnchor="end">
-              ${Math.round(v)}
-            </text>
+            <text className={styles.axTxt} x={pad.l - 8} y={y + 3} textAnchor="end">${Math.round(v)}</text>
           </g>
         );
       })}
-      {REV.map((_, d) =>
-        d % 5 === 0 ? (
-          <text key={d} className={styles.axTxt} x={xs(d)} y={H - 10} textAnchor="middle">
-            {d + 1}日
-          </text>
+      {data.map((d, i) =>
+        i % Math.ceil(n / 6) === 0 ? (
+          <text key={i} className={styles.axTxt} x={xs(i)} y={H - 10} textAnchor="middle">{d.date.slice(5)}</text>
         ) : null,
       )}
-      <path d={fill} fill="url(#profitFill)" />
+      <path d={area} fill="url(#profitFill)" />
       <polyline points={revPts} fill="none" stroke="var(--chart-1)" strokeWidth={2.4} strokeLinejoin="round" />
-      <polyline points={costPts} fill="none" stroke="var(--color-warning)" strokeWidth={2.2} strokeLinejoin="round" />
-      <circle cx={xs(REV.length - 1)} cy={ys(REV[REV.length - 1])} r={4} fill="var(--chart-1)" />
-      <circle cx={xs(COST.length - 1)} cy={ys(COST[COST.length - 1])} r={4} fill="var(--color-warning)" />
+      <circle cx={xs(n - 1)} cy={ys(data[n - 1].rev)} r={4} fill="var(--chart-1)" />
     </svg>
   );
 }
 
 /**
- * HBarChart — 通用横向柱状图（含零基准线，负值标红）。
- * 用于「利润按对外模型」「利润按供应商」两张图。
+ * HBarChart — 通用横向柱状图（动态零基准 + 自适应量程，负值标红）。
  */
 function HBarChart({
   rows,
   W,
   H,
   pad,
-  maxv,
-  minv,
   posColor,
   ticks = false,
 }: {
-  rows: { name: string; val: number }[];
+  rows: ProfitBarItem[];
   W: number;
   H: number;
   pad: { l: number; r: number; t: number; b: number };
-  maxv: number;
-  minv: number;
   posColor: string;
-  /** 是否绘制 X 轴刻度网格（供应商图开启） */
   ticks?: boolean;
 }) {
+  if (rows.length === 0) return <div className={styles.chartSub}>暂无数据</div>;
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
-  const span = maxv - minv;
+  const vals = rows.map((r) => r.val);
+  const rawMax = Math.max(0, ...vals);
+  const rawMin = Math.min(0, ...vals);
+  const maxv = rawMax * 1.1 || 1;
+  const minv = rawMin * 1.1;
+  const span = maxv - minv || 1;
   const zx = pad.l + ((0 - minv) / span) * iw;
   const gh = ih / rows.length;
   const bh = ticks ? 22 : 20;
@@ -283,22 +141,12 @@ function HBarChart({
             return (
               <g key={t}>
                 <line x1={x} y1={pad.t} x2={x} y2={pad.t + ih} stroke="var(--chart-grid)" strokeWidth={1} />
-                <text className={styles.axTxt} x={x} y={H - 8} textAnchor="middle">
-                  ${Math.round(v)}
-                </text>
+                <text className={styles.axTxt} x={x} y={H - 8} textAnchor="middle">${Math.round(v)}</text>
               </g>
             );
           })
         : null}
-      {/* 零基准线 */}
-      <line
-        x1={zx}
-        y1={pad.t}
-        x2={zx}
-        y2={pad.t + ih}
-        stroke={ticks ? 'var(--color-text-muted)' : 'var(--chart-grid)'}
-        strokeWidth={1.4}
-      />
+      <line x1={zx} y1={pad.t} x2={zx} y2={pad.t + ih} stroke={ticks ? 'var(--color-text-muted)' : 'var(--chart-grid)'} strokeWidth={1.4} />
       {rows.map((r, i) => {
         const cy = pad.t + gh * i + gh / 2;
         const bx = pad.l + ((Math.min(r.val, 0) - minv) / span) * iw;
@@ -307,15 +155,12 @@ function HBarChart({
         const lx = r.val < 0 ? bx - 8 : bx + bw + 8;
         const anc = r.val < 0 ? 'end' : 'start';
         const lab = r.val < 0 ? `-$${Math.abs(r.val)}` : `$${r.val}`;
+        const nm = r.name.length > 14 ? r.name.slice(0, 13) + '…' : r.name;
         return (
           <g key={r.name}>
-            <text className={styles.axTxt} x={pad.l - 10} y={cy + 4} textAnchor="end" style={{ fill: 'var(--color-text-secondary)' }}>
-              {r.name}
-            </text>
+            <text className={styles.axTxt} x={pad.l - 10} y={cy + 4} textAnchor="end" style={{ fill: 'var(--color-text-secondary)' }}>{nm}</text>
             <rect x={bx} y={cy - bh / 2} width={bw} height={bh} rx={4} fill={col} />
-            <text className={styles.axTxt} x={lx} y={cy + 4} textAnchor={anc} style={{ fill: 'var(--color-text)' }}>
-              {lab}
-            </text>
+            <text className={styles.axTxt} x={lx} y={cy + 4} textAnchor={anc} style={{ fill: 'var(--color-text)' }}>{lab}</text>
           </g>
         );
       })}
@@ -323,23 +168,16 @@ function HBarChart({
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════════
-   明细表行渲染（利润 / 利润率单元格）
-   ════════════════════════════════════════════════════════════════════════ */
-
-/** 利润单元格：正绿负红，等宽字体。 */
+/* ── 明细表单元格 ── */
 function ProfitCell({ v }: { v: number }) {
   return <span className={v < 0 ? styles.profitNeg : styles.profitPos}>{money(v)}</span>;
 }
-
-/** 利润率 pill。 */
 function RatePill({ rate }: { rate: number }) {
   return <span className={`${styles.ratePill} ${styles[rateClass(rate)]}`}>{rate.toFixed(1)}%</span>;
 }
 
 type TipKind = 'lossModel' | 'lowModel' | 'goodModel' | 'lossVendor' | 'goodVendor' | 'thinVendor' | null;
 
-/** 诊断标签（按模型 / 按供应商规则不同）。 */
 function DiagTag({ kind }: { kind: TipKind }) {
   if (!kind) return null;
   const map: Record<NonNullable<TipKind>, { suggest: boolean; icon: JSX.Element; text: string }> = {
@@ -358,15 +196,12 @@ function DiagTag({ kind }: { kind: TipKind }) {
     </span>
   );
 }
-
-/** 模型维度诊断规则。 */
 function modelTip(rate: number, loss: boolean): TipKind {
   if (loss) return 'lossModel';
   if (rate < 20) return 'lowModel';
   if (rate >= 55) return 'goodModel';
   return null;
 }
-/** 供应商维度诊断规则。 */
 function vendorTip(rate: number, loss: boolean): TipKind {
   if (loss) return 'lossVendor';
   if (rate >= 60) return 'goodVendor';
@@ -374,99 +209,207 @@ function vendorTip(rate: number, loss: boolean): TipKind {
   return null;
 }
 
-/* ════════════════════════════════════════════════════════════════════════
-   主组件
-   ════════════════════════════════════════════════════════════════════════ */
+/** 利润明细表（售价/成本/利润/利润率 + 诊断；调用量/用户数无端点支撑，故不展示）。 */
+function ProfitTable({
+  rows,
+  nameLabel,
+  diag,
+}: {
+  rows: ProfitRow[];
+  nameLabel: string;
+  diag?: (rate: number, loss: boolean) => TipKind;
+}) {
+  if (rows.length === 0) return <div className={styles.chartSub} style={{ padding: 'var(--space-5)' }}>暂无数据</div>;
+  return (
+    <div className={styles.tableWrap}>
+      <table>
+        <thead>
+          <tr>
+            <th>{nameLabel}</th>
+            <th className={styles.num}>营收</th>
+            <th className={styles.num}>成本</th>
+            <th className={styles.num}>利润</th>
+            <th className={styles.num}>利润率</th>
+            {diag ? <th>诊断</th> : null}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const loss = r.profit < 0;
+            return (
+              <tr key={r.name} className={loss ? styles.loss : ''}>
+                <td className={styles.cellName}>{r.name}</td>
+                <td className={`${styles.num} ${styles.monoNum}`}>{money(r.sell)}</td>
+                <td className={`${styles.num} ${styles.monoNum}`}>{money(r.cost)}</td>
+                <td className={styles.num}><ProfitCell v={r.profit} /></td>
+                <td className={styles.num}><RatePill rate={r.rate} /></td>
+                {diag ? <td><DiagTag kind={diag(r.rate, loss)} /></td> : null}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 type DimTab = 'model' | 'vendor' | 'group';
 
+/** 由真实利润行派生经营洞察（最薄利供应商 / 最高毛利模型 / 利润主力分组）。 */
+function buildInsights(
+  modelRows: ProfitRow[],
+  channelRows: ProfitRow[],
+  groupRows: ProfitRow[],
+): { tone: InsightTone; body: React.ReactNode }[] {
+  const out: { tone: InsightTone; body: React.ReactNode }[] = [];
+
+  const worstChannel = channelRows.filter((r) => r.sell > 0).slice().sort((a, b) => a.rate - b.rate)[0];
+  if (worstChannel) {
+    out.push({
+      tone: worstChannel.rate < 20 ? 'warn' : 'info',
+      body: (
+        <>
+          供应商/渠道 <b>{worstChannel.name}</b> 利润率最低，仅 <b>{worstChannel.rate.toFixed(1)}%</b>，
+          建议复议采购价或下调其权重。
+        </>
+      ),
+    });
+  }
+
+  const bestModel = modelRows.filter((r) => r.sell > 0).slice().sort((a, b) => b.rate - a.rate)[0];
+  if (bestModel) {
+    out.push({
+      tone: 'good',
+      body: (
+        <>
+          对外模型 <b>{bestModel.name}</b> 利润率最高，达 <b>{bestModel.rate.toFixed(1)}%</b>，可考虑导入更多流量。
+        </>
+      ),
+    });
+  }
+
+  const totGroupProfit = groupRows.reduce((s, r) => s + r.profit, 0);
+  const topGroup = groupRows.slice().sort((a, b) => b.profit - a.profit)[0];
+  if (topGroup && totGroupProfit > 0) {
+    const share = Math.round((topGroup.profit / totGroupProfit) * 100);
+    out.push({
+      tone: 'info',
+      body: (
+        <>
+          <b>{topGroup.name}</b> 分组贡献 <b>{share}%</b> 利润，是当前利润主力。
+        </>
+      ),
+    });
+  }
+
+  return out;
+}
+
 /**
- * ProfitPage — 利润分析看板（S6 admin/profit.html 工程化）。
+ * ProfitPage — 利润分析看板（已接真实接口）。
  *
- * 售价/成本/利润三段式聚合，按对外模型/供应商/分组多维拆解。
- * 含时间范围切换、经营洞察提示条、4 KPI、营收成本双折线（利润填充）、
- * 利润按模型/供应商横向柱状、三维度可切换明细表（亏损标红 + 诊断标签）。
+ * 数据组合自 /api/profit/dashboard（model/channel/group 三维：售价/成本/利润/利润率）
+ * 与 /api/data（按日营收趋势）。售价/成本/利润三段式，按对外模型/供应商/分组多维拆解。
  * 管理端视图，可展示全字段（成本/利润/上游供应商），不受客户端零泄露约束。
+ *
+ * 契约缺口（无端点支撑，已从展示中移除，不前端造假）：
+ *  - 按日成本拆分 → 趋势图仅绘营收线（/api/data 只返回 quota/count，无成本）
+ *  - 各维度调用量 / 分组用户数 → 明细表不含该列（ProfitDashboardItem 不含）
  */
 export function ProfitPage() {
-  const [range, setRange] = useState('7d');
+  const [rangeId, setRangeId] = useState('30d');
   const [dim, setDim] = useState<DimTab>('model');
+  const days = RANGES.find((r) => r.id === rangeId)?.days ?? 30;
+
+  const { data, isLoading, isError, error } = useProfitDashboard(days);
+
+  const kpis = data?.kpis ?? [];
+  const trend = data?.trend ?? [];
+  const byModelBars = data?.byModelBars ?? [];
+  const byChannelBars = data?.byChannelBars ?? [];
+  const modelRows = data?.modelRows ?? [];
+  const channelRows = data?.channelRows ?? [];
+  const groupRows = data?.groupRows ?? [];
+
+  const insights = useMemo(
+    () => buildInsights(data?.modelRows ?? [], data?.channelRows ?? [], data?.groupRows ?? []),
+    [data],
+  );
+
+  if (isError) {
+    return (
+      <AppShell activeId="profit" title="利润分析" crumb={['管理后台', '运营', '利润分析']}>
+        <section className={styles.chartCard}>
+          加载利润数据失败：{error instanceof ApiError ? error.message : '请稍后重试'}
+          {error instanceof ApiError && error.status === 403 ? '（需管理员权限）' : ''}
+        </section>
+      </AppShell>
+    );
+  }
 
   return (
-    <AdminShell
+    <AppShell
       activeId="profit"
       title="利润分析"
       crumb={['管理后台', '运营', '利润分析']}
-      actions={
-        <Button variant="sec" size="sm">
-          导出报表
-        </Button>
-      }
+      actions={<Button variant="sec" size="sm">导出报表</Button>}
     >
       {/* 时间范围切换 */}
       <section className={styles.rangeBar}>
         <div className={styles.rangeSeg}>
           {RANGES.map((r) => (
-            <button key={r.id} className={range === r.id ? styles.on : ''} onClick={() => setRange(r.id)} type="button">
+            <button key={r.id} className={rangeId === r.id ? styles.on : ''} onClick={() => setRangeId(r.id)} type="button">
               {r.lab}
             </button>
           ))}
         </div>
-        <span className={styles.rangeNote}>数据来源：Log 表实时聚合（售价 / 成本 / 利润三段式）</span>
+        <span className={styles.rangeNote}>数据来源：利润看板 /api/profit/dashboard + 按日配额 /api/data（售价 / 成本 / 利润）</span>
       </section>
 
-      {/* 经营洞察提示条 */}
-      <section className={styles.insights}>
-        {INSIGHTS.map((it, i) => {
-          const IconEl = INSIGHT_ICON[it.tone];
-          return (
-            <div key={i} className={`${styles.insight} ${styles[it.tone]} nx-fade`}>
-              <span className={styles.insightIc} aria-hidden="true">
-                <IconEl />
-              </span>
-              <div className={styles.insightBody}>{it.body}</div>
-            </div>
-          );
-        })}
-      </section>
+      {/* 经营洞察提示条（由真实利润行派生） */}
+      {insights.length > 0 ? (
+        <section className={styles.insights}>
+          {insights.map((it, i) => {
+            const IconEl = INSIGHT_ICON[it.tone];
+            return (
+              <div key={i} className={`${styles.insight} ${styles[it.tone]} nx-fade`}>
+                <span className={styles.insightIc} aria-hidden="true"><IconEl /></span>
+                <div className={styles.insightBody}>{it.body}</div>
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
 
       {/* KPI 顶行 */}
       <section className={styles.kpiRow}>
-        {KPIS.map((k) => (
-          <div key={k.label} className={`${styles.kpi} nx-fade`}>
-            <div className={styles.kpiLabel}>{k.label}</div>
-            <div className={`${styles.kpiVal} ${k.valCls ? styles[k.valCls] : ''}`}>{k.val}</div>
-            <div className={`${styles.kpiDelta} ${styles[k.tone]}`}>
-              {k.tone === 'up' ? <UpArrow /> : null}
-              {k.delta}
-            </div>
-          </div>
-        ))}
+        {isLoading
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className={`${styles.kpi} nx-fade`}>
+                <div className={styles.kpiLabel}>—</div>
+                <div className={styles.kpiVal}>…</div>
+              </div>
+            ))
+          : kpis.map((k) => (
+              <div key={k.label} className={`${styles.kpi} nx-fade`}>
+                <div className={styles.kpiLabel}>{k.label}</div>
+                <div className={`${styles.kpiVal} ${k.valCls ? styles[k.valCls] : ''}`}>{k.val}</div>
+              </div>
+            ))}
       </section>
 
-      {/* 图表区 1：营收 vs 成本双折线 + 利润按对外模型 */}
+      {/* 图表区 1：营收趋势 + 利润按对外模型 */}
       <section className={styles.chartGrid}>
         <div className={`${styles.chartCard} nx-fade`}>
           <div className={styles.chartHead}>
             <div>
-              <h3 className={styles.chartTitle}>近 30 天 营收 vs 成本</h3>
-              <div className={styles.chartSub}>单位：$ · 按日聚合 · 两线之间填充为利润</div>
+              <h3 className={styles.chartTitle}>营收趋势</h3>
+              <div className={styles.chartSub}>单位：$ · 按日聚合 · 来自 /api/data</div>
             </div>
           </div>
-          <RevCostTrend />
+          {isLoading ? <div className={styles.chartSub}>加载中…</div> : <RevCostTrend data={trend} />}
           <div className={styles.legend}>
-            <span>
-              <i style={{ background: 'var(--chart-1)' }} />
-              营收
-            </span>
-            <span>
-              <i style={{ background: 'var(--color-warning)' }} />
-              成本
-            </span>
-            <span>
-              <i style={{ background: 'color-mix(in oklch, var(--chart-1) 22%, transparent)' }} />
-              利润（填充区）
-            </span>
+            <span><i style={{ background: 'var(--chart-1)' }} />营收</span>
           </div>
         </div>
 
@@ -477,39 +420,24 @@ export function ProfitPage() {
               <div className={styles.chartSub}>横向柱状 · 亏损模型标红</div>
             </div>
           </div>
-          <HBarChart
-            rows={PROFIT_BY_MODEL}
-            W={460}
-            H={320}
-            pad={{ l: 118, r: 62, t: 10, b: 24 }}
-            maxv={10000}
-            minv={-2000}
-            posColor="var(--chart-1)"
-          />
+          {isLoading ? <div className={styles.chartSub}>加载中…</div> : (
+            <HBarChart rows={byModelBars} W={460} H={320} pad={{ l: 118, r: 62, t: 10, b: 24 }} posColor="var(--chart-1)" />
+          )}
         </div>
       </section>
 
-      {/* 图表区 2：利润按供应商（全宽） */}
+      {/* 图表区 2：利润按供应商/渠道（全宽） */}
       <section className={styles.chartGridFull}>
         <div className={`${styles.chartCard} nx-fade`}>
           <div className={styles.chartHead}>
             <div>
-              <h3 className={styles.chartTitle}>利润按供应商</h3>
-              <div className={styles.chartSub}>
-                识别哪个供应商在亏 · 残血低成本高毛利、满血高成本薄利甚至亏损 · 亏损标红
-              </div>
+              <h3 className={styles.chartTitle}>利润按供应商 / 渠道</h3>
+              <div className={styles.chartSub}>识别哪个渠道在亏 · 亏损标红</div>
             </div>
           </div>
-          <HBarChart
-            rows={PROFIT_BY_VENDOR}
-            W={980}
-            H={300}
-            pad={{ l: 188, r: 78, t: 10, b: 24 }}
-            maxv={12000}
-            minv={-2000}
-            posColor="var(--chart-7)"
-            ticks
-          />
+          {isLoading ? <div className={styles.chartSub}>加载中…</div> : (
+            <HBarChart rows={byChannelBars} W={980} H={300} pad={{ l: 188, r: 78, t: 10, b: 24 }} posColor="var(--chart-7)" ticks />
+          )}
         </div>
       </section>
 
@@ -518,155 +446,26 @@ export function ProfitPage() {
         <div className={styles.thBar}>
           <h3 className={styles.chartTitle}>利润明细</h3>
           <div className={styles.tabs}>
-            <button className={dim === 'model' ? styles.on : ''} onClick={() => setDim('model')} type="button">
-              按对外模型
-            </button>
-            <button className={dim === 'vendor' ? styles.on : ''} onClick={() => setDim('vendor')} type="button">
-              按供应商
-            </button>
-            <button className={dim === 'group' ? styles.on : ''} onClick={() => setDim('group')} type="button">
-              按分组
-            </button>
+            <button className={dim === 'model' ? styles.on : ''} onClick={() => setDim('model')} type="button">按对外模型</button>
+            <button className={dim === 'vendor' ? styles.on : ''} onClick={() => setDim('vendor')} type="button">按供应商</button>
+            <button className={dim === 'group' ? styles.on : ''} onClick={() => setDim('group')} type="button">按分组</button>
           </div>
         </div>
 
-        {/* 按对外模型 */}
-        {dim === 'model' ? (
-          <div className={styles.tableWrap}>
-            <table>
-              <thead>
-                <tr>
-                  <th>对外模型 A</th>
-                  <th className={styles.num}>调用量</th>
-                  <th className={styles.num}>营收</th>
-                  <th className={styles.num}>成本</th>
-                  <th className={styles.num}>利润</th>
-                  <th className={styles.num}>
-                    <span className={styles.headSort}>
-                      利润率
-                      <DownArrowSmall />
-                    </span>
-                  </th>
-                  <th>诊断</th>
-                </tr>
-              </thead>
-              <tbody>
-                {TBL_MODEL.map((r) => {
-                  const profit = r.rev - r.cost;
-                  const rate = (profit / r.rev) * 100;
-                  const loss = profit < 0;
-                  return (
-                    <tr key={r.name} className={loss ? styles.loss : ''}>
-                      <td className={styles.cellName}>{r.name}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{intFmt(r.calls)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{money(r.rev)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{money(r.cost)}</td>
-                      <td className={styles.num}>
-                        <ProfitCell v={profit} />
-                      </td>
-                      <td className={styles.num}>
-                        <RatePill rate={rate} />
-                      </td>
-                      <td>
-                        <DiagTag kind={modelTip(rate, loss)} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-
-        {/* 按供应商 */}
-        {dim === 'vendor' ? (
-          <div className={styles.tableWrap}>
-            <table>
-              <thead>
-                <tr>
-                  <th>供应商 / 渠道</th>
-                  <th className={styles.num}>调用量</th>
-                  <th className={styles.num}>承接营收</th>
-                  <th className={styles.num}>成本</th>
-                  <th className={styles.num}>利润</th>
-                  <th className={styles.num}>
-                    <span className={styles.headSort}>
-                      利润率
-                      <DownArrowSmall />
-                    </span>
-                  </th>
-                  <th>导流建议</th>
-                </tr>
-              </thead>
-              <tbody>
-                {TBL_VENDOR.map((r) => {
-                  const profit = r.rev - r.cost;
-                  const rate = (profit / r.rev) * 100;
-                  const loss = profit < 0;
-                  return (
-                    <tr key={r.name} className={loss ? styles.loss : ''}>
-                      <td className={styles.cellName}>{r.name}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{intFmt(r.calls)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{money(r.rev)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{money(r.cost)}</td>
-                      <td className={styles.num}>
-                        <ProfitCell v={profit} />
-                      </td>
-                      <td className={styles.num}>
-                        <RatePill rate={rate} />
-                      </td>
-                      <td>
-                        <DiagTag kind={vendorTip(rate, loss)} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-
-        {/* 按分组 */}
-        {dim === 'group' ? (
-          <div className={styles.tableWrap}>
-            <table>
-              <thead>
-                <tr>
-                  <th>分组</th>
-                  <th className={styles.num}>用户数</th>
-                  <th className={styles.num}>调用量</th>
-                  <th className={styles.num}>营收</th>
-                  <th className={styles.num}>成本</th>
-                  <th className={styles.num}>利润</th>
-                  <th className={styles.num}>利润率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {TBL_GROUP.map((r) => {
-                  const profit = r.rev - r.cost;
-                  const rate = (profit / r.rev) * 100;
-                  const loss = profit < 0;
-                  return (
-                    <tr key={r.name} className={loss ? styles.loss : ''}>
-                      <td className={styles.cellName}>{r.name}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{intFmt(r.users)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{intFmt(r.calls)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{money(r.rev)}</td>
-                      <td className={`${styles.num} ${styles.monoNum}`}>{money(r.cost)}</td>
-                      <td className={styles.num}>
-                        <ProfitCell v={profit} />
-                      </td>
-                      <td className={styles.num}>
-                        <RatePill rate={rate} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
+        {isLoading ? (
+          <div className={styles.chartSub} style={{ padding: 'var(--space-5)' }}>加载中…</div>
+        ) : dim === 'model' ? (
+          <ProfitTable rows={modelRows} nameLabel="对外模型 A" diag={modelTip} />
+        ) : dim === 'vendor' ? (
+          <ProfitTable rows={channelRows} nameLabel="供应商 / 渠道" diag={vendorTip} />
+        ) : (
+          <ProfitTable rows={groupRows} nameLabel="分组" />
+        )}
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }
+
+
+
+

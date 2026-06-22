@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useBalance, useMonthSpend, useRechargeRecords } from '../model/billing.model';
 import styles from './BillingPage.module.css';
 
@@ -26,7 +26,7 @@ export function BillingPage() {
   );
 
   return (
-    <ConsoleShell activeId="billing" title="账单与计费" crumb={['控制台', '账单与计费']} actions={actions}>
+    <AppShell activeId="billing" title="账单与计费" crumb={['控制台', '账单与计费']} actions={actions}>
       {/* 余额卡 + 计费说明 */}
       <section className={styles.topGrid}>
         {/* 余额大卡 */}
@@ -145,6 +145,6 @@ export function BillingPage() {
           </table>
         </div>
       </section>
-    </ConsoleShell>
+    </AppShell>
   );
 }

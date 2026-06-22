@@ -7,7 +7,7 @@
  * 替代「分组绑死账号等级」，管理员据此灵活配置售卖策略。
  */
 import { useMemo, useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import {
   useModelGroups,
@@ -155,7 +155,7 @@ export function ModelGroupsPage() {
   const saving = createMut.isPending || updateMut.isPending;
 
   return (
-    <AdminShell
+    <AppShell
       activeId="model-groups"
       title="模型组管理"
       crumb={['管理后台', '资源管理', '模型组管理']}
@@ -325,7 +325,7 @@ export function ModelGroupsPage() {
           <Button onClick={submit} disabled={saving}>{saving ? '保存中…' : '保存'}</Button>
         </div>
       </aside>
-    </AdminShell>
+    </AppShell>
   );
 }
 
