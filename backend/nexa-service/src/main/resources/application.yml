@@ -71,6 +71,10 @@ spring:
 account:
   register-enabled: true
   quota-for-new-user: 0
+  # 验证码 / 密码重置令牌 / OAuth state 的存储后端（R2-02）：
+  # redis（默认）= Redis 原生 TTL，跨实例共享、重启不丢、连不上时降级回内存；memory = 进程内桩（仅测试/单机联调）。
+  store:
+    type: ${ACCOUNT_STORE_TYPE:redis}
 
 # --- JWT 令牌签发配置（JwtTokenIssuer 注入） ---
 # 密钥须 >= 32 字节满足 HS256；通过 JWT_SECRET 环境变量注入，生产务必使用强随机值。
