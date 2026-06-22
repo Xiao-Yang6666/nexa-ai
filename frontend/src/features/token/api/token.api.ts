@@ -33,7 +33,7 @@ export function createToken(req: TokenCreateRequest): Promise<TokenUserView> {
  */
 export function updateToken(
   id: number,
-  patch: Partial<TokenCreateRequest> & { status_only?: boolean },
+  patch: Partial<TokenCreateRequest> & { status_only?: boolean; status?: number },
 ): Promise<TokenUserView> {
   return http.put<TokenUserView>('/api/token/', { json: { id, ...patch } });
 }

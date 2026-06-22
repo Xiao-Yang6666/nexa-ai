@@ -4,6 +4,12 @@ import { useState, useMemo } from 'react';
 import { AdminShell } from '@/features/admin';
 import { Button } from '@/shared/ui';
 import { useAdminUsers, type UserRole } from '@/features/account/model/users-admin.model';
+import {
+  useModelGroups,
+  useUserModelGroups,
+  useSetUserModelGroups,
+  POLICY_LABEL,
+} from '@/features/modelgroup';
 import styles from './UsersAdminPage.module.css';
 
 const ROLE_MAP: Record<UserRole, { cls: string; lab: string }> = {
@@ -37,7 +43,7 @@ export function UsersAdminPage() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerUser, setDrawerUser] = useState<{ name: string; mode: 'manage' | 'edit' | 'new' } | null>(null);
+  const [drawerUser, setDrawerUser] = useState<{ id: number; name: string; mode: 'manage' | 'edit' | 'new' } | null>(null);
 
   // 真后端：GET /api/user/?page&page_size（分页在服务端）。
   const { data, isLoading, isError, error } = useAdminUsers({ page, page_size: PAGE_SIZE });
@@ -77,8 +83,8 @@ export function UsersAdminPage() {
     setSelected(next);
   };
 
-  const openDrawer = (mode: 'manage' | 'edit' | 'new', name = '') => {
-    setDrawerUser({ name, mode });
+  const openDrawer = (mode: 'manage' | 'edit' | 'new', id = 0, name = '') => {
+    setDrawerUser({ id, name, mode });
     setDrawerOpen(true);
   };
   const closeDrawer = () => setDrawerOpen(false);
@@ -208,8 +214,8 @@ export function UsersAdminPage() {
                       <td className="mono-num muted">{u.registered}</td>
                       <td>
                         <div className={styles.rowActs}>
-                          <a onClick={() => openDrawer('edit', u.username)}>编辑</a>
-                          <a onClick={() => openDrawer('manage', u.username)}>管理</a>
+                          <a onClick={() => openDrawer('edit', u.id, u.username)}>编辑</a>
+                          <a onClick={() => openDrawer('manage', u.id, u.username)}>管理</a>
                           <a>绑定</a>
                           <a>重置</a>
                         </div>
@@ -284,6 +290,9 @@ export function UsersAdminPage() {
               <option>root</option>
             </select>
           </div>
+          {drawerUser && drawerUser.id > 0 && drawerUser.mode !== 'new' && (
+            <ModelGroupsField userId={drawerUser.id} />
+          )}
           <div>
             <label className="field-label">备注</label>
             <textarea
@@ -314,3 +323,93 @@ export function UsersAdminPage() {
     </AdminShell>
   );
 }
+
+/**
+ * 抽屉内「私有模型组」配置区：多选勾选 + 覆盖式保存。
+ *
+ * 拉两份数据：所有模型组（可选项）+ 该用户已授权组（初始选中态）。勾选后整体提交
+ * PUT /api/admin/model_group/user/{userId}，后端做 diff 增删。仅展示 PRIVATE 策略组
+ * （公开组人人可用、自动组按等级，无需逐用户授权）。
+ */
+function ModelGroupsField({ userId }: { userId: number }) {
+  const { data: allGroups = [], isLoading: loadingAll } = useModelGroups();
+  const { data: userGroups = [], isLoading: loadingUser } = useUserModelGroups(userId);
+  const setMut = useSetUserModelGroups();
+  const [draft, setDraft] = useState<Set<string> | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  // 仅私有组可逐用户授权（公开/自动无需）。
+  const privateGroups = useMemo(
+    () => allGroups.filter((g) => g.policy === 'PRIVATE'),
+    [allGroups],
+  );
+
+  // 初始选中态来自该用户已授权组的 code 集；draft 为 null 时回退到服务端态。
+  const initialCodes = useMemo(
+    () => new Set(userGroups.map((g) => g.code)),
+    [userGroups],
+  );
+  const checked = draft ?? initialCodes;
+
+  const toggle = (code: string) => {
+    const next = new Set(checked);
+    if (next.has(code)) next.delete(code);
+    else next.add(code);
+    setDraft(next);
+    setSaved(false);
+  };
+
+  const onSave = async () => {
+    setSaved(false);
+    await setMut.mutateAsync({ userId, codes: Array.from(checked) });
+    setDraft(null); // 提交后回退到服务端最新态
+    setSaved(true);
+  };
+
+  const loading = loadingAll || loadingUser;
+  const dirty = draft != null;
+
+  return (
+    <div>
+      <label className="field-label">私有模型组授权</label>
+      {loading ? (
+        <div className="field-hint">加载中…</div>
+      ) : privateGroups.length === 0 ? (
+        <div className="field-hint">
+          暂无私有模型组。可在「模型组管理」创建 {POLICY_LABEL.PRIVATE} 策略的组。
+        </div>
+      ) : (
+        <>
+          <div className={styles.mgList}>
+            {privateGroups.map((g) => (
+              <label key={g.id} className={styles.mgItem}>
+                <input
+                  type="checkbox"
+                  checked={checked.has(g.code)}
+                  onChange={() => toggle(g.code)}
+                />
+                <span className={styles.mgName}>{g.name}</span>
+                <span className={styles.mgCode}>{g.code}</span>
+                <span className={styles.mgRatio}>×{g.ratio}</span>
+              </label>
+            ))}
+          </div>
+          <div className={styles.mgFoot}>
+            <span className="field-hint">
+              {dirty ? '有未保存改动' : saved ? '已保存' : '勾选后保存即覆盖式生效'}
+            </span>
+            <Button
+              size="sm"
+              variant="sec"
+              onClick={onSave}
+              disabled={setMut.isPending || !dirty}
+            >
+              {setMut.isPending ? '保存中…' : '保存授权'}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+

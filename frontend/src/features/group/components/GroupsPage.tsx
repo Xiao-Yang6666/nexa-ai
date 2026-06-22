@@ -13,7 +13,6 @@ import {
   type PrefillRowVM,
 } from '../model/prefill.model';
 import { getOptions, updateOption } from '@/features/billing/api/ratio.api';
-import type { PrefillGroupType } from '../api/prefill.api';
 import styles from './GroupsPage.module.css';
 
 /* ── 内联线性图标 ── */

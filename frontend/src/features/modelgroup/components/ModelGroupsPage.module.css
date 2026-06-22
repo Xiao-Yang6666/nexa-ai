@@ -1,0 +1,167 @@
+/* ============================================================================
+   ModelGroupsPage — 灵活模型组管理样式。复用 UsersAdminPage 的 token 驱动样式约定。
+   ============================================================================ */
+
+/* ── FilterBar ── */
+.filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.sel,
+.srch {
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  padding: 0 var(--space-3);
+}
+.srch {
+  min-width: 240px;
+}
+.sel:focus,
+.srch:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: var(--focus-ring);
+}
+
+/* ── 表格 ── */
+.tableCard {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap table {
+  min-width: 920px;
+}
+.desc {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.empty,
+.err {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--color-text-secondary);
+}
+.err {
+  color: var(--color-danger);
+}
+
+/* 行操作 */
+.rowActs {
+  display: flex;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+.rowActs a {
+  font-size: var(--text-body-sm);
+  color: var(--color-primary-500);
+  cursor: pointer;
+}
+.rowActs a:hover {
+  color: var(--color-primary-600);
+}
+.rowActs a.danger {
+  color: var(--color-danger);
+}
+
+/* ── 抽屉 ── */
+.drawerScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: color-mix(in oklch, var(--color-surface-sunken) 72%, transparent);
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 440px;
+  max-width: 92vw;
+  z-index: 61;
+  transform: translateX(100%);
+  background: var(--color-bg-elevated);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.drawerOn {
+  transform: none;
+}
+.drawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.drawerTitle {
+  font-family: var(--font-brand);
+  font-size: var(--text-h4);
+  font-weight: var(--fw-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+.drawerSub {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.drawerX {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-h5);
+}
+.drawerX:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.drawerFoot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+.formErr {
+  font-size: var(--text-body-sm);
+  color: var(--color-danger);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--color-danger) 10%, transparent);
+}
+
+@media (max-width: 560px) {
+  .srch {
+    min-width: 140px;
+  }
+}

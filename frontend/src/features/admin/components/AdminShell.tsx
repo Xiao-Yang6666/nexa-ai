@@ -94,6 +94,7 @@ const NAV: NavGroup[] = [
       { id: 'channels', label: '渠道管理', href: '/admin/channels', ic: 'server' },
       { id: 'users', label: '用户管理', href: '/admin/users', ic: 'users' },
       { id: 'models', label: '模型/供应商', href: '/admin/models', ic: 'cube' },
+      { id: 'model-groups', label: '模型组管理', href: '/admin/model-groups', ic: 'group' },
       { id: 'groups', label: '预填分组', href: '/admin/groups', ic: 'layers' },
     ],
   },
