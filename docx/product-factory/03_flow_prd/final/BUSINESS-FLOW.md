@@ -8,10 +8,10 @@
 
 ## 0. 阅读顺序建议
 
-1. 先读 [`OVERALL-FLOW.md`](./OVERALL-FLOW.md) —— 跨端/跨角色主干大图 + 4 条主干路径清单 + 5 条跨切面契约（C1~C5）。
-2. 再读 [`BUSINESS-MAIN-FLOW.md`](./BUSINESS-MAIN-FLOW.md) —— 访客→注册→建 Key→Playground→Relay→扣费→看用量 的端到端闭环，及管理员侧运营链路。
+1. 先读 [`OVERALL-FLOW.md`](OVERALL-FLOW.md) —— 跨端/跨角色主干大图 + 4 条主干路径清单 + 5 条跨切面契约（C1~C5）。
+2. 再读 [`BUSINESS-MAIN-FLOW.md`](BUSINESS-MAIN-FLOW.md) —— 访客→注册→建 Key→Playground→Relay→扣费→看用量 的端到端闭环，及管理员侧运营链路。
 3. 按需深入下表 14 个分片细图。
-4. 异常处理统一查 [`EXCEPTION-FLOW.md`](./EXCEPTION-FLOW.md)；页面状态统一查 [`PAGE-STATE-MATRIX.md`](./PAGE-STATE-MATRIX.md)。
+4. 异常处理统一查 [`EXCEPTION-FLOW.md`](EXCEPTION-FLOW.md)；页面状态统一查 [`PAGE-STATE-MATRIX.md`](PAGE-STATE-MATRIX.md)。
 
 ---
 
@@ -19,7 +19,7 @@
 
 | 文件 | 内容 | 图数 |
 |---|---|---|
-| [`OVERALL-FLOW.md`](./OVERALL-FLOW.md) | 端与角色总览、主干大图（按端/角色 subgraph）、4 条主干路径（MP-1~MP-4）、6 条主异常（EX-1~EX-6）、5 条跨切面契约（C1 未登录先登录 / C2 externalJump / C3 二次验证 / C4 Turnstile / C5 self-scope） | 1 |
+| [`OVERALL-FLOW.md`](OVERALL-FLOW.md) | 端与角色总览、主干大图（按端/角色 subgraph）、4 条主干路径（MP-1~MP-4）、6 条主异常（EX-1~EX-6）、5 条跨切面契约（C1 未登录先登录 / C2 externalJump / C3 二次验证 / C4 Turnstile / C5 self-scope） | 1 |
 
 ---
 
@@ -27,20 +27,20 @@
 
 | 分片文件 | 域 | 角色 |
 |---|---|---|
-| [`flow/FL-public.md`](./flow/FL-public.md) | 公开站点/营销（D-公开） | 访客 / 用户 |
-| [`flow/FL-account.md`](./flow/FL-account.md) | 账号与身份 D1 + Telegram 登录 D4 | 访客 / 用户 / 管理员 / Root / 系统 |
-| [`flow/FL-growth.md`](./flow/FL-growth.md) | 增长：签到 D2 + 邀请返利分销 D3 | 用户 / 系统 / 管理员 |
-| [`flow/FL-token.md`](./flow/FL-token.md) | 令牌管理 D3 | 用户 / 外部客户端 / 系统 |
-| [`flow/FL-usagelog.md`](./flow/FL-usagelog.md) | 日志与用量 D4 | 管理员 / 用户 / 外部客户端 / 系统 |
-| [`flow/FL-asynctask.md`](./flow/FL-asynctask.md) | 异步任务中心 D5（MJ/Suno/视频） | 用户 / 管理员 / 系统 |
-| [`flow/FL-prefill.md`](./flow/FL-prefill.md) | 预填分组 D6 | 管理员 |
-| [`flow/FL-channel.md`](./flow/FL-channel.md) | 渠道管理与上游路由 D7/D10（含亲和缓存、跨分组重试） | 管理员 / 系统 / Root |
-| [`flow/FL-billing.md`](./flow/FL-billing.md) | 计费与钱包 D8（充值/预扣结算/订阅/兑换码/阶梯计费） | 用户 / 系统 / 管理员 / 访客 |
-| [`flow/FL-model.md`](./flow/FL-model.md) | 模型广场与元数据 D9（元数据/同步/价格/排行） | 管理员 / 用户 / 访客 |
-| [`flow/FL-relay.md`](./flow/FL-relay.md) | Relay 网关多协议中转 D11/D13（含视频内容代理） | 用户 / 外部客户端 / 系统 / 上游 |
-| [`flow/FL-deploy.md`](./flow/FL-deploy.md) | 部署管理 D14（io.net 集成） | 管理员 |
-| [`flow/FL-ops.md`](./flow/FL-ops.md) | 运营 / 系统设置 / 运维 D16 | 匿名 / Root |
-| [`flow/FL-playground.md`](./flow/FL-playground.md) | Playground 在线试用 D17 | 用户 / 匿名 |
+| [`flow/FL-public.md`](flow/FL-public.md) | 公开站点/营销（D-公开） | 访客 / 用户 |
+| [`flow/FL-account.md`](flow/FL-account.md) | 账号与身份 D1 + Telegram 登录 D4 | 访客 / 用户 / 管理员 / Root / 系统 |
+| [`flow/FL-growth.md`](flow/FL-growth.md) | 增长：签到 D2 + 邀请返利分销 D3 | 用户 / 系统 / 管理员 |
+| [`flow/FL-token.md`](flow/FL-token.md) | 令牌管理 D3 | 用户 / 外部客户端 / 系统 |
+| [`flow/FL-usagelog.md`](flow/FL-usagelog.md) | 日志与用量 D4 | 管理员 / 用户 / 外部客户端 / 系统 |
+| [`flow/FL-asynctask.md`](flow/FL-asynctask.md) | 异步任务中心 D5（MJ/Suno/视频） | 用户 / 管理员 / 系统 |
+| [`flow/FL-prefill.md`](flow/FL-prefill.md) | 预填分组 D6 | 管理员 |
+| [`flow/FL-channel.md`](flow/FL-channel.md) | 渠道管理与上游路由 D7/D10（含亲和缓存、跨分组重试） | 管理员 / 系统 / Root |
+| [`flow/FL-billing.md`](flow/FL-billing.md) | 计费与钱包 D8（充值/预扣结算/订阅/兑换码/阶梯计费） | 用户 / 系统 / 管理员 / 访客 |
+| [`flow/FL-model.md`](flow/FL-model.md) | 模型广场与元数据 D9（元数据/同步/价格/排行） | 管理员 / 用户 / 访客 |
+| [`flow/FL-relay.md`](flow/FL-relay.md) | Relay 网关多协议中转 D11/D13（含视频内容代理） | 用户 / 外部客户端 / 系统 / 上游 |
+| [`flow/FL-deploy.md`](flow/FL-deploy.md) | 部署管理 D14（io.net 集成） | 管理员 |
+| [`flow/FL-ops.md`](flow/FL-ops.md) | 运营 / 系统设置 / 运维 D16 | 匿名 / Root |
+| [`flow/FL-playground.md`](flow/FL-playground.md) | Playground 在线试用 D17 | 用户 / 匿名 |
 
 ---
 
@@ -75,7 +75,7 @@
 
 | 产物 | 用途 | 下游消费 |
 |---|---|---|
-| [`BUSINESS-MAIN-FLOW.md`](./BUSINESS-MAIN-FLOW.md) | 端到端业务主流程（用户侧闭环 + 管理员侧运营链路） | S4 信息架构 / S5 原型主线 |
-| [`EXCEPTION-FLOW.md`](./EXCEPTION-FLOW.md) | 全局异常流程汇总（鉴权/额度/渠道/支付/超时/限流等）+ 处理策略 | S4/S6 异常态设计、错误文案 |
-| [`PAGE-STATE-MATRIX.md`](./PAGE-STATE-MATRIX.md) | 页面/组件 × 状态矩阵（默认/loading/空/成功/失败/权限拦截/特殊态） | **S4/S6 状态覆盖权威输入** |
-| [`FLOW-COVERAGE.csv`](./FLOW-COVERAGE.csv) | 231 功能 ID × 是否被 flow 覆盖映射 | S3 完备性核对、追溯 |
+| [`BUSINESS-MAIN-FLOW.md`](BUSINESS-MAIN-FLOW.md) | 端到端业务主流程（用户侧闭环 + 管理员侧运营链路） | S4 信息架构 / S5 原型主线 |
+| [`EXCEPTION-FLOW.md`](EXCEPTION-FLOW.md) | 全局异常流程汇总（鉴权/额度/渠道/支付/超时/限流等）+ 处理策略 | S4/S6 异常态设计、错误文案 |
+| [`PAGE-STATE-MATRIX.md`](PAGE-STATE-MATRIX.md) | 页面/组件 × 状态矩阵（默认/loading/空/成功/失败/权限拦截/特殊态） | **S4/S6 状态覆盖权威输入** |
+| [`FLOW-COVERAGE.csv`](FLOW-COVERAGE.csv) | 231 功能 ID × 是否被 flow 覆盖映射 | S3 完备性核对、追溯 |

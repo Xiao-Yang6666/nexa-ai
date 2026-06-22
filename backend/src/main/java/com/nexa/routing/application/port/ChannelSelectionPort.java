@@ -2,6 +2,8 @@ package com.nexa.routing.application.port;
 
 import com.nexa.routing.domain.vo.ChannelCandidate;
 
+import java.util.Set;
+
 /**
  * CH-2 选渠委托端口（应用层定义，由 com.nexa.channel 选渠实现适配，F-2035 跨组重试调度依赖）。
  *
@@ -35,4 +37,26 @@ public interface ChannelSelectionPort {
      * @return 选中渠道候选快照，无满足渠道返回 null
      */
     ChannelCandidate selectChannel(String group, String model, int priorityRetry);
+
+    /**
+     * 在指定分组下按优先级层级选择一个满足渠道，并排除一组已尝试渠道（CH-5 重试切换，REQ-03/REQ-10）。
+     *
+     * <p>在 {@link #selectChannel(String, String, int)} 基础上增加「排除集」：实现侧从满足
+     * {@code (group, model, enabled=true)} 的候选中剔除 {@code excludeChannelIds} 内的渠道后，
+     * 再做优先级分层 + 加权随机抽签。用于上游失败后重试切下一个渠道——把已尝试（失败）的渠道
+     * 排除，避免重复命中同一坏渠道。剔除后该层无候选返回 null（调用方据此降级/切组/判耗尽）。</p>
+     *
+     * <p>默认实现忽略排除集委托回 {@link #selectChannel(String, String, int)}，使既有实现不破坏；
+     * 真实 Ability 适配器覆写本方法以真正支持排除。</p>
+     *
+     * @param group            分组名
+     * @param model            请求模型名
+     * @param priorityRetry    当前优先级重试层级（0=最高优先级层，逐级降级）
+     * @param excludeChannelIds 需排除的已尝试渠道 id 集合（null/空=不排除）
+     * @return 选中渠道候选快照，无满足渠道返回 null
+     */
+    default ChannelCandidate selectChannel(String group, String model, int priorityRetry,
+                                           Set<Long> excludeChannelIds) {
+        return selectChannel(group, model, priorityRetry);
+    }
 }

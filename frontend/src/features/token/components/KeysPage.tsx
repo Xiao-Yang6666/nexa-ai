@@ -7,6 +7,7 @@ import {
   useCreateToken,
   useDeleteToken,
   useToggleToken,
+  useTokenKey,
   type TokenRowVM,
 } from '../model/token.model';
 import type { TokenCreateRequest } from '@/shared/api';
@@ -49,12 +50,40 @@ function KeyRow({
   onDelete,
 }: {
   row: TokenRowVM;
-  onToggle: (id: number) => void;
+  onToggle: (id: number, enable: boolean) => void;
   onDelete: (id: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [proto, setProto] = useState<'openai' | 'anthropic'>('openai');
   const [copied, setCopied] = useState(false);
+  const [revealed, setRevealed] = useState<string | null>(null);
+  const reveal = useTokenKey();
+
+  const displayKey = revealed ?? row.keyMasked;
+
+  const doReveal = async () => {
+    if (revealed) {
+      setRevealed(null);
+      return;
+    }
+    try {
+      const plain = await reveal.mutateAsync(row.id);
+      setRevealed(plain);
+    } catch {
+      /* 错误由全局提示处理 */
+    }
+  };
+
+  const copyKey = async () => {
+    try {
+      const k = revealed ?? row.keyMasked;
+      await navigator.clipboard.writeText(k);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      /* 忽略剪贴板异常 */
+    }
+  };
 
   const totalLabel = row.unlimited
     ? '不限'
@@ -63,7 +92,7 @@ function KeyRow({
 
   const copyCurl = async () => {
     try {
-      await navigator.clipboard.writeText(curlText(proto, row.keyMasked));
+      await navigator.clipboard.writeText(curlText(proto, displayKey));
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
@@ -75,7 +104,9 @@ function KeyRow({
     <>
       <tr className={styles.rowExpandable} onClick={() => setExpanded((v) => !v)}>
         <td style={{ color: 'var(--color-text)', fontWeight: 'var(--fw-medium)' }}>{row.name}</td>
-        <td className={styles.keyprefix}>{row.keyMasked}</td>
+        <td className={styles.keyprefix}>
+          <code className={styles.keycell}>{displayKey}</code>
+        </td>
         <td>
           <span className={`badge ${row.badgeClass}`}>
             <span className="dot" style={{ background: `var(${row.dotVar})` }} />
@@ -106,13 +137,58 @@ function KeyRow({
             <button
               className={styles.iconact}
               type="button"
-              title={row.enabled ? '禁用' : '启用'}
-              onClick={() => onToggle(row.id)}
+              title={revealed ? '隐藏明文' : '显示明文'}
+              onClick={doReveal}
+              disabled={reveal.isPending}
             >
-              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="8" />
-                <path d="M6 6l12 12" />
-              </svg>
+              {revealed ? (
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+            <button
+              className={styles.iconact}
+              type="button"
+              title="复制密钥"
+              onClick={copyKey}
+            >
+              {copied ? (
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="var(--color-success)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              )}
+            </button>
+            <button
+              className={styles.iconact}
+              type="button"
+              title={row.enabled ? '禁用' : '启用'}
+              onClick={() => onToggle(row.id, !row.enabled)}
+            >
+              {row.enabled ? (
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="8" />
+                  <path d="M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="var(--color-success)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="8" />
+                  <path d="M8 12l3 3 5-6" />
+                </svg>
+              )}
             </button>
             <button className={`${styles.iconact} ${styles.dan}`} type="button" title="删除" onClick={() => onDelete(row.id)}>
               <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
@@ -132,7 +208,12 @@ function KeyRow({
                 <span className={styles.lbl}>base_url</span>
                 <span className={styles.codepill}>{BASE_URL}</span>
                 <span className={styles.lbl}>密钥</span>
-                <span className={styles.codepill}>{row.keyMasked}</span>
+                <span className={styles.codepill} style={{ fontFamily: 'var(--ff-mono)' }}>{displayKey}</span>
+                {revealed ? (
+                  <button className="btn btn-sec btn-sm" type="button" onClick={() => setRevealed(null)}>
+                    隐藏明文
+                  </button>
+                ) : null}
               </div>
               <div className={styles.accessLine}>
                 <span className={styles.lbl}>支持端点</span>
@@ -179,7 +260,7 @@ function KeyRow({
                 <button className={styles.copybtn} type="button" onClick={copyCurl}>
                   {copied ? '已复制' : '复制'}
                 </button>
-                <pre>{curlText(proto, row.keyMasked)}</pre>
+                <pre>{curlText(proto, displayKey)}</pre>
               </div>
             </div>
           </td>
@@ -281,6 +362,9 @@ function CreateDrawer({
                 <option value={String(Math.floor(Date.now() / 1000) + 90 * 86400)}>90 天后</option>
               </select>
             </div>
+            <div className={styles.noticeBox}>
+              <b>安全提示：</b>创建完成后点击密钥行的「眼睛」图标可查看明文并立即复制，明文仅在主动点击时展示。
+            </div>
           </div>
           <div className={styles.drawerFoot}>
             <button className="btn btn-sec" type="button" onClick={onClose}>
@@ -300,9 +384,9 @@ function CreateDrawer({
  * KeysPage — API 密钥（S6 console/keys.html 工程化）。
  *
  * 接 GET /api/token/（F-3002）拉令牌列表（key 已脱敏），创建走 POST /api/token/（F-3001），
- * 删除/启用/禁用走 DELETE /api/token/{id} / PUT /api/token/。
+ * 删除/启用/禁用走 DELETE /api/token/{id} / PUT /api/token/，明文走 POST /api/token/{id}/key。
  * 客户端零泄露：TokenUserView 无成本/利润/上游字段；本页仅展示用量额度（USD 换算）。
- * 含 loading/empty/error 各态 + 接入信息展开 + 协议 cURL 切换 + 二次确认弹窗。
+ * 含 loading/empty/error 各态 + 接入信息展开 + 协议 cURL 切换 + 二次确认弹窗 + 明文受控显示。
  */
 export function KeysPage() {
   const { data, isLoading, isError, refetch } = useTokens(1, 50);
@@ -311,12 +395,13 @@ export function KeysPage() {
   const del = useDeleteToken();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [confirm, setConfirm] = useState<{ kind: 'delete' | 'toggle'; id: number; name: string } | null>(null);
+  const [confirm, setConfirm] = useState<{ kind: 'delete' | 'toggle'; id: number; name: string; enable?: boolean } | null>(null);
 
   const onCreate = (req: TokenCreateRequest) => {
     create.mutate(req, {
       onSuccess: () => {
         setDrawerOpen(false);
+        refetch();
       },
     });
   };
@@ -324,7 +409,7 @@ export function KeysPage() {
   const onConfirm = () => {
     if (!confirm) return;
     if (confirm.kind === 'delete') del.mutate(confirm.id);
-    if (confirm.kind === 'toggle') toggle.mutate({ id: confirm.id, enable: false });
+    if (confirm.kind === 'toggle') toggle.mutate({ id: confirm.id, enable: !!confirm.enable });
     setConfirm(null);
   };
 
@@ -373,7 +458,7 @@ export function KeysPage() {
             <thead>
               <tr>
                 <th>密钥名</th>
-                <th>Key 前缀</th>
+                <th>Key</th>
                 <th>状态</th>
                 <th>分组</th>
                 <th>已用额度</th>
@@ -409,8 +494,8 @@ export function KeysPage() {
                   <KeyRow
                     key={r.id}
                     row={r}
-                    onToggle={(id) =>
-                      setConfirm({ kind: 'toggle', id, name: r.name })
+                    onToggle={(id, enable) =>
+                      setConfirm({ kind: 'toggle', id, name: r.name, enable })
                     }
                     onDelete={(id) =>
                       setConfirm({ kind: 'delete', id, name: r.name })
@@ -438,17 +523,29 @@ export function KeysPage() {
       {confirm ? (
         <div className={`${styles.modalScrim} ${styles.open}`} onClick={() => setConfirm(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>{confirm.kind === 'delete' ? '删除密钥？' : '禁用密钥？'}</h3>
+            <h3>
+              {confirm.kind === 'delete'
+                ? '删除密钥？'
+                : confirm.enable
+                ? '启用密钥？'
+                : '禁用密钥？'}
+            </h3>
             <p>
               {confirm.kind === 'delete'
                 ? `删除「${confirm.name}」后无法恢复，使用此密钥的所有请求将立即失败。`
+                : confirm.enable
+                ? `启用「${confirm.name}」后该密钥可立即用于调用 API。`
                 : `禁用「${confirm.name}」后使用此密钥的请求将立即返回 401，可随时重新启用。`}
             </p>
             <div className={styles.modalActs}>
               <button className="btn btn-sec" type="button" onClick={() => setConfirm(null)}>
                 取消
               </button>
-              <button className="btn btn-danger" type="button" onClick={onConfirm}>
+              <button
+                className={confirm.kind === 'delete' || !confirm.enable ? 'btn btn-danger' : 'btn btn-primary'}
+                type="button"
+                onClick={onConfirm}
+              >
                 确认
               </button>
             </div>

@@ -478,6 +478,24 @@ public class Channel {
     }
 
     /**
+     * 自动禁用渠道（充血状态迁移，RL-3 AutoBan 命中 / CH-3 DisableChannel）。
+     *
+     * <p>领域规则：上游错误命中禁用条件且 {@code autoBan=1} 时置 Status=AUTO_DISABLED（自动禁用，
+     * 区别于手动禁用——可被自动恢复机制重新启用）。仅 {@code autoBan==1} 才允许自动禁用；
+     * {@code autoBan==0} 调用方应先判定不进入本方法（聚合再设一道护栏：autoBan!=1 时不迁移状态）。
+     * 幂等——已自动禁用再调无副作用。</p>
+     *
+     * @return true=本次发生了状态迁移（须落库 + 通知 root）；false=autoBan 关闭未禁用
+     */
+    public boolean autoDisable() {
+        if (autoBan != 1) {
+            return false;
+        }
+        this.status = ChannelStatus.AUTO_DISABLED;
+        return true;
+    }
+
+    /**
      * 记录一次连通性测试结果（充血行为，F-2017，写 test_time/response_time）。
      *
      * <p>领域规则：测试完成后更新最近测试时间与响应耗时（openapi「写 test_time/response_time」）。

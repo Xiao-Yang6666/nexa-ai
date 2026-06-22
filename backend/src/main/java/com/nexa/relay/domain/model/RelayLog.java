@@ -125,6 +125,8 @@ public class RelayLog {
         log.createdAt = nowEpoch;
         log.userId = info.userId();
         log.username = info.username();
+        log.tokenName = info.tokenName() == null ? "" : info.tokenName();
+        log.tokenId = info.tokenId();
         log.channelId = info.channelId();
         log.modelName = info.requestedModel();
         log.requestedModel = info.requestedModel();
@@ -133,7 +135,19 @@ public class RelayLog {
         log.content = maskedContent;
         log.other = "{\"status_code\":" + upstreamStatus + "}";
         log.group = info.usingGroup();
-        log.ip = info.ip();
+        log.ip = info.ip() == null ? "" : info.ip();
+        log.userAgent = info.userAgent() == null ? "" : info.userAgent();
+        // 错误场景无成功 usage/计费：tokens/金额/耗时记 0；协议字段按入站/目标格式落（NOT NULL 兜空串）。
+        log.promptTokens = 0;
+        log.completionTokens = 0;
+        log.useTime = 0;
+        log.quota = 0;
+        log.quotaSell = 0;
+        log.quotaCost = 0;
+        log.quotaProfit = 0;
+        log.inboundProtocol = info.inboundFormat() == null ? "" : info.inboundFormat().wireValue();
+        log.upstreamProtocol = info.targetProtocol() == null ? "" : info.targetProtocol().wireValue();
+        log.protocolConverted = !info.isPassthrough();
         return log;
     }
 

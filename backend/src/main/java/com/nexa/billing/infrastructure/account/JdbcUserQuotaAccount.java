@@ -49,6 +49,22 @@ public class JdbcUserQuotaAccount implements UserQuotaAccount {
 
     /** {@inheritDoc} */
     @Override
+    public void debit(long userId, Quota amount) {
+        if (amount.isZero()) {
+            return; // 零额度扣减无副作用，直接返回（避免无谓 UPDATE）。
+        }
+        // 原子自减；软删除用户不扣减。本期最小结算不做余额下限保护（允许欠费），完整预扣/余额闸待后续。
+        int affected = jdbcTemplate.update(
+                "UPDATE users SET quota = quota - ? WHERE id = ? AND deleted_at IS NULL",
+                amount.value(), userId);
+        if (affected == 0) {
+            // 不吞错：目标用户不存在/已删是结算前提被破坏的信号，向上抛由调用方处置。
+            throw new InvalidBillingParameterException("cannot debit quota: user not found or deleted, id=" + userId);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public Quota balanceOf(long userId) {
         Long balance = jdbcTemplate.query(
                 "SELECT quota FROM users WHERE id = ? AND deleted_at IS NULL",

@@ -16,7 +16,7 @@ export interface TokenPage extends Pagination {
  * openapi: GET /api/token/ (F-3002) → ApiResponse{ data: TokenPage }
  */
 export function getTokens(page = 1, pageSize = 20): Promise<TokenPage> {
-  return http.get<TokenPage>('/api/token/', { query: { page, page_size: pageSize } });
+  return http.get<TokenPage>('/api/token/', { query: { p: page, page_size: pageSize } });
 }
 
 /**

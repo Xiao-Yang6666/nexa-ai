@@ -1,0 +1,244 @@
+function_id,module,function,in_API_ENDPOINTS,in_openapi,endpoint_type,task_id,data_objects
+F-1001,D1 账号与身份,邮箱密码注册,Y,Y,REST端点,T-001,User
+F-1002,D1 账号与身份,邮箱密码登录,Y,Y,REST端点,T-002,User;Session
+F-1003,D1 账号与身份,用户登出,Y,Y,REST端点,T-003,Session
+F-1004,D1 账号与身份,发送注册/找回邮箱验证码,Y,Y,REST端点,T-004,EmailVerificationCode
+F-1005,D1 账号与身份,注册时邮箱验证码校验,Y,N,横切/系统内部/交叉引用,T-005,User;EmailVerificationCode
+F-1006,D1 账号与身份,发送重置密码邮件,Y,Y,REST端点,T-006,PasswordResetToken
+F-1007,D1 账号与身份,提交重置新密码,Y,Y,REST端点,T-007,User;PasswordResetToken
+F-1008,D1 账号与身份,管理端查询/搜索用户,Y,Y,REST端点,T-008,User
+F-1009,D1 账号与身份,管理端创建用户,Y,Y,REST端点,T-009,User
+F-1010,D1 账号与身份,管理端管理用户状态(ManageUser),Y,Y,REST端点,T-010,User
+F-1011,D1 账号与身份,更新用户资料(管理端),Y,Y,REST端点,T-011,User
+F-1012,D1 账号与身份,用户角色分级(root/admin/common),Y,N,横切/系统内部/交叉引用,T-012,User
+F-1013,D1 账号与身份,用户分组(group)绑定,Y,N,横切/系统内部/交叉引用,T-013,User
+F-1014,D1 账号与身份,用户备注与个人设置,Y,Y,REST端点,T-014,User;UserSetting
+F-1015,D1 账号与身份,生成 OAuth state(CSRF)并暂存 aff,Y,Y,REST端点,T-015,Session
+F-1016,D1 账号与身份,GitHub OAuth 登录/注册,Y,Y,REST端点,T-016,User;UserOAuthBinding
+F-1017,D1 账号与身份,GitHub legacy_id 迁移,Y,N,横切/系统内部/交叉引用,T-017,User
+F-1018,D1 账号与身份,Discord OAuth 登录/绑定,Y,Y,REST端点,T-018,User;UserOAuthBinding
+F-1019,D1 账号与身份,OIDC 通用 OAuth 登录/绑定,Y,N,横切/系统内部/交叉引用,T-019,User
+F-1020,D1 账号与身份,LinuxDO OAuth 登录/绑定,Y,Y,REST端点,T-020,User
+F-1021,D1 账号与身份,WeChat 扫码授权,Y,Y,REST端点,T-021,WeChatAuthState
+F-1022,D1 账号与身份,WeChat 绑定/登录,Y,Y,REST端点,T-022,User
+F-1023,D1 账号与身份,获取自定义 OAuth discovery,Y,Y,REST端点,T-023,CustomOAuthProvider
+F-1024,D1 账号与身份,自定义 OAuth provider CRUD,Y,Y,REST端点,T-024,CustomOAuthProvider
+F-1025,D1 账号与身份,自定义 provider 登录与绑定写入,Y,N,横切/系统内部/交叉引用,T-025,User;UserOAuthBinding
+F-1026,D1 账号与身份,解绑自定义 OAuth(本人),Y,Y,REST端点,T-026,UserOAuthBinding
+F-1027,D1 账号与身份,管理端查询/解绑用户 OAuth 绑定,Y,Y,REST端点,T-027,UserOAuthBinding
+F-1028,D1 账号与身份,Passkey 注册(begin/finish),Y,Y,REST端点,T-028,Passkey
+F-1029,D1 账号与身份,Passkey 登录(begin/finish),Y,Y,REST端点,T-029,Passkey;Session
+F-1030,D1 账号与身份,Passkey 二次验证(verify),Y,Y,REST端点,T-030,Passkey
+F-1031,D1 账号与身份,Passkey 删除/查询状态,Y,Y,REST端点,T-031,Passkey
+F-1032,D1 账号与身份,管理端重置用户 Passkey,Y,Y,REST端点,T-032,Passkey
+F-1033,D1 账号与身份,2FA 启用流程(setup→enable),Y,Y,REST端点,T-033,TwoFA
+F-1034,D1 账号与身份,2FA 关闭,Y,Y,REST端点,T-034,TwoFA
+F-1035,D1 账号与身份,2FA 备份码生成,Y,Y,REST端点,T-035,TwoFA
+F-1036,D1 账号与身份,2FA 登录校验,Y,Y,REST端点,T-036,TwoFA;Session
+F-1037,D1 账号与身份,管理端 2FA 统计与禁用,Y,Y,REST端点,T-037,TwoFA
+F-1038,D1 账号与身份,通用敏感动作二次验证,Y,Y,REST端点,T-038,SecureVerification
+F-1039,D3 邀请返利分销,获取个人邀请码,Y,Y,REST端点,T-039,User
+F-1040,D3 邀请返利分销,邮箱注册邀请码归因,Y,N,横切/系统内部/交叉引用,T-040,User
+F-1041,D3 邀请返利分销,OAuth 注册邀请码归因,Y,N,横切/系统内部/交叉引用,T-041,User;Session
+F-1042,D3 邀请返利分销,邀请人奖励发放,Y,N,横切/系统内部/交叉引用,T-042,User
+F-1043,D3 邀请返利分销,新用户邀请奖励,Y,N,横切/系统内部/交叉引用,T-043,User
+F-1044,D3 邀请返利分销,邀请额度划转为可用额度,Y,Y,REST端点,T-044,User
+F-1045,D3 邀请返利分销,邀请统计展示,Y,Y,REST端点,T-045,User
+F-1046,D2 签到,每日签到领取随机额度,Y,Y,REST端点,T-046,Checkin;User
+F-1047,D2 签到,签到状态与本月记录查询,Y,Y,REST端点,T-047,Checkin
+F-1048,D2 签到,签到防重复(唯一约束+事务),Y,N,横切/系统内部/交叉引用,T-048,Checkin
+F-1049,D2 签到,签到开关与额度区间配置,Y,N,横切/系统内部/交叉引用,T-049,CheckinSetting
+F-1050,D2 签到,签到人机校验,Y,N,横切/系统内部/交叉引用,T-050,-
+F-1051,D4 Telegram登录Bot,Telegram 登录(HMAC 校验),Y,Y,REST端点,T-051,User;Session
+F-1052,D4 Telegram登录Bot,Telegram 绑定到现有账号,Y,Y,REST端点,T-052,User
+F-1053,D4 Telegram登录Bot,Telegram Login Widget HMAC 防伪,Y,N,横切/系统内部/交叉引用,T-053,-
+F-1054,D4 Telegram登录Bot,Telegram 绑定唯一性校验,Y,N,横切/系统内部/交叉引用,T-054,User
+F-2001,异步任务中心,通用异步任务记录写入与状态机流转,Y,N,横切/系统内部/交叉引用,T-055,Task(TaskID/Platform/Status/Progress/Sub
+F-2002,异步任务中心,任务状态 CAS 条件更新(防并发覆盖),Y,N,横切/系统内部/交叉引用,T-056,Task.Status
+F-2003,异步任务中心,用户任务列表分页与多条件过滤查询,Y,Y,REST端点,T-057,"Task,SyncTaskQueryParams"
+F-2004,异步任务中心,管理端全量任务列表查询,Y,Y,REST端点,T-058,"Task,SyncTaskQueryParams"
+F-2005,异步任务中心,Midjourney 绘图任务提交(imagine/chan,Y,N,横切/系统内部/交叉引用,T-059,Midjourney(Action/MjId/Prompt/Status/Pro
+F-2006,异步任务中心,MJ 任务按 ID 拉取与按条件列表查询,Y,N,横切/系统内部/交叉引用,T-060,"Midjourney,Task"
+F-2007,异步任务中心,Suno 音乐/歌词任务提交与查询(MUSIC/LYRICS,Y,Y,REST端点,T-061,"Task(Platform=suno),constant.SunoAction"
+F-2008,异步任务中心,视频生成任务提交(Sora/Kling/Vidu/Hailu,Y,N,横切/系统内部/交叉引用,T-062,"Task,TaskPrivateData(ResultURL),TaskBill"
+F-2009,异步任务中心,任务异步退款与差额结算(计费上下文重算),Y,N,横切/系统内部/交叉引用,T-063,TaskBillingContext(ModelPrice/GroupRatio
+F-2010,异步任务中心,任务结果产物展示(ImageUrl/VideoUrl/But,Y,N,横切/系统内部/交叉引用,T-064,"Midjourney(ImageUrl/VideoUrl/Buttons),Ta"
+F-2011,异步任务中心,扫描超时未完成任务,Y,N,横切/系统内部/交叉引用,T-065,Task
+F-2012,预填分组,预填分组创建(model/tag/endpoint 三类型),Y,Y,REST端点,T-066,PrefillGroup(Name/Type/Items)
+F-2013,预填分组,预填分组更新与名称冲突校验,Y,Y,REST端点,T-067,PrefillGroup(Id/Name/Items)
+F-2014,预填分组,预填分组下拉填充渠道/令牌配置,Y,Y,REST端点,T-068,PrefillGroup
+F-2015,预填分组,预填分组软删除,Y,Y,REST端点,T-069,PrefillGroup
+F-2016,渠道管理与上游路由,渠道 CRUD/搜索/批量操作,Y,Y,REST端点,T-070,Channel(Type/Key/Weight/Priority/Group/M
+F-2017,渠道管理与上游路由,渠道连通性测试(单/全量),Y,Y,REST端点,T-071,Channel(TestModel/TestTime)
+F-2018,渠道管理与上游路由,渠道上游余额查询与更新,Y,Y,REST端点,T-072,Channel
+F-2019,渠道管理与上游路由,按 tag 批量启用/禁用渠道,Y,Y,REST端点,T-073,Channel(Tag/Status)
+F-2020,渠道管理与上游路由,渠道多 Key 模式管理(轮询/随机选 Key),Y,N,横切/系统内部/交叉引用,T-074,Channel(IsMultiKey/MultiKeySize/MultiKey
+F-2021,渠道管理与上游路由,模型映射/重定向,Y,N,横切/系统内部/交叉引用,T-075,Channel(ModelMapping)
+F-2022,渠道管理与上游路由,状态码映射,Y,N,横切/系统内部/交叉引用,T-076,Channel(StatusCodeMapping)
+F-2023,渠道管理与上游路由,渠道自动禁用(AutoBan)与触发条件,Y,N,横切/系统内部/交叉引用,T-077,"Channel(AutoBan/Status),types.ChannelErr"
+F-2024,渠道管理与上游路由,渠道自动恢复(AutoEnable)条件,Y,N,横切/系统内部/交叉引用,T-078,Channel(Status)
+F-2025,渠道管理与上游路由,参数/请求头覆写(ParamOverride/HeaderO,Y,N,横切/系统内部/交叉引用,T-079,Channel(ParamOverride/HeaderOverride)
+F-2026,渠道管理与上游路由,上游模型探测与同步(fetch_models / detec,Y,Y,REST端点,T-080,Channel(Models)
+F-2027,渠道管理与上游路由,Ollama 模型管理(pull/delete/versio,Y,Y,REST端点,T-081,Channel
+F-2028,渠道管理与上游路由,优先级+权重随机路由选渠道,Y,N,横切/系统内部/交叉引用,T-082,"Channel(Priority/Weight),Ability"
+F-2029,亲和缓存,会话亲和键提取与渠道粘连,Y,N,横切/系统内部/交叉引用,T-083,ChannelAffinityRule(ModelRegex/PathRegex
+F-2030,亲和缓存,内置 codex/claude CLI header 透传模,Y,N,横切/系统内部/交叉引用,T-084,ChannelAffinityRule(ParamOverrideTemplat
+F-2031,亲和缓存,亲和缓存策略配置(SwitchOnSuccess/TTL/M,Y,N,横切/系统内部/交叉引用,T-085,ChannelAffinitySetting(Enabled/SwitchOnS
+F-2032,亲和缓存,清空亲和缓存(全部/按规则名),Y,Y,REST端点,T-086,ChannelAffinitySetting
+F-2033,亲和缓存,亲和缓存用量统计查询,Y,N,横切/系统内部/交叉引用,T-087,ChannelAffinitySetting
+F-2034,亲和缓存,亲和命中跳过重试(SkipRetryOnFailure),Y,N,横切/系统内部/交叉引用,T-088,ChannelAffinityRule(SkipRetryOnFailure)
+F-2035,跨分组重试,auto 分组逐组耗尽优先级后切下一组重试,Y,N,横切/系统内部/交叉引用,T-089,"Channel,RetryParam(TokenGroup/Retry),Con"
+F-2036,跨分组重试,令牌级跨分组重试开关(仅 auto 分组有效),Y,N,横切/系统内部/交叉引用,T-090,"Token(CrossGroupRetry),ContextKeyTokenCr"
+F-2037,跨分组重试,全局重试次数配置(RetryTimes),Y,N,横切/系统内部/交叉引用,T-091,RetryParam(Retry)
+F-2038,计费与额度,倍率计费(model_ratio×group_ratio×c,Y,N,横切/系统内部/交叉引用,T-092,"Log,UseData,TokenParams"
+F-2039,计费与额度,缓存倍率计费(cache_ratio/exposed_cac,Y,N,横切/系统内部/交叉引用,T-093,Usage(PromptTokensDetails.CachedTokens/C
+F-2040,计费与额度,表达式/阶梯计费(billingexpr 变量与函数),Y,N,横切/系统内部/交叉引用,T-094,billingexpr.TokenParams(P/C/Len/CR/CC/CC
+F-2041,计费与额度,阶梯计费结算(TryTieredSettle 用冻结快照),Y,N,横切/系统内部/交叉引用,T-095,RelayInfo.TieredBillingSnapshot(BillingM
+F-2042,计费与额度,预扣额度(pre-consume)与多退少不补,Y,N,横切/系统内部/交叉引用,T-096,"RelayInfo(FinalPreConsumedQuota),User(Qu"
+F-2043,计费与额度,倍率配置管理与同步(ratio_config/ratio_s,Y,Y,REST端点,T-097,ratio_setting
+F-2044,计费与额度,充值与余额查询(多支付渠道),Y,Y,REST端点,T-098,"TopUp,User(Quota)"
+F-2045,计费与额度,兑换码(Redemption 单个/批量/过期),Y,Y,REST端点,T-099,Redemption(Quota/Count/过期)
+F-2046,计费与额度,订阅计划与订单(SubscriptionPlan/Order,Y,Y,REST端点,T-100,"SubscriptionPlan,SubscriptionOrder,UserS"
+F-2047,计费与额度,订阅预扣/退款记录(SubscriptionPreConsu,Y,N,横切/系统内部/交叉引用,T-101,SubscriptionPreConsumeRecord(consumed/re
+F-2048,计费与额度,公开价格页/模型价格暴露,Y,Y,REST端点,T-102,ratio_setting(expose_ratio/exposed_cache
+F-3001,令牌管理,创建令牌（生成唯一明文 key + 校验额度区间与令牌数量上,Y,Y,REST端点,T-103,Token
+F-3002,令牌管理,令牌列表分页查询（key 自动打码）,Y,Y,REST端点,T-104,Token
+F-3003,令牌管理,令牌关键词/前缀搜索（SQL LIKE 注入防护 + 强制截,Y,Y,REST端点,T-105,Token
+F-3004,令牌管理,获取单个令牌明文 key（限流 + 禁缓存保护）,Y,Y,REST端点,T-106,Token
+F-3005,令牌管理,批量获取令牌明文 key（数量上限 100）,Y,Y,REST端点,T-107,Token
+F-3006,令牌管理,更新令牌（含仅改状态 status_only 与启用前合法性,Y,Y,REST端点,T-108,Token
+F-3007,令牌管理,删除令牌 / 批量删除令牌,Y,Y,REST端点,T-109,Token
+F-3008,令牌管理,令牌额度与过期时间管理（无限额度 / -1 永不过期）,Y,N,横切/系统内部/交叉引用,T-110,Token
+F-3009,令牌管理,令牌模型白名单（ModelLimits 开关 + 列表）,Y,N,横切/系统内部/交叉引用,T-111,Token
+F-3010,令牌管理,令牌 IP 白名单（AllowIps 多行解析）,Y,N,横切/系统内部/交叉引用,T-112,Token
+F-3011,令牌管理,令牌按分组绑定（Group + 跨分组重试开关）,Y,N,横切/系统内部/交叉引用,T-113,Token
+F-3012,令牌管理,令牌用量查询（OpenAI 兼容 credit_summar,Y,Y,REST端点,T-114,Token
+F-3013,模型元数据,模型元数据列表（分页 + 供应商计数填充）,Y,Y,REST端点,T-115,ModelMeta
+F-3014,模型元数据,模型元数据搜索（关键词 + 供应商过滤）,Y,Y,REST端点,T-116,ModelMeta
+F-3015,模型元数据,模型元数据创建（名称查重 + 刷新定价）,Y,Y,REST端点,T-117,ModelMeta
+F-3016,模型元数据,模型元数据更新（全量更新 / 仅状态 status_only,Y,Y,REST端点,T-118,ModelMeta
+F-3017,模型元数据,模型元数据删除（刷新定价）,Y,Y,REST端点,T-119,ModelMeta
+F-3018,供应商元数据,供应商元数据 CRUD（名称唯一约束）,Y,Y,REST端点,T-120,VendorMeta
+F-3019,模型同步,上游模型同步执行（拉取 basellm 元数据创建缺失模型 ,Y,Y,REST端点,T-121,"ModelMeta,VendorMeta,MissingModels"
+F-3020,模型同步,上游模型同步预览（差异对比不落库）,Y,Y,REST端点,T-122,"ModelMeta,VendorMeta"
+F-3021,模型同步,缺失模型检测（渠道引用但无元数据的模型）,Y,Y,REST端点,T-123,MissingModels
+F-3022,模型广场,模型排行榜（公开 period 维度快照）,Y,N,横切/系统内部/交叉引用,T-124,UseDataRankings
+F-3023,模型广场,公开价格页（按用户可用分组过滤定价 + 分组倍率）,Y,N,横切/系统内部/交叉引用,T-125,"Pricing,VendorMeta"
+F-3024,模型广场,模型广场（DashboardListModels 渠道到模型,Y,N,横切/系统内部/交叉引用,T-126,ModelMeta
+F-3025,模型广场,用户可见模型列表（按用户分组聚合去重）,Y,Y,REST端点,T-127,"ModelMeta,User"
+F-3026,Relay 网关,OpenAI 兼容 chat/completions 与 c,Y,Y,REST端点,T-128,"Token,Channel,Log"
+F-3027,Relay 网关,embeddings 中转（含后缀匹配兼容）,Y,Y,REST端点,T-129,"Token,Channel"
+F-3028,Relay 网关,images 中转（generations/edits，va,Y,Y,REST端点,T-130,"Token,Channel"
+F-3029,Relay 网关,audio 中转（speech/transcription/,Y,N,横切/系统内部/交叉引用,T-131,"Token,Channel"
+F-3030,Relay 网关,moderations 内容审核中转,Y,N,横切/系统内部/交叉引用,T-132,"Token,Channel"
+F-3031,Relay 网关,rerank 重排序中转,Y,N,横切/系统内部/交叉引用,T-133,"Token,Channel"
+F-3032,Relay 网关,responses 中转（含 compact 紧凑变体）,Y,Y,REST端点,T-134,"Token,Channel"
+F-3033,Relay 网关,realtime WebSocket 实时中转,Y,N,横切/系统内部/交叉引用,T-136,"Token,Channel"
+F-3034,Relay 网关,Gemini 原生协议中转（/v1beta/models/*,Y,Y,REST端点,T-137,"Token,Channel"
+F-3035,Relay 网关,Claude 原生协议中转（/v1/messages）,Y,Y,REST端点,T-138,"Token,Channel"
+F-3036,Relay 网关,各厂商原生协议适配（37 个 provider adapte,Y,N,横切/系统内部/交叉引用,T-139,Channel
+F-3037,Relay 网关,Relay 统一错误处理与渠道自动禁用（按状态码重试/禁用）,Y,N,横切/系统内部/交叉引用,T-140,"Channel,Log"
+F-3039,部署管理,io.net 部署集成开关与设置查询,Y,N,横切/系统内部/交叉引用,T-141,Option
+F-3040,部署管理,io.net 连接测试（校验 api_key + 返回硬件可,Y,N,横切/系统内部/交叉引用,T-142,Option
+F-3041,部署管理,部署列表查询与状态计数（分页 + 状态聚合）,Y,N,横切/系统内部/交叉引用,T-143,Deployment
+F-3042,部署管理,部署搜索（按状态过滤 + 名称关键词本地过滤）,Y,N,横切/系统内部/交叉引用,T-144,Deployment
+F-3043,部署管理,部署详情查询（GPU/容器/计算分钟/地域）,Y,N,横切/系统内部/交叉引用,T-145,Deployment
+F-3044,部署管理,创建部署（DeployContainer 下发容器）,Y,N,横切/系统内部/交叉引用,T-146,Deployment
+F-3045,部署管理,部署更新（UpdateDeployment 配置变更）,Y,N,横切/系统内部/交叉引用,T-147,Deployment
+F-3046,部署管理,部署重命名（名称可用性预检）,Y,N,横切/系统内部/交叉引用,T-148,Deployment
+F-3047,部署管理,部署续期（ExtendDeployment 延长计算时长）,Y,N,横切/系统内部/交叉引用,T-149,Deployment
+F-3048,部署管理,删除部署（请求终止）,Y,N,横切/系统内部/交叉引用,T-150,Deployment
+F-3049,部署管理,硬件类型查询（含总可用量统计）,Y,N,横切/系统内部/交叉引用,T-151,Deployment
+F-3050,部署管理,部署地域查询,Y,N,横切/系统内部/交叉引用,T-152,Deployment
+F-3051,部署管理,可用副本查询（按硬件 ID + GPU 数）,Y,N,横切/系统内部/交叉引用,T-153,Deployment
+F-3052,部署管理,部署价格预估,Y,N,横切/系统内部/交叉引用,T-154,Deployment
+F-3053,部署管理,集群名称可用性查询,Y,N,横切/系统内部/交叉引用,T-155,Deployment
+F-3054,部署管理,部署容器列表（含容器事件）,Y,N,横切/系统内部/交叉引用,T-156,"Deployment,Container"
+F-3055,部署管理,容器详情查询,Y,N,横切/系统内部/交叉引用,T-157,Container
+F-3056,部署管理,容器日志查询（按级别/流/游标分页 + 时间范围）,Y,N,横切/系统内部/交叉引用,T-158,Container
+F-3057,Relay 网关,edits 中转（legacy /v1/edits 编辑端点,Y,Y,REST端点,T-135,"Token,Channel"
+F-4001,日志与用量,管理端全量日志查询（按类型/时间/用户名/令牌名/模型/渠道,Y,Y,REST端点,T-159,Log
+F-4002,日志与用量,用户自助日志查询（仅本人 user_id，按类型/时间/令牌,Y,Y,REST端点,T-160,Log
+F-4003,日志与用量,按令牌明文 key 查询消费日志（令牌读权限 + 限流 + ,Y,Y,REST端点,T-161,Log;Token
+F-4004,日志与用量,管理端日志统计（消费类 quota/rpm/tpm 汇总）,Y,Y,REST端点,T-162,Log
+F-4005,日志与用量,用户自助日志统计（按当前用户名汇总 quota/rpm/tp,Y,Y,REST端点,T-163,Log
+F-4006,日志与用量,清理历史日志（按目标时间戳分批删除，每批上限 100）,Y,Y,REST端点,T-164,Log
+F-4007,日志与用量,管理端配额按日数据查询（GetAllQuotaDates，可,Y,Y,REST端点,T-165,QuotaData
+F-4008,日志与用量,配额数据按用户聚合（GetQuotaDatesByUser，,Y,N,横切/系统内部/交叉引用,T-166,QuotaData
+F-4009,日志与用量,用户自助配额按日数据（GetUserQuotaDates，时,Y,Y,REST端点,T-167,QuotaData
+F-4010,日志与用量,模型/用量排行榜快照（公开，按 period 周/月）,Y,Y,REST端点,T-168,UsedataRanking
+F-4011,日志与用量,管理/高危操作审计日志记录（type=LogTypeMana,Y,N,横切/系统内部/交叉引用,T-169,Log
+F-4012,日志与用量,用户安全敏感操作审计（passkey 绑定/解绑等，无管理员,Y,N,横切/系统内部/交叉引用,T-170,Log
+F-4013,日志与用量,登录审计日志记录（type=LogTypeLogin）,Y,N,横切/系统内部/交叉引用,T-171,Log
+F-4014,日志与用量,渠道亲和缓存用量统计查询,Y,Y,REST端点,T-172,ChannelAffinityUsageCache
+F-4015,运营与运维,系统初始化状态查询（GetSetup，未初始化返回 root,Y,N,横切/系统内部/交叉引用,T-173,Setup
+F-4016,运营与运维,系统初始化提交（PostSetup，创建 root 账号 +,Y,N,横切/系统内部/交叉引用,T-174,User;Setup;Option
+F-4017,运营与运维,全站选项列表查询（GetOptions，自动剔除敏感键 + ,Y,Y,REST端点,T-175,Option
+F-4018,运营与运维,全站选项更新（UpdateOption，含逐键合法性校验与依,Y,Y,REST端点,T-176,Option;Log
+F-4019,运营与运维,性能统计查询（缓存/内存/磁盘/GC/Goroutine 与,Y,N,横切/系统内部/交叉引用,T-177,PerformanceStats
+F-4020,运营与运维,清理不活跃磁盘缓存（删除 10 分钟以上未使用缓存文件）,Y,N,横切/系统内部/交叉引用,T-178,DiskCache
+F-4021,运营与运维,强制执行 GC / 重置性能统计计数,Y,N,横切/系统内部/交叉引用,T-179,PerformanceStats
+F-4022,运营与运维,日志文件列表查询（仅 oneapi-*.log，含总大小与最,Y,N,横切/系统内部/交叉引用,T-180,LogFile
+F-4023,运营与运维,清理过期日志文件（by_count 保留最新 N 个 / b,Y,N,横切/系统内部/交叉引用,T-181,LogFile
+F-4024,运营与运维,性能指标汇总查询（公开 summary，按 hours + ,Y,N,横切/系统内部/交叉引用,T-182,PerfMetric
+F-4025,运营与运维,单模型性能指标查询（按 model 必填 + group +,Y,N,横切/系统内部/交叉引用,T-183,PerfMetric
+F-4026,运营与运维,Uptime-Kuma 状态接入（并发拉取多组状态页 + 心,Y,Y,REST端点,T-184,UptimeMonitor
+F-4027,运营与运维,用户协议公开内容读取,Y,Y,REST端点,T-185,LegalSetting
+F-4028,运营与运维,隐私政策公开内容读取,Y,Y,REST端点,T-186,LegalSetting
+F-4029,运营与运维,公告/关于/首页内容公开读取,Y,N,横切/系统内部/交叉引用,T-187,Option
+F-4030,运营与运维,支付合规声明确认（仅会话鉴权，写合规版本/时间/操作者/IP,Y,Y,REST端点,T-188,Option
+F-4031,运营与运维,控制台旧设置迁移（ApiInfo/Announcements,Y,N,横切/系统内部/交叉引用,T-189,Option
+F-4032,运营与运维,"模型请求限流分组配置（按分组设置 [count,durati",Y,N,横切/系统内部/交叉引用,T-190,Option
+F-4033,运营与运维,敏感词内容过滤配置（启用开关 + 换行分隔词表）,Y,N,横切/系统内部/交叉引用,T-191,SensitiveWords
+F-4034,运营与运维,用户可用分组与自动分组配置（auto_group 列表 + ,Y,N,横切/系统内部/交叉引用,T-192,AutoGroup
+F-4035,运营与运维,前端主题切换配置（default / classic 二选一,Y,N,横切/系统内部/交叉引用,T-193,Option
+F-4036,运营与运维,后端多语言解析与切换（zh-CN/zh-TW/en，按用户设,Y,N,横切/系统内部/交叉引用,T-194,UserSetting
+F-4037,运营与运维,额度预警通知配置（email/webhook/bark 三渠,Y,N,横切/系统内部/交叉引用,T-195,NotificationSetting
+F-4038,Playground,站内对话试用 Playground（临时令牌走 relay，,Y,Y,REST端点,T-196,Token;User
+F-4039,公开站点,营销首页公开状态聚合（系统名/Logo/页脚/登录方式开关/,Y,Y,REST端点,T-197,Option;LegalSetting;ConsoleSetting
+F-4040,公开站点,首页对话输入框 Playground 入口（placehol,Y,N,横切/系统内部/交叉引用,T-198,无
+F-4041,公开站点,用户协议公开页（/agreement 路由渲染协议正文）,Y,N,横切/系统内部/交叉引用,T-199,LegalSetting
+F-4042,公开站点,隐私政策公开页（/privacy 路由渲染隐私正文）,Y,N,横切/系统内部/交叉引用,T-200,LegalSetting
+F-4043,公开站点,公开主题/语言切换控件（页面右上「切换主题」「切换语言」）,Y,N,横切/系统内部/交叉引用,T-201,无
+F-4044,公开站点,控制台/模型广场/API Keys 主入口（动态域，证据 G,Y,N,横切/系统内部/交叉引用,T-202,无
+F-4045,渠道运维,Codex 渠道上游用量查询（解析 OAuth key + ,Y,N,横切/系统内部/交叉引用,T-203,Channel
+F-4046,Relay,生成视频内容网关代理下发（按渠道类型解析 URL + SSR,Y,Y,REST端点,T-204,Task;Channel
+F-5001,NFR,网关附加延迟与转发开销埋点,Y,N,横切/系统内部/交叉引用,T-205,PerfMetric;Log
+F-5002,NFR,性能压测与基准门禁,Y,N,横切/系统内部/交叉引用,T-206,PerfMetric
+F-5003,NFR,渠道健康度看板,Y,N,横切/系统内部/交叉引用,T-207,Channel;ChannelSatisfy;Log
+F-5004,NFR,SLA月度可用性报表,Y,N,横切/系统内部/交叉引用,T-208,PerfMetric;Log
+F-5005,NFR,容灾演练与备份恢复,Y,N,横切/系统内部/交叉引用,T-209,DB备份
+F-5006,Security,令牌Key掩码与受控取明文,Y,N,横切/系统内部/交叉引用,T-210,Token
+F-5007,Security,密钥与支付Secret加密静态存储,Y,N,横切/系统内部/交叉引用,T-211,Channel;PaymentSetting
+F-5008,Security,日志prompt/响应脱敏管线,Y,N,横切/系统内部/交叉引用,T-212,Log
+F-5009,Security,高危操作审计留痕,Y,N,横切/系统内部/交叉引用,T-213,Log;Audit
+F-5010,Observability,Prometheus RED指标导出,Y,Y,REST端点,T-214,PerfMetric;UseData
+F-5011,Observability,多渠道告警编排,Y,N,横切/系统内部/交叉引用,T-215,Option;NotificationSettings
+F-5012,Observability,链路追踪trace_id贯穿,Y,N,横切/系统内部/交叉引用,T-216,Log
+F-5013,Scalability,无状态横扩与共享缓存,Y,N,横切/系统内部/交叉引用,T-217,ChannelCache;TokenCache
+F-5014,Scalability,缓存命中率监控,Y,N,横切/系统内部/交叉引用,T-218,ChannelCache;TokenCache;Ability
+F-5015,Scalability,日志归档与分区,Y,N,横切/系统内部/交叉引用,T-219,Log;QuotaData
+F-5016,Compliance,数据分级登记,Y,N,横切/系统内部/交叉引用,T-220,全表
+F-5017,Compliance,prompt留存开关与保留期,Y,N,横切/系统内部/交叉引用,T-221,Log;Option
+F-5018,Compliance,合规分组仅境内provider,Y,N,横切/系统内部/交叉引用,T-222,Channel;UserGroup;VendorMeta
+F-5019,Compliance,数据出境告知与驻地标注,Y,N,横切/系统内部/交叉引用,T-223,VendorMeta
+F-5020,Compliance,账号注销级联删除,Y,N,横切/系统内部/交叉引用,T-224,User;Token;UserOAuthBinding;Log
+F-5021,Compliance,隐私政策与出境条款同意闸门,Y,N,横切/系统内部/交叉引用,T-225,Option;User
+F-5030,RBAC,功能权限组运营集运维集分配,Y,N,横切/系统内部/交叉引用,T-226,User;Option
+F-5031,RBAC,三级系统角色鉴权,Y,N,横切/系统内部/交叉引用,T-227,User
+F-5032,RBAC,self-scope资源越权防护,Y,N,横切/系统内部/交叉引用,T-228,Token;Log;Task;Quota
+F-5033,RBAC,高危操作二次验证闸门,Y,N,横切/系统内部/交叉引用,T-229,Token;Channel;User
+F-5034,RBAC,角色操作权限矩阵配置化,Y,N,横切/系统内部/交叉引用,T-230,Option;Audit
+F-5035,RBAC,团队工作区实体阶段二预留,Y,N,横切/系统内部/交叉引用,T-231,User;Token;Team;Quota
+F-6001,D8 模型与供应商,对外模型分级商品目录,Y,Y,REST端点,T-232,PublicModel
+F-6002,D8 模型与供应商,超管底仓映射 A→B,Y,Y,REST端点,T-233,PlatformModelMapping
+F-6003,D8 模型与供应商,客户层自助模型映射 C→A,Y,Y,REST端点,T-234,UserModelAlias
+F-6004,D8 模型与供应商,模型权限全开,Y,N,横切/系统内部/交叉引用,T-235,PublicModel
+F-6005,D7 渠道与供应商,供应渠道池(一对多+容灾),Y,Y,REST端点,T-236,"Channel,Ability,ChannelModelCost"
+F-6006,D7 渠道与供应商,供应商成本配置,Y,Y,REST端点,T-237,ChannelModelCost
+F-6007,D6 计费与额度,成本/售价分离,Y,N,横切/系统内部/交叉引用,T-238,Log(quota_sell/quota_cost/quota_profit)
+F-6008,D6 计费与额度,分组折扣计费,Y,N,横切/系统内部/交叉引用,T-239,"User.Group,group_ratio"
+F-6009,D6 计费与额度,利润分析看板,Y,Y,REST端点,T-240,"Log,AdminLogView"
+F-6010,D9 中继转发,协议兼容层(OpenAI⇄Anthropic),Y,N,横切/系统内部/交叉引用,T-241,"IR中间表示,RelayFormat"
+F-6011,D9 中继转发,端到端经营转发链路,Y,N,横切/系统内部/交叉引用,T-242,"RelayInfo,PriceData,Log"
+F-6012,D5 用量与日志,调用明细逐条展示,Y,N,横切/系统内部/交叉引用,T-243,"Log,UserLogView,AdminLogView"

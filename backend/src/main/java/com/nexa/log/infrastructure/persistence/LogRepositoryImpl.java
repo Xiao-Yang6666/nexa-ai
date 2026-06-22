@@ -183,13 +183,14 @@ public class LogRepositoryImpl implements LogRepository {
             };
             List<ProfitDashboardEntry> result = new ArrayList<>(rows.size());
             for (Object[] r : rows) {
-                // 列序：dimension_key, sum_sell, sum_cost, sum_profit, cost_missing_count
+                // 列序：dimension_key, sum_sell, sum_cost, sum_profit, cost_missing_count, request_count
                 result.add(new ProfitDashboardEntry(
                         r[0] == null ? "" : r[0].toString(),
                         toLong(r[1]),
                         toLong(r[2]),
                         toLong(r[3]),
-                        toLong(r[4])));
+                        toLong(r[4]),
+                        toLong(r[5])));
             }
             return result;
         } catch (DataAccessException ex) {

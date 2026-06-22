@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -141,6 +142,22 @@ class ChannelTest {
         assertEquals(ChannelStatus.MANUALLY_DISABLED, c.status());
         c.enable();
         assertEquals(ChannelStatus.ENABLED, c.status());
+    }
+
+    @Test
+    @DisplayName("autoDisable：autoBan=1 命中迁移 AUTO_DISABLED 返 true；autoBan=0 不迁移返 false；幂等")
+    void autoDisable() {
+        // autoBan=1（默认）：命中自动禁用，迁移到 AUTO_DISABLED 并返 true
+        Channel banOn = Channel.create(OPENAI_TYPE, "k", "m", null, null, null, null, 1, null, null, null, null, null, null);
+        assertTrue(banOn.autoDisable());
+        assertEquals(ChannelStatus.AUTO_DISABLED, banOn.status());
+        assertTrue(banOn.autoDisable()); // 幂等：仍返 true（autoBan=1）且保持 AUTO_DISABLED
+        assertEquals(ChannelStatus.AUTO_DISABLED, banOn.status());
+
+        // autoBan=0：拒绝自动禁用，返 false 且状态不变
+        Channel banOff = Channel.create(OPENAI_TYPE, "k", "m", null, null, null, null, 0, null, null, null, null, null, null);
+        assertFalse(banOff.autoDisable());
+        assertEquals(ChannelStatus.ENABLED, banOff.status());
     }
 
     // ---- 余额 ----
