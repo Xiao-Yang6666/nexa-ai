@@ -4,7 +4,10 @@ import com.nexa.token.domain.model.Token;
 import com.nexa.token.domain.repository.TokenRepository;
 import com.nexa.token.domain.vo.Pagination;
 import com.nexa.token.domain.vo.TokenStatus;
+import com.nexa.token.infrastructure.config.AuthCacheConfig;
 import com.nexa.token.infrastructure.persistence.entity.TokenJpaEntity;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -57,13 +60,40 @@ public class TokenRepositoryImpl implements TokenRepository {
         return jpa.findById(id).map(this::toDomain);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * <p>命脉热点：{@code /v1/*} 每次转发都按 key 反查 token 校验有效性/归属，挂 {@code @Cacheable}
+     * 缓存反查结果（cache={@code apiKeyAuth}，key=apiKey 值，TTL 120s 见 {@link AuthCacheConfig}）。
+     * 空白 key 不进缓存（{@code condition}）；未命中的空结果不缓存（{@code unless="#result == null"}——
+     * Spring 对 {@code Optional} 返回值解包，空 {@code Optional} 的 {@code #result} 为 null）——避免刚建的
+     * token 因负缓存在 120s 内鉴权失败。Redis 不可用时由 {@code CacheErrorHandler} 降级直查 DB。</p>
+     */
     @Override
+    @Cacheable(cacheNames = AuthCacheConfig.API_KEY_AUTH_CACHE, key = "#key",
+            condition = "#key != null && !#key.isBlank()",
+            unless = "#result == null")
     public Optional<Token> findByKey(String key) {
         if (key == null || key.isBlank()) {
             return Optional.empty();
         }
         return jpa.findByKey(key.trim()).map(this::toDomain);
+    }
+
+    /**
+     * 写穿失效：清掉指定 apiKey 的鉴权缓存（禁用/删除 token 后立即生效，不等 TTL）。
+     *
+     * <p>由 token 管理用例在禁用/删除后调用（彼时已加载 token，持有其明文 key）。eviction 由
+     * {@code @CacheEvict} 注解驱动，本方法体为空——清除动作由缓存切面完成。Redis 不可用时由
+     * {@code CacheErrorHandler} 吞掉异常，不阻断管理操作。</p>
+     *
+     * @param key 待失效的完整明文 key（与缓存写入键一致）
+     */
+    @Override
+    @CacheEvict(cacheNames = AuthCacheConfig.API_KEY_AUTH_CACHE, key = "#key",
+            condition = "#key != null && !#key.isBlank()")
+    public void evictAuthCache(String key) {
+        // no-op：失效由 @CacheEvict 切面执行。
     }
 
     /** {@inheritDoc} */

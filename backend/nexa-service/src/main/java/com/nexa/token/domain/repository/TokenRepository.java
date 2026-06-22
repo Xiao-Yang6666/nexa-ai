@@ -95,6 +95,16 @@ public interface TokenRepository {
     List<Token> findByUserAndIds(long userId, List<Long> ids);
 
     /**
+     * 失效指定明文 key 的鉴权缓存（写穿，禁用/删除 token 后立即生效，T12/CR-05）。
+     *
+     * <p>由 token 管理用例在禁用/删除提交后调用，确保被禁/删 token 不再因缓存命中而通过 /v1/* 鉴权。
+     * 缓存未启用或 Redis 不可用时为安全空操作（不抛出，不阻断管理流程）。</p>
+     *
+     * @param key 待失效的完整明文 key
+     */
+    void evictAuthCache(String key);
+
+    /**
      * 软删除单个令牌（F-3007，写 deleted_at）。
      *
      * @param id 令牌主键
