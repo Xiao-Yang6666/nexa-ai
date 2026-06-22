@@ -1,9 +1,7 @@
 /* ============================================================================
-   AdminShell — 管理后台共享外壳样式（顶栏 + 左侧栏 + 内容区 + 面包屑）
-   S6 原型 admin-shell.js 的内联样式工程化迁移；在 ConsoleShell 基础上扩展：
-     · 顶栏右侧多「角色切换 ▾」下拉
-     · 侧栏管理区分组带「管理」徽章 + 分隔线
-   全 token 驱动，零裸色值。
+   AppShell — 全站统一应用外壳样式（顶栏 + 左侧栏 + 内容区 + 面包屑）
+   合并自 S6 console-shell / admin-shell：单一壳承载 console + admin 全部页面。
+   管理区分组带「管理」徽章 + 顶部分隔线；全 token 驱动，零裸色值。
    ============================================================================ */
 
 .ic {
@@ -71,70 +69,6 @@
   align-items: center;
   gap: var(--space-4);
 }
-
-/* ── 角色切换下拉（管理台特有） ── */
-.role {
-  position: relative;
-}
-.roleBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 32px;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-full);
-  background: color-mix(in oklch, var(--color-primary-500) 14%, transparent);
-  border: 1px solid color-mix(in oklch, var(--color-primary-500) 36%, transparent);
-  color: var(--color-primary-700);
-  font-family: inherit;
-  font-size: var(--text-body-sm);
-  font-weight: var(--fw-medium);
-  cursor: pointer;
-}
-.roleBtn .ic {
-  width: 15px;
-  height: 15px;
-}
-.roleMenu {
-  display: none;
-  position: absolute;
-  top: 40px;
-  right: 0;
-  min-width: 172px;
-  z-index: 50;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-2);
-}
-.roleMenu.open {
-  display: block;
-}
-.roleOpt {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
-  font-size: var(--text-body-sm);
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-}
-.roleOpt:hover {
-  background: var(--color-surface-sunken);
-  color: var(--color-text);
-}
-.roleOpt.cur {
-  color: var(--color-primary-700);
-  background: color-mix(in oklch, var(--color-primary-500) 10%, transparent);
-}
-
 .iconBtn {
   position: relative;
   background: transparent;
@@ -192,7 +126,6 @@
   color: var(--color-text);
   font-weight: var(--fw-medium);
 }
-
 /* ── 侧栏 ── */
 .side {
   position: fixed;
@@ -277,7 +210,6 @@
 .navLink.on .navIc {
   color: var(--color-primary-700);
 }
-
 /* ── 内容区 ── */
 .main {
   margin-left: 240px;
@@ -341,14 +273,16 @@
   border: none;
 }
 
-/* ── 卡片入场动效（admin 更克制：仅淡入） ── */
+/* ── 卡片入场动效 ── */
 .main :global(.nx-fade) {
   opacity: 0;
+  transform: translateY(8px);
   animation: nxfade var(--dur-2) var(--ease-out) forwards;
 }
 @keyframes nxfade {
   to {
     opacity: 1;
+    transform: none;
   }
 }
 
@@ -369,9 +303,6 @@
   }
   .scrim.open {
     display: block;
-  }
-  .roleBtn span:not(.ic) {
-    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {

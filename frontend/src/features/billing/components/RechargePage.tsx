@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useCreateTopUp, giftFor } from '../model/billing.model';
 import styles from './RechargePage.module.css';
 
@@ -70,7 +70,7 @@ export function RechargePage() {
   };
 
   return (
-    <ConsoleShell activeId="recharge" title="余额充值" crumb={['控制台', '账单与计费', '余额充值']}>
+    <AppShell activeId="recharge" title="余额充值" crumb={['控制台', '账单与计费', '余额充值']}>
       {done ? (
         <section className={`${styles.panel} nx-fade`}>
           <div className={styles.successBox}>
@@ -215,6 +215,6 @@ export function RechargePage() {
           </aside>
         </div>
       )}
-    </ConsoleShell>
+    </AppShell>
   );
 }

@@ -3,10 +3,12 @@
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSelf, isAdminRole } from '@/features/account/model/account.model';
-import styles from './ConsoleShell.module.css';
+// 从 account model 叶子模块导入（非 barrel）：打破 account↔shell 循环依赖。
+import { useSelf, ROLE } from '@/features/account/model/account.model';
+import { NAV } from '../nav-tree';
+import styles from './AppShell.module.css';
 
-/* ── 线性 stroke 图标库（24x24，stroke:currentColor）。迁移自 S6 console-shell.js ── */
+/* ── 线性 stroke 图标库（24x24，stroke:currentColor）。合并自 S6 console/admin shell ── */
 const ICONS: Record<string, ReactNode> = {
   gauge: (<><path d="M12 14l3-3" /><path d="M3.5 18a9 9 0 1 1 17 0" /><circle cx="12" cy="14" r="1.4" /></>),
   key: (<><circle cx="7.5" cy="15.5" r="3.5" /><path d="M10 13l8-8" /><path d="M15 5l3 3" /><path d="M17 7l2-2" /></>),
@@ -19,6 +21,14 @@ const ICONS: Record<string, ReactNode> = {
   settings: (<><circle cx="12" cy="12" r="3" /><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" /></>),
   bell: (<><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7z" /><path d="M10.5 19a1.7 1.7 0 0 0 3 0" /></>),
   grid: (<><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>),
+  server: (<><rect x="3" y="4" width="18" height="7" rx="2" /><rect x="3" y="13" width="18" height="7" rx="2" /><path d="M7 7.5h.01" /><path d="M7 16.5h.01" /></>),
+  users: (<><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><path d="M16 6.2a3 3 0 0 1 0 5.6" /><path d="M17.5 19a5.2 5.2 0 0 0-3-4.7" /></>),
+  cube: (<><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" /><path d="M4 7.5l8 4.5 8-4.5" /><path d="M12 12v9" /></>),
+  layers: (<><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></>),
+  calc: (<><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h8" /><path d="M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" /></>),
+  ticket: (<><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" /><path d="M14 6v12" /></>),
+  file: (<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M8 13h8M8 17h5" /></>),
+  pulse: (<path d="M3 12h4l2-6 4 12 2-6h6" />),
   chevron: (<path d="M9 6l6 6-6 6" />),
 };
 
@@ -39,120 +49,59 @@ function Icon({ name, className }: { name: string; className?: string }) {
     </svg>
   );
 }
-
-interface NavItem {
-  /** 路由 id，与 App Router 段名一致 */
-  id: string;
-  label: string;
-  /** 控制台路由 href（/console/<id>） */
-  href: string;
-  ic: string;
-}
-
-interface NavGroup {
-  group: string;
-  items: NavItem[];
-}
-
-/**
- * 控制台导航树。与 S6 console-shell.js 的 NAV 同构，
- * href 改为 App Router flat 路径（/<page>，路由组不加段）。
- */
-const NAV: NavGroup[] = [
-  { group: '概览', items: [{ id: 'dashboard', label: '仪表盘', href: '/dashboard', ic: 'gauge' }] },
-  {
-    group: '接入',
-    items: [
-      { id: 'keys', label: 'API 密钥', href: '/keys', ic: 'key' },
-      { id: 'model-map', label: '模型映射', href: '/model-map', ic: 'share' },
-      { id: 'usage', label: '用量统计', href: '/usage', ic: 'bar' },
-      { id: 'tasks', label: '异步任务', href: '/tasks', ic: 'tasks' },
-    ],
-  },
-  {
-    group: '账户',
-    items: [
-      { id: 'billing', label: '账单与计费', href: '/billing', ic: 'receipt' },
-      { id: 'recharge', label: '余额充值', href: '/recharge', ic: 'wallet' },
-    ],
-  },
-  {
-    group: '增长',
-    items: [
-      { id: 'checkin', label: '每日签到', href: '/checkin', ic: 'calendar' },
-      { id: 'referral', label: '分销推广', href: '/referral', ic: 'share' },
-    ],
-  },
-  { group: '设置', items: [{ id: 'settings', label: '个人设置', href: '/settings', ic: 'settings' }] },
-];
-
-export interface ConsoleShellProps {
-  /** 当前激活路由 id（如 'checkin'），决定侧栏高亮 */
+export interface AppShellProps {
+  /** 当前激活路由 id（如 'channels'），决定侧栏高亮 */
   activeId: string;
   /** 页面标题（顶部大标题） */
   title: string;
-  /** 面包屑路径，如 ['控制台','每日签到'] */
+  /** 面包屑路径，如 ['管理后台','渠道管理'] */
   crumb: string[];
-  /** 顶部右侧操作区（页面级按钮，如「新增映射」） */
+  /** 顶部右侧操作区（页面级按钮，如「新增渠道」） */
   actions?: ReactNode;
-  /** 顶栏展示的余额文案（来自 self 接口，客户视图，非成本） */
-  balance?: string;
   /** 顶栏展示的用户名（缺省取 self 接口的真实用户名） */
   userName?: string;
   children: ReactNode;
 }
 
 /**
- * ConsoleShell — 控制台共享外壳（顶栏 + 左侧导航 + 面包屑 + 内容区）。
+ * AppShell — 全站统一应用外壳（顶栏 + 左侧角色动态导航 + 面包屑 + 内容区）。
  *
- * S6 原型 console-shell.js（运行期 JS 注入外壳）的工程化版本：
- * 改为 React 组件，导航树静态声明、激活态由 props.activeId 驱动、
- * 移动端汉堡抽屉用受控 state。样式全部来自 ConsoleShell.module.css（token 化）。
+ * 取代原 ConsoleShell / AdminShell 两套写死的静态壳：菜单来自单一数据源 nav-tree.ts，
+ * 按当前登录用户角色过滤（role >= item.minRole），root/admin 自然看到普通用户菜单超集 + 管理入口，
+ * 普通用户只见 COMMON 项。删除了跨路由组「视图切换」链接（菜单退化 bug 根因）。
  *
- * 顶栏用户名取 self 接口的真实登录用户；管理员/超管(role≥admin)额外显示「管理后台」入口，
- * 方便从用户视图切回管理视图（与 AdminShell 顶栏「用户视图」对称）。
- * 每个控制台页面用 <ConsoleShell activeId title crumb actions>{页面主区}</ConsoleShell> 包裹。
+ * 角色兜底：self pending/未取到时按 COMMON 渲染（绝不闪退成 admin、也不越权 flash root/admin 项）。
+ * page 级越权防线仍在各路由组 layout 守卫 + 后端 @RequireRole。
  */
-export function ConsoleShell({
-  activeId,
-  title,
-  crumb,
-  actions,
-  balance = '$128.50',
-  userName,
-  children,
-}: ConsoleShellProps) {
+export function AppShell({ activeId, title, crumb, actions, userName, children }: AppShellProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const self = useSelf();
 
-  // 真实登录用户：props 显式传入优先，否则取 self；都没有时给安全兜底。
+  // 角色兜底 COMMON：refetch 瞬间 self.data undefined 时绝不升格为 admin/root。
+  const currentRole = self.data?.role ?? ROLE.COMMON;
   const displayName = userName ?? self.data?.displayName ?? self.data?.username ?? '用户';
-  const canEnterAdmin = isAdminRole(self.data?.role ?? 0);
+
+  // 单一数据源按角色过滤：去掉 minRole 高于本人的项，丢弃过滤后变空的分组。
+  const nav = NAV.map((grp) => ({
+    ...grp,
+    items: grp.items.filter((it) => currentRole >= it.minRole),
+  })).filter((grp) => grp.items.length > 0);
+
+  // 顶栏 logo 落点：管理员回管理总览，普通用户回仪表盘。
+  const homeHref = currentRole >= ROLE.ADMIN ? '/admin' : '/dashboard';
 
   return (
     <>
       <header className={styles.top}>
-        <button
-          className={styles.burger}
-          aria-label="菜单"
-          onClick={() => setOpen((v) => !v)}
-        >
+        <button className={styles.burger} aria-label="菜单" onClick={() => setOpen((v) => !v)}>
           <Icon name="tasks" />
         </button>
-        <Link className={styles.logo} href="/dashboard">
+        <Link className={styles.logo} href={homeHref}>
           <span className={styles.logoSq}>N</span>
           <span>Nexa·AI</span>
         </Link>
         <div className={styles.topRight}>
-          <span className={styles.bal}>
-            余额 <b>{balance}</b>
-          </span>
-          {canEnterAdmin ? (
-            <Link className={styles.iconBtn} href="/admin" aria-label="进入管理后台" title="进入管理后台">
-              <Icon name="grid" />
-            </Link>
-          ) : null}
           <button className={styles.iconBtn} aria-label="通知">
             <Icon name="bell" />
             <span className={styles.dotMark} />
@@ -166,9 +115,12 @@ export function ConsoleShell({
       </header>
 
       <aside className={`${styles.side} ${open ? styles.open : ''}`}>
-        {NAV.map((grp) => (
-          <div key={grp.group} className={styles.navGrp}>
-            <div className={styles.navHead}>{grp.group}</div>
+        {nav.map((grp) => (
+          <div key={grp.group} className={`${styles.navGrp} ${grp.admin ? styles.navGrpAdmin : ''}`}>
+            <div className={styles.navHead}>
+              {grp.group}
+              {grp.admin ? <span className={`badge b-info ${styles.navBadge}`}>管理</span> : null}
+            </div>
             {grp.items.map((it) => {
               const isActive = it.id === activeId || pathname === it.href;
               return (
@@ -199,7 +151,10 @@ export function ConsoleShell({
             <div>
               <div className={styles.crumb}>
                 {crumb.map((c, i) => (
-                  <span key={`${c}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                  <span
+                    key={`${c}-${i}`}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)' }}
+                  >
                     {i > 0 ? (
                       <span className={styles.crumbSep}>
                         <Icon name="chevron" />

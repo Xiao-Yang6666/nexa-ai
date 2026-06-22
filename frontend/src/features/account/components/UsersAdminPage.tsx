@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { useAdminUsers, type UserRole } from '@/features/account/model/users-admin.model';
 import {
@@ -90,7 +90,7 @@ export function UsersAdminPage() {
   const closeDrawer = () => setDrawerOpen(false);
 
   return (
-    <AdminShell
+    <AppShell
       activeId="users"
       title="用户管理"
       crumb={['管理后台', '资源管理', '用户管理']}
@@ -320,7 +320,7 @@ export function UsersAdminPage() {
           <Button>保存变更</Button>
         </div>
       </aside>
-    </AdminShell>
+    </AppShell>
   );
 }
 

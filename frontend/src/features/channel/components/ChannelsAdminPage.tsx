@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo, type KeyboardEvent } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
 import {
@@ -229,7 +229,7 @@ export function ChannelsAdminPage() {
   const colSpan = 11;
 
   return (
-    <AdminShell
+    <AppShell
       activeId="channels"
       title="渠道管理"
       crumb={['管理后台', '资源管理', '渠道管理']}
@@ -476,6 +476,6 @@ export function ChannelsAdminPage() {
           </Button>
         </div>
       </aside>
-    </AdminShell>
+    </AppShell>
   );
 }

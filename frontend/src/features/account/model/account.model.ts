@@ -102,12 +102,14 @@ export function useRegister() {
   });
 }
 
-/** 本人信息查询 hook（GET /api/user/self）→ 裁剪后的 AccountVM。 */
+/** 本人信息查询 hook（GET /api/user/self）→ 裁剪后的 AccountVM。
+ *  设 5min staleTime：self 跨页稳定，减少 AppShell 菜单因 refetch 抖动（角色兜底闪烁）。 */
 export function useSelf() {
   return useQuery({
     queryKey: ['account', 'self'],
     queryFn: getSelf,
     select: toAccountVM,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

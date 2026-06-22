@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useSelf, useSaveSetting } from '../model/account.model';
 import styles from './SettingsPage.module.css';
 
@@ -168,16 +168,16 @@ export function SettingsPage() {
 
   if (isLoading) {
     return (
-      <ConsoleShell activeId="settings" title="个人设置" crumb={['控制台', '个人设置']}>
+      <AppShell activeId="settings" title="个人设置" crumb={['控制台', '个人设置']}>
         <div className={styles.skCard} />
         <div className={styles.skCard} />
-      </ConsoleShell>
+      </AppShell>
     );
   }
 
   if (isError || !account) {
     return (
-      <ConsoleShell activeId="settings" title="个人设置" crumb={['控制台', '个人设置']}>
+      <AppShell activeId="settings" title="个人设置" crumb={['控制台', '个人设置']}>
         <div className={`${styles.card} ${styles.stateBox}`}>
           <div className={styles.t}>设置加载失败</div>
           <div>网络或服务异常，请稍后重试。</div>
@@ -185,12 +185,12 @@ export function SettingsPage() {
             重试
           </button>
         </div>
-      </ConsoleShell>
+      </AppShell>
     );
   }
 
   return (
-    <ConsoleShell activeId="settings" title="个人设置" crumb={['控制台', '个人设置']}>
+    <AppShell activeId="settings" title="个人设置" crumb={['控制台', '个人设置']}>
       {/* 闭环导航 */}
       <div className={`${styles.loopnav} nx-fade`}>
         <a href="/keys">
@@ -460,6 +460,6 @@ export function SettingsPage() {
           )}
         </div>
       </div>
-    </ConsoleShell>
+    </AppShell>
   );
 }

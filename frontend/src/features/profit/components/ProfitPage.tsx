@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import styles from './ProfitPage.module.css';
 
@@ -393,7 +393,7 @@ export function ProfitPage() {
   const [dim, setDim] = useState<DimTab>('model');
 
   return (
-    <AdminShell
+    <AppShell
       activeId="profit"
       title="利润分析"
       crumb={['管理后台', '运营', '利润分析']}
@@ -667,6 +667,6 @@ export function ProfitPage() {
           </div>
         ) : null}
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }

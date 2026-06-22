@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import {
   useModelAliases,
   useAliasCandidates,
@@ -205,7 +205,7 @@ export function ModelMapPage() {
   );
 
   return (
-    <ConsoleShell activeId="model-map" title="我的模型映射" crumb={['控制台', '我的模型映射']} actions={actions}>
+    <AppShell activeId="model-map" title="我的模型映射" crumb={['控制台', '我的模型映射']} actions={actions}>
       {/* 闭环导航 */}
       <div className={`${styles.loopnav} nx-fade`}>
         <a href="/keys">
@@ -547,6 +547,6 @@ export function ModelMapPage() {
           </div>
         </div>
       )}
-    </ConsoleShell>
+    </AppShell>
   );
 }
