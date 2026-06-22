@@ -105,6 +105,44 @@ class ClaudeProtocolAdapterTest {
     }
 
     @Test
+    void d1_multiBlockSystemSerializesAsArray() throws Exception {
+        // 多块 system 应序列化为 text 数组（覆盖 system().size()>1 分支），再反解析回 IR 无丢失。
+        ChatIR ir = ChatIR.builder("claude-3")
+                .addSystem(ContentBlock.text("rule A"))
+                .addSystem(ContentBlock.text("rule B"))
+                .addMessage(com.nexa.relay.domain.ir.Message.ofText("user", "hi"))
+                .build();
+        byte[] out = adapter.serializeRequest(ir);
+        JsonNode root = mapper.readTree(out);
+        assertTrue(root.path("system").isArray());
+        assertEquals(2, root.path("system").size());
+        assertEquals("rule A", root.path("system").get(0).path("text").asText());
+        assertEquals("rule B", root.path("system").get(1).path("text").asText());
+
+        ChatIR back = adapter.parseRequest(out);
+        assertEquals(2, back.system().size());
+        assertEquals("rule B", back.system().get(1).text());
+    }
+
+    @Test
+    void d2_d4_d5_responseFullRoundTrip() {
+        // serializeResponse → parseResponse 全往返：content/stop_reason/usage 不丢失。
+        ChatRespIR original = ChatRespIR.of("msg_rt", "claude-3",
+                List.of(ContentBlock.text("hello"), ContentBlock.text("world")),
+                StopReason.MAX_TOKENS, UsageIR.of(11, 22));
+        byte[] wire = adapter.serializeResponse(original);
+        ChatRespIR back = adapter.parseResponse(wire);
+        assertEquals("msg_rt", back.id());
+        assertEquals("claude-3", back.model());
+        assertEquals(StopReason.MAX_TOKENS, back.stopReason());
+        assertEquals(11, back.usage().promptTokens());
+        assertEquals(22, back.usage().completionTokens());
+        assertEquals(2, back.content().size());
+        assertEquals("hello", back.content().get(0).text());
+        assertEquals("world", back.content().get(1).text());
+    }
+
+    @Test
     void d3_toolUseAndResultBlocks() {
         String json = "{\"model\":\"claude-3\",\"max_tokens\":50,\"messages\":["
                 + "{\"role\":\"assistant\",\"content\":[{\"type\":\"tool_use\",\"id\":\"tu_1\",\"name\":\"calc\",\"input\":{\"x\":1}}]},"
