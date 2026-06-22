@@ -18,6 +18,7 @@ public final class StreamState {
     private boolean messageStopped;
     private int currentContentBlockIndex;
     private UsageIR cumulativeUsage = UsageIR.ZERO;
+    private String stopReasonWire;
 
     public boolean isMessageStarted() { return messageStarted; }
     public void markMessageStarted() { this.messageStarted = true; }
@@ -29,6 +30,10 @@ public final class StreamState {
     public void setCurrentContentBlockIndex(int index) { this.currentContentBlockIndex = index; }
 
     public UsageIR getCumulativeUsage() { return cumulativeUsage; }
+
+    /** 跨 chunk 暂存的停止原因线值（Anthropic message_delta 先到、message_stop 才发终结 IR）。 */
+    public String getStopReasonWire() { return stopReasonWire; }
+    public void setStopReasonWire(String wire) { this.stopReasonWire = wire; }
 
     /** 累加 usage（取两者最大值逻辑或直接替换，取决于协议语义；此处简化为替换）。 */
     public void updateUsage(UsageIR usage) {

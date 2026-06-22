@@ -4,6 +4,7 @@ import com.nexa.model.application.ListPublicModelsUseCase;
 import com.nexa.relay.application.RelayAuthContext;
 import com.nexa.relay.application.RelayForwardResult;
 import com.nexa.relay.application.RelayForwardUseCase;
+import com.nexa.relay.application.VideoProxyUseCase;
 import com.nexa.relay.domain.vo.RelayDispatch;
 import com.nexa.relay.domain.vo.RelayMode;
 import com.nexa.relay.infrastructure.auth.RelayApiKeyAuthentication;
@@ -12,13 +13,16 @@ import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.time.Instant;
 import java.util.List;
@@ -47,10 +51,14 @@ public class RelayController {
 
     private final RelayForwardUseCase useCase;
     private final ListPublicModelsUseCase listPublicModelsUseCase;
+    private final VideoProxyUseCase videoProxyUseCase;
 
-    public RelayController(RelayForwardUseCase useCase, ListPublicModelsUseCase listPublicModelsUseCase) {
+    public RelayController(RelayForwardUseCase useCase,
+                           ListPublicModelsUseCase listPublicModelsUseCase,
+                           VideoProxyUseCase videoProxyUseCase) {
         this.useCase = useCase;
         this.listPublicModelsUseCase = listPublicModelsUseCase;
+        this.videoProxyUseCase = videoProxyUseCase;
     }
 
     /**
@@ -162,15 +170,31 @@ public class RelayController {
     /**
      * 视频内容代理（F-4046 RL-5，UserAuth）。
      *
+     * <p>归属校验（self-scope）→ 终态（SUCCESS）→ URL 解析 → SSRF → 流式回写
+     * （{@code Cache-Control: max-age=86400}）。{@code data:} base64 直出；其余经 SSRF 校验后流式拉取。
+     * 校验失败由 {@link RelayExceptionHandler} 翻译为 403/404。</p>
+     *
      * @param taskId 视频任务 ID
      */
     @RequireRole(AuthLevel.USER)
     @GetMapping("/v1/videos/{task_id}/content")
-    public ResponseEntity<?> videoContent(@PathVariable("task_id") String taskId) {
-        // TODO(W3+): 注入 VideoProxyUseCase，完成归属校验→终态校验→SSRF→io.Copy 流式回写（RL-5）
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
-                .body(Map.of("error", ErrorResponse.of("not_implemented",
-                        "video proxy not yet wired (W3+ TODO)", null)));
+    public ResponseEntity<?> videoContent(@PathVariable("task_id") String taskId,
+                                          @CurrentActor AuthenticatedActor actor) {
+        VideoProxyUseCase.VideoContent content =
+                videoProxyUseCase.resolveContent(taskId, (int) actor.userId());
+        if (content.isInline()) {
+            // data: base64 直出（已解码字节）。
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CACHE_CONTROL, VideoProxyUseCase.CACHE_CONTROL)
+                    .header(HttpHeaders.CONTENT_TYPE,
+                            content.mediaTypeOpt().orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE))
+                    .body(content.inlineBytes());
+        }
+        // 远端 URL：流式拉取并回写（io.Copy 等价）。
+        StreamingResponseBody stream = out -> videoProxyUseCase.streamRemote(content, out);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, VideoProxyUseCase.CACHE_CONTROL)
+                .body(stream);
     }
 
     /**
@@ -195,6 +219,16 @@ public class RelayController {
         String tokenName = relayAuth == null ? null : relayAuth.tokenName();
         RelayAuthContext authContext = new RelayAuthContext(
                 actor.userId(), actor.username(), group, tokenId, tokenName);
+
+        // RL-8 流式：客户 stream:true → 走 SSE 流式回写（StreamingResponseBody 逐 chunk flush）。
+        if (useCase.wantsStream(body)) {
+            StreamingResponseBody stream = out -> useCase.forwardStream(path, body, authContext, out);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_EVENT_STREAM)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                    .body(stream);
+        }
+
         RelayForwardResult result = useCase.forward(path, body, authContext);
         return ResponseEntity.status(result.statusCode())
                 .body(result.body());

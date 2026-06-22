@@ -98,6 +98,90 @@ public class RestClientUpstreamHttpAdapter implements UpstreamHttpPort {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void stream(UpstreamRequest request, UpstreamStreamHandler handler) {
+        String url = buildUrl(request.baseUrl(), request.path());
+        HttpMethod method = HttpMethod.valueOf(request.method().toUpperCase());
+        try {
+            RestClient.RequestBodySpec spec = restClient.method(method).uri(url);
+            for (Map.Entry<String, String> h : request.headers().entrySet()) {
+                spec = spec.header(h.getKey(), h.getValue());
+            }
+            // SSE 流式：声明 Accept: text/event-stream，鼓励上游分块返回。
+            spec = spec.header(HttpHeaders.ACCEPT, MediaType.TEXT_EVENT_STREAM_VALUE);
+            String apiKey = request.apiKey();
+            if (apiKey != null && !apiKey.isBlank()) {
+                spec = spec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+            }
+            byte[] body = request.body();
+            if (body != null) {
+                if (!request.headers().containsKey(HttpHeaders.CONTENT_TYPE)) {
+                    spec = spec.contentType(MediaType.APPLICATION_JSON);
+                }
+                spec = spec.body(body);
+            }
+
+            // exchange：直接拿到响应体 InputStream，按 SSE 事件边界（空行 \n\n）切块逐块回调。
+            spec.exchange((clientReq, clientRes) -> {
+                int status = clientRes.getStatusCode().value();
+                if (status < 200 || status >= 300) {
+                    byte[] errBody = clientRes.getBody().readAllBytes();
+                    handler.onError(status, errBody);
+                    return null;
+                }
+                streamByEvent(clientRes.getBody(), handler);
+                handler.onComplete(status);
+                return null;
+            });
+        } catch (UpstreamException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw new UpstreamException(502,
+                    "upstream stream failed for path " + request.path() + ": " + e.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * 按 SSE 事件边界切块：累积字节直到遇到事件分隔（{@code \n\n}），整事件块回调一次。
+     *
+     * <p>SSE 规范以空行分隔事件；按事件而非按字节回调可让上层 {@code parseStreamChunk} 拿到完整事件，
+     * 避免半个 JSON 被切断。流末残留缓冲（无终止空行）作为最后一块回调。</p>
+     */
+    private static void streamByEvent(java.io.InputStream in, UpstreamStreamHandler handler) throws java.io.IOException {
+        java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        int n;
+        while ((n = in.read(chunk)) != -1) {
+            for (int i = 0; i < n; i++) {
+                buf.write(chunk[i]);
+            }
+            // 检测事件边界 \n\n，命中即把累积块整体回调并清空缓冲。
+            byte[] cur = buf.toByteArray();
+            int boundary = lastDoubleNewline(cur);
+            if (boundary >= 0) {
+                byte[] event = java.util.Arrays.copyOfRange(cur, 0, boundary + 2);
+                handler.onChunk(event);
+                byte[] rest = java.util.Arrays.copyOfRange(cur, boundary + 2, cur.length);
+                buf.reset();
+                buf.write(rest);
+            }
+        }
+        if (buf.size() > 0) {
+            handler.onChunk(buf.toByteArray());
+        }
+    }
+
+    /** 返回缓冲中最后一个 {@code \n\n} 边界的起始下标（无则 -1）。 */
+    private static int lastDoubleNewline(byte[] data) {
+        for (int i = data.length - 2; i >= 0; i--) {
+            if (data[i] == '\n' && data[i + 1] == '\n') {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     /**
      * 拼接最终 URL：{@code baseUrl + path}，容错首尾斜杠重复/缺失。
      *

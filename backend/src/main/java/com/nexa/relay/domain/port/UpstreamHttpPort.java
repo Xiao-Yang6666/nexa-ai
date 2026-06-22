@@ -13,8 +13,9 @@ package com.nexa.relay.domain.port;
  * {@code Authorization: Bearer <key>}），上游凭证<b>绝不落日志</b>；上游 BaseURL 的 SSRF 防护
  * （白名单/校验，与 RL-5 {@code ValidateURLWithFetchSetting} 同源思路）由实现兜底。</p>
  *
- * <p>本期仅定义非流式 {@link #send(UpstreamRequest)}；流式响应体 stream（SSE 逐 chunk 回写）
- * 留作 REQ-08 扩展位（届时新增流式方法，不破坏本接口）。</p>
+ * <p>本期定义非流式 {@link #send(UpstreamRequest)} 与流式 {@link #stream(UpstreamRequest, UpstreamStreamHandler)}
+ * （REQ-08 SSE 逐 chunk 回写）。流式实现按行/事件切分上游响应体，逐块回调 handler，由主干经
+ * {@code ProtocolAdapter.parseStreamChunk/serializeStreamChunk} 做 1→N 协议转换后 flush 给客户。</p>
  */
 public interface UpstreamHttpPort {
 
@@ -32,4 +33,33 @@ public interface UpstreamHttpPort {
      * @throws com.nexa.relay.domain.exception.UpstreamException 网络层失败 / 无法取得 HTTP 响应
      */
     UpstreamResponse send(UpstreamRequest request);
+
+    /**
+     * 流式调用上游（REQ-08）：发起请求后按 SSE 事件边界逐块读取上游响应体，每块原始字节回调
+     * {@code handler.onChunk(rawChunkBytes)}；上游流正常结束回调 {@code handler.onComplete(statusCode)}。
+     *
+     * <p>领域语义：本方法只负责「把上游 SSE 原始块按序喂给 handler」，协议转换（{@code parseStreamChunk →
+     * IR → serializeStreamChunk}）与回写客户、末尾计费由主干编排。HTTP 非 2xx（上游开流前即报错）以
+     * {@code handler.onError(statusCode, rawBody)} 反馈，供主干按 RL-3 处置；网络层失败抛
+     * {@link com.nexa.relay.domain.exception.UpstreamException}。</p>
+     *
+     * @param request 出站请求（body 中 {@code stream=true}）
+     * @param handler 逐块回调（onChunk/onComplete/onError）
+     * @throws com.nexa.relay.domain.exception.UpstreamException 网络层失败
+     */
+    void stream(UpstreamRequest request, UpstreamStreamHandler handler);
+
+    /**
+     * 流式回调（REQ-08）：主干实现，接收上游 SSE 原始块并做协议转换 + 回写客户。
+     */
+    interface UpstreamStreamHandler {
+        /** 收到一块上游 SSE 原始字节（一个或多个事件）。 */
+        void onChunk(byte[] rawChunk);
+
+        /** 上游流正常结束（2xx 完成）。 */
+        void onComplete(int statusCode);
+
+        /** 上游开流前报错（HTTP 非 2xx），携带状态码与原始错误体（供 RL-3 处置 + 脱敏）。 */
+        void onError(int statusCode, byte[] rawBody);
+    }
 }

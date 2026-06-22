@@ -14,11 +14,15 @@ import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.exception.InvalidRelayParameterException;
 import com.nexa.relay.domain.exception.NoAvailableChannelException;
 import com.nexa.relay.domain.exception.UpstreamException;
+import com.nexa.relay.domain.ir.ChatIR;
+import com.nexa.relay.domain.ir.ChatRespIR;
 import com.nexa.relay.domain.ir.UsageIR;
 import com.nexa.relay.domain.model.RelayLog;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
 import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.port.UpstreamResponse;
+import com.nexa.relay.domain.protocol.ProtocolAdapter;
+import com.nexa.relay.domain.protocol.ProtocolRegistry;
 import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
@@ -29,8 +33,10 @@ import com.nexa.relay.domain.service.RetryPolicy;
 import com.nexa.relay.domain.service.TwoLayerModelResolver;
 import com.nexa.relay.domain.vo.AliasScope;
 import com.nexa.relay.domain.vo.BillingResult;
+import com.nexa.relay.domain.vo.ChannelProtocolMapping;
 import com.nexa.routing.application.SelectRelayChannelUseCase;
 import com.nexa.relay.domain.vo.ModelResolution;
+import com.nexa.relay.domain.vo.ProtocolFormat;
 import com.nexa.relay.domain.vo.RelayDispatch;
 import com.nexa.relay.domain.vo.RelayInfo;
 import org.springframework.stereotype.Service;
@@ -137,7 +143,6 @@ public class RelayForwardUseCase {
     public RelayForwardResult forward(String path, byte[] body, RelayAuthContext authContext) {
         // ① 协议识别（RL-2）。
         RelayDispatch dispatch = resolveDispatch(path);
-
         // ② 解析请求体取 model 名（C），执行两层映射 C→A→B（RL-7 第②步）。
         JsonNode root = parseBody(body);
         String requestedModel = readModelName(root);
@@ -151,17 +156,20 @@ public class RelayForwardUseCase {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
 
-        // ④⑤ 选渠 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
+        // ④⑤ 选渠 + 协议转换 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
         // 计费⑥⑦/结算⑦'/消费 Log⑨ 仅在最终成功的渠道上执行（循环外成功路径），
         // 错误 Log（Type=5）每次失败都记，AutoBan 命中即禁用——不破坏既有成功路径语义。
-        // TODO REQ-04: 接入 ProtocolRegistry 做 inFmt==targetProto passthrough / 否则 IR 转换；
-        //              本期仅 OpenAI 非流式 passthrough——仅改写 body 的 model 字段为 B 后透传。
-        byte[] upstreamBody = rewriteModel(root, upstreamModel);
+        // REQ-04: 头尾决策在选渠后做——targetProto 取决于选中渠道的 type，故 body 转换在循环内逐渠道进行：
+        //   inFmt == protocolOf(channel.type) → passthrough（仅改写 model 为 B 透传）；
+        //   不等 → ProtocolRegistry.get(inFmt).parseRequest → IR(model=B) → targetAdapter.serializeRequest。
+        ProtocolFormat inFmt = dispatch.format();
         java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
         int retryCount = 0;
         int lastFailureStatus = 502;
         String lastFailureMaskedMessage = MaskSensitiveError.mask(lastFailureStatus, null);
         Channel channel;
+        ProtocolFormat targetProto;
+        boolean passthrough;
         UpstreamResponse upstreamResponse;
 
         while (true) {
@@ -179,7 +187,11 @@ public class RelayForwardUseCase {
                 return buildErrorResult(dispatch, lastFailureStatus, lastFailureMaskedMessage);
             }
 
-            // ⑤ 协议转换 + 调上游（RL-6 头尾决策 + RL-7 第⑤步）。
+            // ⑤ RL-6 头尾决策 + 协议转换（REQ-04）：按选中渠道目标协议构造出站 body。
+            targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
+            passthrough = inFmt == targetProto;
+            byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
+
             UpstreamRequest upstreamRequest = UpstreamRequest.of(
                     "POST", channel.baseUrl(), path, channel.key(), upstreamBody,
                     java.util.Map.of("Content-Type", "application/json"));
@@ -213,9 +225,14 @@ public class RelayForwardUseCase {
             return buildErrorResult(dispatch, failureStatus, masked);
         }
 
+        // ⑧ 响应回转（RL-6）：passthrough 直通 / 否则 targetAdapter.parseResponse → IR → inAdapter.serializeResponse。
+        //   流式（client stream:true）回转见 REQ-08 流式分支，本期非流式经 convertResponseBody。
+        byte[] clientBody = convertResponseBody(
+                upstreamResponse.body(), inFmt, targetProto, passthrough);
+
         // ⑥⑦ 双价记账（quota_sell/quota_cost/quota_profit，REQ-05）。
-        // 第15步：从上游响应体解析真实 usage（D5 prompt/completion tokens）。
-        UsageIR usage = parseUsage(upstreamResponse);
+        // 第15步：从上游响应体（targetProto 口径）解析真实 usage（D5 prompt/completion tokens）。
+        UsageIR usage = parseUsage(upstreamResponse, targetProto);
         // 第16步售价 / 第17-18步成本：调 DualPriceBilling 纯函数算三金额。
         //   售价 quota_sell = BasePriceRatio(A) × GroupRatio(group) × tokens（用公开名 A + 分组折扣，恒定，不随渠道变）。
         //   成本 quota_cost = CostRatio(实际 ChannelId, B) × tokens（用真实渠道 id + 上游名 B，不乘 GroupRatio，ADR-BILL-02）。
@@ -230,12 +247,206 @@ public class RelayForwardUseCase {
         // TODO REQ-05 完整：补「选渠后预扣 + 响应后多退少补」分段结算（§6 第8-9/19步），本期仅响应后一次性扣 quota_sell。
         settle(authContext.userId(), billing);
 
-        // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段 + channel_id + 三金额。
-        recordConsumeLog(dispatch, resolution, channel, authContext, usage, billing);
+        // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段（inFmt/targetProto/converted）+ channel_id + 三金额。
+        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing);
 
-        // 透传上游 status + headers + body 回客户（非流式 passthrough）。
+        // 透传上游 status + headers + 回转后 body（非流式）。
         return new RelayForwardResult(
-                upstreamResponse.statusCode(), upstreamResponse.headers(), upstreamResponse.body());
+                upstreamResponse.statusCode(), upstreamResponse.headers(), clientBody);
+    }
+
+    /** 客户是否请求流式（body.stream==true，RL-8）。控制器据此决定走 SSE 流式回写还是非流式。 */
+    public boolean wantsStream(byte[] body) {
+        try {
+            JsonNode root = objectMapper.readTree(body);
+            return root.path("stream").asBoolean(false);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 流式转发主干（REQ-08，RL-8 SSE 1→N）：与 {@link #forward} 同样的鉴权→映射→key校验→选渠→头尾决策，
+     * 但出站请求 {@code stream=true}，上游 SSE 逐 chunk 经 {@code parseStreamChunk → IR → serializeStreamChunk}
+     * 转回客户协议并即时 flush；流末按累计 usage 走双价记账落 Log（REQ-05）。
+     *
+     * <p>渠道不在 streamSupportedChannels（本期简化：所有渠道按支持处理）时可降级非流式——降级策略待
+     * REQ-08 增强；当前若上游不支持 SSE，{@code parseStreamChunk} 解析不出事件则原样回写（不阻断）。</p>
+     *
+     * @param path        请求路径
+     * @param body        客户原始请求体（stream=true）
+     * @param authContext 鉴权上下文
+     * @param sink        客户输出流（SSE 写入目标，由控制器 StreamingResponseBody 提供）
+     */
+    public void forwardStream(String path, byte[] body, RelayAuthContext authContext, java.io.OutputStream sink) {
+        RelayDispatch dispatch = resolveDispatch(path);
+        JsonNode root = parseBody(body);
+        String requestedModel = readModelName(root);
+        ModelResolution resolution =
+                resolveModel(requestedModel, authContext.userId(), authContext.group());
+        String upstreamModel = resolution.upstream();
+        if (authContext.tokenId() != null) {
+            keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
+        }
+
+        ProtocolFormat inFmt = dispatch.format();
+        java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
+        int retryCount = 0;
+
+        while (true) {
+            Channel channel;
+            try {
+                channel = selectRelayChannelUseCase.selectChannel(
+                        authContext.group(), upstreamModel, triedChannelIds);
+            } catch (NoAvailableChannelException e) {
+                if (triedChannelIds.isEmpty()) {
+                    throw e;
+                }
+                return; // 重试耗尽：流已可能部分写出，静默结束（错误 Log 已逐次记录）。
+            }
+
+            ProtocolFormat targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
+            boolean passthrough = inFmt == targetProto;
+            byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
+
+            UpstreamRequest upstreamRequest = UpstreamRequest.of(
+                    "POST", channel.baseUrl(), path, channel.key(), upstreamBody,
+                    java.util.Map.of("Content-Type", "application/json"));
+
+            StreamConversionHandler handler = new StreamConversionHandler(
+                    sink, inFmt, targetProto, passthrough);
+            try {
+                upstreamHttpPort.stream(upstreamRequest, handler);
+            } catch (UpstreamException e) {
+                handleUpstreamFailure(dispatch, resolution, channel, authContext,
+                        e.upstreamStatusCode(), e.getMessage());
+                triedChannelIds.add(channel.id());
+                if (RetryPolicy.shouldRetry(e.upstreamStatusCode()) && retryCount < maxRetryTimes()
+                        && !handler.hasWritten()) {
+                    retryCount++;
+                    continue;
+                }
+                return;
+            }
+
+            // 上游开流前即报错（HTTP 非 2xx）：按 RL-3 重试/禁用，未写出任何 chunk 才可换渠道重试。
+            if (handler.errorStatus() != null) {
+                int failureStatus = handler.errorStatus();
+                handleUpstreamFailure(dispatch, resolution, channel, authContext,
+                        failureStatus, handler.errorDetail());
+                triedChannelIds.add(channel.id());
+                if (RetryPolicy.shouldRetry(failureStatus) && retryCount < maxRetryTimes()
+                        && !handler.hasWritten()) {
+                    retryCount++;
+                    continue;
+                }
+                // 不可重试：把脱敏错误作为 SSE 事件写给客户后结束。
+                writeStreamError(sink, dispatch, failureStatus,
+                        MaskSensitiveError.mask(failureStatus, handler.errorDetail()));
+                return;
+            }
+
+            // 成功：流已逐 chunk 写出，按累计 usage 走双价记账落 Log（REQ-05）。
+            UsageIR usage = handler.cumulativeUsage();
+            BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
+            BigDecimal groupRatio = resolveGroupRatio(authContext.group());
+            BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel);
+            BillingResult billing = DualPriceBilling.compute(
+                    usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
+            settle(authContext.userId(), billing);
+            recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing);
+            return;
+        }
+    }
+
+    /**
+     * 流式转换回调（REQ-08）：上游 SSE 原始块 → {@code parseStreamChunk → IR delta → serializeStreamChunk}
+     * （inFmt 协议）→ 写客户 sink。passthrough 时原样转发原始块。累计 usage 供流末计费。
+     */
+    private final class StreamConversionHandler implements UpstreamHttpPort.UpstreamStreamHandler {
+        private final java.io.OutputStream sink;
+        private final ProtocolFormat inFmt;
+        private final ProtocolFormat targetProto;
+        private final boolean passthrough;
+        private final com.nexa.relay.domain.ir.StreamState upstreamState = new com.nexa.relay.domain.ir.StreamState();
+        private final com.nexa.relay.domain.ir.StreamState clientState = new com.nexa.relay.domain.ir.StreamState();
+        private boolean written;
+        private Integer errorStatus;
+        private String errorDetail;
+
+        StreamConversionHandler(java.io.OutputStream sink, ProtocolFormat inFmt,
+                                ProtocolFormat targetProto, boolean passthrough) {
+            this.sink = sink;
+            this.inFmt = inFmt;
+            this.targetProto = targetProto;
+            this.passthrough = passthrough;
+        }
+
+        @Override
+        public void onChunk(byte[] rawChunk) {
+            try {
+                if (passthrough) {
+                    // 同协议直转，但仍解析以累计 usage 供计费（OpenAI/Claude 均可）。
+                    ProtocolAdapter target = ProtocolRegistry.get(targetProto).orElse(null);
+                    if (target != null) {
+                        target.parseStreamChunk(rawChunk, upstreamState); // 仅为累计 usage 副作用
+                    }
+                    sink.write(rawChunk);
+                    sink.flush();
+                    written = true;
+                    return;
+                }
+                ProtocolAdapter targetAdapter = ProtocolRegistry.get(targetProto).orElse(null);
+                ProtocolAdapter inAdapter = ProtocolRegistry.get(inFmt).orElse(null);
+                if (targetAdapter == null || inAdapter == null) {
+                    sink.write(rawChunk); // 回落直转。
+                    sink.flush();
+                    written = true;
+                    return;
+                }
+                for (com.nexa.relay.domain.ir.ChatDeltaIR delta
+                        : targetAdapter.parseStreamChunk(rawChunk, upstreamState)) {
+                    for (byte[] outEvent : inAdapter.serializeStreamChunk(delta, clientState)) {
+                        sink.write(outEvent);
+                    }
+                }
+                sink.flush();
+                written = true;
+            } catch (java.io.IOException e) {
+                throw new UpstreamException(499, "client stream write failed: " + e.getClass().getSimpleName());
+            }
+        }
+
+        @Override
+        public void onComplete(int statusCode) {
+            // 流正常结束：usage 已在 onChunk 累计于 upstreamState。
+        }
+
+        @Override
+        public void onError(int statusCode, byte[] rawBody) {
+            this.errorStatus = statusCode;
+            this.errorDetail = rawBody == null ? null
+                    : new String(rawBody, java.nio.charset.StandardCharsets.UTF_8);
+        }
+
+        boolean hasWritten() { return written; }
+        Integer errorStatus() { return errorStatus; }
+        String errorDetail() { return errorDetail; }
+        UsageIR cumulativeUsage() { return upstreamState.getCumulativeUsage(); }
+    }
+
+    /** 流式路径上游报错且不可重试时，把脱敏错误作为一个 SSE 事件写给客户后结束流。 */
+    private void writeStreamError(java.io.OutputStream sink, RelayDispatch dispatch,
+                                  int statusCode, String maskedMessage) {
+        try {
+            RelayForwardResult err = buildErrorResult(dispatch, statusCode, maskedMessage);
+            sink.write(("data: " + new String(err.body(), java.nio.charset.StandardCharsets.UTF_8) + "\n\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            sink.write("data: [DONE]\n\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            sink.flush();
+        } catch (java.io.IOException ignored) {
+            // 客户已断开：无法回写，静默结束。
+        }
     }
 
     /** 解析客户请求体为 JSON 树（非 JSON / 空体即非法入参，不吞错）。 */
@@ -259,7 +470,81 @@ public class RelayForwardUseCase {
         return modelNode.asText();
     }
 
-    /** 改写请求体 model 字段为真实上游名 B（OpenAI 非流式 passthrough，其余字段透传）。 */
+    /**
+     * RL-6 头尾决策构造出站请求体（REQ-04）。
+     *
+     * <p>passthrough（inFmt==targetProto）：仅改写 {@code model} 字段为 B 后透传原 body（保留客户私有参数）；
+     * 否则经 IR 转换：{@code inAdapter.parseRequest(原body) → IR(model 改为 B) → targetAdapter.serializeRequest}。
+     * 任一协议未注册（注册表未命中）→ 回落 passthrough 直改 model（RL-6 cp_legacy，不阻断现网）。</p>
+     */
+    private byte[] buildUpstreamBody(JsonNode root, ProtocolFormat inFmt, ProtocolFormat targetProto,
+                                     String upstreamModel, boolean passthrough) {
+        if (passthrough) {
+            return rewriteModel(root, upstreamModel);
+        }
+        ProtocolAdapter inAdapter = ProtocolRegistry.get(inFmt).orElse(null);
+        ProtocolAdapter targetAdapter = ProtocolRegistry.get(targetProto).orElse(null);
+        if (inAdapter == null || targetAdapter == null) {
+            // 注册表未命中（如 Gemini 预留位）：回落直改 model 透传，不阻断（RL-6 cp_legacy）。
+            return rewriteModel(root, upstreamModel);
+        }
+        byte[] rawIn = toBytes(root);
+        ChatIR ir = inAdapter.parseRequest(rawIn);
+        // model 恒改为真实上游名 B（两层映射产出），其余 IR 字段由 inAdapter 已归一。
+        ChatIR irForUpstream = ir.model().equals(upstreamModel) ? ir : withModel(ir, upstreamModel);
+        return targetAdapter.serializeRequest(irForUpstream);
+    }
+
+    /**
+     * RL-6 响应回转（REQ-04 第⑧步）。
+     *
+     * <p>passthrough：上游响应体即客户入站协议，直通；否则经 IR 反向：
+     * {@code targetAdapter.parseResponse(上游body) → IR → inAdapter.serializeResponse} 还原成客户协议。
+     * 协议未注册回落直通。空 body 原样返回。</p>
+     */
+    private byte[] convertResponseBody(byte[] upstreamBody, ProtocolFormat inFmt,
+                                       ProtocolFormat targetProto, boolean passthrough) {
+        if (passthrough || upstreamBody == null || upstreamBody.length == 0) {
+            return upstreamBody;
+        }
+        ProtocolAdapter inAdapter = ProtocolRegistry.get(inFmt).orElse(null);
+        ProtocolAdapter targetAdapter = ProtocolRegistry.get(targetProto).orElse(null);
+        if (inAdapter == null || targetAdapter == null) {
+            return upstreamBody; // 回落直通。
+        }
+        ChatRespIR ir = targetAdapter.parseResponse(upstreamBody);
+        return inAdapter.serializeResponse(ir);
+    }
+
+    /** ChatIR 改 model（IR 为不可变 record，用 Builder 重建并复制全字段）。 */
+    private ChatIR withModel(ChatIR ir, String model) {
+        ChatIR.Builder b = ChatIR.builder(model)
+                .system(ir.system())
+                .messages(ir.messages())
+                .tools(ir.tools())
+                .toolChoice(ir.toolChoice())
+                .stream(ir.stream())
+                .maxTokens(ir.maxTokens())
+                .temperature(ir.temperature())
+                .topP(ir.topP())
+                .stopSequences(ir.stopSequences())
+                .passthrough(ir.passthroughExtras());
+        if (ir.metadata() != null) {
+            b.metadata(ir.metadata());
+        }
+        return b.build();
+    }
+
+    /** JsonNode → 字节（IR 转换入口需原始 body 字节）。 */
+    private byte[] toBytes(JsonNode root) {
+        try {
+            return objectMapper.writeValueAsBytes(root);
+        } catch (IOException e) {
+            throw new InvalidRelayParameterException("failed to serialize request body");
+        }
+    }
+
+    /** 改写请求体 model 字段为真实上游名 B（passthrough，其余字段透传）。 */
     private byte[] rewriteModel(JsonNode root, String upstreamModel) {
         try {
             ObjectNode rewritten = ((ObjectNode) root).deepCopy();
@@ -299,13 +584,13 @@ public class RelayForwardUseCase {
     }
 
     /**
-     * 解析上游响应体的 usage（第15步，D5 token 口径）。
+     * 解析上游响应体的 usage（第15步，D5 token 口径），按 targetProto 选 token 字段名。
      *
-     * <p>本期 OpenAI 非流式 passthrough：上游响应体即 OpenAI 格式，直接读 {@code usage.prompt_tokens}/
-     * {@code usage.completion_tokens}。仅在上游 2xx 成功后调用（非 2xx 已在 RL-3 重试/错误链处置，
-     * 不进入计费）；解析失败 / 缺 usage → 返回 {@link UsageIR#ZERO}（计费缺失兜底不阻断）。</p>
+     * <p>上游响应体是 targetProto 协议格式：OpenAI 读 {@code usage.prompt_tokens/completion_tokens}，
+     * Claude 读 {@code usage.input_tokens/output_tokens}（D5）。仅在上游 2xx 成功后调用（非 2xx 已在
+     * RL-3 重试/错误链处置，不进入计费）；解析失败 / 缺 usage → 返回 {@link UsageIR#ZERO}（计费缺失兜底不阻断）。</p>
      */
-    private UsageIR parseUsage(UpstreamResponse response) {
+    private UsageIR parseUsage(UpstreamResponse response, ProtocolFormat targetProto) {
         byte[] body = response.body();
         if (body == null || body.length == 0) {
             return UsageIR.ZERO;
@@ -314,6 +599,11 @@ public class RelayForwardUseCase {
             JsonNode usageNode = objectMapper.readTree(body).path("usage");
             if (usageNode.isMissingNode() || usageNode.isNull()) {
                 return UsageIR.ZERO;
+            }
+            if (targetProto == ProtocolFormat.CLAUDE) {
+                return UsageIR.of(
+                        usageNode.path("input_tokens").asInt(0),
+                        usageNode.path("output_tokens").asInt(0));
             }
             return UsageIR.of(
                     usageNode.path("prompt_tokens").asInt(0),
@@ -377,7 +667,8 @@ public class RelayForwardUseCase {
 
     /** 落一条消费 Log（RL-7 第⑨步，Type=2 Consume）：三段模型 + 协议三字段 + channel_id + 三金额 + 真实 usage。 */
     private void recordConsumeLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                  RelayAuthContext authContext, UsageIR usage, BillingResult billing) {
+                                  ProtocolFormat targetProto, RelayAuthContext authContext,
+                                  UsageIR usage, BillingResult billing) {
         RelayInfo info = new RelayInfo();
         info.setUserId(authContext.userId());
         info.setUsername(authContext.username());
@@ -388,8 +679,8 @@ public class RelayForwardUseCase {
         info.setResolvedPublicModel(resolution.resolvedPublic());
         info.setUpstreamModelName(resolution.upstream());
         info.setInboundFormat(dispatch.format());
-        info.setTargetProtocol(dispatch.format()); // 本期仅 OpenAI passthrough：inFmt == targetProto
-        info.computePassthrough();
+        info.setTargetProtocol(targetProto); // REQ-04: 真实目标协议（按选中渠道 type 判定）
+        info.computePassthrough();           // inFmt==targetProto → protocol_converted=false
         info.setChannelId(channel.id());
         info.setChannelType(channel.type().code());
         // 客户端 IP / User-Agent：本期 forward 链路未透传 HttpServletRequest，

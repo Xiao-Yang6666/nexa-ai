@@ -194,15 +194,14 @@ public class OpenAiProtocolAdapter implements ProtocolAdapter {
 
     @Override
     public List<ChatDeltaIR> parseStreamChunk(byte[] raw, StreamState state) {
-        // TODO(W3+): 解析 OpenAI SSE data:{choices:[{delta}]} / [DONE]，逐 chunk → IR delta（RL-8 流式往返）。
-        // 首版聚焦非流式；流式 1→N 互转留待后续 wave 完善 StreamState 状态机。
-        return List.of();
+        // OpenAI SSE data:{choices:[{delta}]} / [DONE] → IR delta（RL-8 流式往返，REQ-08）。
+        return OpenAiStreamCodec.parse(raw, state, mapper);
     }
 
     @Override
     public List<byte[]> serializeStreamChunk(ChatDeltaIR delta, StreamState state) {
-        // TODO(W3+): IR delta → OpenAI SSE event（data:{...}），终结 chunk 追加 [DONE]。
-        return List.of();
+        // IR delta → OpenAI SSE event（data:{...}），终结 chunk 追加 [DONE]（REQ-08）。
+        return OpenAiStreamCodec.serialize(delta, state, mapper);
     }
 
     // ---- 私有辅助（D1/D2/D5 映射细节） ----
