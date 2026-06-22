@@ -64,4 +64,14 @@ public interface ModelGroupAccessRepository {
      * @return 命中返回记录，否则空
      */
     Optional<ModelGroupAccess> findById(long id);
+
+    /**
+     * 删除指定主体对指定模型组的授权（覆盖式设置时移除多余授权）。
+     *
+     * @param modelGroupId 模型组主键
+     * @param subjectType  主体类型
+     * @param subjectId    主体主键
+     * @return 命中并删除返回 {@code true}；不存在返回 {@code false}
+     */
+    boolean delete(long modelGroupId, AccessSubjectType subjectType, long subjectId);
 }

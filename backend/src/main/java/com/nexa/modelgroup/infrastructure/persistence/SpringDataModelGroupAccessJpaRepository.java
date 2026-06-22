@@ -2,6 +2,7 @@ package com.nexa.modelgroup.infrastructure.persistence;
 
 import com.nexa.modelgroup.infrastructure.persistence.entity.ModelGroupAccessJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,6 +20,11 @@ interface SpringDataModelGroupAccessJpaRepository extends JpaRepository<ModelGro
 
     /** 授权重复探测。 */
     boolean existsByModelGroupIdAndSubjectTypeAndSubjectId(
+            Long modelGroupId, String subjectType, Long subjectId);
+
+    /** 删除指定主体对指定模型组的授权（返回受影响行数）。 */
+    @Modifying
+    long deleteByModelGroupIdAndSubjectTypeAndSubjectId(
             Long modelGroupId, String subjectType, Long subjectId);
 
     /**

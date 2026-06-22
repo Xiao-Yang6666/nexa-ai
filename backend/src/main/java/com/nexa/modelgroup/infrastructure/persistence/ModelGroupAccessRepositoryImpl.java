@@ -69,6 +69,14 @@ public class ModelGroupAccessRepositoryImpl implements ModelGroupAccessRepositor
         return jpa.findById(id).map(this::toDomain);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean delete(long modelGroupId, AccessSubjectType subjectType, long subjectId) {
+        long affected = jpa.deleteByModelGroupIdAndSubjectTypeAndSubjectId(
+                modelGroupId, subjectType.wireValue(), subjectId);
+        return affected > 0;
+    }
+
     // ---- 聚合 <-> 实体映射 ----
 
     private ModelGroupAccessJpaEntity toEntity(ModelGroupAccess a) {

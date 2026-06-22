@@ -3,6 +3,7 @@ package com.nexa.modelgroup.interfaces.api;
 import com.nexa.modelgroup.domain.exception.DomainException;
 import com.nexa.modelgroup.domain.exception.InvalidModelGroupParameterException;
 import com.nexa.modelgroup.domain.exception.ModelGroupCodeConflictException;
+import com.nexa.modelgroup.domain.exception.ModelGroupCodeNotFoundException;
 import com.nexa.modelgroup.domain.exception.ModelGroupNotFoundException;
 import com.nexa.modelgroup.domain.exception.ModelGroupPersistenceException;
 import com.nexa.modelgroup.interfaces.api.dto.ApiResponse;
@@ -51,6 +52,18 @@ public class ModelGroupExceptionHandler {
      */
     @ExceptionHandler(ModelGroupNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(ModelGroupNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(e.getMessage()));
+    }
+
+    /**
+     * 模型组（按 code）不存在 → 404。
+     *
+     * @param e 按 code 不存在异常
+     * @return 404 错误信封
+     */
+    @ExceptionHandler(ModelGroupCodeNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCodeNotFound(ModelGroupCodeNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(e.getMessage()));
     }

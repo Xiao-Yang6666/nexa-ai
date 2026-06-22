@@ -4,6 +4,8 @@ import com.nexa.modelgroup.application.CreateModelGroupUseCase;
 import com.nexa.modelgroup.application.DeleteModelGroupUseCase;
 import com.nexa.modelgroup.application.ListModelGroupsUseCase;
 import com.nexa.modelgroup.application.ManageModelGroupAccessUseCase;
+import com.nexa.modelgroup.application.QueryUserModelGroupsUseCase;
+import com.nexa.modelgroup.application.SetUserModelGroupsUseCase;
 import com.nexa.modelgroup.application.UpdateModelGroupStatusUseCase;
 import com.nexa.modelgroup.application.UpdateModelGroupUseCase;
 import com.nexa.modelgroup.domain.exception.InvalidModelGroupParameterException;
@@ -15,6 +17,7 @@ import com.nexa.modelgroup.interfaces.api.dto.ModelGroupAdminView;
 import com.nexa.modelgroup.interfaces.api.dto.ModelGroupCreateRequest;
 import com.nexa.modelgroup.interfaces.api.dto.ModelGroupStatusRequest;
 import com.nexa.modelgroup.interfaces.api.dto.ModelGroupUpdateRequest;
+import com.nexa.modelgroup.interfaces.api.dto.SetUserModelGroupsRequest;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -59,27 +62,35 @@ public class ModelGroupController {
     private final UpdateModelGroupStatusUseCase statusUseCase;
     private final DeleteModelGroupUseCase deleteUseCase;
     private final ManageModelGroupAccessUseCase accessUseCase;
+    private final QueryUserModelGroupsUseCase queryUserGroupsUseCase;
+    private final SetUserModelGroupsUseCase setUserGroupsUseCase;
 
     /**
-     * @param listUseCase   列表用例
-     * @param createUseCase 创建用例
-     * @param updateUseCase 更新用例
-     * @param statusUseCase 状态切换用例
-     * @param deleteUseCase 软删除用例
-     * @param accessUseCase 访问授权用例
+     * @param listUseCase            列表用例
+     * @param createUseCase          创建用例
+     * @param updateUseCase          更新用例
+     * @param statusUseCase          状态切换用例
+     * @param deleteUseCase          软删除用例
+     * @param accessUseCase          访问授权用例
+     * @param queryUserGroupsUseCase 查用户已授权组用例
+     * @param setUserGroupsUseCase   覆盖式设置用户授权组用例
      */
     public ModelGroupController(ListModelGroupsUseCase listUseCase,
                                 CreateModelGroupUseCase createUseCase,
                                 UpdateModelGroupUseCase updateUseCase,
                                 UpdateModelGroupStatusUseCase statusUseCase,
                                 DeleteModelGroupUseCase deleteUseCase,
-                                ManageModelGroupAccessUseCase accessUseCase) {
+                                ManageModelGroupAccessUseCase accessUseCase,
+                                QueryUserModelGroupsUseCase queryUserGroupsUseCase,
+                                SetUserModelGroupsUseCase setUserGroupsUseCase) {
         this.listUseCase = listUseCase;
         this.createUseCase = createUseCase;
         this.updateUseCase = updateUseCase;
         this.statusUseCase = statusUseCase;
         this.deleteUseCase = deleteUseCase;
         this.accessUseCase = accessUseCase;
+        this.queryUserGroupsUseCase = queryUserGroupsUseCase;
+        this.setUserGroupsUseCase = setUserGroupsUseCase;
     }
 
     /**
@@ -193,5 +204,40 @@ public class ModelGroupController {
     public ApiResponse<Void> revokeAccess(@PathVariable("accessId") long accessId) {
         accessUseCase.revoke(accessId);
         return ApiResponse.ok("access revoked");
+    }
+
+    /**
+     * 查询某用户当前已被授权的私有模型组（用户列表/编辑弹窗回显）。
+     *
+     * @param userId 用户主键（path）
+     * @return 成功信封，data 为该用户 USER 级授权命中的模型组视图列表
+     */
+    @GetMapping("/user/{userId}")
+    public ApiResponse<List<ModelGroupAdminView>> listUserGroups(@PathVariable("userId") long userId) {
+        List<ModelGroupAdminView> views = queryUserGroupsUseCase.listForUser(userId).stream()
+                .map(ModelGroupAdminView::from)
+                .toList();
+        return ApiResponse.okData(views);
+    }
+
+    /**
+     * 覆盖式设置某用户的私有模型组授权（用户列表里勾选一批组后整体提交）。
+     *
+     * <p>请求体 {@code codes} 为该用户最终应拥有的全部组编码，后端做 diff 增删（空数组=清空）。
+     * 某 code 无对应存活组 → 404。</p>
+     *
+     * @param userId  用户主键（path）
+     * @param request 目标组编码集（覆盖式）
+     * @return 成功信封，data 为设置后该用户授权命中的模型组视图列表
+     */
+    @PutMapping("/user/{userId}")
+    public ApiResponse<List<ModelGroupAdminView>> setUserGroups(
+            @PathVariable("userId") long userId,
+            @RequestBody SetUserModelGroupsRequest request) {
+        List<String> codes = request == null ? null : request.codes();
+        List<ModelGroupAdminView> views = setUserGroupsUseCase.setForUser(userId, codes).stream()
+                .map(ModelGroupAdminView::from)
+                .toList();
+        return ApiResponse.okData(views);
     }
 }
