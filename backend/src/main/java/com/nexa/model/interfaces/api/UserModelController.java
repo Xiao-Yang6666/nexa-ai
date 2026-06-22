@@ -1,7 +1,7 @@
 package com.nexa.model.interfaces.api;
 
 import com.nexa.model.application.ModelSquareUseCase;
-import com.nexa.model.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;

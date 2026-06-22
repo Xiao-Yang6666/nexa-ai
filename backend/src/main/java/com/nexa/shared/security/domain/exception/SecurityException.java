@@ -8,8 +8,8 @@ package com.nexa.shared.security.domain.exception;
  * HTTP 状态码 + 错误信封（对齐 openapi {@code ErrorResponse}）。</p>
  *
  * <p>设计依据：backend-engineer §3.2「领域错误用明确错误类型/错误码，不靠 panic 控流」；
- * 与账号域 {@code com.nexa.account.domain.exception.DomainException} 同构（各 bounded context
- * 各自的领域异常基类），domain 层零框架依赖，纯 {@link RuntimeException} 派生。</p>
+ * 与业务域简单型 {@link com.nexa.shared.kernel.DomainException} 同形态（code+message），但属安全横切
+ * 子域、语义独立而单列，domain 层零框架依赖，纯 {@link RuntimeException} 派生。</p>
  */
 public abstract class SecurityException extends RuntimeException {
 

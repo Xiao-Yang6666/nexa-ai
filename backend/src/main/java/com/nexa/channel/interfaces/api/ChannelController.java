@@ -14,7 +14,7 @@ import com.nexa.channel.application.ToggleChannelsByTagUseCase;
 import com.nexa.channel.application.UpdateChannelBalanceUseCase;
 import com.nexa.channel.application.UpdateChannelUseCase;
 import com.nexa.channel.domain.vo.Pagination;
-import com.nexa.channel.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.channel.interfaces.api.dto.BatchActionRequest;
 import com.nexa.channel.interfaces.api.dto.ChannelAdminView;
 import com.nexa.channel.interfaces.api.dto.ChannelCreateRequest;

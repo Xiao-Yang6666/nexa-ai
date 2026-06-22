@@ -1,5 +1,7 @@
 package com.nexa.deployment.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 部署管理参数非法异常（接口层映射 400）。
  *

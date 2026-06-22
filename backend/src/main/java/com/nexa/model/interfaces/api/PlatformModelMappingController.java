@@ -3,6 +3,7 @@ package com.nexa.model.interfaces.api;
 import com.nexa.model.application.ManagePlatformModelMappingUseCase;
 import com.nexa.model.domain.model.PlatformModelMapping;
 import com.nexa.model.domain.vo.Pagination;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.model.interfaces.api.dto.*;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;

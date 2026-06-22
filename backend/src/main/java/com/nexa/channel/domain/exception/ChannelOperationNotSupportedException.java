@@ -1,5 +1,7 @@
 package com.nexa.channel.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 渠道操作不被支持异常（如对非 Ollama 渠道执行 Ollama 管理、对异步渠道执行同步连通性测试，→400）。
  *

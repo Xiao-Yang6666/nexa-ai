@@ -1,5 +1,7 @@
 package com.nexa.modelgroup.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 模型组（按 code）不存在异常（→ HTTP 404）。
  *

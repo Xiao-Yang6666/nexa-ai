@@ -7,9 +7,8 @@ import com.nexa.relay.domain.exception.ProtocolConversionException;
 import com.nexa.relay.domain.exception.RelayNotImplementedException;
 import com.nexa.relay.domain.exception.UpstreamException;
 import com.nexa.relay.domain.exception.VideoTaskException;
-import com.nexa.relay.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -54,11 +53,6 @@ public class RelayExceptionHandler {
     @ExceptionHandler(ProtocolConversionException.class)
     public ResponseEntity<Map<String, Object>> handleConversion(ProtocolConversionException e) {
         return toError(500, "server_error", "protocol conversion failed", e.code());
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleNotReadable(HttpMessageNotReadableException e) {
-        return toError(400, "invalid_request_error", "invalid request body", "INVALID_JSON");
     }
 
     @ExceptionHandler(DomainException.class)

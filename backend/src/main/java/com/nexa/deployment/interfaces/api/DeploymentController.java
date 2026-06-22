@@ -11,7 +11,7 @@ import com.nexa.deployment.application.UpdateDeploymentUseCase;
 import com.nexa.deployment.domain.vo.DeploymentId;
 import com.nexa.deployment.domain.vo.DeploymentName;
 import com.nexa.deployment.domain.vo.Pagination;
-import com.nexa.deployment.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.deployment.interfaces.api.dto.DeploymentListView;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

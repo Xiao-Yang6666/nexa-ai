@@ -1,5 +1,7 @@
 package com.nexa.account.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * OAuth 绑定不存在异常（解绑时按定位条件未命中绑定）。
  *

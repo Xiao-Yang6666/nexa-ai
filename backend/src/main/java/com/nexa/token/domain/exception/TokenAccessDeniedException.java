@@ -1,5 +1,7 @@
 package com.nexa.token.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 令牌越权访问异常（→ 403）。
  *

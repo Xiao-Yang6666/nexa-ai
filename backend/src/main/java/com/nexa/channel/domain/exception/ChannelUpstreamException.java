@@ -1,5 +1,7 @@
 package com.nexa.channel.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 渠道上游集成异常（连通性测试/余额刷新/模型探测/Ollama 管理调用上游失败，→502）。
  *

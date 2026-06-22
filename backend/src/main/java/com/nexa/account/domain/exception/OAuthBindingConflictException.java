@@ -1,5 +1,7 @@
 package com.nexa.account.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * OAuth 绑定冲突异常（领域语义）。
  *

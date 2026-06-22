@@ -3,7 +3,7 @@ package com.nexa.model.interfaces.api;
 import com.nexa.model.application.ManageVendorUseCase;
 import com.nexa.model.domain.model.Vendor;
 import com.nexa.model.domain.vo.Pagination;
-import com.nexa.model.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.model.interfaces.api.dto.VendorAdminView;
 import com.nexa.model.interfaces.api.dto.VendorListView;
 import com.nexa.model.interfaces.api.dto.VendorWriteRequest;

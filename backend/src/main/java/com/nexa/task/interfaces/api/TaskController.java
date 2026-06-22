@@ -8,7 +8,7 @@ import com.nexa.task.application.QueryTaskUseCase;
 import com.nexa.task.application.TaskPage;
 import com.nexa.task.domain.model.Task;
 import com.nexa.task.domain.vo.TaskQuery;
-import com.nexa.task.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.task.interfaces.api.dto.TaskAdminView;
 import com.nexa.task.interfaces.api.dto.TaskListData;
 import com.nexa.task.interfaces.api.dto.TaskUserView;

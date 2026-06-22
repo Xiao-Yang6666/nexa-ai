@@ -1,5 +1,7 @@
 package com.nexa.billing.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 兑换码已被使用异常（重复兑换守卫）。
  *

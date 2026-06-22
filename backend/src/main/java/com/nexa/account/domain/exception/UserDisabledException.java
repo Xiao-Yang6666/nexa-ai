@@ -1,5 +1,7 @@
 package com.nexa.account.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 账号被封禁异常。
  *

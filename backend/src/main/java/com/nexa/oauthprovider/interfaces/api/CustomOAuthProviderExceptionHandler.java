@@ -1,17 +1,13 @@
 package com.nexa.oauthprovider.interfaces.api;
 
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.oauthprovider.domain.exception.CustomOAuthProviderNotFoundException;
 import com.nexa.oauthprovider.domain.exception.InvalidCustomOAuthProviderException;
-import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
 
 /**
  * 自定义 OAuth provider 接口层全局异常处理（协议翻译：领域异常 → HTTP 状态码 + 错误信封）。
@@ -53,41 +49,5 @@ public class CustomOAuthProviderExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleNotFound(CustomOAuthProviderNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(e.getMessage()));
-    }
-
-    /**
-     * Bean Validation（body 校验）失败 → 400。
-     *
-     * @param e 校验异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
-                .collect(Collectors.joining("; "));
-        if (message.isBlank()) {
-            message = "request validation failed";
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
-    }
-
-    /**
-     * 方法级参数约束校验失败 → 400。
-     *
-     * @param e 约束校验异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConstraint(ConstraintViolationException e) {
-        String message = e.getConstraintViolations().stream()
-                .map(jakarta.validation.ConstraintViolation::getMessage)
-                .collect(Collectors.joining("; "));
-        if (message.isBlank()) {
-            message = "request validation failed";
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
     }
 }

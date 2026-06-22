@@ -2,7 +2,7 @@ package com.nexa.billing.interfaces.api;
 
 import com.nexa.billing.application.RedeemCodeUseCase;
 import com.nexa.billing.domain.vo.Quota;
-import com.nexa.billing.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.billing.interfaces.api.dto.RedeemRequest;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;

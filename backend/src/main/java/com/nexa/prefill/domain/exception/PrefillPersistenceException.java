@@ -1,5 +1,7 @@
 package com.nexa.prefill.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 预填分组持久化异常（→ 500，基础设施层 JSON 序列化/反序列化 items 失败时的领域语义包装）。
  *

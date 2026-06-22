@@ -1,5 +1,7 @@
 package com.nexa.model.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 模型/供应商元数据入参非法异常（接口层映射 400）。
  *

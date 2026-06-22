@@ -1,6 +1,6 @@
 package com.nexa.shared.security.interfaces.api;
 
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.shared.security.domain.exception.AccessDeniedException;
 import com.nexa.shared.security.domain.exception.AuthenticationRequiredException;
 import com.nexa.shared.security.domain.exception.FieldEncryptionException;

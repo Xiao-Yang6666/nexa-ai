@@ -3,7 +3,7 @@ package com.nexa.telegram.interfaces.api;
 import com.nexa.telegram.domain.exception.InvalidTelegramAuthException;
 import com.nexa.telegram.domain.exception.TelegramBindingConflictException;
 import com.nexa.telegram.domain.exception.TelegramUserNotFoundException;
-import com.nexa.telegram.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

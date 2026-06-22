@@ -1,5 +1,7 @@
 package com.nexa.channel.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 供应商成本配置不存在异常（接口层映射 404，F-6006）。
  *

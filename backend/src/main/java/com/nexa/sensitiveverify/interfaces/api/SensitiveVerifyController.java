@@ -2,7 +2,7 @@ package com.nexa.sensitiveverify.interfaces.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.sensitiveverify.application.VerifySensitiveActionCommand;
 import com.nexa.sensitiveverify.application.VerifySensitiveActionUseCase;
 import com.nexa.sensitiveverify.domain.exception.InvalidVerificationRequestException;

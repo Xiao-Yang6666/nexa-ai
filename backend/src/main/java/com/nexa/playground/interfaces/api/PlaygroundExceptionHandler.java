@@ -4,7 +4,6 @@ import com.nexa.playground.domain.exception.DomainException;
 import com.nexa.playground.domain.exception.InvalidPlaygroundRequestException;
 import com.nexa.playground.domain.exception.PlaygroundAccessDeniedException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -39,15 +38,6 @@ public class PlaygroundExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleInvalid(InvalidPlaygroundRequestException e) {
         return toError(400, "invalid_request_error", e.getMessage(), e.code());
     }
-
-    /**
-     * Spring 反序列化失败（请求体非法 JSON）→ 400。
-     */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleNotReadable(HttpMessageNotReadableException e) {
-        return toError(400, "invalid_request_error", "invalid request body", "PLAYGROUND_INVALID_REQUEST");
-    }
-
     /**
      * 其余 Playground 领域异常 → 按其建议状态码翻译。
      */

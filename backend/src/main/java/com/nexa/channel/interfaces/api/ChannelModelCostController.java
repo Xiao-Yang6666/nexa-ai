@@ -3,7 +3,7 @@ package com.nexa.channel.interfaces.api;
 import com.nexa.channel.application.ManageChannelModelCostUseCase;
 import com.nexa.channel.domain.model.ChannelModelCost;
 import com.nexa.channel.domain.vo.Pagination;
-import com.nexa.channel.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.channel.interfaces.api.dto.ChannelModelCostAdminView;
 import com.nexa.channel.interfaces.api.dto.ChannelModelCostListView;
 import com.nexa.channel.interfaces.api.dto.ChannelModelCostWriteRequest;

@@ -1,7 +1,7 @@
 package com.nexa.channel.interfaces.api;
 
 import com.nexa.channel.application.QueryChannelPoolUseCase;
-import com.nexa.channel.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.channel.interfaces.api.dto.ChannelPoolListView;
 import com.nexa.channel.interfaces.api.dto.ChannelPoolMember;
 import com.nexa.shared.security.domain.rbac.AuthLevel;

@@ -1,5 +1,7 @@
 package com.nexa.account.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 用户名已存在异常。
  *

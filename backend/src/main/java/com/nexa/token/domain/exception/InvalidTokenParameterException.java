@@ -1,5 +1,7 @@
 package com.nexa.token.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 令牌入参非法异常（→ 400）。
  *

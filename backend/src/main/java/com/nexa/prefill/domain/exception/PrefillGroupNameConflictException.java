@@ -1,5 +1,7 @@
 package com.nexa.prefill.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 预填分组名称冲突异常（→ 409，对齐 openapi {@code POST/PUT /api/prefill_group} 的
  * 「同 type 下 name 冲突 / 新 name 与同 type 他组冲突 → prefill group name conflict」）。

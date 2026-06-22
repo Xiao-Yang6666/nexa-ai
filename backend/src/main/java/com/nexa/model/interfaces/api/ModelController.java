@@ -8,7 +8,7 @@ import com.nexa.model.application.SearchModelMetasUseCase;
 import com.nexa.model.application.SyncUpstreamModelsUseCase;
 import com.nexa.model.application.UpdateModelMetaUseCase;
 import com.nexa.model.domain.vo.Pagination;
-import com.nexa.model.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.model.interfaces.api.dto.ModelMetaAdminView;
 import com.nexa.model.interfaces.api.dto.ModelMetaCreateRequest;
 import com.nexa.model.interfaces.api.dto.ModelMetaListView;

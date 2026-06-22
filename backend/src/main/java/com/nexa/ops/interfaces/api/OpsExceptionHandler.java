@@ -1,7 +1,7 @@
 package com.nexa.ops.interfaces.api;
 
 import com.nexa.ops.domain.exception.DomainException;
-import com.nexa.ops.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;

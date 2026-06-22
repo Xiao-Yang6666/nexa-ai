@@ -1,5 +1,7 @@
 package com.nexa.billing.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 兑换码无效异常（不存在 / 格式非法）。
  *

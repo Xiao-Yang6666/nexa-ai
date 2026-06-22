@@ -1,5 +1,7 @@
 package com.nexa.account.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * OAuth state 校验失败异常（CSRF 防护，领域语义）。
  *

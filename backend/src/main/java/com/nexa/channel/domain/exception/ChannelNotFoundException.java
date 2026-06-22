@@ -1,5 +1,7 @@
 package com.nexa.channel.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 渠道不存在异常（按 id 操作但渠道缺失，→404）。
  *

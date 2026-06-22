@@ -6,7 +6,7 @@ import com.nexa.log.application.QuerySelfLogsUseCase;
 import com.nexa.log.domain.vo.LogQuery;
 import com.nexa.log.domain.vo.LogStat;
 import com.nexa.log.domain.vo.Pagination;
-import com.nexa.log.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.log.interfaces.api.dto.LogListView;
 import com.nexa.log.interfaces.api.dto.LogStatView;
 import com.nexa.log.interfaces.api.dto.UserLogView;

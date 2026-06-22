@@ -4,7 +4,7 @@ import com.nexa.account.application.InitWeChatAuthUseCase;
 import com.nexa.account.application.OAuthLoginResult;
 import com.nexa.account.application.WeChatLoginCommand;
 import com.nexa.account.application.WeChatLoginUseCase;
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.account.interfaces.api.dto.UserView;
 import com.nexa.account.interfaces.api.dto.WeChatAuthView;
 import com.nexa.account.interfaces.api.dto.WeChatBindRequest;

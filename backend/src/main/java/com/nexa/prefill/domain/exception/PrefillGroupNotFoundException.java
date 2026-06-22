@@ -1,5 +1,7 @@
 package com.nexa.prefill.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 预填分组不存在异常（→ 404，对齐 openapi {@code PUT/DELETE /api/prefill_group} 的
  * 「id 不存在 → prefill group not found」）。

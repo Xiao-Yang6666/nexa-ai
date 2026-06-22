@@ -6,7 +6,7 @@ import com.nexa.growth.application.TransferAffQuotaUseCase;
 import com.nexa.growth.domain.model.AffiliateAccount;
 import com.nexa.growth.interfaces.api.dto.AffTransferRequest;
 import com.nexa.growth.interfaces.api.dto.AffiliateStatsView;
-import com.nexa.growth.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;

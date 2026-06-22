@@ -2,10 +2,9 @@ package com.nexa.channel.interfaces.api;
 
 import com.nexa.channel.domain.exception.ChannelModelCostNotFoundException;
 import com.nexa.channel.domain.exception.InvalidChannelParameterException;
-import com.nexa.channel.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -47,16 +46,5 @@ public class ChannelCostPoolExceptionHandler {
     @ExceptionHandler(ChannelModelCostNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleCostNotFound(ChannelModelCostNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-    }
-
-    /**
-     * 请求体不可读（非法 JSON）→ 400。
-     *
-     * @param e 反序列化异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("invalid request body"));
     }
 }

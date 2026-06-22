@@ -1,6 +1,6 @@
 package com.nexa.sensitiveverify.interfaces.api;
 
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.sensitiveverify.domain.exception.InvalidVerificationRequestException;
 import com.nexa.sensitiveverify.domain.exception.SensitiveActionVerificationFailedException;
 import org.springframework.http.HttpStatus;

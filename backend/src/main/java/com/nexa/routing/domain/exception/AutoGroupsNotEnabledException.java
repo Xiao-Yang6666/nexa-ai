@@ -1,5 +1,7 @@
 package com.nexa.routing.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * auto 分组未启用异常（F-2035，PRD CH-5 节点 ag_disable）。
  *

@@ -1,7 +1,7 @@
 package com.nexa.relay.interfaces.api;
 
 import com.nexa.relay.application.ManageMappingUseCase;
-import com.nexa.relay.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.relay.interfaces.api.dto.PlatformMappingRequest;
 import com.nexa.relay.interfaces.api.dto.PlatformMappingView;
 import com.nexa.relay.interfaces.api.dto.UserAliasRequest;

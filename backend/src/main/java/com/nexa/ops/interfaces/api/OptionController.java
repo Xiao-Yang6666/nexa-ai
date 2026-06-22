@@ -5,7 +5,7 @@ import com.nexa.ops.application.option.ListOptionsUseCase;
 import com.nexa.ops.application.option.UpdateOptionUseCase;
 import com.nexa.ops.domain.compliance.PaymentComplianceConfirmation;
 import com.nexa.ops.domain.option.Option;
-import com.nexa.ops.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.ops.interfaces.api.dto.OptionUpdateRequest;
 import com.nexa.ops.interfaces.api.dto.OptionView;
 import com.nexa.ops.interfaces.api.dto.PaymentComplianceRequest;

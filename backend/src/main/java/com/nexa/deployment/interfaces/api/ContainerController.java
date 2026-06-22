@@ -6,7 +6,7 @@ import com.nexa.deployment.application.ListContainersUseCase;
 import com.nexa.deployment.domain.vo.ContainerId;
 import com.nexa.deployment.domain.vo.DeploymentId;
 import com.nexa.deployment.domain.vo.LogQuery;
-import com.nexa.deployment.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.deployment.interfaces.api.dto.ContainerListView;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

@@ -1,5 +1,7 @@
 package com.nexa.token.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 令牌不存在异常（→ 404）。
  *

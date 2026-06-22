@@ -1,7 +1,7 @@
 package com.nexa.compliance.interfaces.api;
 
 import com.nexa.account.domain.exception.UserNotFoundException;
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.compliance.domain.exception.ConsentRequiredException;
 import com.nexa.compliance.domain.exception.CrossBorderRoutingDeniedException;
 import com.nexa.compliance.domain.exception.InvalidRetentionPolicyException;

@@ -1,7 +1,7 @@
 package com.nexa.token.interfaces.api;
 
 import com.nexa.token.application.QueryTokenUsageUseCase;
-import com.nexa.token.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.token.interfaces.api.dto.UsageView;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;

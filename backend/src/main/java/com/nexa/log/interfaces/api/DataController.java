@@ -1,7 +1,7 @@
 package com.nexa.log.interfaces.api;
 
 import com.nexa.log.application.QueryAdminQuotaDataUseCase;
-import com.nexa.log.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.log.interfaces.api.dto.QuotaDataItemView;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;

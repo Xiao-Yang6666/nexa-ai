@@ -10,7 +10,7 @@ import com.nexa.modelgroup.application.UpdateModelGroupStatusUseCase;
 import com.nexa.modelgroup.application.UpdateModelGroupUseCase;
 import com.nexa.modelgroup.domain.exception.InvalidModelGroupParameterException;
 import com.nexa.modelgroup.domain.model.ModelGroup;
-import com.nexa.modelgroup.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.modelgroup.interfaces.api.dto.ModelGroupAccessRequest;
 import com.nexa.modelgroup.interfaces.api.dto.ModelGroupAccessView;
 import com.nexa.modelgroup.interfaces.api.dto.ModelGroupAdminView;

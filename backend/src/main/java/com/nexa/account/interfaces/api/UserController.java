@@ -8,7 +8,7 @@ import com.nexa.account.application.RegisterUserCommand;
 import com.nexa.account.application.RegisterUserUseCase;
 import com.nexa.account.application.ResetPasswordCommand;
 import com.nexa.account.application.ResetPasswordUseCase;
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.account.interfaces.api.dto.LoginRequest;
 import com.nexa.account.interfaces.api.dto.RegisterRequest;
 import com.nexa.account.interfaces.api.dto.ResetPasswordRequest;

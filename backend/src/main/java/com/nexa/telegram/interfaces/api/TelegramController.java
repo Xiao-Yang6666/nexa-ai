@@ -9,7 +9,7 @@ import com.nexa.telegram.application.TelegramBindUseCase;
 import com.nexa.telegram.application.TelegramLoginCommand;
 import com.nexa.telegram.application.TelegramLoginResult;
 import com.nexa.telegram.application.TelegramLoginUseCase;
-import com.nexa.telegram.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.telegram.interfaces.api.dto.TelegramUserView;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

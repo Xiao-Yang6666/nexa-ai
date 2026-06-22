@@ -3,6 +3,7 @@ package com.nexa.model.interfaces.api;
 import com.nexa.model.application.ManageUserModelAliasUseCase;
 import com.nexa.model.domain.model.UserModelAlias;
 import com.nexa.model.domain.vo.AliasScopeType;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.model.interfaces.api.dto.*;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;

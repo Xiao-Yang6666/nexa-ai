@@ -1,5 +1,7 @@
 package com.nexa.model.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 底仓映射不存在异常（接口层映射 404，F-6002）。
  *

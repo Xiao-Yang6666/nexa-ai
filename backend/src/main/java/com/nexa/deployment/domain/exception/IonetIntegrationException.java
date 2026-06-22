@@ -1,5 +1,7 @@
 package com.nexa.deployment.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * io.net 上游集成异常（接口层映射 502 Bad Gateway）。
  *

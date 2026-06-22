@@ -1,5 +1,7 @@
 package com.nexa.model.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 上游模型同步集成异常（接口层映射 502）。
  *

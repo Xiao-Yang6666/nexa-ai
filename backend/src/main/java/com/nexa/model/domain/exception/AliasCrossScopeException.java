@@ -1,5 +1,7 @@
 package com.nexa.model.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 跨 scope 越权写入异常（接口层映射 403，F-6003）。
  *

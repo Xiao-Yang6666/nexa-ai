@@ -3,7 +3,7 @@ package com.nexa.growth.interfaces.api;
 import com.nexa.growth.application.DailyCheckinUseCase;
 import com.nexa.growth.application.QueryCheckinStatusUseCase;
 import com.nexa.growth.domain.vo.CheckinStats;
-import com.nexa.growth.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.growth.interfaces.api.dto.CheckinResultView;
 import com.nexa.growth.interfaces.api.dto.CheckinStatusView;
 import com.nexa.shared.security.domain.rbac.AuthLevel;

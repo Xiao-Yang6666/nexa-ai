@@ -1,9 +1,8 @@
 package com.nexa.growth.interfaces.api;
 
 import com.nexa.growth.domain.exception.DomainException;
-import com.nexa.growth.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -48,16 +47,5 @@ public class GrowthExceptionHandler {
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ApiResponse<Void>> handleDomain(DomainException e) {
         return ResponseEntity.status(e.httpStatus()).body(ApiResponse.error(e.getMessage()));
-    }
-
-    /**
-     * 请求体不可读（非法 JSON）→ 400（如 {@code POST /api/user/self/aff_transfer} 体反序列化失败）。
-     *
-     * @param e 反序列化异常
-     * @return 400 错误信封（稳定提示，不回显解析细节）
-     */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException e) {
-        return ResponseEntity.badRequest().body(ApiResponse.error("invalid request body"));
     }
 }

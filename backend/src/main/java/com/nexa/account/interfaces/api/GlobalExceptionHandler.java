@@ -1,5 +1,7 @@
 package com.nexa.account.interfaces.api;
 
+import com.nexa.shared.kernel.DomainException;
+
 import com.nexa.account.domain.exception.InvalidCredentialException;
 import com.nexa.account.domain.exception.InvalidOAuthStateException;
 import com.nexa.account.domain.exception.InvalidResetTokenException;
@@ -11,23 +13,21 @@ import com.nexa.account.domain.exception.UserAlreadyExistsException;
 import com.nexa.account.domain.exception.UserDisabledException;
 import com.nexa.account.domain.exception.UserNotFoundException;
 import com.nexa.account.domain.exception.VerificationCodeException;
-import com.nexa.account.interfaces.api.dto.ApiResponse;
-import jakarta.validation.ConstraintViolationException;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
-
 /**
- * 账号接口层全局异常处理（协议翻译：领域异常 → HTTP 状态码 + 错误信封）。
+ * 账号接口层异常处理（协议翻译：账号域<b>领域异常</b> → HTTP 状态码 + 错误信封）。
  *
  * <p>DDD 铁律：领域抛业务语义异常（{@code DomainException} 子类，携带稳定 code），接口层在此
  * 集中翻译为 openapi {@code ErrorResponse}（{@code {success:false, message}}）+ 合适的 HTTP 状态码。
  * 用例/控制器因此不写 try/catch 模板代码（backend-engineer §3.2 错误用明确类型而非散落处理）。</p>
+ *
+ * <p>仅保留账号域<b>领域异常</b>映射；协议级异常（Bean Validation / 约束校验 / 非法 JSON / 兜底 500）
+ * 已上提到全局 {@code com.nexa.shared.web.GlobalApiExceptionHandler} 统一处理，不再在各模块重复。</p>
  *
  * <p>状态码映射（对齐 openapi：账号注册/登录失败均归 400 BadRequestError，封禁归 403）：
  * <ul>
@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  *   <li>{@link InvalidResetTokenException} → 400（重置令牌无效/过期，F-1007）</li>
  *   <li>{@link RoleHierarchyViolationException} → 403（管理端角色越权，F-1009~1012，AC-10）</li>
  *   <li>{@link UserNotFoundException} → 404（管理端按 id 定位目标用户失败，F-1010/1011）</li>
- *   <li>Bean Validation 失败 → 400</li>
  * </ul>
  * 错误 message 透传领域 message（已设计为不泄露可枚举信息）。</p>
  */
@@ -96,27 +95,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(e.getMessage()));
     }
-
-    /**
-     * Bean Validation 协议级校验失败 → 400。
-     *
-     * <p>把字段级错误聚合成可读 message；不暴露内部细节。</p>
-     *
-     * @param e 校验异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
-                .collect(Collectors.joining("; "));
-        if (message.isBlank()) {
-            message = "request validation failed";
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
-    }
-
     /**
      * 邮箱验证码错误/过期 → 400（F-1005）。
      *
@@ -140,28 +118,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(e.getMessage()));
     }
-
-    /**
-     * 方法级参数约束校验失败（如 query 参数 {@code @NotBlank}）→ 400。
-     *
-     * <p>{@code @RequestParam} 上的约束注解由 {@code @Validated} 触发，失败抛
-     * {@link ConstraintViolationException}（区别于 body 校验的 {@link MethodArgumentNotValidException}）。</p>
-     *
-     * @param e 约束校验异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException e) {
-        String message = e.getConstraintViolations().stream()
-                .map(jakarta.validation.ConstraintViolation::getMessage)
-                .collect(Collectors.joining("; "));
-        if (message.isBlank()) {
-            message = "request validation failed";
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(message));
-    }
-
     /**
      * 管理端角色越权护栏违反 → 403（F-1009~1012，对齐 openapi {@code ForbiddenError}）。
      *

@@ -1,5 +1,7 @@
 package com.nexa.channel.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 渠道入参非法异常（缺失必填/越界/格式错误，→400）。
  *

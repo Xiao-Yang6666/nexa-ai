@@ -1,15 +1,14 @@
 package com.nexa.modelgroup.interfaces.api;
 
-import com.nexa.modelgroup.domain.exception.DomainException;
+import com.nexa.shared.kernel.DomainException;
 import com.nexa.modelgroup.domain.exception.InvalidModelGroupParameterException;
 import com.nexa.modelgroup.domain.exception.ModelGroupCodeConflictException;
 import com.nexa.modelgroup.domain.exception.ModelGroupCodeNotFoundException;
 import com.nexa.modelgroup.domain.exception.ModelGroupNotFoundException;
 import com.nexa.modelgroup.domain.exception.ModelGroupPersistenceException;
-import com.nexa.modelgroup.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -102,17 +101,5 @@ public class ModelGroupExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDomain(DomainException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(e.getMessage()));
-    }
-
-    /**
-     * 请求体不可读（非法 JSON）→ 400。
-     *
-     * @param e 反序列化异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("invalid request body"));
     }
 }

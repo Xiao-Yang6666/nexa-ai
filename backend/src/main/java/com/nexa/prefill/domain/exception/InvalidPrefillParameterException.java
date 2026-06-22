@@ -1,5 +1,7 @@
 package com.nexa.prefill.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 预填分组参数非法异常（→ 400，对齐 openapi {@code POST /api/prefill_group} 的
  * 「name/type required」与 {@code GET} 的「type 非法枚举 → 400 invalid type」）。

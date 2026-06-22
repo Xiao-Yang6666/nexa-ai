@@ -2,7 +2,7 @@ package com.nexa.log.interfaces.api;
 
 import com.nexa.log.application.QueryLogsByTokenUseCase;
 import com.nexa.log.application.port.TokenIdResolver;
-import com.nexa.log.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.log.interfaces.api.dto.LogListView;
 import com.nexa.log.interfaces.api.dto.UserLogView;
 import jakarta.servlet.http.HttpServletRequest;

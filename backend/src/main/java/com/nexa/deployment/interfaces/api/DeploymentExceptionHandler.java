@@ -1,12 +1,13 @@
 package com.nexa.deployment.interfaces.api;
 
+import com.nexa.shared.kernel.DomainException;
+
 import com.nexa.deployment.domain.exception.DeploymentNameUnavailableException;
 import com.nexa.deployment.domain.exception.InvalidDeploymentParameterException;
 import com.nexa.deployment.domain.exception.IonetIntegrationException;
-import com.nexa.deployment.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -74,17 +75,5 @@ public class DeploymentExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIntegration(IonetIntegrationException e) {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(ApiResponse.error(e.getMessage()));
-    }
-
-    /**
-     * 请求体不可读（非法 JSON）→ 400（对齐契约「请求体非法→绑定错误」，F-3052）。
-     *
-     * @param e 反序列化异常
-     * @return 400 错误信封
-     */
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotReadable(HttpMessageNotReadableException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("invalid request body"));
     }
 }

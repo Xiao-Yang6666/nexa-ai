@@ -5,7 +5,7 @@ import com.nexa.prefill.application.DeletePrefillGroupUseCase;
 import com.nexa.prefill.application.ListPrefillGroupsUseCase;
 import com.nexa.prefill.application.UpdatePrefillGroupUseCase;
 import com.nexa.prefill.domain.model.PrefillGroup;
-import com.nexa.prefill.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.prefill.interfaces.api.dto.PrefillGroupAdminView;
 import com.nexa.prefill.interfaces.api.dto.PrefillGroupCreateRequest;
 import com.nexa.prefill.interfaces.api.dto.PrefillGroupUpdateRequest;

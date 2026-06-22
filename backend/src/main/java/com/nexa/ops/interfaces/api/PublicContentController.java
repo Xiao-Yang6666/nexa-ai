@@ -1,7 +1,7 @@
 package com.nexa.ops.interfaces.api;
 
 import com.nexa.ops.application.option.GetPublicContentUseCase;
-import com.nexa.ops.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 

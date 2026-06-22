@@ -9,7 +9,7 @@ import com.nexa.token.application.RevealTokenKeyUseCase;
 import com.nexa.token.application.SearchTokensUseCase;
 import com.nexa.token.application.UpdateTokenUseCase;
 import com.nexa.token.domain.vo.Pagination;
-import com.nexa.token.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.token.interfaces.api.dto.BatchIdsRequest;
 import com.nexa.token.interfaces.api.dto.TokenCreateRequest;
 import com.nexa.token.interfaces.api.dto.TokenListView;

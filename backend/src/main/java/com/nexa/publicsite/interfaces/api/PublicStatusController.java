@@ -1,7 +1,7 @@
 package com.nexa.publicsite.interfaces.api;
 
 import com.nexa.publicsite.application.QuerySiteStatusUseCase;
-import com.nexa.publicsite.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.publicsite.interfaces.api.dto.StatusAggregateView;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

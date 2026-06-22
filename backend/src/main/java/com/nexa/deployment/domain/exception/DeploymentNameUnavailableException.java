@@ -1,5 +1,7 @@
 package com.nexa.deployment.domain.exception;
 
+import com.nexa.shared.kernel.DomainException;
+
 /**
  * 部署名称不可用异常（接口层映射 409 Conflict，F-3046）。
  *

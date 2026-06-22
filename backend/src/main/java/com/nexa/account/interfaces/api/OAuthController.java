@@ -6,7 +6,7 @@ import com.nexa.account.application.OAuthLoginCommand;
 import com.nexa.account.application.OAuthLoginResult;
 import com.nexa.account.application.OAuthLoginUseCase;
 import com.nexa.account.domain.vo.OAuthProvider;
-import com.nexa.account.interfaces.api.dto.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.account.interfaces.api.dto.UserView;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
