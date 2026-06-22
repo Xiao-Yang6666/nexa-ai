@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import {
   useCheckinStatus,
   useCheckinMutation,
@@ -63,7 +63,7 @@ export function CheckinPage() {
   );
 
   return (
-    <ConsoleShell activeId="checkin" title="每日签到" crumb={['控制台', '每日签到']} actions={actions}>
+    <AppShell activeId="checkin" title="每日签到" crumb={['控制台', '每日签到']} actions={actions}>
       {isLoading ? (
         <section className={styles.hero}>
           <div className={styles.skeleton} />
@@ -268,6 +268,6 @@ export function CheckinPage() {
           </section>
         </>
       )}
-    </ConsoleShell>
+    </AppShell>
   );
 }

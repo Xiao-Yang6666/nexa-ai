@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useKpi, TREND_30D, MODEL_DIST, LATENCY_BY_MODEL } from '../model/dashboard.model';
 import styles from './DashboardPage.module.css';
 
@@ -143,7 +143,7 @@ export function DashboardPage() {
   const kpi = useKpi();
 
   return (
-    <ConsoleShell activeId="dashboard" title="仪表盘" crumb={['控制台', '仪表盘']}>
+    <AppShell activeId="dashboard" title="仪表盘" crumb={['控制台', '仪表盘']}>
       {/* KPI 顶行 */}
       <section className={styles.kpiRow}>
         <div className={`${styles.kpi} nx-fade`}>
@@ -257,6 +257,6 @@ export function DashboardPage() {
           </table>
         </div>
       </section>
-    </ConsoleShell>
+    </AppShell>
   );
 }

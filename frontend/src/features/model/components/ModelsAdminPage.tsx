@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
 import {
@@ -339,7 +339,7 @@ export function ModelsAdminPage() {
 
 
   return (
-    <AdminShell
+    <AppShell
       activeId="models"
       title="模型/供应商"
       crumb={['管理后台', '资源管理', '模型/供应商']}
@@ -792,6 +792,6 @@ export function ModelsAdminPage() {
           </div>
         </div>
       </div>
-    </AdminShell>
+    </AppShell>
   );
 }

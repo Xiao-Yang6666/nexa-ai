@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import {
   useTokens,
   useCreateToken,
@@ -420,7 +420,7 @@ export function KeysPage() {
   );
 
   return (
-    <ConsoleShell activeId="keys" title="API 密钥" crumb={['控制台', 'API 密钥']} actions={actions}>
+    <AppShell activeId="keys" title="API 密钥" crumb={['控制台', 'API 密钥']} actions={actions}>
       {/* 闭环导航：API 密钥 ↔ 模型映射 ↔ 分组 */}
       <div className={`${styles.loopnav} nx-fade`}>
         <a className={styles.cur} aria-current="page">
@@ -552,6 +552,6 @@ export function KeysPage() {
           </div>
         </div>
       ) : null}
-    </ConsoleShell>
+    </AppShell>
   );
 }

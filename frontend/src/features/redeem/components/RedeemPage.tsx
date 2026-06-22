@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
 import {
@@ -198,7 +198,7 @@ export function RedeemPage() {
   const generating = genMutation.isPending;
 
   return (
-    <AdminShell activeId="redeem" title="兑换码管理" crumb={['管理后台', '运营', '兑换码']}>
+    <AppShell activeId="redeem" title="兑换码管理" crumb={['管理后台', '运营', '兑换码']}>
       {/* 顶部生成卡 */}
       <section className={styles.genGrid}>
         {/* 单个生成 */}
@@ -428,6 +428,6 @@ export function RedeemPage() {
           </div>
         </div>
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }
