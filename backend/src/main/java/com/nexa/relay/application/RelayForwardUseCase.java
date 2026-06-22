@@ -18,6 +18,7 @@ import com.nexa.relay.domain.ir.ChatIR;
 import com.nexa.relay.domain.ir.ChatRespIR;
 import com.nexa.relay.domain.ir.UsageIR;
 import com.nexa.relay.domain.model.RelayLog;
+import com.nexa.relay.domain.port.ModelGroupPricingPort;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
 import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.port.UpstreamResponse;
@@ -66,6 +67,7 @@ public class RelayForwardUseCase {
     private final PublicModelRepository publicModelRepo;
     private final ChannelModelCostRepository channelModelCostRepo;
     private final UserQuotaAccount userQuotaAccount;
+    private final ModelGroupPricingPort modelGroupPricingPort;
 
     public RelayForwardUseCase(PlatformModelMappingRepository l2Repo,
                                UserModelAliasRepository l1Repo,
@@ -77,7 +79,8 @@ public class RelayForwardUseCase {
                                SelectRelayChannelUseCase selectRelayChannelUseCase,
                                PublicModelRepository publicModelRepo,
                                ChannelModelCostRepository channelModelCostRepo,
-                               UserQuotaAccount userQuotaAccount) {
+                               UserQuotaAccount userQuotaAccount,
+                               ModelGroupPricingPort modelGroupPricingPort) {
         this.l2Repo = l2Repo;
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
@@ -89,6 +92,7 @@ public class RelayForwardUseCase {
         this.publicModelRepo = publicModelRepo;
         this.channelModelCostRepo = channelModelCostRepo;
         this.userQuotaAccount = userQuotaAccount;
+        this.modelGroupPricingPort = modelGroupPricingPort;
     }
 
     /**
@@ -624,14 +628,18 @@ public class RelayForwardUseCase {
     }
 
     /**
-     * 取分组折扣系数（BL-8 纯折扣，GetGroupRatio(UsingGroup)）。
+     * 取分组售价倍率（REQ-05 计费，灵活模型组：售价倍率取选中模型组的 {@code basePriceRatio}）。
      *
-     * <p>TODO REQ-05 完整：分组折扣应读 {@code group_ratio} KV（BILLING-MODEL-ARCHITECTURE §3，
-     * free=1.0/vip=0.85/svip=0.7，后台可配）。中央 GroupRatio 注册中心尚未在本服务落地（见 REQ-13），
-     * 本期统一回落 1.0（free 基础折扣口径），售价 = BasePriceRatio(A) × 1.0 × tokens。</p>
+     * <p>取调用方分组 code 对应模型组的模型组级倍率（{@link ModelGroupPricingPort}）替代原 GroupRatio
+     * 折扣位：售价 = {@code BasePriceRatio(A) × 模型组倍率 × tokens}。模型组未配置/禁用/已软删时回落
+     * {@code 1.0}（保持旧行为、不阻断计费）。这样管理员可对不同模型组设不同倍率售卖，而非把折扣写死在
+     * 用户等级上。端口为 {@code null}（防御性，理论上 Spring 必注入）时同样回落 1.0。</p>
      */
     private BigDecimal resolveGroupRatio(String group) {
-        return BigDecimal.ONE;
+        if (modelGroupPricingPort == null) {
+            return BigDecimal.ONE;
+        }
+        return modelGroupPricingPort.priceRatioOf(group).orElse(BigDecimal.ONE);
     }
 
     /**
