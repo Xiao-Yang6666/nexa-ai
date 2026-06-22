@@ -52,6 +52,21 @@ spring:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
 
+  # --- Redis：鉴权结果缓存（T12/CR-05，/v1/* 转发查 key 有效性/归属的热点缓存）后端 ---
+  # host/port 由环境变量注入，默认 localhost:6379。Lettuce 惰性连接——Redis 暂不可用不阻断启动；
+  # 运行期连不上时由 CacheErrorHandler 降级直查 DB（见 AuthCacheConfig），鉴权命脉不挂。
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      connect-timeout: 2000ms
+
+  # --- 缓存：Redis 承载，注解式 @Cacheable/@CacheEvict（TTL/容错见 AuthCacheConfig） ---
+  cache:
+    type: ${CACHE_TYPE:redis}
+
 # --- 账号系统设置（ConfigAccountSettings 绑定，PRD §15 / AC-1 R13） ---
 account:
   register-enabled: true

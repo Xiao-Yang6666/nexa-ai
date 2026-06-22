@@ -24,6 +24,9 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: non_null
+  # 集成测试环境无 Redis：关缓存（NoOp CacheManager），@Cacheable/@CacheEvict 退化为直查，不连 Redis。
+  cache:
+    type: none
   threads:
     virtual:
       enabled: true

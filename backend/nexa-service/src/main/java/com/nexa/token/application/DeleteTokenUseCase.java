@@ -39,5 +39,7 @@ public class DeleteTokenUseCase {
             throw new TokenAccessDeniedException(id);
         }
         tokenRepository.softDeleteById(id);
+        // 写穿失效：删除后立即清鉴权缓存，被删 token 不再因缓存命中而通过 /v1/* 鉴权（T12/CR-05）。
+        tokenRepository.evictAuthCache(token.key());
     }
 }

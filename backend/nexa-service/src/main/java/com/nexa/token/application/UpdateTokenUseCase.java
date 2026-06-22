@@ -57,6 +57,9 @@ public class UpdateTokenUseCase {
                     command.crossGroupRetry(),
                     command.endpointLimits());
         }
-        return tokenRepository.save(token);
+        Token saved = tokenRepository.save(token);
+        // 写穿失效：禁用立即生效；编辑（额度/过期/分组）也清缓存避免 /v1/* 鉴权读到旧值（T12/CR-05）。
+        tokenRepository.evictAuthCache(saved.key());
+        return saved;
     }
 }

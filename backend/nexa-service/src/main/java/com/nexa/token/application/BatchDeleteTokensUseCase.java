@@ -1,5 +1,6 @@
 package com.nexa.token.application;
 
+import com.nexa.token.domain.model.Token;
 import com.nexa.token.domain.repository.TokenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,12 @@ public class BatchDeleteTokensUseCase {
         if (ids == null || ids.isEmpty()) {
             return 0;
         }
-        return tokenRepository.softDeleteByUserAndIds(actorUserId, ids);
+        // 删除前按 self-scope 加载命中令牌的 key，删后据此逐个写穿失效鉴权缓存（T12/CR-05）。
+        List<Token> targets = tokenRepository.findByUserAndIds(actorUserId, ids);
+        int deleted = tokenRepository.softDeleteByUserAndIds(actorUserId, ids);
+        for (Token token : targets) {
+            tokenRepository.evictAuthCache(token.key());
+        }
+        return deleted;
     }
 }

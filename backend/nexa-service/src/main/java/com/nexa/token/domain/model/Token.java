@@ -6,6 +6,7 @@ import com.nexa.token.domain.vo.TokenStatus;
 import com.nexa.token.domain.vo.UsageSummary;
 
 import java.security.SecureRandom;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
@@ -35,7 +36,10 @@ import java.util.Objects;
  * 「减法约束」（模型全开背景）；{@code endpointLimits} 在 TokenAuth 后、L1 前校验，纯减法自我约束，
  * 非权限闸门。本聚合只负责字段合法与状态迁移，运行期减法校验属转发链路职责（超出本片范围）。</p>
  */
-public class Token {
+public class Token implements Serializable {
+
+    /** Redis 鉴权缓存以 JDK 序列化承载本聚合（T12/CR-05），声明序列化版本号。 */
+    private static final long serialVersionUID = 1L;
 
     /** name 最大长度，对齐 DB-SCHEMA §2 校验 {@code MsgTokenNameTooLong}（≤50）。 */
     public static final int NAME_MAX_LENGTH = 50;
