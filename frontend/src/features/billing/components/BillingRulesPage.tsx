@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { ApiError } from '@/shared/api';
 import { useBillingRatios, type RatioKind, type RatioRowVM, type RatioBin } from '../model/ratio.model';
 import styles from './BillingRulesPage.module.css';
@@ -130,7 +130,7 @@ export function BillingRulesPage() {
   );
 
   return (
-    <AdminShell
+    <AppShell
       activeId="billing-rules"
       title="计费规则"
       crumb={['管理后台', '运营', '计费规则']}
@@ -257,6 +257,6 @@ export function BillingRulesPage() {
         </div>
         <RatioDistChart bins={bins} />
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }

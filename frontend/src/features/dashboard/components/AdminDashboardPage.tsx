@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { ApiError } from '@/shared/api';
 import {
   useAdminDashboard,
@@ -161,17 +161,17 @@ export function AdminDashboardPage() {
 
   if (isError) {
     return (
-      <AdminShell activeId="admin-dashboard" title="全局概览" crumb={['管理后台', '全局概览']}>
+      <AppShell activeId="admin-dashboard" title="全局概览" crumb={['管理后台', '全局概览']}>
         <section className={styles.errorBox}>
           加载概览失败：{error instanceof ApiError ? error.message : '请稍后重试'}
           {error instanceof ApiError && error.status === 403 ? '（需管理员权限）' : ''}
         </section>
-      </AdminShell>
+      </AppShell>
     );
   }
 
   return (
-    <AdminShell activeId="admin-dashboard" title="全局概览" crumb={['管理后台', '全局概览']}>
+    <AppShell activeId="admin-dashboard" title="全局概览" crumb={['管理后台', '全局概览']}>
       {/* KPI 顶行 */}
       <section className={styles.kpiRow}>
         {isLoading
@@ -259,6 +259,6 @@ export function AdminDashboardPage() {
           </div>
         </div>
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }

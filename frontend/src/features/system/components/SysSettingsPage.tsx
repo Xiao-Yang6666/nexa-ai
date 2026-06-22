@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import styles from './SysSettingsPage.module.css';
 
@@ -109,7 +109,7 @@ export function SysSettingsPage() {
   };
 
   return (
-    <AdminShell
+    <AppShell
       activeId="sys"
       title="系统设置"
       crumb={['管理后台', '系统', '系统设置']}
@@ -332,6 +332,6 @@ export function SysSettingsPage() {
           </div>
         </div>
       </div>
-    </AdminShell>
+    </AppShell>
   );
 }
