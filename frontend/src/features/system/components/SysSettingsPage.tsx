@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
+import { ApiError } from '@/shared/api';
+import { useSaveOption, useSysSettings, usdToQuotaStr } from '../model/system.model';
 import styles from './SysSettingsPage.module.css';
 
 /* ── 内联 SVG 图标 ── */
@@ -82,7 +84,21 @@ const TABS: { id: PaneId; icon: keyof typeof IC; label: string }[] = [
 ];
 
 /* ── 开关行组件 ── */
-function SwRow({ title, desc, defaultOn }: { title: string; desc: string; defaultOn?: boolean }) {
+function SwRow({
+  title,
+  desc,
+  defaultOn,
+  checked,
+  onChange,
+}: {
+  title: string;
+  desc: string;
+  defaultOn?: boolean;
+  /** 受控值（绑定真实选项时传入） */
+  checked?: boolean;
+  onChange?: (v: boolean) => void;
+}) {
+  const controlled = checked !== undefined;
   return (
     <div className={styles.swRow}>
       <div className={styles.swInfo}>
@@ -90,7 +106,11 @@ function SwRow({ title, desc, defaultOn }: { title: string; desc: string; defaul
         <div className={styles.d}>{desc}</div>
       </div>
       <label className="switch">
-        <input type="checkbox" defaultChecked={defaultOn} />
+        {controlled ? (
+          <input type="checkbox" checked={checked} onChange={(e) => onChange?.(e.target.checked)} />
+        ) : (
+          <input type="checkbox" defaultChecked={defaultOn} />
+        )}
         <span className="track" />
         <span className="thumb" />
       </label>
@@ -103,8 +123,40 @@ export function SysSettingsPage() {
   const [activePane, setActivePane] = useState<PaneId>('basic');
   const [saveHint, setSaveHint] = useState('所有改动将全站生效');
 
-  const handleSave = () => {
-    setSaveHint('设置已保存');
+  const { data, isLoading, isError, error } = useSysSettings();
+  const saveOption = useSaveOption();
+
+  // 受控表单态（仅契约可确认键），加载完成后用真实选项回填
+  const [systemName, setSystemName] = useState('');
+  const [registerEnabled, setRegisterEnabled] = useState(false);
+  const [emailVerification, setEmailVerification] = useState(false);
+  const [githubOAuth, setGithubOAuth] = useState(false);
+  const [newUserQuotaUsd, setNewUserQuotaUsd] = useState('');
+
+  useEffect(() => {
+    if (!data) return;
+    setSystemName(data.systemName);
+    setRegisterEnabled(data.registerEnabled);
+    setEmailVerification(data.emailVerification);
+    setGithubOAuth(data.githubOAuth);
+    setNewUserQuotaUsd(data.newUserQuotaUsd);
+  }, [data]);
+
+  const handleSave = async () => {
+    setSaveHint('保存中…');
+    try {
+      // 仅保存契约可确认键（逐键 PUT /api/option/）
+      await Promise.all([
+        saveOption.mutateAsync({ key: 'SystemName', value: systemName }),
+        saveOption.mutateAsync({ key: 'RegisterEnabled', value: String(registerEnabled) }),
+        saveOption.mutateAsync({ key: 'EmailVerificationEnabled', value: String(emailVerification) }),
+        saveOption.mutateAsync({ key: 'GitHubOAuthEnabled', value: String(githubOAuth) }),
+        saveOption.mutateAsync({ key: 'QuotaForNewUser', value: usdToQuotaStr(newUserQuotaUsd) }),
+      ]);
+      setSaveHint('设置已保存');
+    } catch (e) {
+      setSaveHint(e instanceof ApiError ? `保存失败：${e.message}` : '保存失败，请重试');
+    }
     setTimeout(() => setSaveHint('所有改动将全站生效'), 1600);
   };
 
@@ -122,6 +174,15 @@ export function SysSettingsPage() {
         </span>
         <span className="badge b-info" style={{ marginLeft: 'auto' }}>超管专属</span>
       </section>
+
+      {isError ? (
+        <section className={`${styles.banner} nx-fade`}>
+          <span className={styles.txt}>
+            加载系统选项失败：{error instanceof ApiError ? error.message : '请稍后重试'}
+            {error instanceof ApiError && error.status === 403 ? '（需 root 权限）' : ''}
+          </span>
+        </section>
+      ) : null}
 
       <div className={styles.layout}>
         {/* 左侧子 Tab */}
@@ -148,8 +209,14 @@ export function SysSettingsPage() {
               <p className={styles.desc}>站点对外展示的基本信息。</p>
               <div className={styles.field}>
                 <label className="field-label">站点名称</label>
-                <input className="input" defaultValue="Nexa·AI 网关" />
+                <input
+                  className="input"
+                  value={systemName}
+                  onChange={(e) => setSystemName(e.target.value)}
+                  placeholder={isLoading ? '加载中…' : 'SystemName'}
+                />
               </div>
+              {/* TODO(api-missing): 站点描述 option 键未在契约中枚举，PUT /api/option/ 逐键严格校验，不臆造键名 */}
               <div className={styles.field}>
                 <label className="field-label">站点描述</label>
                 <input className="input" defaultValue="统一多模型 API 网关与计费平台" />
@@ -177,9 +244,10 @@ export function SysSettingsPage() {
             <div className={styles.card}>
               <h3>注册与登录</h3>
               <p className={styles.desc}>控制新用户注册与登录方式。</p>
-              <SwRow title="开放注册" desc="关闭后仅管理员可创建账号" defaultOn />
-              <SwRow title="邮箱验证" desc="注册后需验证邮箱才能使用" defaultOn />
-              <SwRow title="GitHub OAuth 登录" desc="允许使用 GitHub 账号登录" defaultOn />
+              <SwRow title="开放注册" desc="关闭后仅管理员可创建账号" checked={registerEnabled} onChange={setRegisterEnabled} />
+              <SwRow title="邮箱验证" desc="注册后需验证邮箱才能使用" checked={emailVerification} onChange={setEmailVerification} />
+              <SwRow title="GitHub OAuth 登录" desc="允许使用 GitHub 账号登录" checked={githubOAuth} onChange={setGithubOAuth} />
+              {/* TODO(api-missing): 邀请码注册开关无对应已确认 option 键 */}
               <SwRow title="邀请码注册" desc="注册必须填写有效邀请码" />
             </div>
           </div>
@@ -192,8 +260,14 @@ export function SysSettingsPage() {
               <div className={styles.field2}>
                 <div className={styles.field}>
                   <label className="field-label">默认新用户额度（美元）</label>
-                  <input className="input mono-num" defaultValue="5.00" />
+                  <input
+                    className="input mono-num"
+                    value={newUserQuotaUsd}
+                    onChange={(e) => setNewUserQuotaUsd(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '5.00'}
+                  />
                 </div>
+                {/* TODO(api-missing): 计费货币 option 键未在契约中枚举 */}
                 <div className={styles.field}>
                   <label className="field-label">计费货币</label>
                   <select className="input" defaultValue="USD（美元）">
@@ -202,6 +276,7 @@ export function SysSettingsPage() {
                   </select>
                 </div>
               </div>
+              {/* TODO(api-missing): 默认 RPM/TPM 限制 option 键未在契约中枚举 */}
               <div className={styles.field2}>
                 <div className={styles.field}>
                   <label className="field-label">默认 RPM 限制</label>
@@ -217,6 +292,7 @@ export function SysSettingsPage() {
           </div>
 
           {/* 邮件与通知 */}
+          {/* TODO(api-missing): SMTP 配置（服务器/端口/账号/密码/TLS）option 键未在契约中枚举 */}
           <div className={`${styles.pane} ${activePane === 'mail' ? styles.on : ''}`}>
             <div className={styles.card}>
               <h3>SMTP 配置</h3>
@@ -253,6 +329,7 @@ export function SysSettingsPage() {
           </div>
 
           {/* 安全 */}
+          {/* TODO(api-missing): 安全策略（2FA/锁定/会话有效期/IP 白名单）option 键未在契约中枚举 */}
           <div className={`${styles.pane} ${activePane === 'security' ? styles.on : ''}`}>
             <div className={styles.card}>
               <h3>安全策略</h3>
@@ -280,6 +357,7 @@ export function SysSettingsPage() {
           </div>
 
           {/* 高级 */}
+          {/* TODO(api-missing): 高级选项（维护模式/调试日志/超时/日志保留/缓存清理/重置统计）option 键与操作端点未在契约中枚举 */}
           <div className={`${styles.pane} ${activePane === 'advanced' ? styles.on : ''}`}>
             <div className={styles.card}>
               <h3>高级选项</h3>
@@ -328,7 +406,9 @@ export function SysSettingsPage() {
             <span className={styles.hint}>{saveHint}</span>
             <span className={styles.grow} />
             <Button variant="ghost">放弃更改</Button>
-            <Button onClick={handleSave}>保存设置</Button>
+            <Button onClick={handleSave} disabled={saveOption.isPending || isLoading}>
+              {saveOption.isPending ? '保存中…' : '保存设置'}
+            </Button>
           </div>
         </div>
       </div>
