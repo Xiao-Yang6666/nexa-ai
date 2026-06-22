@@ -1,0 +1,4 @@
+id,source_role,proposal,business_value,user_impact,technical_risk,implementation_cost,dependency,contract_impact,recommended_stage,priority,decision
+S12-001,backend-lead,为nexa-common补模块边界文档与package-info,medium,low,low,low,nexa-common拆分完成,none,S8,P1,do
+S12-002,architect,增加Maven Enforcer规则禁止common反向依赖业务包,medium,low,medium,medium,当前reactor结构,none,S8,P1,do
+S12-003,backend-lead,继续收敛重复子域ExceptionHandler但保留特殊业务映射,medium,medium,medium,medium,全局异常处理已公共化,none,S8,P2,defer
