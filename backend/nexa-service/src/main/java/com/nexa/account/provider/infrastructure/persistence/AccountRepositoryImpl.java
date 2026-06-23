@@ -1,0 +1,173 @@
+package com.nexa.account.provider.infrastructure.persistence;
+
+import com.nexa.account.provider.domain.model.Account;
+import com.nexa.account.provider.domain.repository.AccountRepository;
+import com.nexa.account.provider.domain.vo.AccountGroupRef;
+import com.nexa.account.provider.domain.vo.Pagination;
+import com.nexa.account.provider.infrastructure.persistence.entity.AccountGroupJpaEntity;
+import com.nexa.account.provider.infrastructure.persistence.entity.AccountJpaEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 领域仓储 {@link AccountRepository} 的 JPA 实现（基础设施层适配器）。
+ *
+ * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link SpringDataAccountJpaRepository}
+ * + 账号-分组关联仓储 + 实体↔领域映射实现它。领域聚合 {@link Account} 与 JPA 实体分离，映射集中此处。
+ * {@code account_groups} 关联在 save 时 fan-out、delete 时 fan-in（仿 channel→abilities）。</p>
+ */
+@Repository
+public class AccountRepositoryImpl implements AccountRepository {
+
+    private final SpringDataAccountJpaRepository jpa;
+    private final SpringDataAccountGroupJpaRepository groupJpa;
+
+    /**
+     * @param jpa      账号 Spring Data JPA 仓库
+     * @param groupJpa 账号-分组关联 Spring Data JPA 仓库
+     */
+    public AccountRepositoryImpl(SpringDataAccountJpaRepository jpa,
+                                 SpringDataAccountGroupJpaRepository groupJpa) {
+        this.jpa = jpa;
+        this.groupJpa = groupJpa;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional
+    public Account save(Account account) {
+        AccountJpaEntity saved = jpa.save(toEntity(account));
+        account.assignId(saved.getId());
+        rebuildGroups(saved.getId(), account.groups());
+        return toDomain(saved, account.groups());
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<Account> findById(long id) {
+        return jpa.findById(id).map(e -> toDomain(e, loadGroups(e.getId())));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<Account> findPage(String platform, Pagination pagination) {
+        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        return jpa.findPage(normalizeFilter(platform), pageable).stream()
+                .map(e -> toDomain(e, loadGroups(e.getId())))
+                .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long count(String platform) {
+        return jpa.countFiltered(normalizeFilter(platform));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<Account> findByPlatform(String platform) {
+        return jpa.findByPlatform(platform).stream()
+                .map(e -> toDomain(e, loadGroups(e.getId())))
+                .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<Account> findSchedulable(long now) {
+        // 先按 ACTIVE 初筛（DB 索引命中），再用领域聚合 isSchedulable 终判过期/过载窗。
+        return jpa.findActive().stream()
+                .map(e -> toDomain(e, loadGroups(e.getId())))
+                .filter(a -> a.isSchedulable(now))
+                .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional
+    public void deleteById(long id) {
+        // fan-in：清掉该账号的分组关联（不依赖 DB CASCADE）。
+        groupJpa.deleteByAccountId(id);
+        jpa.deleteById(id);
+    }
+
+    private static String normalizeFilter(String platform) {
+        return (platform == null || platform.isBlank()) ? null : platform.trim();
+    }
+
+    // ---- 领域聚合 <-> JPA 实体映射（基础设施层内部，领域不可见） ----
+
+    private AccountJpaEntity toEntity(Account a) {
+        AccountJpaEntity e = new AccountJpaEntity();
+        e.setId(a.id());
+        e.setName(a.name());
+        e.setPlatform(a.platform());
+        e.setType(a.type());
+        // credentials jsonb 非空：领域可空 → 落库空 JSON 对象。
+        e.setCredentials(a.credentials() == null ? "{}" : a.credentials());
+        e.setConcurrency(a.concurrency());
+        e.setPriority(a.priority());
+        e.setStatus(a.status().code());
+        e.setRateLimitedAt(a.rateLimitedAt());
+        e.setRateLimitResetAt(a.rateLimitResetAt());
+        e.setOverloadUntil(a.overloadUntil());
+        e.setExpiresAt(a.expiresAt());
+        e.setAutoPauseOnExpired(a.autoPauseOnExpired());
+        e.setCreatedAt(a.createdTime());
+        e.setUpdatedAt(a.updatedTime());
+        return e;
+    }
+
+    private Account toDomain(AccountJpaEntity e, List<AccountGroupRef> groups) {
+        return Account.rehydrate(
+                e.getId(),
+                e.getName(),
+                e.getPlatform(),
+                e.getType(),
+                "{}".equals(e.getCredentials()) ? null : e.getCredentials(),
+                e.getConcurrency(),
+                e.getPriority(),
+                e.getStatus(),
+                e.getRateLimitedAt(),
+                e.getRateLimitResetAt(),
+                e.getOverloadUntil(),
+                e.getExpiresAt(),
+                e.isAutoPauseOnExpired(),
+                groups,
+                e.getCreatedAt(),
+                e.getUpdatedAt());
+    }
+
+    private List<AccountGroupRef> loadGroups(Long accountId) {
+        return groupJpa.findByAccountId(accountId).stream()
+                .map(g -> new AccountGroupRef(g.getGroupId(), g.getPriority()))
+                .toList();
+    }
+
+    /**
+     * 重建某账号的 account_groups 关联（save 后调用）：先按 accountId 全删，再 fan-out 插入。
+     *
+     * @param accountId 账号 id
+     * @param groups    分组关联集合
+     */
+    private void rebuildGroups(Long accountId, List<AccountGroupRef> groups) {
+        if (accountId == null) {
+            return;
+        }
+        groupJpa.deleteByAccountId(accountId);
+        if (groups == null || groups.isEmpty()) {
+            return;
+        }
+        List<AccountGroupJpaEntity> rows = new ArrayList<>(groups.size());
+        for (AccountGroupRef ref : groups) {
+            rows.add(new AccountGroupJpaEntity(accountId, ref.groupId(), ref.priority()));
+        }
+        groupJpa.saveAll(rows);
+    }
+}
