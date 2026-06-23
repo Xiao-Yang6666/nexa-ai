@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
-import { useSaveOption, useSysSettings, usdToQuotaStr } from '../model/system.model';
+import { useSaveOption, useSysSettings, usdToQuotaStr, validateSysSettings } from '../model/system.model';
 import styles from './SysSettingsPage.module.css';
 
 /* ── 内联 SVG 图标 ── */
@@ -133,6 +133,27 @@ export function SysSettingsPage() {
   const [githubOAuth, setGithubOAuth] = useState(false);
   const [newUserQuotaUsd, setNewUserQuotaUsd] = useState('');
 
+  // R3-01 系统配置面板受控态（键名契约见 system.model）
+  const [siteDescription, setSiteDescription] = useState('');
+  const [inviteOnly, setInviteOnly] = useState(false);
+  const [billingCurrency, setBillingCurrency] = useState('USD');
+  const [defaultRpm, setDefaultRpm] = useState('');
+  const [defaultTpm, setDefaultTpm] = useState('');
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('');
+  const [smtpUsername, setSmtpUsername] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  const [smtpPasswordSet, setSmtpPasswordSet] = useState(false);
+  const [smtpTls, setSmtpTls] = useState(false);
+  const [force2fa, setForce2fa] = useState(false);
+  const [lockoutThreshold, setLockoutThreshold] = useState('');
+  const [sessionTtlMinutes, setSessionTtlMinutes] = useState('');
+  const [ipWhitelist, setIpWhitelist] = useState('');
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [debugLog, setDebugLog] = useState(false);
+  const [requestTimeoutSec, setRequestTimeoutSec] = useState('');
+  const [logRetentionDays, setLogRetentionDays] = useState('');
+
   useEffect(() => {
     if (!data) return;
     setSystemName(data.systemName);
@@ -140,19 +161,98 @@ export function SysSettingsPage() {
     setEmailVerification(data.emailVerification);
     setGithubOAuth(data.githubOAuth);
     setNewUserQuotaUsd(data.newUserQuotaUsd);
+
+    setSiteDescription(data.siteDescription);
+    setInviteOnly(data.inviteOnly);
+    setBillingCurrency(data.billingCurrency);
+    setDefaultRpm(data.defaultRpm);
+    setDefaultTpm(data.defaultTpm);
+    setSmtpHost(data.smtpHost);
+    setSmtpPort(data.smtpPort);
+    setSmtpUsername(data.smtpUsername);
+    setSmtpPassword('');
+    setSmtpPasswordSet(data.smtpPasswordSet);
+    setSmtpTls(data.smtpTls);
+    setForce2fa(data.force2fa);
+    setLockoutThreshold(data.lockoutThreshold);
+    setSessionTtlMinutes(data.sessionTtlMinutes);
+    setIpWhitelist(data.ipWhitelist);
+    setMaintenanceMode(data.maintenanceMode);
+    setDebugLog(data.debugLog);
+    setRequestTimeoutSec(data.requestTimeoutSec);
+    setLogRetentionDays(data.logRetentionDays);
   }, [data]);
 
   const handleSave = async () => {
+    // 前端校验（与后端 OptionRegistry 对齐），不通过则中止保存。
+    const vmErr = validateSysSettings({
+      systemName,
+      registerEnabled,
+      emailVerification,
+      githubOAuth,
+      themeFrontend: data?.themeFrontend ?? 'default',
+      newUserQuotaUsd,
+      siteDescription,
+      inviteOnly,
+      billingCurrency,
+      defaultRpm,
+      defaultTpm,
+      smtpHost,
+      smtpPort,
+      smtpUsername,
+      smtpPasswordSet,
+      smtpTls,
+      force2fa,
+      lockoutThreshold,
+      sessionTtlMinutes,
+      ipWhitelist,
+      maintenanceMode,
+      debugLog,
+      requestTimeoutSec,
+      logRetentionDays,
+    });
+    if (vmErr) {
+      setSaveHint(`保存失败：${vmErr}`);
+      setTimeout(() => setSaveHint('所有改动将全站生效'), 2400);
+      return;
+    }
+
     setSaveHint('保存中…');
     try {
-      // 仅保存契约可确认键（逐键 PUT /api/option/）
-      await Promise.all([
+      // 逐键 PUT /api/option/。空字符串数值键跳过（视为未设置，不下发脏值）。
+      const puts: Promise<unknown>[] = [
         saveOption.mutateAsync({ key: 'SystemName', value: systemName }),
         saveOption.mutateAsync({ key: 'RegisterEnabled', value: String(registerEnabled) }),
         saveOption.mutateAsync({ key: 'EmailVerificationEnabled', value: String(emailVerification) }),
         saveOption.mutateAsync({ key: 'GitHubOAuthEnabled', value: String(githubOAuth) }),
         saveOption.mutateAsync({ key: 'QuotaForNewUser', value: usdToQuotaStr(newUserQuotaUsd) }),
-      ]);
+        // R3-01 键名契约
+        saveOption.mutateAsync({ key: 'site.description', value: siteDescription }),
+        saveOption.mutateAsync({ key: 'register.invite_only', value: String(inviteOnly) }),
+        saveOption.mutateAsync({ key: 'billing.currency', value: billingCurrency }),
+        saveOption.mutateAsync({ key: 'smtp.host', value: smtpHost }),
+        saveOption.mutateAsync({ key: 'smtp.username', value: smtpUsername }),
+        saveOption.mutateAsync({ key: 'smtp.tls', value: String(smtpTls) }),
+        saveOption.mutateAsync({ key: 'security.force_2fa', value: String(force2fa) }),
+        saveOption.mutateAsync({ key: 'security.ip_whitelist', value: ipWhitelist }),
+        saveOption.mutateAsync({ key: 'advanced.maintenance_mode', value: String(maintenanceMode) }),
+        saveOption.mutateAsync({ key: 'advanced.debug_log', value: String(debugLog) }),
+      ];
+      const pushIf = (key: string, value: string) => {
+        if (value !== '') puts.push(saveOption.mutateAsync({ key, value }));
+      };
+      pushIf('ratelimit.default_rpm', defaultRpm);
+      pushIf('ratelimit.default_tpm', defaultTpm);
+      pushIf('smtp.port', smtpPort);
+      pushIf('security.lockout_threshold', lockoutThreshold);
+      pushIf('security.session_ttl_minutes', sessionTtlMinutes);
+      pushIf('advanced.request_timeout_sec', requestTimeoutSec);
+      pushIf('advanced.log_retention_days', logRetentionDays);
+      // 密码仅在用户输入了新值时下发（敏感键，读取时已被剔除，不回显明文）。
+      if (smtpPassword !== '') {
+        puts.push(saveOption.mutateAsync({ key: 'smtp.passwordSecret', value: smtpPassword }));
+      }
+      await Promise.all(puts);
       setSaveHint('设置已保存');
     } catch (e) {
       setSaveHint(e instanceof ApiError ? `保存失败：${e.message}` : '保存失败，请重试');
@@ -216,10 +316,15 @@ export function SysSettingsPage() {
                   placeholder={isLoading ? '加载中…' : 'SystemName'}
                 />
               </div>
-              {/* TODO(api-missing): 站点描述 option 键未在契约中枚举，PUT /api/option/ 逐键严格校验，不臆造键名 */}
               <div className={styles.field}>
                 <label className="field-label">站点描述</label>
-                <input className="input" defaultValue="统一多模型 API 网关与计费平台" />
+                <input
+                  className="input"
+                  value={siteDescription}
+                  maxLength={500}
+                  onChange={(e) => setSiteDescription(e.target.value)}
+                  placeholder={isLoading ? '加载中…' : '统一多模型 API 网关与计费平台'}
+                />
               </div>
               <div className={styles.field}>
                 <label className="field-label">站点 Logo</label>
@@ -247,8 +352,8 @@ export function SysSettingsPage() {
               <SwRow title="开放注册" desc="关闭后仅管理员可创建账号" checked={registerEnabled} onChange={setRegisterEnabled} />
               <SwRow title="邮箱验证" desc="注册后需验证邮箱才能使用" checked={emailVerification} onChange={setEmailVerification} />
               <SwRow title="GitHub OAuth 登录" desc="允许使用 GitHub 账号登录" checked={githubOAuth} onChange={setGithubOAuth} />
-              {/* TODO(api-missing): 邀请码注册开关无对应已确认 option 键 */}
-              <SwRow title="邀请码注册" desc="注册必须填写有效邀请码" />
+              {/* 邀请码注册开关 → register.invite_only */}
+              <SwRow title="邀请码注册" desc="注册必须填写有效邀请码" checked={inviteOnly} onChange={setInviteOnly} />
             </div>
           </div>
 
@@ -267,32 +372,45 @@ export function SysSettingsPage() {
                     placeholder={isLoading ? '加载中…' : '5.00'}
                   />
                 </div>
-                {/* TODO(api-missing): 计费货币 option 键未在契约中枚举 */}
+                {/* 计费货币 → billing.currency（白名单 CNY/USD） */}
                 <div className={styles.field}>
                   <label className="field-label">计费货币</label>
-                  <select className="input" defaultValue="USD（美元）">
-                    <option>USD（美元）</option>
-                    <option>CNY（人民币）</option>
+                  <select
+                    className="input"
+                    value={billingCurrency}
+                    onChange={(e) => setBillingCurrency(e.target.value)}
+                  >
+                    <option value="USD">USD（美元）</option>
+                    <option value="CNY">CNY（人民币）</option>
                   </select>
                 </div>
               </div>
-              {/* TODO(api-missing): 默认 RPM/TPM 限制 option 键未在契约中枚举 */}
+              {/* 默认 RPM/TPM → ratelimit.default_rpm / ratelimit.default_tpm */}
               <div className={styles.field2}>
                 <div className={styles.field}>
                   <label className="field-label">默认 RPM 限制</label>
-                  <input className="input mono-num" defaultValue="60" />
+                  <input
+                    className="input mono-num"
+                    value={defaultRpm}
+                    onChange={(e) => setDefaultRpm(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '60'}
+                  />
                 </div>
                 <div className={styles.field}>
                   <label className="field-label">默认 TPM 限制</label>
-                  <input className="input mono-num" defaultValue="40000" />
+                  <input
+                    className="input mono-num"
+                    value={defaultTpm}
+                    onChange={(e) => setDefaultTpm(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '40000'}
+                  />
                 </div>
               </div>
               <SwRow title="额度耗尽自动停用" desc="余额为零时拒绝新请求" defaultOn />
             </div>
           </div>
 
-          {/* 邮件与通知 */}
-          {/* TODO(api-missing): SMTP 配置（服务器/端口/账号/密码/TLS）option 键未在契约中枚举 */}
+          {/* 邮件与通知 → smtp.* 键名契约 */}
           <div className={`${styles.pane} ${activePane === 'mail' ? styles.on : ''}`}>
             <div className={styles.card}>
               <h3>SMTP 配置</h3>
@@ -300,80 +418,117 @@ export function SysSettingsPage() {
               <div className={styles.field2}>
                 <div className={styles.field}>
                   <label className="field-label">SMTP 服务器</label>
-                  <input className="input mono-num" defaultValue="smtp.mailgun.org" />
+                  <input
+                    className="input mono-num"
+                    value={smtpHost}
+                    onChange={(e) => setSmtpHost(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : 'smtp.mailgun.org'}
+                  />
                 </div>
                 <div className={styles.field}>
                   <label className="field-label">端口</label>
-                  <input className="input mono-num" defaultValue="587" />
+                  <input
+                    className="input mono-num"
+                    value={smtpPort}
+                    onChange={(e) => setSmtpPort(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '587'}
+                  />
                 </div>
               </div>
               <div className={styles.field2}>
                 <div className={styles.field}>
                   <label className="field-label">发件账号</label>
-                  <input className="input mono-num" defaultValue="noreply@nexa.ai" />
+                  <input
+                    className="input mono-num"
+                    value={smtpUsername}
+                    onChange={(e) => setSmtpUsername(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : 'noreply@nexa.ai'}
+                  />
                 </div>
                 <div className={styles.field}>
                   <label className="field-label">发件密码</label>
-                  <input className="input mono-num" type="password" defaultValue="************" />
+                  <input
+                    className="input mono-num"
+                    type="password"
+                    value={smtpPassword}
+                    onChange={(e) => setSmtpPassword(e.target.value)}
+                    placeholder={smtpPasswordSet ? '已设置（留空则不修改）' : '未设置'}
+                  />
                 </div>
               </div>
-              <div className={styles.field}>
-                <label className="field-label">发件人显示名</label>
-                <input className="input" defaultValue="Nexa·AI 平台" />
-              </div>
-              <SwRow title="启用 TLS" desc="使用加密连接发送邮件" defaultOn />
+              <SwRow title="启用 TLS" desc="使用加密连接发送邮件" checked={smtpTls} onChange={setSmtpTls} />
               <div className={styles.field} style={{ marginTop: 'var(--space-4)' }}>
                 <Button variant="sec" size="sm">发送测试邮件</Button>
               </div>
             </div>
           </div>
 
-          {/* 安全 */}
-          {/* TODO(api-missing): 安全策略（2FA/锁定/会话有效期/IP 白名单）option 键未在契约中枚举 */}
+          {/* 安全 → security.* 键名契约 */}
           <div className={`${styles.pane} ${activePane === 'security' ? styles.on : ''}`}>
             <div className={styles.card}>
               <h3>安全策略</h3>
               <p className={styles.desc}>账户与访问安全相关设置。</p>
-              <SwRow title="强制双因素认证（2FA）" desc="管理员账户必须启用 2FA" defaultOn />
-              <SwRow title="登录失败锁定" desc="连续失败 5 次锁定 15 分钟" defaultOn />
+              <SwRow title="强制双因素认证（2FA）" desc="管理员账户必须启用 2FA" checked={force2fa} onChange={setForce2fa} />
               <div className={styles.field2} style={{ marginTop: 'var(--space-4)' }}>
                 <div className={styles.field}>
-                  <label className="field-label">会话有效期（小时）</label>
-                  <input className="input mono-num" defaultValue="72" />
+                  <label className="field-label">账号锁定阈值（失败次数，0 = 不锁定）</label>
+                  <input
+                    className="input mono-num"
+                    value={lockoutThreshold}
+                    onChange={(e) => setLockoutThreshold(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '5'}
+                  />
                 </div>
                 <div className={styles.field}>
-                  <label className="field-label">API Key 最大数 / 用户</label>
-                  <input className="input mono-num" defaultValue="10" />
+                  <label className="field-label">会话有效期（分钟）</label>
+                  <input
+                    className="input mono-num"
+                    value={sessionTtlMinutes}
+                    onChange={(e) => setSessionTtlMinutes(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '4320'}
+                  />
                 </div>
               </div>
               <div className={styles.field}>
                 <label className="field-label">IP 白名单（管理后台访问）</label>
                 <textarea
                   className={`input mono-num ${styles.textareaTall}`}
-                  defaultValue={'10.0.0.0/8\n118.24.6.0/24'}
+                  value={ipWhitelist}
+                  onChange={(e) => setIpWhitelist(e.target.value)}
+                  placeholder={isLoading ? '加载中…' : '10.0.0.0/8,118.24.6.0/24'}
                 />
               </div>
             </div>
           </div>
 
-          {/* 高级 */}
-          {/* TODO(api-missing): 高级选项（维护模式/调试日志/超时/日志保留/缓存清理/重置统计）option 键与操作端点未在契约中枚举 */}
+          {/* 高级 → advanced.* 键名契约（缓存清理/重置统计为操作，非配置，保留 TODO） */}
           <div className={`${styles.pane} ${activePane === 'advanced' ? styles.on : ''}`}>
             <div className={styles.card}>
               <h3>高级选项</h3>
               <p className={styles.desc}>系统级运行参数，谨慎调整。</p>
-              <SwRow title="维护模式" desc="开启后仅管理员可访问，普通用户看到维护页" />
-              <SwRow title="调试日志" desc="记录详细请求日志（会增加存储占用）" />
+              <SwRow title="维护模式" desc="开启后仅管理员可访问，普通用户看到维护页" checked={maintenanceMode} onChange={setMaintenanceMode} />
+              <SwRow title="调试日志" desc="记录详细请求日志（会增加存储占用）" checked={debugLog} onChange={setDebugLog} />
               <div className={styles.field2} style={{ marginTop: 'var(--space-4)' }}>
                 <div className={styles.field}>
                   <label className="field-label">请求超时（秒）</label>
-                  <input className="input mono-num" defaultValue="120" />
+                  <input
+                    className="input mono-num"
+                    value={requestTimeoutSec}
+                    onChange={(e) => setRequestTimeoutSec(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '120'}
+                  />
                 </div>
                 <div className={styles.field}>
                   <label className="field-label">日志保留（天）</label>
-                  <input className="input mono-num" defaultValue="90" />
+                  <input
+                    className="input mono-num"
+                    value={logRetentionDays}
+                    onChange={(e) => setLogRetentionDays(e.target.value)}
+                    placeholder={isLoading ? '加载中…' : '90'}
+                  />
                 </div>
               </div>
+              {/* TODO(api-missing): 缓存清理为操作（非配置键），需专用操作端点，本轮不做 */}
               <div className={styles.field}>
                 <label className="field-label">缓存</label>
                 <Button variant="sec" size="sm">清理缓存</Button>
@@ -384,6 +539,7 @@ export function SysSettingsPage() {
             {/* 危险操作区 */}
             <div className={styles.dangerZone}>
               <h3>危险操作</h3>
+              {/* TODO(api-missing): 清空缓存 / 重置统计为操作（非配置键），需专用操作端点，本轮不做 */}
               <div className={styles.dangerItem}>
                 <div className={styles.diInfo}>
                   <div className={styles.t}>清空全部缓存</div>

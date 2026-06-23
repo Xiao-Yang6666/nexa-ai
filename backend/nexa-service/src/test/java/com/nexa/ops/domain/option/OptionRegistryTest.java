@@ -116,4 +116,114 @@ class OptionRegistryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> OptionRegistry.validate("  ", "x"));
     }
+
+    // ---- 规则 5：R3-01 系统配置面板布尔键（值须 true/false） ----
+
+    @Test
+    void booleanKeysAcceptTrueFalse() {
+        assertDoesNotThrow(() -> OptionRegistry.validate("register.invite_only", "true"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.tls", "false"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("security.force_2fa", "true"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("advanced.maintenance_mode", "false"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("advanced.debug_log", "true"));
+    }
+
+    @Test
+    void booleanKeyRejectsNonBooleanValue() {
+        InvalidOptionValueException ex = assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("register.invite_only", "maybe"));
+        assertTrue(ex.getMessage().contains("true"));
+    }
+
+    // ---- 规则 6：R3-01 非负整数键（≥0） ----
+
+    @Test
+    void nonNegativeIntKeysAcceptZeroAndPositive() {
+        assertDoesNotThrow(() -> OptionRegistry.validate("ratelimit.default_rpm", "0"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("ratelimit.default_tpm", "40000"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("security.lockout_threshold", "5"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("advanced.log_retention_days", "90"));
+    }
+
+    @Test
+    void nonNegativeIntKeyRejectsNegative() {
+        assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("ratelimit.default_rpm", "-1"));
+    }
+
+    @Test
+    void nonNegativeIntKeyRejectsNonInteger() {
+        assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("ratelimit.default_tpm", "lots"));
+    }
+
+    // ---- 规则 7：R3-01 正整数键（≥1） ----
+
+    @Test
+    void positiveIntKeysAcceptOneAndAbove() {
+        assertDoesNotThrow(() -> OptionRegistry.validate("security.session_ttl_minutes", "1"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("advanced.request_timeout_sec", "120"));
+    }
+
+    @Test
+    void positiveIntKeyRejectsZero() {
+        assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("security.session_ttl_minutes", "0"));
+    }
+
+    // ---- 规则 8：R3-01 计费货币白名单（CNY/USD） ----
+
+    @Test
+    void currencyAcceptsWhitelistedValues() {
+        assertDoesNotThrow(() -> OptionRegistry.validate("billing.currency", "CNY"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("billing.currency", "USD"));
+    }
+
+    @Test
+    void currencyRejectsUnknownValue() {
+        InvalidOptionValueException ex = assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("billing.currency", "EUR"));
+        assertTrue(ex.getMessage().contains("货币"));
+    }
+
+    // ---- 规则 9：R3-01 SMTP 端口（1-65535） ----
+
+    @Test
+    void smtpPortAcceptsValidRange() {
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.port", "587"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.port", "1"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.port", "65535"));
+    }
+
+    @Test
+    void smtpPortRejectsOutOfRange() {
+        assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("smtp.port", "0"));
+        assertThrows(InvalidOptionValueException.class,
+                () -> OptionRegistry.validate("smtp.port", "70000"));
+    }
+
+    // ---- R3-01 直通键（无强约束）：站点描述 / SMTP host / 账号 / IP 白名单 ----
+
+    @Test
+    void r301PassThroughKeysAccepted() {
+        assertDoesNotThrow(() -> OptionRegistry.validate("site.description", "统一多模型 API 网关"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.host", "smtp.mailgun.org"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.username", "noreply@nexa.ai"));
+        assertDoesNotThrow(() -> OptionRegistry.validate("security.ip_whitelist", "10.0.0.0/8,118.24.6.0/24"));
+    }
+
+    // ---- R3-01 SMTP 密码键为敏感键（键名以 Secret 结尾→GET 列表自动剔除值） ----
+
+    @Test
+    void smtpPasswordSecretKeyIsSensitive() {
+        // 复用 OptionKey.isSensitive() 后缀机制：passwordSecret 以 Secret 结尾 → 敏感。
+        assertTrue(OptionKey.of("smtp.passwordSecret").isSensitive());
+    }
+
+    @Test
+    void smtpPasswordSecretValuePassesValidation() {
+        // 敏感键本身无领域结构约束（直通），剔除发生在 GET 列表查询层。
+        assertDoesNotThrow(() -> OptionRegistry.validate("smtp.passwordSecret", "s3cr3t"));
+    }
 }
