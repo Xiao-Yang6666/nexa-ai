@@ -1,4 +1,20 @@
 id,source_role,proposal,business_value,user_impact,technical_risk,implementation_cost,dependency,contract_impact,recommended_stage,priority,decision
-S12-001,backend-lead,为nexa-common补模块边界文档与package-info,medium,low,low,low,nexa-common拆分完成,none,S8,P1,do
-S12-002,architect,增加Maven Enforcer规则禁止common反向依赖业务包,medium,low,medium,medium,当前reactor结构,none,S8,P1,do
-S12-003,backend-lead,继续收敛重复子域ExceptionHandler但保留特殊业务映射,medium,medium,medium,medium,全局异常处理已公共化,none,S8,P2,defer
+S12-R5-001,PM+架构师,付费闭环打通：/api/topup 后端控制器缺失+CreateTopUpOrderUseCase孤儿+支付网关是放行桩,用户无法真付钱,high,high,medium,high,支付网关选型(需用户拍板),api+db,S7,P0,needs_user
+S12-R5-002,架构师+后端,platform_model_mappings 双实体去重:model域(Boolean null→true)与relay域(boolean null→false)映射同一张V12表且默认值相反,会导致"管理面建了映射但中继读不到",high,high,high,medium,无,api+db,S7,P0,do
+S12-R5-003,后端,计费口径分裂:线上relay走的DualPriceBilling.compute缺÷500000+用HALF_UP,与重度测试的BillingCalculator(÷500000+FLOOR+最小计费1)差5个数量级,线上路径无金额级测试,high,high,high,medium,无,none,S8,P0,do
+S12-R5-004,PM,Playground有后端(/pg/chat/completions完整)无前端页面,转化漏斗第一站缺失,后端零成本,high,high,low,medium,无,none,S9,P1,do
+S12-R5-005,PM,仪表盘首屏趋势图/环形图/延迟图/最近调用表全是DashboardPage.tsx硬编码静态数组,付费用户看到的数字对不上自己用量,medium,high,low,medium,后端usage聚合端点,api,S8+S9,P1,do
+S12-R5-006,集成,可观测性空壳:MetricRegistry零调用/metrics永远空,DispatchAlertsUseCase零调用无@Scheduled,无Actuator无/health探活,无logback结构化日志,medium,low,medium,medium,无,nfr,S8,P1,do
+S12-R5-007,集成,生产凭证防呆:JWT_SECRET默认值进了仓库(可伪造任意用户令牌),SECURITY_ENCRYPTION_KEY默认空,DB_PASSWORD=postgres,生产启动前无防呆阻断,high,low,low,low,无,nfr,S8,P0,do
+S12-R5-008,后端,路由亲和/跨组重试死子系统:ResolveChannelRouteUseCase(CH-4粘连+CH-5容灾,配V15迁移+6测试)功能完整但转发主干调的是SelectRelayChannelUseCase(自承最小闭环),完整实现零生产收益,medium,medium,medium,medium,无,none,S8,P1,do
+S12-R5-009,后端+集成,集成测试几乎为零:539测试只有1个IT+4个MockMvc,无SpringBootTest/DataJpaTest/Testcontainers,Repository层和JdbcUserQuotaAccount(真金扣款)零真实DB验证,medium,low,medium,high,无,none,S8,P1,do
+S12-R5-010,后端+PM,relay转发前无余额闸门且debit允许欠费+流式usage缺失按0漏钱,收入泄漏风险,high,medium,medium,medium,计费口径先定(S12-R5-003),none,S8,P1,do
+S12-R5-011,PM,邮件是LoggingEmailSender桩,注册验证码/密码重置可能断,medium,medium,low,low,SMTP凭证(需用户),none,S8,P2,needs_user
+S12-R5-012,前端,删除shared/api/mock*.ts三个文件(800行,开关已关后端已就位),逼出真实接通率+清理过时"推定"注释,low,low,low,low,无,none,S9,P2,do
+S12-R5-013,架构师,RelayForwardUseCase 896行god class+forward/forwardStream重复+selectChannelPlaceholder死代码+一半依赖走port一半直连domain,边界腐蚀,medium,low,medium,medium,无,none,S8,P2,defer
+S12-R5-014,集成,前端寻址两套机制(rewrites同源 vs NEXT_PUBLIC_API_BASE直连)并存无防呆+build-time烘焙热改不生效,low,medium,low,low,无,none,S9,P2,do
+S12-R5-015,PM+后端,日志IP/UA永远落空串使idx_logs_ip索引无效+成本行缺失致利润虚高,low,low,low,low,无,none,S8,P2,do
+S12-R5-016,集成,无E2E/冒烟脚本+无Dockerfile/compose,R4-A部署验证人工不可重复,medium,low,low,medium,无,none,S10,P1,do
+S12-R5-017,架构师+PM,合规驻地源:渠道表加residency字段,需运营定怎么标境内外,medium,low,medium,medium,运营规则(需用户),db,S7,P2,needs_user
+S12-R5-018,集成,流式SSE中断被内部消化不外抛,半截流与计费一致性存疑+Redis降级查DB但Hikari池仅5抖动即满,medium,medium,medium,medium,无,none,S8,P2,defer
+S12-R5-019,前端,WebAuthn/Passkey stub状态,生产化工作量大,low,low,medium,high,无,none,S9,P3,defer
