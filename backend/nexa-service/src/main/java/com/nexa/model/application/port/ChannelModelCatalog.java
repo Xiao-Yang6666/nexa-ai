@@ -29,14 +29,4 @@ public interface ChannelModelCatalog {
      * @return channelId → models[]
      */
     Map<Long, List<String>> channelIdToModels();
-
-    /**
-     * 列出某用户分组可见的启用模型名去重集合（F-3025 用户可见模型）。
-     *
-     * <p>聚合该分组下启用渠道的 models，去重合并；返回对外模型名 A。</p>
-     *
-     * @param group 用户分组
-     * @return 该分组可见的去重模型名列表
-     */
-    List<String> visibleModelsForGroup(String group);
 }

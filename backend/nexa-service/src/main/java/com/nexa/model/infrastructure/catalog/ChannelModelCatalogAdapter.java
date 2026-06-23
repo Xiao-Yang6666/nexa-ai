@@ -58,42 +58,6 @@ public class ChannelModelCatalogAdapter implements ChannelModelCatalog {
         return result;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public List<String> visibleModelsForGroup(String group) {
-        // F-3025：聚合「该分组下启用渠道」的模型，去重合并。渠道 group 字段可为逗号分隔多分组。
-        String target = (group == null || group.isBlank()) ? "default" : group.trim();
-        Set<String> models = new LinkedHashSet<>();
-        for (Channel c : channelRepository.findAll()) {
-            if (!c.status().isEnabled()) {
-                continue; // 仅启用渠道可见。
-            }
-            if (channelServesGroup(c.group(), target)) {
-                models.addAll(splitModels(c.models()));
-            }
-        }
-        return new ArrayList<>(models);
-    }
-
-    /**
-     * 渠道 group 字段（可逗号分隔多分组）是否覆盖目标分组。
-     *
-     * @param channelGroup 渠道分组串
-     * @param target       用户分组
-     * @return 是否覆盖
-     */
-    private boolean channelServesGroup(String channelGroup, String target) {
-        if (channelGroup == null || channelGroup.isBlank()) {
-            return false;
-        }
-        for (String g : channelGroup.split(",")) {
-            if (g.trim().equals(target)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * 渠道 models 字段（逗号分隔串）拆分为去空白去空模型名列表（保序）。
      *
