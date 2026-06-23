@@ -22,8 +22,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +71,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/chat/completions")
-    public ResponseEntity<?> chatCompletions(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/chat/completions", body, actor);
+    public ResponseEntity<?> chatCompletions(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                             HttpServletResponse response) {
+        return forwardRelay("/v1/chat/completions", body, actor, response);
     }
 
     /**
@@ -78,8 +81,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/completions")
-    public ResponseEntity<?> completions(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/completions", body, actor);
+    public ResponseEntity<?> completions(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                         HttpServletResponse response) {
+        return forwardRelay("/v1/completions", body, actor, response);
     }
 
     /**
@@ -87,8 +91,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/messages")
-    public ResponseEntity<?> messages(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/messages", body, actor);
+    public ResponseEntity<?> messages(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                      HttpServletResponse response) {
+        return forwardRelay("/v1/messages", body, actor, response);
     }
 
     /**
@@ -121,8 +126,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/embeddings")
-    public ResponseEntity<?> embeddings(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/embeddings", body, actor);
+    public ResponseEntity<?> embeddings(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                        HttpServletResponse response) {
+        return forwardRelay("/v1/embeddings", body, actor, response);
     }
 
     /**
@@ -130,8 +136,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/responses/compact")
-    public ResponseEntity<?> responsesCompact(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/responses/compact", body, actor);
+    public ResponseEntity<?> responsesCompact(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                              HttpServletResponse response) {
+        return forwardRelay("/v1/responses/compact", body, actor, response);
     }
 
     /**
@@ -139,8 +146,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/responses")
-    public ResponseEntity<?> responses(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/responses", body, actor);
+    public ResponseEntity<?> responses(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                       HttpServletResponse response) {
+        return forwardRelay("/v1/responses", body, actor, response);
     }
 
     /**
@@ -148,8 +156,9 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/edits")
-    public ResponseEntity<?> edits(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
-        return forwardRelay("/v1/edits", body, actor);
+    public ResponseEntity<?> edits(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                   HttpServletResponse response) {
+        return forwardRelay("/v1/edits", body, actor, response);
     }
 
     /**
@@ -157,14 +166,15 @@ public class RelayController {
      */
     @RequireRole(AuthLevel.USER)
     @PostMapping("/v1/images/variations")
-    public ResponseEntity<?> imageVariations(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor) {
+    public ResponseEntity<?> imageVariations(@RequestBody byte[] body, @CurrentActor AuthenticatedActor actor,
+                                             HttpServletResponse response) {
         RelayDispatch dispatch = useCase.resolveDispatch("/v1/images/variations");
         if (dispatch.mode() == RelayMode.NOT_IMPLEMENTED) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
                     .body(Map.of("error", ErrorResponse.of("not_implemented",
                             "/v1/images/variations is not implemented", "RELAY_NOT_IMPLEMENTED")));
         }
-        return forwardRelay("/v1/images/variations", body, actor);
+        return forwardRelay("/v1/images/variations", body, actor, response);
     }
 
     /**
@@ -179,7 +189,8 @@ public class RelayController {
     @RequireRole(AuthLevel.USER)
     @GetMapping("/v1/videos/{task_id}/content")
     public ResponseEntity<?> videoContent(@PathVariable("task_id") String taskId,
-                                          @CurrentActor AuthenticatedActor actor) {
+                                          @CurrentActor AuthenticatedActor actor,
+                                          HttpServletResponse response) {
         VideoProxyUseCase.VideoContent content =
                 videoProxyUseCase.resolveContent(taskId, (int) actor.userId());
         if (content.isInline()) {
@@ -190,11 +201,12 @@ public class RelayController {
                             content.mediaTypeOpt().orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE))
                     .body(content.inlineBytes());
         }
-        // 远端 URL：流式拉取并回写（io.Copy 等价）。
-        StreamingResponseBody stream = out -> videoProxyUseCase.streamRemote(content, out);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CACHE_CONTROL, VideoProxyUseCase.CACHE_CONTROL)
-                .body(stream);
+        // 远端 URL：流式拉取并回写（io.Copy 等价）。直写 HttpServletResponse 走 servlet 输出流，
+        // 绕过 ResponseEntity 的 HttpMessageConverter 链——后者无法把流式写出器序列化（见 forwardRelay 注释）。
+        response.setStatus(HttpStatus.OK.value());
+        response.setHeader(HttpHeaders.CACHE_CONTROL, VideoProxyUseCase.CACHE_CONTROL);
+        writeStream(response, out -> videoProxyUseCase.streamRemote(content, out));
+        return null;
     }
 
     /**
@@ -212,7 +224,8 @@ public class RelayController {
      * @param actor 当前认证操作者
      * @return 透传上游响应的 {@code ResponseEntity}
      */
-    private ResponseEntity<?> forwardRelay(String path, byte[] body, AuthenticatedActor actor) {
+    private ResponseEntity<?> forwardRelay(String path, byte[] body, AuthenticatedActor actor,
+                                           HttpServletResponse response) {
         RelayApiKeyAuthentication relayAuth = RelayApiKeyAuthentication.current().orElse(null);
         Long tokenId = relayAuth == null ? null : relayAuth.tokenId();
         String group = relayAuth == null ? null : relayAuth.group();
@@ -220,17 +233,52 @@ public class RelayController {
         RelayAuthContext authContext = new RelayAuthContext(
                 actor.userId(), actor.username(), group, tokenId, tokenName);
 
-        // RL-8 流式：客户 stream:true → 走 SSE 流式回写（StreamingResponseBody 逐 chunk flush）。
+        // RL-8 流式：客户 stream:true → 走 SSE 流式回写（逐 chunk flush）。
+        //
+        // 直写注入的 HttpServletResponse（servlet 输出流），返回 null 表示响应已由控制器自行处理，
+        // 不再经 Spring 的返回值处理器。早期写法用 ResponseEntity.body(StreamingResponseBody) 会触发
+        // 500：方法签名是 ResponseEntity<?>，泛型擦除成通配，Spring 用 ResponseEntityReturnValueHandler
+        // 取出 body 后走 HttpMessageConverter 链去序列化它，而没有 converter 能把一个 Lambda 写成
+        // text/event-stream，抛 HttpMessageNotWritableException。直写 response 彻底绕过该链路。
+        //
+        // 注意写出顺序：forwardStream 内的选渠/鉴权/key校验/模型组闸门若抛异常，发生在写出任何字节之前，
+        // 此时响应未提交，可由 RelayExceptionHandler 正常翻译为错误信封；写出第一个 chunk 后的上游中断
+        // 由 forwardStream 内部消化（不外抛），故此处无需 try/catch。
         if (useCase.wantsStream(body)) {
-            StreamingResponseBody stream = out -> useCase.forwardStream(path, body, authContext, out);
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_EVENT_STREAM)
-                    .header(HttpHeaders.CACHE_CONTROL, "no-cache")
-                    .body(stream);
+            response.setStatus(HttpStatus.OK.value());
+            response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+            response.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+            writeStream(response, out -> useCase.forwardStream(path, body, authContext, out));
+            return null;
         }
 
         RelayForwardResult result = useCase.forward(path, body, authContext);
         return ResponseEntity.status(result.statusCode())
                 .body(result.body());
+    }
+
+    /** 取 servlet 输出流执行流式写出器（直写绕过返回值处理器）。IO 异常向上抛由容器处理。 */
+    private void writeStream(HttpServletResponse response, StreamWriter writer) {
+        try {
+            OutputStream out = response.getOutputStream();
+            writer.writeTo(out);
+            out.flush();
+        } catch (IOException e) {
+            // 客户端断连或写出失败：响应可能已部分提交，无法改写状态码。流式计费在 forwardStream
+            // 内已按已交付 token 落 Log（防漏钱），此处仅终止写出。
+            throw new RelayStreamWriteException(e);
+        }
+    }
+
+    @FunctionalInterface
+    private interface StreamWriter {
+        void writeTo(OutputStream out) throws IOException;
+    }
+
+    /** 流式写出阶段的 IO 异常（响应可能已提交，仅用于终止写出，不再翻译为错误信封）。 */
+    private static final class RelayStreamWriteException extends RuntimeException {
+        RelayStreamWriteException(Throwable cause) {
+            super(cause);
+        }
     }
 }
