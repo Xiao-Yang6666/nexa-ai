@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
-import { useSaveOption, useSysSettings, usdToQuotaStr, validateSysSettings } from '../model/system.model';
+import { useSaveOption, useSysSettings, usdToQuotaStr, validateSysSettings, usePerformanceStats, useClearCache, useResetStats, formatCacheBytes } from '../model/system.model';
 import styles from './SysSettingsPage.module.css';
 
 /* ── 内联 SVG 图标 ── */
@@ -125,6 +125,36 @@ export function SysSettingsPage() {
 
   const { data, isLoading, isError, error } = useSysSettings();
   const saveOption = useSaveOption();
+
+  // R4-B 运维操作：缓存占用查询 + 清空缓存 + 重置统计
+  const { data: cacheBytes } = usePerformanceStats();
+  const clearCache = useClearCache();
+  const resetStats = useResetStats();
+  const [opHint, setOpHint] = useState('');
+
+  const handleClearCache = async () => {
+    if (!window.confirm('确认清空全部缓存？将立即清除所有路由 / 模型 / 配额缓存。')) return;
+    setOpHint('清空缓存中…');
+    try {
+      const r = await clearCache.mutateAsync();
+      setOpHint(`已清空缓存（删除 ${r.deleted_count ?? 0} 项，释放 ${formatCacheBytes(r.freed_bytes)}）`);
+    } catch (e) {
+      setOpHint(e instanceof ApiError ? `清空失败：${e.message}` : '清空失败，请重试');
+    }
+    setTimeout(() => setOpHint(''), 2400);
+  };
+
+  const handleResetStats = async () => {
+    if (!window.confirm('确认重置统计数据？将清零全站请求 / 费用 / token 统计，不可恢复。')) return;
+    setOpHint('重置统计中…');
+    try {
+      await resetStats.mutateAsync();
+      setOpHint('统计数据已重置');
+    } catch (e) {
+      setOpHint(e instanceof ApiError ? `重置失败：${e.message}` : '重置失败，请重试');
+    }
+    setTimeout(() => setOpHint(''), 2400);
+  };
 
   // 受控表单态（仅契约可确认键），加载完成后用真实选项回填
   const [systemName, setSystemName] = useState('');
@@ -528,32 +558,37 @@ export function SysSettingsPage() {
                   />
                 </div>
               </div>
-              {/* TODO(api-missing): 缓存清理为操作（非配置键），需专用操作端点，本轮不做 */}
               <div className={styles.field}>
                 <label className="field-label">缓存</label>
-                <Button variant="sec" size="sm">清理缓存</Button>
-                <div className="field-hint">当前缓存占用约 482 MB</div>
+                <Button variant="sec" size="sm" onClick={handleClearCache} disabled={clearCache.isPending}>
+                  {clearCache.isPending ? '清理中…' : '清理缓存'}
+                </Button>
+                <div className="field-hint">当前缓存占用约 {formatCacheBytes(cacheBytes)}</div>
               </div>
             </div>
 
             {/* 危险操作区 */}
             <div className={styles.dangerZone}>
               <h3>危险操作</h3>
-              {/* TODO(api-missing): 清空缓存 / 重置统计为操作（非配置键），需专用操作端点，本轮不做 */}
               <div className={styles.dangerItem}>
                 <div className={styles.diInfo}>
                   <div className={styles.t}>清空全部缓存</div>
                   <div className={styles.d}>立即清除所有路由 / 模型 / 配额缓存</div>
                 </div>
-                <Button variant="danger" size="sm">清空缓存</Button>
+                <Button variant="danger" size="sm" onClick={handleClearCache} disabled={clearCache.isPending}>
+                  {clearCache.isPending ? '清空中…' : '清空缓存'}
+                </Button>
               </div>
               <div className={styles.dangerItem}>
                 <div className={styles.diInfo}>
                   <div className={styles.t}>重置统计数据</div>
                   <div className={styles.d}>清零全站请求 / 费用 / token 统计，不可恢复</div>
                 </div>
-                <Button variant="danger" size="sm">重置统计</Button>
+                <Button variant="danger" size="sm" onClick={handleResetStats} disabled={resetStats.isPending}>
+                  {resetStats.isPending ? '重置中…' : '重置统计'}
+                </Button>
               </div>
+              {opHint ? <div className="field-hint" style={{ marginTop: 'var(--space-3)' }}>{opHint}</div> : null}
             </div>
           </div>
 
