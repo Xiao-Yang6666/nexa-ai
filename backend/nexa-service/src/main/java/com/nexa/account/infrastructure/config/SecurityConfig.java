@@ -117,6 +117,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/user/checkin").authenticated()   // F-1047 签到状态查询（USER）
                         .requestMatchers(HttpMethod.POST, "/api/user/checkin").authenticated()  // F-1046 每日签到（USER）
                         .requestMatchers("/api/user/self", "/api/user/self/**").authenticated() // F-1xxx 本人 self-scope（USER）
+                        .requestMatchers(HttpMethod.POST, "/api/user/topup").authenticated()    // F-2044 卡密兑换入账（USER）——RedeemController @RequireRole(USER) 就近控权；
+                        // 原 bug：下面宽泛的 /api/user/* admin 门槛误把 topup 要求成 ADMIN → 普通用户兑换 403（与 checkin 同类坑）。
                         // ===== 管理端用户管理（adminAuth，要求 ≥ admin；root 亦可）=====
                         // 精确匹配真正的管理端用户管理端点，不用宽泛前缀，避免误伤上面的 USER 子路径：
                         //   - GET  /api/user/        列表（F-1008）       - POST /api/user/        创建（F-1009）
