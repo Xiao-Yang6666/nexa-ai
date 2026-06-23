@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import {
   usePrefillGroups,
@@ -521,7 +521,7 @@ export function GroupsPage() {
   const [pane, setPane] = useState<Pane>('prefill');
 
   return (
-    <AdminShell
+    <AppShell
       activeId="groups"
       title="预填分组"
       crumb={['管理后台', '资源管理', '预填分组']}
@@ -544,6 +544,6 @@ export function GroupsPage() {
       </div>
 
       {pane === 'ratio' ? <RatioPane /> : <PrefillPane />}
-    </AdminShell>
+    </AppShell>
   );
 }

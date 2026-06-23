@@ -1,6 +1,6 @@
 'use client';
 
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { useSystemStatus, type OpsCapabilityVM } from '@/features/ops/model/ops.model';
 import styles from './OpsMonitorPage.module.css';
@@ -44,7 +44,7 @@ export function OpsMonitorPage() {
   const caps = data?.capabilities ?? [];
 
   return (
-    <AdminShell
+    <AppShell
       activeId="ops"
       title="运维监控"
       crumb={['管理后台', '系统', '运维监控']}
@@ -111,6 +111,6 @@ export function OpsMonitorPage() {
           </div>
         </div>
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }

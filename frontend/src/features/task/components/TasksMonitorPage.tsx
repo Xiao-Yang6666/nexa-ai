@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import styles from './TasksMonitorPage.module.css';
 
@@ -205,7 +205,7 @@ export function TasksMonitorPage() {
   const [typeFilter, setTypeFilter] = useState('');
 
   return (
-    <AdminShell
+    <AppShell
       activeId="tasks-monitor"
       title="任务监控"
       crumb={['管理后台', '运营', '任务监控']}
@@ -394,6 +394,6 @@ export function TasksMonitorPage() {
           </div>
         </div>
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }

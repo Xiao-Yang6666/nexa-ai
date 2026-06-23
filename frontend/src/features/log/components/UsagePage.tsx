@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useSelfLogs, useSelfLogStat, type LogRowVM } from '../model/log.model';
 import type { LogSelfQuery } from '../api/log.api';
 import styles from './UsagePage.module.css';
@@ -230,7 +230,7 @@ export function UsagePage() {
   );
 
   return (
-    <ConsoleShell activeId="usage" title="调用明细" crumb={['控制台', '调用明细']} actions={actions}>
+    <AppShell activeId="usage" title="调用明细" crumb={['控制台', '调用明细']} actions={actions}>
       {/* 统计小卡（仅本人维度） */}
       <section className={styles.statRow}>
         <div className={`${styles.stat} nx-fade`}>
@@ -352,6 +352,6 @@ export function UsagePage() {
           <span>共 {rows.length} 条</span>
         </div>
       </section>
-    </ConsoleShell>
+    </AppShell>
   );
 }

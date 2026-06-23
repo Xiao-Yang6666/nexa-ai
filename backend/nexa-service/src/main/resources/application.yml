@@ -1,0 +1,101 @@
+# =============================================================================
+# Nexa 后端配置 — 账号域垂直切片（默认 profile）
+# 技术栈：Spring Boot 3.2 + JPA(Hibernate6) + PostgreSQL + Flyway + Java21 虚拟线程
+#
+# 敏感配置全部通过环境变量注入，仓库内不含真实凭据。
+# 本地开发：复制 .env.example 为 .env 并填入真实值，或直接 export 环境变量后启动。
+# =============================================================================
+spring:
+  application:
+    name: nexa-backend
+
+  # --- 虚拟线程（Java 21）：每请求一线程模型下用虚拟线程承载，降低阻塞 IO 成本 ---
+  threads:
+    virtual:
+      enabled: true
+
+  # --- 数据源：连接 PostgreSQL，凭据由环境变量注入 ---
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/nexa}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    # --- HikariCP 连接池：生产 PG 共用，max_connections 有限，须严格约束单实例占用 ---
+    # 防止反复启停 / 多实例把 PG 连接吃满（FATAL: too many clients already）。
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:5}      # 单实例最大连接数，避免吃满 PG 的 max_connections
+      minimum-idle: 1                          # 空闲时最少保留 1 条
+      idle-timeout: 60000                       # 空闲 60s 即回收，防止僵尸 idle 连接堆积
+      max-lifetime: 600000                      # 连接最长存活 10min，强制轮换
+      keepalive-time: 30000                     # 30s 探活，及时剔除已断连接
+      connection-timeout: 30000                 # 取连接超时 30s
+
+  # --- JPA / Hibernate ---
+  jpa:
+    hibernate:
+      # 表结构由 Flyway 管理；JPA 仅校验实体映射与库表一致，绝不自动改表（生产安全）。
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+
+  # --- Flyway：启动时连 PG 执行 db/migration 下的版本脚本建表 ---
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  # --- Jackson：出/入参 JSON 字段名 snake_case，对齐 openapi（username/verification_code...） ---
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+
+  # --- Redis：鉴权结果缓存（T12/CR-05，/v1/* 转发查 key 有效性/归属的热点缓存）后端 ---
+  # host/port 由环境变量注入，默认 localhost:6379。Lettuce 惰性连接——Redis 暂不可用不阻断启动；
+  # 运行期连不上时由 CacheErrorHandler 降级直查 DB（见 AuthCacheConfig），鉴权命脉不挂。
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      connect-timeout: 2000ms
+
+  # --- 缓存：Redis 承载，注解式 @Cacheable/@CacheEvict（TTL/容错见 AuthCacheConfig） ---
+  cache:
+    type: ${CACHE_TYPE:redis}
+
+# --- 账号系统设置（ConfigAccountSettings 绑定，PRD §15 / AC-1 R13） ---
+account:
+  register-enabled: true
+  quota-for-new-user: 0
+  # 验证码 / 密码重置令牌 / OAuth state 的存储后端（R2-02）：
+  # redis（默认）= Redis 原生 TTL，跨实例共享、重启不丢、连不上时降级回内存；memory = 进程内桩（仅测试/单机联调）。
+  store:
+    type: ${ACCOUNT_STORE_TYPE:redis}
+
+# --- JWT 令牌签发配置（JwtTokenIssuer 注入） ---
+# 密钥须 >= 32 字节满足 HS256；通过 JWT_SECRET 环境变量注入，生产务必使用强随机值。
+jwt:
+  secret: ${JWT_SECRET:change-me-local-dev-secret-key-min-32-bytes-0123456789}
+  ttl-seconds: ${JWT_TTL_SECONDS:604800}
+
+# --- 敏感字段加密（AesGcmFieldEncryptor 注入，SecurityProperties prefix=security） ---
+# AES-256 主密钥（Base64 的 32 字节）；通过 SECURITY_ENCRYPTION_KEY 环境变量注入，
+# 密钥绝不入库/入日志。生产务必使用独立强随机密钥。
+security:
+  encryption:
+    key: ${SECURITY_ENCRYPTION_KEY:}
+
+# --- CORS 跨域配置（CorsProperties 绑定，前缀 app.cors） ---
+# 前后端分离部署，前端与后端不同源，浏览器对 /api/* 发起跨域请求前会先发 OPTIONS 预检。
+# 因 allow-credentials=true（前端带 JWT/session cookie），origin 不能用 *，须列具体值。
+# 通过环境变量 APP_CORS_ALLOWED_ORIGINS（逗号分隔）注入真实前端 origin。
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3100}
+
+server:
+  port: ${SERVER_PORT:8080}

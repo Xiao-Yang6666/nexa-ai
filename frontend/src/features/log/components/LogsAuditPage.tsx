@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
-import { AdminShell } from '@/features/admin';
+import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import {
   useAdminLogs,
@@ -317,7 +317,7 @@ export function LogsAuditPage() {
   }
 
   return (
-    <AdminShell
+    <AppShell
       activeId="logs"
       title="调用明细"
       crumb={['管理后台', '系统', '调用明细']}
@@ -521,6 +521,6 @@ export function LogsAuditPage() {
           </div>
         </div>
       </section>
-    </AdminShell>
+    </AppShell>
   );
 }

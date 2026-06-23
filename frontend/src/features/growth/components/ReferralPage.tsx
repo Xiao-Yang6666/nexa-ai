@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ConsoleShell } from '@/features/console';
+import { AppShell } from '@/features/shell';
 import { useSelf } from '@/features/account';
 import { useAffCode, quotaUsdValue } from '../model/growth.model';
 import styles from './ReferralPage.module.css';
@@ -115,7 +115,7 @@ export function ReferralPage() {
   const actions = <button className="btn btn-sec">申请结算</button>;
 
   return (
-    <ConsoleShell activeId="referral" title="分销推广" crumb={['控制台', '分销推广']} actions={actions}>
+    <AppShell activeId="referral" title="分销推广" crumb={['控制台', '分销推广']} actions={actions}>
       {self.isLoading ? (
         <section className={styles.top}>
           <div className={styles.skeleton} />
@@ -274,6 +274,6 @@ export function ReferralPage() {
           </section>
         </>
       )}
-    </ConsoleShell>
+    </AppShell>
   );
 }
