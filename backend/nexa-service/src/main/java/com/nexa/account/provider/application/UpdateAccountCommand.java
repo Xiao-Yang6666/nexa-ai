@@ -1,0 +1,32 @@
+package com.nexa.account.provider.application;
+
+import com.nexa.account.provider.domain.vo.AccountGroupRef;
+
+import java.util.List;
+
+/**
+ * 编辑供应商账号命令（应用层入参 DTO，覆盖式 PUT，校验/归一在领域聚合）。
+ *
+ * @param id                 账号 id（必填）
+ * @param name               账号名（必填）
+ * @param platform           供应商平台（必填）
+ * @param type               账号类型（必填）
+ * @param credentials        凭证 JSON（可空/空白=保留原值不变）
+ * @param concurrency        并发度（可空→3）
+ * @param priority           优先级（可空→50）
+ * @param expiresAt          过期时刻 epoch 秒（可空）
+ * @param autoPauseOnExpired 过期自动暂停（可空=不改）
+ * @param groups             所属分组集合（可空）
+ */
+public record UpdateAccountCommand(
+        long id,
+        String name,
+        String platform,
+        String type,
+        String credentials,
+        Integer concurrency,
+        Integer priority,
+        Long expiresAt,
+        Boolean autoPauseOnExpired,
+        List<AccountGroupRef> groups) {
+}

@@ -1,0 +1,34 @@
+package com.nexa.account.provider.infrastructure.persistence;
+
+import com.nexa.account.provider.infrastructure.persistence.entity.AccountGroupJpaEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.List;
+
+/**
+ * Spring Data JPA 仓库（账号-分组关联，基础设施层内部接口）。
+ *
+ * <p>仅供 {@link AccountRepositoryImpl} 维护 account_groups fan-out/fan-in。</p>
+ */
+interface SpringDataAccountGroupJpaRepository
+        extends JpaRepository<AccountGroupJpaEntity, AccountGroupJpaEntity.AccountGroupPK> {
+
+    /**
+     * 按账号 id 列出关联。
+     *
+     * @param accountId 账号 id
+     * @return 关联列表
+     */
+    List<AccountGroupJpaEntity> findByAccountId(Long accountId);
+
+    /**
+     * 按账号 id 删除全部关联（fan-in，账号 delete/重建前清理）。
+     *
+     * @param accountId 账号 id
+     */
+    @Modifying
+    @Query("DELETE FROM AccountGroupJpaEntity ag WHERE ag.accountId = :accountId")
+    void deleteByAccountId(Long accountId);
+}
