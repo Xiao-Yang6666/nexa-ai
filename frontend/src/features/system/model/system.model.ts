@@ -8,10 +8,17 @@
  *   / theme.frontend / QuotaForNewUser。
  * R3-01 系统配置面板键名契约（site.* / register.* / billing.* / ratelimit.* / smtp.* /
  *   security.* / advanced.*）由本 slice 定义，前后端共用；smtp.passwordSecret 为敏感键
- *   （键名以 Secret 结尾，GET 列表自动剔除值）。缓存清理/重置统计为操作非配置，留待专用端点。
+ *   （键名以 Secret 结尾，GET 列表自动剔除值）。缓存清理/重置统计为运维操作（非配置键），
+ *   走专用 /api/ops/* 端点（见 ops.api，R4-B）。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getOptions, updateOption, type OptionItem } from '../api/system.api';
+import {
+  clearDiskCache,
+  getPerformanceStats,
+  resetStats,
+  type CacheCleanupResult,
+} from '../api/ops.api';
 
 const QUOTA_PER_USD = 500_000;
 
@@ -147,6 +154,47 @@ export function useSaveOption() {
     mutationFn: ({ key, value }: { key: string; value: string }) => updateOption(key, value),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['system', 'options'] });
+    },
+  });
+}
+
+const BYTES_PER_MB = 1024 * 1024;
+
+/** 字节 → 人类可读的缓存占用文案（MB，保留 0 位小数）。 */
+export function formatCacheBytes(bytes: number | undefined): string {
+  if (bytes === undefined || !Number.isFinite(bytes) || bytes <= 0) {
+    return '0 MB';
+  }
+  return `${Math.round(bytes / BYTES_PER_MB)} MB`;
+}
+
+/** 性能统计查询 hook（GET /api/ops/performance），供「当前缓存占用」展示真实值。 */
+export function usePerformanceStats() {
+  return useQuery({
+    queryKey: ['system', 'performance'],
+    queryFn: getPerformanceStats,
+    select: (s) => s.disk_cache_info?.total_bytes,
+  });
+}
+
+/** 清空磁盘缓存 mutation（POST /api/ops/cache/clear），成功后刷新性能统计。 */
+export function useClearCache() {
+  const qc = useQueryClient();
+  return useMutation<CacheCleanupResult, unknown, void>({
+    mutationFn: () => clearDiskCache(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['system', 'performance'] });
+    },
+  });
+}
+
+/** 重置统计 mutation（POST /api/ops/stats/reset），成功后刷新性能统计。 */
+export function useResetStats() {
+  const qc = useQueryClient();
+  return useMutation<void, unknown, void>({
+    mutationFn: () => resetStats(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['system', 'performance'] });
     },
   });
 }
