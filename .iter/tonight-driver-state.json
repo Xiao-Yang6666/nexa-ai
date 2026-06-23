@@ -1,0 +1,28 @@
+{
+  "phase": "round3_R3-01_DONE_merged_main_pushed",
+  "round": 3,
+  "updated_at": "2026-06-23T10:15:00+08:00",
+  "driver_mode": "main_controller_online",
+  "main_baseline": "8353481 (含R1+R2+R3-01), 远端已推",
+  "R3-01_complete": {
+    "desc": "SysSettings配置面板接通: 18键名契约+OptionRegistry领域校验+前端GET/PUT",
+    "backend_commit": "e5a15b6",
+    "frontend_commit": "21a04ac",
+    "merge": "8353481",
+    "tests": "532绿(从514+18: OptionRegistry校验+OptionController MockMvc)",
+    "api_missing": "8→2 (剩缓存清理/重置统计两个操作,本轮不做)",
+    "live_verify": "亲验真实HTTP 5场景全过: 非法布尔/货币/端口→400中文; 合法→200; smtp.passwordSecret明文剔除(DB存真值,GET列表剔除)",
+    "key_insight": "后端PUT/api/option是直通,不需补键. 真做的是定18键名契约+校验+前端接线"
+  },
+  "test_env_finding": {
+    "discovery": "sub2有nexa-backend-prod(8091)+nexa-frontend-prod已跑40h,连同一个nexa库(5434),跑了V28删platform_model_mappings表",
+    "user_clarified": "内测阶段,可当测试环境用",
+    "r3_solution": "给R3-01另起独立库nexa_r3test(Flyway从头建表自洽),不和prod抢被V28管控的nexa库",
+    "main_vs_prod": "prod代码比main新(跑了V28). main的platform_model_mappings实体停在V12时代. 这个差异待后续对齐(非R3-01问题)"
+  },
+  "round3_scope": "用户定只做候选1(配置面板). 候选2驻地源暂缓",
+  "next": "S12 Round3复盘 → 等用户定下一轮. 或对齐main与prod代码差异(V28等)",
+  "settings_json": "扩展白名单版(含curl/ssh/psql前缀,不用defaultMode). CC健康",
+  "cron_autonomous_loop": "paused",
+  "red_lines_held": "未推生产容器 未花钱. main已获授权合并推送"
+}

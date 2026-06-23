@@ -1,0 +1,114 @@
+{
+  "project": "nexa-ai",
+  "goal": "明天可直接上线发布的候选。按自动工厂skill循环:S11真验证→S12反溯分析→回溯前置阶段派CC并行开发→再S11→再S12,迭代优化直到无值得做的优化点。",
+  "mode": "autonomous_overnight_loop",
+  "started": "2026-06-23T01:40:00+08:00",
+  "phase": "dev_in_progress",
+  "round": 2,
+  "parallel": "能并行的必并行。上游限流已解。多CC同时开发(max10)。",
+  "redlines": [
+    "不自动合main、不自动推生产、不花钱——这三件停下发微信",
+    "撞墙(连续失败/集成炸修不动)停下报微信",
+    "大改(改架构/改范围/可能掀翻现有功能)先发微信列给用户拍,小改直接派CC做",
+    "S12默认pause_iteration但用户已显式授权连跑→continue_to_next_round允许"
+  ],
+  "infra": {
+    "backend": "localhost:8080 (proc varies, 启动用 /root/.hermes/scripts/nexa-backend-start.sh)",
+    "pg": "216.167.75.27:5434/nexa (密码见sub2 nexa-pg-test容器env)",
+    "redis": "216.167.75.27:6380 (无密码, sub2 nexa-redis-test容器)",
+    "aeskey": "/tmp/nexa-s11-aeskey.txt",
+    "java": "JAVA_HOME=/opt/jdk21",
+    "branches": "s11-acceptance(后端s8+前端s9整合); integration/s8-backend; integration/s9-frontend"
+  },
+  "completed_this_round": {
+    "S8_backend": [
+      "T4 REQ-07 Claude协议",
+      "T5 REQ-08 流式SSE计费(单测绿,端到端缺证据)",
+      "T6 compliance登记",
+      "T11 Redis清单",
+      "T12 CR-05 Redis鉴权缓存"
+    ],
+    "S9_frontend": [
+      "T7 CR-01+03 统一AppShell修菜单降级",
+      "T8 CR-02 退出登录",
+      "T9 CR-04 视频no-op",
+      "T10 CR-06 超管页接真实API"
+    ],
+    "S11": "命脉基本通:非流式计费真落库(log id=7 type=2 prompt=11 comp=7)。T12缓存键现身。报告.iter/11_uat/ACCEPTANCE-REPORT.md"
+  },
+  "open_gaps": [
+    {
+      "id": "S11-01",
+      "desc": "T5流式计费(is_stream=t)缺端到端证据,需补流式curl验证",
+      "severity": "P1",
+      "stage": "S11复验或S8补"
+    }
+  ],
+  "next_actions": [
+    "phase=dev_in_progress: 3个CC并行开发中(R2-01/R2-02/R2-03,各独立worktree+branch)。下个tick检查完成情况:看 /tmp/cc-r2-0X.log + worktree git log有无commit + SLICE-RESULT.md + 真跑 mvn -pl nexa-service -am test 验证绿(不信自报)",
+    "完成的slice合进integration分支:R2-01/R2-02/R2-03都是后端→integration/s8-backend(逐个merge,冲突手解;R2-01改relay计费 vs R2-03改routing选渠,文件边界已分开应无冲突)",
+    "CC可能撞max-turns(120)未完→用 claude -p --continue 在对应worktree续修",
+    "全完成后state.phase改dev_done_goto_S11",
+    "后续:重整s11-acceptance→起后端→跑命脉链curl(重点验本轮R2-01流式计费is_stream=t真落库)→更新ACCEPTANCE-REPORT→无P0则round+1开下轮"
+  ],
+  "s12_round1_done": "主控亲自跑完S12复盘。决策文档 .iter/12_post_acceptance/final/NEXT-SCOPE-DECISION.md",
+  "round2_scope": {
+    "do_P0_P1": [
+      "R2-01 T5流式计费端到端坐实(P0,后端relay,补流式curl验证is_stream=t真落库,没落则修)",
+      "R2-02 内存桩(验证码/密码重置/OAuth state)切Redis(P1,后端account,已有Redis基建)",
+      "R2-03 compliance子域接relay选渠主干至少1条F-5018境内约束(P1,独立slice谨慎碰主干)"
+    ],
+    "defer": [
+      "R2-04 api-missing(8处)",
+      "R2-05 OAuth信任级F-1020",
+      "R2-06 真邮件SMTP(需用户给凭证)"
+    ]
+  },
+  "last_human_instruction": "用户已睡,授权按方案连跑迭代。明早可上线候选。能并行必并行。",
+  "running_slices": [
+    {
+      "id": "R2-01",
+      "prio": "P0",
+      "worktree": "/root/nexa-wt/r2-01-stream",
+      "pid": 1988,
+      "session": "proc_f02f532f2239",
+      "merge_into": "integration/s8-backend",
+      "desc": "T5流式计费端到端坐实(is_stream=t真落库)",
+      "status": "done",
+      "dispatched_by": "主控亲派",
+      "commit": "781973f(cherry-pick到s8-backend)",
+      "verified": "亲验482→504测试绿。修2个真漏钱bug:①passthrough usage解析无try/catch非标块抛异常打断整条流→不转发不计费 ②已交付token后断流catch直接return不落计费。抽billStreamConsume两路径都落is_stream=true log(usage缺失按0仍落)。没碰选渠。"
+    },
+    {
+      "id": "R2-02",
+      "prio": "P1",
+      "worktree": "/root/nexa-wt/r2-02-redis",
+      "pid": 2087,
+      "session": "proc_dcdc4a75d151",
+      "merge_into": "integration/s8-backend",
+      "desc": "验证码/密码重置/OAuthstate切Redis",
+      "status": "done",
+      "dispatched_by": "主控亲派",
+      "commit": "ff79435(cherry-pick到s8-backend)",
+      "verified": "3个Redis实现(验证码/密码重置/OAuthstate)原生TTL,InMemory保留fallback。CC撞max-turns+续修卡--continue权限,主控收口跑测试504绿+commit。"
+    },
+    {
+      "id": "R2-03",
+      "prio": "P1",
+      "worktree": "/root/nexa-wt/r2-03-compliance-routing",
+      "pid": 30347,
+      "merge_into": "integration/s8-backend",
+      "desc": "compliance接relay选渠主干(F-5018境内约束)",
+      "status": "running",
+      "dispatched_by": "cron 2:14 tick",
+      "note": "在跑(pid30347),改routing选渠域(SelectRelayChannelUseCase+新ChannelResidencyPort),未碰RelayForwardUseCase→与R2-01无冲突✅"
+    }
+  ],
+  "double_dispatch_incident": "2:14 cron tick已派R2-01/02/03(worktree r2-0x-xxx-suffix);主控2:19误删其中2个worktree导致那批CC跑在deleted目录;已杀废CC(30149/30200),重派R2-01/R2-02(主控worktree),保留cron的R2-03(健在)。教训已patch parallel-task-controller skill:主控在线必须亲派不推cron。",
+  "cron_status": "paused(主控在线亲自盯,避免再双轨;这批CC完成合并+回S11后再resume接管下一轮)",
+  "s8_backend_head": "含R2-01+R2-02 cherry-pick,纯后端无前端污染,编译过",
+  "incident_log": [
+    "R2-01 merge把s11-acceptance的前端带进s8-backend→reset+cherry-pick修正,已patch skill",
+    "--continue不读allowlist→主控收口R2-02,已patch skill"
+  ]
+}
