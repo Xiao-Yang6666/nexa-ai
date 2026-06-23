@@ -2,11 +2,12 @@
  * features/model/api/model-admin.api — 模型/供应商管理端接口调用（AdminAuth）。
  * 路径/方法/出参逐字对齐 openapi.yaml，不臆造字段。分页参数统一 p + page_size。
  *
- * 覆盖 ModelsAdminPage 四 Tab 所需端点：
- *  - 对外模型 public_models（含 A→B 映射 platform_model_mappings、渠道池 channel/pool）
- *  - 供应商成本 channel_model_costs
+ * 覆盖 ModelsAdminPage 三 Tab 所需端点：
+ *  - 对外模型 public_models（含供货渠道池 channel/pool 摘要）
  *  - 模型元数据 models（含 sync/preview、missing）
- *  - 供应商元数据 vendors
+ *  - 模型厂牌 vendors
+ *
+ * A→B 底仓映射已下沉为渠道级（channel.model_mapping），不再有全局 platform_model_mappings 端点。
  */
 import { http } from '@/shared/api';
 import type {
@@ -14,10 +15,11 @@ import type {
   PublicModelCreateRequest,
   PublicModelUpdateRequest,
   ModelMetaAdminView,
+  ModelMetaCreateRequest,
+  ModelMetaUpdateRequest,
   VendorAdminView,
   ChannelModelCostAdminView,
   ChannelPoolMember,
-  PlatformModelMappingAdminView,
   ModelSyncDiff,
   ModelSyncResult,
 } from '@/shared/api';
@@ -49,18 +51,6 @@ export function deletePublicModel(id: number): Promise<void> {
   return http.delete<void>(`/api/public_models/${id}`);
 }
 
-/* ── A→B 底仓映射 ─────────────────────────────────────────────────────── */
-export interface MappingListResponse {
-  items: PlatformModelMappingAdminView[];
-  total: number;
-}
-/** GET /api/platform_model_mappings (F-6002) */
-export function getModelMappings(page = 1, pageSize = 200): Promise<MappingListResponse> {
-  return http.get<MappingListResponse>('/api/platform_model_mappings', {
-    query: { p: page, page_size: pageSize },
-  });
-}
-
 /* ── 渠道池 ───────────────────────────────────────────────────────────── */
 export interface ChannelPoolListResponse {
   items: ChannelPoolMember[];
@@ -77,6 +67,18 @@ export function getChannelPool(params: {
       upstream_model: params.upstreamModel,
       group: params.group,
     },
+  });
+}
+
+/* ── 渠道列表（供"供应渠道池"本地匹配用，避免渠道池端点 N+1 + 静默吞错） ── */
+export interface ChannelListForPool {
+  items: Array<{ id?: number; name?: string; models?: string; group?: string; priority?: number; status?: number }>;
+  total: number;
+}
+/** GET /api/channel/ —— 一次性拉全量渠道（page_size 取大值），前端按 models CSV 本地匹配每个对外模型 A。 */
+export function getChannelsForPool(pageSize = 500): Promise<ChannelListForPool> {
+  return http.get<ChannelListForPool>('/api/channel/', {
+    query: { p: 1, page_size: pageSize },
   });
 }
 
@@ -118,6 +120,21 @@ export function getModelMetas(page = 1, pageSize = 50): Promise<ModelMetaListRes
 /** GET /api/models/missing (F-3021)。返回上游存在但本地缺失的模型名数组。 */
 export function getMissingModels(): Promise<string[]> {
   return http.get<string[]>('/api/models/missing');
+}
+
+/** POST /api/models (F-3015) 创建模型元数据。 */
+export function createModelMeta(req: ModelMetaCreateRequest): Promise<ModelMetaAdminView> {
+  return http.post<ModelMetaAdminView>('/api/models', { json: req });
+}
+
+/** PUT /api/models (F-3016) 更新模型元数据（支持 status_only）。 */
+export function updateModelMeta(req: ModelMetaUpdateRequest): Promise<ModelMetaAdminView> {
+  return http.put<ModelMetaAdminView>('/api/models', { json: req });
+}
+
+/** DELETE /api/models/{id} (F-3017) 删除模型元数据。 */
+export function deleteModelMeta(id: number): Promise<void> {
+  return http.delete<void>(`/api/models/${id}`);
 }
 
 /** POST /api/models/sync/preview (F-3020)。返回同步差异。 */

@@ -2,8 +2,6 @@ package com.nexa.relay.interfaces.api;
 
 import com.nexa.relay.application.ManageMappingUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.relay.interfaces.api.dto.PlatformMappingRequest;
-import com.nexa.relay.interfaces.api.dto.PlatformMappingView;
 import com.nexa.relay.interfaces.api.dto.UserAliasRequest;
 import com.nexa.relay.interfaces.api.dto.UserAliasView;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
@@ -22,18 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 两层模型映射管理控制器（接口层，F-6011）。
+ * 用户层模型别名管理控制器（接口层，F-6011）。
  *
- * <p>承载映射管理端点：
+ * <p>承载 L1 别名（C→A）自助管理端点：
  * <ul>
- *   <li>{@code GET  /api/relay/mappings}         L2 底仓列表（AdminAuth）</li>
- *   <li>{@code POST /api/relay/mappings}          L2 底仓创建（RootAuth，B 只有 root 可配）</li>
- *   <li>{@code DELETE /api/relay/mappings/{id}}   L2 底仓删除（RootAuth）</li>
  *   <li>{@code GET  /api/relay/aliases}           L1 别名列表（UserAuth，self-scope）</li>
  *   <li>{@code POST /api/relay/aliases}           L1 别名创建（UserAuth，self-scope）</li>
  *   <li>{@code DELETE /api/relay/aliases/{id}}    L1 别名删除（UserAuth，self-scope）</li>
  * </ul>
- * 可见性铁律：L2 底仓视图 {@link PlatformMappingView} 含 B，只在 AdminAuth/RootAuth 路由返回（不出现在任何 user 路由）。</p>
+ * L2 全局底仓映射（A→B）已废弃——A→B 下沉为渠道级（{@code Channel.modelMapping}），由渠道管理端点维护，
+ * 不再有 {@code /api/relay/mappings} 全局映射端点。</p>
  */
 @RestController
 @RequestMapping("/api/relay")
@@ -43,31 +39,6 @@ public class RelayMappingController {
 
     public RelayMappingController(ManageMappingUseCase useCase) {
         this.useCase = useCase;
-    }
-
-    /** L2 底仓映射列表（AdminAuth）。 */
-    @RequireRole(AuthLevel.ADMIN)
-    @GetMapping("/mappings")
-    public ResponseEntity<ApiResponse<List<PlatformMappingView>>> listMappings() {
-        List<PlatformMappingView> views = useCase.listL2Mappings().stream()
-                .map(PlatformMappingView::from).toList();
-        return ResponseEntity.ok(ApiResponse.okData(views));
-    }
-
-    /** L2 底仓映射创建（RootAuth，B 只有 root 可配）。 */
-    @RequireRole(AuthLevel.ROOT)
-    @PostMapping("/mappings")
-    public ResponseEntity<ApiResponse<Void>> createMapping(@RequestBody PlatformMappingRequest req) {
-        useCase.createL2Mapping(req.publicName(), req.upstreamName(), req.remark());
-        return ResponseEntity.ok(ApiResponse.ok("mapping created"));
-    }
-
-    /** L2 底仓映射删除（RootAuth）。 */
-    @RequireRole(AuthLevel.ROOT)
-    @DeleteMapping("/mappings/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteMapping(@PathVariable Long id) {
-        useCase.deleteL2Mapping(id);
-        return ResponseEntity.ok(ApiResponse.ok("mapping deleted"));
     }
 
     /** L1 别名列表（UserAuth，self-scope）。 */

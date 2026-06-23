@@ -35,26 +35,27 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
   const tierCfg = model?.tier ? TIER_DISPLAY[model.tier] : null;
 
   return (
-    <>
-      <div
-        className={`${styles.scrim} ${open ? styles.scrimOpen : ''}`}
-        aria-hidden="true"
-        onClick={onClose}
-      />
+    <div
+      className={`${styles.scrim} ${open ? styles.scrimOpen : ''}`}
+      aria-hidden={!open}
+      onClick={onClose}
+    >
       <aside
         className={`${styles.drawer} ${open ? styles.drawerOpen : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-hidden={!open}
         aria-label={model ? `${model.modelName} 详情` : '模型详情'}
+        onClick={(e) => e.stopPropagation()}
       >
         {model ? (
           <>
             <div className={styles.dwHead}>
               <VendorAvatar vendor={model.vendor} size="lg" />
               <div className={styles.dwTtl}>
-                <h2>{model.modelName}</h2>
-                <div className={styles.vd}>{model.vendor}</div>
+                <h2>{model.displayName || model.modelName}</h2>
+                <div className={styles.vd}>
+                  {model.vendor} · <span className={styles.dwModelId}>{model.modelName}</span>
+                </div>
               </div>
               <button
                 type="button"
@@ -69,6 +70,12 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
             </div>
 
             <div className={styles.dwBody}>
+              {model.description ? (
+                <section>
+                  <h3 className={styles.dwSecT}>简介</h3>
+                  <p className={styles.dwDesc}>{model.description}</p>
+                </section>
+              ) : null}
               <section>
                 <h3 className={styles.dwSecT}>价格</h3>
                 {model.basePrice != null ? (
@@ -77,17 +84,16 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
                       <span className={styles.lab}>基准价</span>
                       <span className={styles.nexa}>${fmtPrice(model.basePrice)}</span>
                     </div>
-                    <div className={styles.pcFoot}>
-                      <span className={styles.lab}>对外名 {model.modelName}</span>
-                      {model.savePercent != null ? (
+                    {model.savePercent != null ? (
+                      <div className={styles.pcFoot}>
                         <span className={styles.save}>
                           <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="m6 9 6 6 6-6" />
                           </svg>
                           省 {model.savePercent}%
                         </span>
-                      ) : null}
-                    </div>
+                      </div>
+                    ) : null}
                     <div className={styles.pcUnit}>
                       单位：USD / 1M tokens · 登录后按会员等级享折后价
                     </div>
@@ -179,6 +185,6 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
           </>
         ) : null}
       </aside>
-    </>
+    </div>
   );
 }

@@ -75,6 +75,28 @@ public class ChannelModelCostController {
     }
 
     /**
+     * 批量创建/更新成本倍率（按分组/账号批量设成本，{@code POST /api/channel_model_costs/batch}，upsert）。
+     *
+     * <p>请求体为成本写条目数组；逐条复用 (channel_id, upstream_model) 幂等 upsert，整批一个事务。
+     * 前端"批量设成本倍率"把选中渠道 × 各自支持模型展开为条目传入。</p>
+     *
+     * @param requests 批量写请求（每条 channel_id / upstream_model 必填）
+     * @return 成功信封，data = 落库后成本行数组（AdminView，含 cost/B）
+     */
+    @PostMapping("/batch")
+    public ApiResponse<List<ChannelModelCostAdminView>> batchUpsert(
+            @RequestBody List<ChannelModelCostWriteRequest> requests) {
+        List<ManageChannelModelCostUseCase.BatchCostItem> items = requests.stream()
+                .map(r -> new ManageChannelModelCostUseCase.BatchCostItem(
+                        r.channelId(), r.upstreamModel(), r.costRatio(),
+                        r.completionCostRatio(), r.enabled(), r.remark()))
+                .toList();
+        List<ChannelModelCostAdminView> views = useCase.batchUpsert(items).stream()
+                .map(ChannelModelCostAdminView::from).toList();
+        return ApiResponse.okData(views);
+    }
+
+    /**
      * 删除成本倍率（F-6006，{@code DELETE /api/channel_model_costs/{id}}）。
      *
      * @param id path 成本行 id

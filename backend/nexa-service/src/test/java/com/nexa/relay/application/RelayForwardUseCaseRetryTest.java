@@ -12,7 +12,6 @@ import com.nexa.relay.domain.model.RelayLog;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
 import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.port.UpstreamResponse;
-import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.vo.LogType;
@@ -61,7 +60,6 @@ class RelayForwardUseCaseRetryTest {
 
     @BeforeEach
     void setUp() {
-        PlatformModelMappingRepository l2Repo = mock(PlatformModelMappingRepository.class);
         UserModelAliasRepository l1Repo = mock(UserModelAliasRepository.class);
         logRepo = mock(RelayLogRepository.class);
         upstreamHttpPort = mock(UpstreamHttpPort.class);
@@ -72,14 +70,13 @@ class RelayForwardUseCaseRetryTest {
         ChannelModelCostRepository costRepo = mock(ChannelModelCostRepository.class);
         userQuotaAccount = mock(UserQuotaAccount.class);
 
-        // C→A→B 两层映射：无 L1/L2 命中 → C 原样透传为 A 与 B（不影响重试逻辑验证）。
+        // C→A 映射：无 L1 命中 → C 原样透传为 A（A→B 由渠道级 modelMapping 解析，本测渠道未配映射→B=A）。
         when(l1Repo.findTargetByAlias(any(), anyString())).thenReturn(Optional.empty());
-        when(l2Repo.findUpstreamByPublicName(anyString())).thenReturn(Optional.empty());
         when(publicModelRepo.findByPublicName(anyString())).thenReturn(Optional.empty());
         when(costRepo.findByChannelAndUpstream(org.mockito.ArgumentMatchers.anyInt(), anyString()))
                 .thenReturn(Optional.empty());
 
-        useCase = new RelayForwardUseCase(l2Repo, l1Repo, logRepo, upstreamHttpPort, channelRepo,
+        useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort, channelRepo,
                 new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
                 // 模型组定价端口：返回 empty → 售价倍率回落 1.0（保持本测试原有计费口径不变）。
                 groupCode -> java.util.Optional.empty(),

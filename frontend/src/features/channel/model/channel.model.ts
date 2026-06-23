@@ -8,13 +8,22 @@
  *   本系统暂以 status 三态呈现（无 warn 态时不再臆造）。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ChannelAdminView, ChannelCreateRequest, ChannelUpdateRequest } from '@/shared/api';
+import type {
+  ChannelAdminView,
+  ChannelCreateRequest,
+  ChannelUpdateRequest,
+  ChannelModelCostAdminView,
+  ChannelModelCostWriteRequest,
+} from '@/shared/api';
 import {
   getChannels,
   createChannel,
   updateChannel,
   deleteChannel,
   batchOperateChannels,
+  getChannelCosts,
+  upsertChannelCost,
+  batchUpsertChannelCosts,
   type ChannelListResponse,
 } from '../api/channel.api';
 
@@ -182,5 +191,57 @@ export function useBatchOperateChannels() {
     mutationFn: ({ ids, action }: { ids: number[]; action: string }) =>
       batchOperateChannels(ids, action),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['channel'] }),
+  });
+}
+
+/* ── 渠道成本倍率（channel × B，仅 admin） ───────────────────────────────── */
+
+/** 单渠道成本行视图模型（B + 成本倍率）。 */
+export interface ChannelCostVM {
+  id: number;
+  /** 真实模型 B（渠道 modelMapping 产出的上游名） */
+  b: string;
+  /** 成本倍率原值（null=未配） */
+  costNum: number | null;
+  enabled: boolean;
+  remark: string;
+}
+
+export function toChannelCostVM(view: ChannelModelCostAdminView): ChannelCostVM {
+  const c = view.cost_ratio;
+  return {
+    id: view.id ?? 0,
+    b: view.upstream_model ?? '',
+    costNum: c != null ? Number(c) : null,
+    enabled: view.enabled ?? false,
+    remark: view.remark || '',
+  };
+}
+
+/** 某渠道全部成本行查询（按 channel_id 过滤）。 */
+export function useChannelCosts(channelId: number | null) {
+  return useQuery({
+    queryKey: ['channel', 'costs', channelId],
+    enabled: channelId != null,
+    queryFn: () => getChannelCosts({ channelId: channelId ?? undefined, pageSize: 200 }),
+    select: (data) => (data.items ?? []).map(toChannelCostVM),
+  });
+}
+
+/** 单条成本 upsert mutation。 */
+export function useUpsertChannelCost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (req: ChannelModelCostWriteRequest) => upsertChannelCost(req),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['channel', 'costs'] }),
+  });
+}
+
+/** 批量成本 upsert mutation（按账号/分组批量设倍率）。 */
+export function useBatchUpsertChannelCosts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (items: ChannelModelCostWriteRequest[]) => batchUpsertChannelCosts(items),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['channel', 'costs'] }),
   });
 }

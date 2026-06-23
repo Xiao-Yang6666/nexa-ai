@@ -9,7 +9,7 @@ import com.nexa.channel.domain.vo.ChannelStatus;
 import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.model.RelayLog;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
-import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
+import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.vo.LogType;
@@ -55,7 +55,6 @@ class RelayForwardUseCaseStreamTest {
 
     @BeforeEach
     void setUp() {
-        PlatformModelMappingRepository l2Repo = mock(PlatformModelMappingRepository.class);
         UserModelAliasRepository l1Repo = mock(UserModelAliasRepository.class);
         logRepo = mock(RelayLogRepository.class);
         upstreamHttpPort = mock(UpstreamHttpPort.class);
@@ -67,12 +66,11 @@ class RelayForwardUseCaseStreamTest {
         userQuotaAccount = mock(UserQuotaAccount.class);
 
         when(l1Repo.findTargetByAlias(any(), anyString())).thenReturn(Optional.empty());
-        when(l2Repo.findUpstreamByPublicName(anyString())).thenReturn(Optional.empty());
         when(publicModelRepo.findByPublicName(anyString())).thenReturn(Optional.empty());
         when(costRepo.findByChannelAndUpstream(org.mockito.ArgumentMatchers.anyInt(), anyString()))
                 .thenReturn(Optional.empty());
 
-        useCase = new RelayForwardUseCase(l2Repo, l1Repo, logRepo, upstreamHttpPort, channelRepo,
+        useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort, channelRepo,
                 new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
                 groupCode -> Optional.empty(),
                 (groupCode, userId, tokenId) -> true);

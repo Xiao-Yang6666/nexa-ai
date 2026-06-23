@@ -13,21 +13,23 @@ import type {
   PublicModelCreateRequest,
   PublicModelUpdateRequest,
   ModelMetaAdminView,
+  ModelMetaCreateRequest,
+  ModelMetaUpdateRequest,
   VendorAdminView,
   ChannelModelCostAdminView,
-  PlatformModelMappingAdminView,
-  ChannelPoolMember,
 } from '@/shared/api';
 import {
   getPublicModels,
   createPublicModel,
   updatePublicModel,
   deletePublicModel,
-  getModelMappings,
-  getChannelPool,
+  getChannelsForPool,
   getChannelModelCosts,
   getModelMetas,
   getMissingModels,
+  createModelMeta,
+  updateModelMeta,
+  deleteModelMeta,
   previewModelSync,
   executeModelSync,
   getVendors,
@@ -50,7 +52,7 @@ export const TIER_LABEL: Record<string, string> = {
   air: '经济',
 };
 
-/** 对外模型行视图模型（合并 A→B 映射 + 渠道池摘要）。 */
+/** 对外模型行视图模型（合并供货渠道池摘要）。 */
 export interface PublicModelVM {
   id: number;
   /** 对外名 A */
@@ -67,28 +69,27 @@ export interface PublicModelVM {
   sortOrder: number;
   /** 描述（编辑用） */
   description: string;
-  /** 映射到的真实上游 B（来自 platform_model_mappings，可能多个取首个 + 计数） */
-  b: string;
-  bCount: number;
-  /** 供应渠道池：渠道数 + 主通道名 */
+  /** 供应渠道池：渠道数 + 主通道名（A→B 为渠道级私有，不在对外模型页展示 B） */
   poolCount: number;
   poolMain: string;
   on: boolean;
 }
 
-/** PublicModelAdminView + 映射表 + 渠道池 → 对外模型 VM。 */
+/** 渠道（供应渠道池本地匹配用的精简形态）。 */
+interface PoolChannel {
+  id?: number;
+  name?: string;
+  models?: string;
+  priority?: number;
+}
+
+/** PublicModelAdminView + 匹配到的供货渠道 → 对外模型 VM。 */
 export function toPublicModelVM(
   view: PublicModelAdminView,
-  mappings: PlatformModelMappingAdminView[],
-  pool: ChannelPoolMember[],
+  matchedChannels: PoolChannel[],
 ): PublicModelVM {
   const a = view.public_name ?? '';
-  const myMappings = mappings.filter((m) => m.public_name === a);
-  const bList = myMappings.map((m) => m.upstream_name ?? '').filter(Boolean);
-  // 渠道池：匹配该 A 映射到的任一 B
-  const bSet = new Set(bList);
-  const myPool = pool.filter((p) => p.upstream_model && bSet.has(p.upstream_model));
-  const sortedPool = myPool.slice().sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0));
+  const sorted = matchedChannels.slice().sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0));
   const tier = view.quality_tier ?? 'air';
   return {
     id: view.id ?? 0,
@@ -100,27 +101,53 @@ export function toPublicModelVM(
     priceRatioNum: view.base_price_ratio != null ? Number(view.base_price_ratio) : 1,
     sortOrder: view.sort_order ?? 0,
     description: view.description || '',
-    b: bList[0] ?? '',
-    bCount: bList.length,
-    poolCount: myPool.length,
-    poolMain: sortedPool[0]?.channel_name ?? '',
+    poolCount: matchedChannels.length,
+    poolMain: sorted[0]?.name ?? '',
     on: view.enabled ?? false,
   };
 }
 
-/** 对外模型 Tab 聚合查询（public_models + mappings + pool 三源合并）。 */
+/** 渠道 models CSV 是否声明支持对外名 A（大小写/空格不敏感，与后端 matchModel 同口径）。 */
+function channelSupportsModel(models: string | undefined, a: string): boolean {
+  if (!models || !a) return false;
+  const target = a.trim().toLowerCase();
+  return models.split(',').some((m) => m.trim().toLowerCase() === target);
+}
+
+/**
+ * 去掉对外名 A 的品质后缀（-air/-max/-pro），还原底层模型名用于匹配渠道 models。
+ *
+ * <p>对外名按 {@link buildPublicName} 规则 = 底层名 slug + `-air|-max|-pro`。渠道 models 存的是底层名，
+ * 故供货匹配前先剥后缀。无已知后缀则原样返回。</p>
+ */
+export function stripTierSuffix(a: string): string {
+  return (a || '').replace(/-(air|max|pro)$/i, '');
+}
+
+/** 渠道是否供货某对外名 A：A 原名或去品质后缀的底层名命中渠道 models 即算。 */
+function channelServesPublic(models: string | undefined, a: string): boolean {
+  return channelSupportsModel(models, a) || channelSupportsModel(models, stripTierSuffix(a));
+}
+
+/** 对外模型 Tab 聚合查询（public_models + 一次性渠道列表本地匹配供货池）。 */
 export function usePublicModels() {
   return useQuery({
     queryKey: ['model-admin', 'public-models'],
     queryFn: async () => {
-      const [pm, mp, pool] = await Promise.all([
+      // 并行拉对外模型 + 全量渠道；渠道列表错误正常抛出（不再静默吞成"未绑渠道"）。
+      const [pm, channels] = await Promise.all([
         getPublicModels(1, 200),
-        getModelMappings(1, 500),
-        getChannelPool(),
+        getChannelsForPool(500),
       ]);
-      const mappings = mp.items ?? [];
-      const poolItems = pool.items ?? [];
-      return (pm.items ?? []).map((v) => toPublicModelVM(v, mappings, poolItems));
+      const models = pm.items ?? [];
+      const chList = channels.items ?? [];
+      return models.map((v) => {
+        const a = v.public_name ?? '';
+        // 本地按 models CSV 匹配供货渠道：A 原名或去品质后缀的底层名命中即算（带 -air/-pro 后缀的商品
+        // 渠道仍按底层名 claude-sonnet-4.5 供货，需剥后缀才能正确统计）。
+        const matched = chList.filter((c) => channelServesPublic(c.models, a));
+        return toPublicModelVM(v, matched);
+      });
     },
   });
 }
@@ -205,34 +232,89 @@ export interface ModelMetaVM {
   /** 供应商名（由 vendor 列表 join） */
   ven: string;
   st: ModelState;
+  /** 原始 status 码（编辑用） */
+  statusCode: number;
   tags: string[];
+  /** 标签原始串（编辑用） */
+  tagsRaw: string;
   endpoints: string;
+  /** 描述（编辑用） */
+  description: string;
+  /** 图标（编辑用） */
+  icon: string;
+  /** 供货渠道数（有几个渠道在 models 里声明支持本模型） */
+  poolCount: number;
 }
 
-export function toModelMetaVM(view: ModelMetaAdminView, vendorName: Map<number, string>): ModelMetaVM {
+export function toModelMetaVM(
+  view: ModelMetaAdminView,
+  vendorName: Map<number, string>,
+  poolCount = 0,
+): ModelMetaVM {
   return {
     id: view.id ?? 0,
     nm: view.model_name ?? '',
     vendorId: view.vendor_id ?? 0,
     ven: view.vendor_id ? (vendorName.get(view.vendor_id) ?? `#${view.vendor_id}`) : '—',
     st: deriveModelState(view.status),
+    statusCode: view.status ?? 0,
     tags: (view.tags || '').split(',').map((t) => t.trim()).filter(Boolean),
+    tagsRaw: view.tags || '',
     endpoints: view.endpoints || '',
+    description: view.description || '',
+    icon: view.icon || '',
+    poolCount,
   };
 }
 
-/** 模型元数据 Tab 查询（models join vendors 取供应商名）。 */
+/** 模型元数据 Tab 查询（models join vendors 取供应商名 + 渠道列表算供货数）。 */
 export function useModelMetas() {
   return useQuery({
     queryKey: ['model-admin', 'metas'],
     queryFn: async () => {
-      const [models, vendors] = await Promise.all([getModelMetas(1, 200), getVendors(1, 200)]);
+      const [models, vendors, channels] = await Promise.all([
+        getModelMetas(1, 200),
+        getVendors(1, 200),
+        getChannelsForPool(500).catch(() => ({ items: [], total: 0 })),
+      ]);
       const vendorName = new Map<number, string>();
       (vendors.items ?? []).forEach((v) => {
         if (v.id != null) vendorName.set(v.id, v.name ?? `#${v.id}`);
       });
-      return (models.items ?? []).map((m) => toModelMetaVM(m, vendorName));
+      const chList = channels.items ?? [];
+      return (models.items ?? []).map((m) => {
+        const name = m.model_name ?? '';
+        const poolCount = chList.filter((c) => channelSupportsModel(c.models, name)).length;
+        return toModelMetaVM(m, vendorName, poolCount);
+      });
     },
+  });
+}
+
+/** 创建模型元数据 mutation。 */
+export function useCreateModelMeta() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (req: ModelMetaCreateRequest) => createModelMeta(req),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin', 'metas'] }),
+  });
+}
+
+/** 更新模型元数据 mutation（含 status_only 上下架切换）。 */
+export function useUpdateModelMeta() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (req: ModelMetaUpdateRequest) => updateModelMeta(req),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin', 'metas'] }),
+  });
+}
+
+/** 删除模型元数据 mutation。 */
+export function useDeleteModelMeta() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteModelMeta(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin', 'metas'] }),
   });
 }
 

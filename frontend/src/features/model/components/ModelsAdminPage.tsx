@@ -6,7 +6,6 @@ import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
 import {
   usePublicModels,
-  useChannelCosts,
   useModelMetas,
   useVendors,
   useMissingModels,
@@ -15,10 +14,12 @@ import {
   useCreatePublicModel,
   useUpdatePublicModel,
   useDeletePublicModel,
+  useCreateModelMeta,
+  useUpdateModelMeta,
+  useDeleteModelMeta,
   TIER_LABEL,
   MODEL_STATE_MAP,
   type PublicModelVM,
-  type CostGroupVM,
   type ModelMetaVM,
   type VendorVM,
   type ModelState,
@@ -43,14 +44,6 @@ function IcInfo() {
     </svg>
   );
 }
-function IcArrow() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 12h14" /><path d="M13 6l6 6-6 6" />
-    </svg>
-  );
-}
 
 /* ════════════════════════════ 小展示组件 ════════════════════════════ */
 const TIER_CLS: Record<string, string> = {
@@ -65,17 +58,6 @@ function TierBadge({ t }: { t: string }) {
       <span className={styles.dot} />
       {TIER_LABEL[t] ?? t}
     </span>
-  );
-}
-
-function MapCell({ b, count }: { b: string; count: number }) {
-  if (!b) return <span className={styles.costWarn}>未映射 B</span>;
-  return (
-    <div className={styles.maprow}>
-      <span className={styles.mapGlyph}><IcArrow /></span>
-      <span className={styles.mapb}>{b}</span>
-      {count > 1 && <span className={styles.privTag}>+{count - 1} 个 B</span>}
-    </div>
   );
 }
 
@@ -131,6 +113,58 @@ function Caps({ arr }: { arr: string[] }) {
   );
 }
 
+/** 模型元数据抽屉的剩余字段（标签/描述/图标 + 错误），抽出以控制单块体积。 */
+interface MetaFormState {
+  model_name: string;
+  vendor_id: string;
+  status: string;
+  tags: string;
+  endpoints: string;
+  description: string;
+  icon: string;
+}
+function MetaDrawerRest({ metaForm, setMetaForm, metaErr }: {
+  metaForm: MetaFormState;
+  setMetaForm: React.Dispatch<React.SetStateAction<MetaFormState>>;
+  metaErr: string | null;
+}) {
+  return (
+    <>
+      <div style={{ marginTop: 'var(--space-3)' }}>
+        <label className="field-label">标签（逗号分隔，可空）</label>
+        <input
+          className="input"
+          placeholder="vision,tools,reasoning"
+          value={metaForm.tags}
+          onChange={(e) => setMetaForm((f) => ({ ...f, tags: e.target.value }))}
+        />
+      </div>
+      <div style={{ marginTop: 'var(--space-3)' }}>
+        <label className="field-label">描述（可空）</label>
+        <input
+          className="input"
+          value={metaForm.description}
+          onChange={(e) => setMetaForm((f) => ({ ...f, description: e.target.value }))}
+        />
+      </div>
+      <div style={{ marginTop: 'var(--space-3)' }}>
+        <label className="field-label">图标（可空）</label>
+        <input
+          className="input"
+          value={metaForm.icon}
+          onChange={(e) => setMetaForm((f) => ({ ...f, icon: e.target.value }))}
+        />
+      </div>
+      {metaErr && (
+        <div className="field-hint" style={{ marginTop: 'var(--space-3)', color: 'var(--color-danger)' }}>
+          {metaErr}
+        </div>
+      )}
+    </>
+  );
+}
+
+
 /** 统一占位行（加载/错误/空）。 */
 function StateRow({ colSpan, loading, error, empty }: {
   colSpan: number;
@@ -151,21 +185,21 @@ function StateRow({ colSpan, loading, error, empty }: {
 }
 
 /* ════════════════════════════ 主组件 ════════════════════════════ */
-type TabKey = 'public' | 'costs' | 'models' | 'vendors';
+type TabKey = 'public' | 'models' | 'vendors';
 
 /**
- * ModelsAdminPage — 模型/供应商管理（S6 admin/models-admin.html 工程化，已接真实接口）。
- * 四 Tab：对外模型 / 供应商成本 / 模型元数据 / 供应商元数据。
- * 数据源：GET /api/public_models（+ platform_model_mappings + channel/pool）、
- * /api/channel_model_costs、/api/models（+ /api/vendors join）、/api/vendors。
+ * ModelsAdminPage — 模型商品管理（S6 admin/models-admin.html 工程化，已接真实接口）。
+ * 三 Tab：对外模型 / 模型元数据 / 模型厂牌。
+ * 数据源：GET /api/public_models（+ 供货渠道池 channel/pool 摘要）、
+ * /api/models（+ /api/vendors join）、/api/vendors。
  * 缺失检测 GET /api/models/missing、上游同步预览 POST /api/models/sync/preview。
+ * A→B 底仓映射已下沉为渠道级（渠道管理页配置），本页不再展示/维护 A→B。
  */
 export function ModelsAdminPage() {
   const [tab, setTab] = useState<TabKey>('public');
 
   /* 各 Tab 数据 */
   const pubsQuery = usePublicModels();
-  const costsQuery = useChannelCosts();
   const metasQuery = useModelMetas();
   const vendorsQuery = useVendors();
 
@@ -179,6 +213,25 @@ export function ModelsAdminPage() {
   const createPub = useCreatePublicModel();
   const updatePub = useUpdatePublicModel();
   const deletePub = useDeletePublicModel();
+
+  /* 模型元数据写操作 */
+  const createMeta = useCreateModelMeta();
+  const updateMeta = useUpdateModelMeta();
+  const deleteMeta = useDeleteModelMeta();
+
+  /* 模型元数据编辑抽屉 */
+  const [metaDrawerOpen, setMetaDrawerOpen] = useState(false);
+  const [metaEditId, setMetaEditId] = useState<number | null>(null);
+  const [metaForm, setMetaForm] = useState({
+    model_name: '',
+    vendor_id: '',
+    status: '1',
+    tags: '',
+    endpoints: '',
+    description: '',
+    icon: '',
+  });
+  const [metaErr, setMetaErr] = useState<string | null>(null);
 
   /* 对外模型编辑抽屉 */
   const [pubDrawerOpen, setPubDrawerOpen] = useState(false);
@@ -199,10 +252,6 @@ export function ModelsAdminPage() {
   const [pState, setPState] = useState('');
   const [pSearch, setPSearch] = useState('');
 
-  /* 供应商成本筛选 */
-  const [cModel, setCModel] = useState('');
-  const [cUnset, setCUnset] = useState(false);
-
   /* 模型元数据筛选 */
   const [fVendor, setFVendor] = useState('');
   const [fState, setFState] = useState('');
@@ -212,7 +261,6 @@ export function ModelsAdminPage() {
   const [vSearch, setVSearch] = useState('');
 
   const pubs: PublicModelVM[] = useMemo(() => pubsQuery.data ?? [], [pubsQuery.data]);
-  const costGroups: CostGroupVM[] = useMemo(() => costsQuery.data ?? [], [costsQuery.data]);
   const metas: ModelMetaVM[] = useMemo(() => metasQuery.data ?? [], [metasQuery.data]);
   const vendors: VendorVM[] = useMemo(() => vendorsQuery.data ?? [], [vendorsQuery.data]);
 
@@ -232,14 +280,6 @@ export function ModelsAdminPage() {
     });
   }, [pubs, pTier, pState, pSearch]);
 
-  /* ── 供应商成本筛选 ── */
-  const filteredCosts = useMemo(() => {
-    return costGroups
-      .filter((g) => !cModel || g.b === cModel)
-      .map((g) => ({ ...g, rows: g.rows.filter((r) => !cUnset || r.unset) }))
-      .filter((g) => g.rows.length > 0);
-  }, [costGroups, cModel, cUnset]);
-
   /* ── 模型元数据筛选 ── */
   const filteredModels = useMemo(() => {
     return metas.filter((r) => {
@@ -250,16 +290,14 @@ export function ModelsAdminPage() {
     });
   }, [metas, fVendor, fState, fSearch]);
 
-  /* ── 供应商元数据筛选 ── */
+  /* ── 模型厂牌筛选 ── */
   const filteredVendors = useMemo(() => {
     return vendors.filter((v) => !vSearch || v.nm.toLowerCase().includes(vSearch.toLowerCase()));
   }, [vendors, vSearch]);
 
   /* 动态下拉项 */
-  const bOptions = useMemo(() => costGroups.map((g) => g.b), [costGroups]);
   const vendorOptions = useMemo(() => Array.from(new Set(metas.map((m) => m.ven).filter((v) => v !== '—'))), [metas]);
 
-  const totalCostRows = filteredCosts.reduce((s, g) => s + g.rows.length, 0);
   const syncDiff = syncMutation.data?.diff;
 
   async function handleDetect() {
@@ -279,6 +317,25 @@ export function ModelsAdminPage() {
     setPubEditId(null);
     setPubErr(null);
     setPubForm({ public_name: '', display_name: '', quality_tier: 'air', base_price_ratio: '1', sort_order: '0', description: '', enabled: true });
+    setPubDrawerOpen(true);
+  }
+  /**
+   * 从模型元数据「发布」：模型ID（public_name，调用键）直接 = 底层模型名，不拼任何后缀；
+   * 外显名（display_name）默认同名、可改。品质档只影响倍率/分组展示，不参与命名。
+   */
+  function openPublishFromMeta(r: ModelMetaVM) {
+    setPubEditId(null);
+    setPubErr(null);
+    setPubForm({
+      public_name: r.nm,
+      display_name: r.nm,
+      quality_tier: 'air',
+      base_price_ratio: '1',
+      sort_order: '0',
+      description: r.description || '',
+      enabled: true,
+    });
+    setTab('public');
     setPubDrawerOpen(true);
   }
   function openPubEdit(r: PublicModelVM) {
@@ -337,6 +394,70 @@ export function ModelsAdminPage() {
   }
   const pubSaving = createPub.isPending || updatePub.isPending;
 
+  /* ── 模型元数据抽屉 ── */
+  function openMetaNew() {
+    setMetaEditId(null);
+    setMetaErr(null);
+    setMetaForm({ model_name: '', vendor_id: '', status: '1', tags: '', endpoints: '', description: '', icon: '' });
+    setMetaDrawerOpen(true);
+  }
+  function openMetaEdit(r: ModelMetaVM) {
+    setMetaEditId(r.id);
+    setMetaErr(null);
+    setMetaForm({
+      model_name: r.nm,
+      vendor_id: r.vendorId ? String(r.vendorId) : '',
+      status: String(r.statusCode || 1),
+      tags: r.tagsRaw,
+      endpoints: r.endpoints,
+      description: r.description,
+      icon: r.icon,
+    });
+    setMetaDrawerOpen(true);
+  }
+  async function handleMetaSave() {
+    setMetaErr(null);
+    const name = metaForm.model_name.trim();
+    if (!name) { setMetaErr('模型名必填'); return; }
+    const vendorId = metaForm.vendor_id.trim() ? Number(metaForm.vendor_id) : undefined;
+    if (vendorId != null && Number.isNaN(vendorId)) { setMetaErr('供应商非法'); return; }
+    const status = Number(metaForm.status) || 0;
+    try {
+      if (metaEditId == null) {
+        await createMeta.mutateAsync({
+          model_name: name,
+          vendor_id: vendorId,
+          tags: metaForm.tags.trim() || undefined,
+          endpoints: metaForm.endpoints.trim() || undefined,
+          description: metaForm.description.trim() || undefined,
+          icon: metaForm.icon.trim() || undefined,
+        });
+      } else {
+        await updateMeta.mutateAsync({
+          id: metaEditId,
+          status,
+          model_name: name,
+          vendor_id: vendorId,
+          tags: metaForm.tags.trim() || undefined,
+          endpoints: metaForm.endpoints.trim() || undefined,
+          description: metaForm.description.trim() || undefined,
+          icon: metaForm.icon.trim() || undefined,
+        });
+      }
+      setMetaDrawerOpen(false);
+    } catch (e) {
+      setMetaErr(e instanceof ApiError ? e.message : '保存失败，请稍后重试');
+    }
+  }
+  async function handleMetaToggle(r: ModelMetaVM) {
+    // status_only 切换上下架：1=上架、2=下架。
+    await updateMeta.mutateAsync({ id: r.id, status_only: true, status: r.st === 'on' ? 2 : 1 });
+  }
+  async function handleMetaDelete(r: ModelMetaVM) {
+    await deleteMeta.mutateAsync(r.id);
+  }
+  const metaSaving = createMeta.isPending || updateMeta.isPending;
+
 
   return (
     <AppShell
@@ -369,9 +490,8 @@ export function ModelsAdminPage() {
       {/* Tab */}
       <div className={styles.tabs}>
         <button className={`${styles.tab}${tab === 'public' ? ' ' + styles.on : ''}`} onClick={() => setTab('public')}>对外模型</button>
-        <button className={`${styles.tab}${tab === 'costs' ? ' ' + styles.on : ''}`} onClick={() => setTab('costs')}>供应商成本</button>
         <button className={`${styles.tab}${tab === 'models' ? ' ' + styles.on : ''}`} onClick={() => setTab('models')}>模型元数据</button>
-        <button className={`${styles.tab}${tab === 'vendors' ? ' ' + styles.on : ''}`} onClick={() => setTab('vendors')}>供应商元数据</button>
+        <button className={`${styles.tab}${tab === 'vendors' ? ' ' + styles.on : ''}`} onClick={() => setTab('vendors')}>模型厂牌</button>
       </div>
 
       {/* ════ 对外模型 Tab ════ */}
@@ -380,7 +500,7 @@ export function ModelsAdminPage() {
           <section className={`${styles.noteBar} nx-fade`}>
             <IcInfo />
             <span className={styles.txt}>
-              对外模型即对客户售卖的商品（公开名 <b>A</b>）。基准售价对所有客户恒定；底仓映射 <b>A 到 B</b> 仅平台内部可见，<b>客户永不可见 B</b>。
+              对外模型即对客户售卖的商品（公开名 <b>A</b>）。基准售价对所有客户恒定；底仓映射 <b>A→B</b> 与成本倍率已下沉到<b>渠道管理</b>页，按渠道各自配置（<b>客户永不可见 B</b>）。
             </span>
           </section>
 
@@ -407,13 +527,13 @@ export function ModelsAdminPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>对外名 (A)</th><th>品质档</th>
-                    <th>基准售价倍率</th><th>底仓映射 A 到 B（B 不可见）</th>
+                    <th>模型 ID / 外显名</th><th>品质档</th>
+                    <th>基准售价倍率</th>
                     <th>供应渠道池</th><th>状态</th><th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <StateRow colSpan={7} loading={pubsQuery.isLoading} error={pubsQuery.error} empty={filteredPubs.length === 0} />
+                  <StateRow colSpan={6} loading={pubsQuery.isLoading} error={pubsQuery.error} empty={filteredPubs.length === 0} />
                   {filteredPubs.map((r) => (
                     <tr key={r.id}>
                       <td className={styles.cellmono}>
@@ -422,7 +542,6 @@ export function ModelsAdminPage() {
                       </td>
                       <td><TierBadge t={r.tier} /></td>
                       <td className={styles.cellmono}>{r.priceRatio}</td>
-                      <td><MapCell b={r.b} count={r.bCount} /></td>
                       <td><PoolCell count={r.poolCount} main={r.poolMain} /></td>
                       <td><PubStateBadge on={r.on} /></td>
                       <td>
@@ -439,98 +558,6 @@ export function ModelsAdminPage() {
             </div>
             <div className={styles.pager}>
               <span>共 {filteredPubs.length} 个对外模型</span>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {/* ════ 供应商成本 Tab ════ */}
-      {tab === 'costs' && (
-        <div>
-          <section className={`${styles.noteBar} nx-fade`}>
-            <IcInfo />
-            <span className={styles.txt}>
-              成本倍率挂在「供应商渠道 × 真实模型 <b>B</b>」上，<b>仅平台内部、手动填写</b>。它只影响利润计算，<b>不影响对客户售价</b>。下方按 B 分组呈现各渠道成本差异。
-            </span>
-          </section>
-
-          <section className={`${styles.toolbar} nx-fade`}>
-            <select className={styles.sel} value={cModel} onChange={(e) => setCModel(e.target.value)}>
-              <option value="">全部真实模型 B</option>
-              {bOptions.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
-            <label className={styles.swInline}>
-              <input type="checkbox" checked={cUnset} onChange={(e) => setCUnset(e.target.checked)} />
-              <span>仅看未配成本</span>
-            </label>
-            <span className={styles.grow} />
-          </section>
-
-          <section className={`${styles.tableCard} nx-fade`}>
-            {costsQuery.isLoading ? (
-              <div className={styles.emptyCell}>加载中…</div>
-            ) : costsQuery.isError ? (
-              <div className={styles.emptyCell}>
-                加载失败：{costsQuery.error instanceof ApiError ? costsQuery.error.message : '请稍后重试'}
-              </div>
-            ) : filteredCosts.length === 0 ? (
-              <div className={styles.emptyCell}>暂无成本配置</div>
-            ) : (
-              filteredCosts.map((g) => {
-                const nums = g.rows.filter((r) => !r.unset && r.costNum != null).map((r) => r.costNum as number);
-                let spread: React.ReactNode;
-                if (nums.length > 1) {
-                  const mn = Math.min(...nums);
-                  const mx = Math.max(...nums);
-                  spread = <>成本极差 <b>{mn.toFixed(2)}</b> ~ <b>{mx.toFixed(2)}</b>（{(mx / Math.max(mn, 0.0001)).toFixed(1)}x 差异）</>;
-                } else {
-                  spread = '待补全更多供应商成本';
-                }
-                return (
-                  <div key={g.b} className={styles.costGrp}>
-                    <div className={styles.costGrphead}>
-                      <span className={styles.bname}>{g.b}</span>
-                      <span className={styles.privTag}>真实模型 B · 客户不可见</span>
-                      <span className={styles.spread}>{spread}</span>
-                    </div>
-                    <div className={styles.tableWrap}>
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>渠道 ID</th><th>成本倍率</th><th>备注</th><th>最后更新</th><th>状态</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {g.rows.map((r) => (
-                            <tr key={r.id}>
-                              <td className={styles.cellmono}>#{r.channelId}</td>
-                              <td className={styles.cellmono}>{r.unset ? '—' : `×${r.cost}`}</td>
-                              <td className="muted">{r.remark || '—'}</td>
-                              <td className="muted">{r.upd}</td>
-                              <td>
-                                {r.unset ? (
-                                  <span className={styles.costWarn}>未配成本，利润无法计算</span>
-                                ) : r.on ? (
-                                  <span className="badge b-suc">
-                                    <span className="dot" style={{ background: 'var(--color-success)' }} />已配
-                                  </span>
-                                ) : (
-                                  <span className="badge b-info">
-                                    <span className="dot" style={{ background: 'var(--color-info)' }} />已停用
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <div className={styles.pager}>
-              <span>共 {filteredCosts.length} 个真实模型 B、{totalCostRows} 条渠道成本配置</span>
             </div>
           </section>
         </div>
@@ -553,6 +580,7 @@ export function ModelsAdminPage() {
             <input className={styles.srch} type="search" placeholder="搜索模型名"
               value={fSearch} onChange={(e) => setFSearch(e.target.value)} />
             <span className={styles.grow} />
+            <Button variant="primary" size="sm" onClick={openMetaNew}>新建模型</Button>
           </section>
 
           <section className={`${styles.tableCard} nx-fade`}>
@@ -560,18 +588,31 @@ export function ModelsAdminPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>模型名</th><th>供应商</th><th>状态</th><th>端点</th><th>标签</th>
+                    <th>模型名</th><th>供应商</th><th>供货渠道</th><th>状态</th><th>端点</th><th>标签</th><th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <StateRow colSpan={5} loading={metasQuery.isLoading} error={metasQuery.error} empty={filteredModels.length === 0} />
+                  <StateRow colSpan={7} loading={metasQuery.isLoading} error={metasQuery.error} empty={filteredModels.length === 0} />
                   {filteredModels.map((r) => (
                     <tr key={r.id}>
                       <td className={styles.cellmono}>{r.nm}</td>
                       <td className="muted">{r.ven}</td>
+                      <td>
+                        {r.poolCount > 0
+                          ? <span className={styles.chsCnt}>{r.poolCount} 渠道</span>
+                          : <span className={styles.costWarn}>未绑渠道</span>}
+                      </td>
                       <td><StateBadge st={r.st} /></td>
                       <td className={`${styles.cellmono} muted`}>{r.endpoints || '—'}</td>
                       <td><Caps arr={r.tags} /></td>
+                      <td>
+                        <div className={styles.rowActs}>
+                          <a onClick={() => openPublishFromMeta(r)}>发布</a>
+                          <a onClick={() => openMetaEdit(r)}>编辑</a>
+                          <a onClick={() => handleMetaToggle(r)}>{r.st === 'on' ? '下架' : '上架'}</a>
+                          <a className={styles.dang} onClick={() => handleMetaDelete(r)}>删除</a>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -627,24 +668,29 @@ export function ModelsAdminPage() {
         </div>
         <div className={styles.drawerBody}>
           <div>
-            <label className="field-label">对外名 A <span className="field-req">*</span></label>
+            <label className="field-label">模型 ID <span className="field-req">*</span></label>
             <input
               className={`input ${styles.cellmono}`}
-              placeholder="例如：opus-4.8-经济"
+              placeholder="例如：claude-haiku-4.5"
               value={pubForm.public_name}
               disabled={pubEditId != null}
               onChange={(e) => setPubForm((f) => ({ ...f, public_name: e.target.value }))}
             />
-            {pubEditId != null && <div className={styles.fieldHint}>对外名 A 建后不可改</div>}
+            <div className={styles.fieldHint}>
+              {pubEditId != null
+                ? '模型 ID 建后不可改'
+                : '客户调用时使用的模型名，须与底层模型 / 渠道支持的模型名一致（不要拼接后缀）。'}
+            </div>
           </div>
           <div style={{ marginTop: 'var(--space-3)' }}>
-            <label className="field-label">展示名</label>
+            <label className="field-label">外显名称</label>
             <input
               className="input"
-              placeholder="例如：Claude Opus 4.8 经济版"
+              placeholder="例如：Claude Haiku 4.5"
               value={pubForm.display_name}
               onChange={(e) => setPubForm((f) => ({ ...f, display_name: e.target.value }))}
             />
+            <div className={styles.fieldHint}>仅用于模型广场展示，不影响调用。</div>
           </div>
           <div className={styles.row2} style={{ marginTop: 'var(--space-3)' }}>
             <div>
@@ -699,7 +745,7 @@ export function ModelsAdminPage() {
             </label>
           </div>
           <div className={styles.fieldHint} style={{ marginTop: 'var(--space-3)' }}>
-            底仓映射 A→B 与供应渠道池在「平台映射 / 渠道池」中单独维护，此处仅管理对外商品本身。
+            底仓映射 A→B、成本倍率与供应渠道池在<b>渠道管理</b>页按渠道各自维护，此处仅管理对外商品本身。
           </div>
           {pubErr && (
             <div className={styles.fieldHint} style={{ marginTop: 'var(--space-3)', color: 'var(--color-danger)' }}>
@@ -711,6 +757,69 @@ export function ModelsAdminPage() {
           <Button variant="ghost" onClick={() => setPubDrawerOpen(false)}>取消</Button>
           <Button variant="primary" onClick={handlePubSave} disabled={pubSaving}>
             {pubSaving ? '保存中…' : '保存'}
+          </Button>
+        </div>
+      </aside>
+
+      {/* ════ 模型元数据 编辑/新建 抽屉 ════ */}
+      <div className={`${styles.drawerScrim}${metaDrawerOpen ? ' ' + styles.on : ''}`} onClick={() => setMetaDrawerOpen(false)} />
+      <aside className={`${styles.drawer}${metaDrawerOpen ? ' ' + styles.on : ''}`} aria-label="模型元数据编辑">
+        <div className={styles.drawerHead}>
+          <h2 className={styles.drawerTitle}>{metaEditId == null ? '新建模型' : '编辑模型'}</h2>
+          <button className={styles.drawerX} onClick={() => setMetaDrawerOpen(false)} aria-label="关闭">×</button>
+        </div>
+        <div className={styles.drawerBody}>
+          <div>
+            <label className="field-label">模型名 <span className="field-req">*</span></label>
+            <input
+              className={`input ${styles.cellmono}`}
+              placeholder="例如：gpt-4o"
+              value={metaForm.model_name}
+              onChange={(e) => setMetaForm((f) => ({ ...f, model_name: e.target.value }))}
+            />
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label className="field-label">供应商（厂牌 vendor id，可空）</label>
+            <select
+              className="input"
+              value={metaForm.vendor_id}
+              onChange={(e) => setMetaForm((f) => ({ ...f, vendor_id: e.target.value }))}
+            >
+              <option value="">（无）</option>
+              {vendors.map((v) => <option key={v.id} value={String(v.id)}>{v.nm}</option>)}
+            </select>
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label className="field-label">状态</label>
+            <select
+              className="input"
+              value={metaForm.status}
+              onChange={(e) => setMetaForm((f) => ({ ...f, status: e.target.value }))}
+            >
+              <option value="1">上架</option>
+              <option value="2">下架</option>
+              <option value="3">预发布</option>
+            </select>
+          </div>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <label className="field-label">端点（逗号分隔，可空）</label>
+            <input
+              className={`input ${styles.cellmono}`}
+              placeholder="/v1/chat/completions,/v1/embeddings"
+              value={metaForm.endpoints}
+              onChange={(e) => setMetaForm((f) => ({ ...f, endpoints: e.target.value }))}
+            />
+          </div>
+          <MetaDrawerRest
+            metaForm={metaForm}
+            setMetaForm={setMetaForm}
+            metaErr={metaErr}
+          />
+        </div>
+        <div className={styles.drawerFoot}>
+          <Button variant="ghost" onClick={() => setMetaDrawerOpen(false)}>取消</Button>
+          <Button variant="primary" onClick={handleMetaSave} disabled={metaSaving}>
+            {metaSaving ? '保存中…' : '保存'}
           </Button>
         </div>
       </aside>

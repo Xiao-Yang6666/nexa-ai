@@ -26,7 +26,6 @@ import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.port.UpstreamResponse;
 import com.nexa.relay.domain.protocol.ProtocolAdapter;
 import com.nexa.relay.domain.protocol.ProtocolRegistry;
-import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.service.DualPriceBilling;
@@ -58,7 +57,6 @@ import java.util.Arrays;
 @Service
 public class RelayForwardUseCase {
 
-    private final PlatformModelMappingRepository l2Repo;
     private final UserModelAliasRepository l1Repo;
     private final RelayLogRepository logRepo;
     private final UpstreamHttpPort upstreamHttpPort;
@@ -72,8 +70,7 @@ public class RelayForwardUseCase {
     private final ModelGroupPricingPort modelGroupPricingPort;
     private final ModelGroupAccessPort modelGroupAccessPort;
 
-    public RelayForwardUseCase(PlatformModelMappingRepository l2Repo,
-                               UserModelAliasRepository l1Repo,
+    public RelayForwardUseCase(UserModelAliasRepository l1Repo,
                                RelayLogRepository logRepo,
                                UpstreamHttpPort upstreamHttpPort,
                                ChannelRepository channelRepo,
@@ -85,7 +82,6 @@ public class RelayForwardUseCase {
                                UserQuotaAccount userQuotaAccount,
                                ModelGroupPricingPort modelGroupPricingPort,
                                ModelGroupAccessPort modelGroupAccessPort) {
-        this.l2Repo = l2Repo;
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
         this.upstreamHttpPort = upstreamHttpPort;
@@ -111,7 +107,12 @@ public class RelayForwardUseCase {
     }
 
     /**
-     * 执行两层模型映射 C→A→B（RL-7 第②步）。
+     * 执行客户层模型映射 C→A（RL-7 第②步 L1）。
+     *
+     * <p>A→B 不再在此解析：底仓映射已下沉为<b>渠道级</b>（选中渠道后用其 {@code modelMapping} 做 A→B，
+     * 见 {@link #resolveChannelUpstream}），故 {@link TwoLayerModelResolver} 的 L2 查找传 {@code null}
+     * （A→B 恒等于 A，由渠道级映射在选渠后接管）。这样同一对外名 A 可被不同上游渠道映射到各自的真实名 B，
+     * 不再受"全局唯一 A→B"约束。</p>
      *
      * @param requestedModel 客户输入名 C
      * @param userId         当前 userId（L1 user scope）
@@ -126,9 +127,36 @@ public class RelayForwardUseCase {
                 // L1 lookup: user > group 优先级
                 alias -> l1Repo.findTargetByAlias(userScope, alias)
                         .orElseGet(() -> l1Repo.findTargetByAlias(groupScope, alias).orElse(null)),
-                // L2 lookup
-                publicName -> l2Repo.findUpstreamByPublicName(publicName).orElse(null)
+                // L2 lookup: 不再走全局底仓映射——A→B 已下沉为渠道级（选渠后解析），此处恒等返回 null。
+                publicName -> null
         );
+    }
+
+    /**
+     * 渠道级底仓映射 A→B（选渠后解析，替代原全局 platform_model_mappings 的 L2）。
+     *
+     * <p>用选中渠道的 {@code modelMapping}（JSON object {@code {"A":"B"}}）把对外/平台名 A 映射到该渠道
+     * 自己的真实上游名 B。未配映射、A 不在映射表、或映射值空白 → 恒等返回 A（B=A）。解析失败（非法 JSON）
+     * 同样恒等回落，不阻断转发。这样同一 A 可被不同渠道映射到各自的 B，A→B 不再全局唯一。</p>
+     *
+     * @param channel     选中的渠道聚合
+     * @param publicName  对外/平台名 A（C→A 后的产物，也是 abilities 选渠键）
+     * @return 该渠道的真实上游名 B（未映射则 = A）
+     */
+    private String resolveChannelUpstream(Channel channel, String publicName) {
+        String mapping = channel.modelMapping();
+        if (mapping == null || mapping.isBlank()) {
+            return publicName;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(mapping).path(publicName);
+            if (node.isTextual() && !node.asText().isBlank()) {
+                return node.asText();
+            }
+        } catch (IOException ignored) {
+            // 非法映射 JSON：恒等回落 B=A，不阻断转发（与"未配映射"同语义）。
+        }
+        return publicName;
     }
 
     /**
@@ -157,7 +185,7 @@ public class RelayForwardUseCase {
         String requestedModel = readModelName(root);
         ModelResolution resolution =
                 resolveModel(requestedModel, authContext.userId(), authContext.group());
-        String upstreamModel = resolution.upstream(); // B：真实上游模型名
+        String publicModel = resolution.resolvedPublic(); // A：平台公开名（选渠键 + 定价键）
 
         // ③ key 减法校验（ModelLimits 对 A / EndpointLimits 对 inFmt，默认全开放行）。
         // REQ-06: 接入 KeyLimitGuard（tokenId 为空时——token 鉴权未接线——按默认全开放行）。
@@ -180,17 +208,18 @@ public class RelayForwardUseCase {
         int lastFailureStatus = 502;
         String lastFailureMaskedMessage = MaskSensitiveError.mask(lastFailureStatus, null);
         Channel channel;
+        String upstreamModel;             // B：真实上游名，渠道级解析（每渠道可不同）
         ProtocolFormat targetProto;
         boolean passthrough;
         UpstreamResponse upstreamResponse;
 
         while (true) {
-            // ④ 选渠（group×B 加权随机 + CH-5 排除已尝试渠道再选下一个，REQ-03 重载）。
-            //   首次选渠无候选 → 上抛 NoAvailableChannelException（503，对齐 RL-1 §4）。
+            // ④ 选渠（group×A 加权随机 + CH-5 排除已尝试渠道再选下一个，REQ-03 重载）。
+            //   选渠键为对外/平台名 A（abilities.model 列存 A）；首次无候选 → NoAvailableChannelException（503）。
             //   重试中无更多候选（triedChannelIds 非空后耗尽）→ 终止重试，返回上游最后一次错误。
             try {
                 channel = selectRelayChannelUseCase.selectChannel(
-                        authContext.group(), upstreamModel, triedChannelIds);
+                        authContext.group(), publicModel, triedChannelIds);
             } catch (NoAvailableChannelException e) {
                 if (triedChannelIds.isEmpty()) {
                     throw e; // 首次即无可用渠道：保持原 503 语义。
@@ -198,6 +227,9 @@ public class RelayForwardUseCase {
                 // 已尝试过渠道但候选耗尽（CH-5 全组耗尽）：返回最后一次上游错误（重试耗尽态）。
                 return buildErrorResult(dispatch, lastFailureStatus, lastFailureMaskedMessage);
             }
+
+            // ④' 渠道级底仓映射 A→B：用选中渠道的 modelMapping 把 A 映射到该渠道的真实上游名 B（未配则 B=A）。
+            upstreamModel = resolveChannelUpstream(channel, publicModel);
 
             // ⑤ RL-6 头尾决策 + 协议转换（REQ-04）：按选中渠道目标协议构造出站 body。
             targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
@@ -224,7 +256,7 @@ public class RelayForwardUseCase {
 
             // re_log + re_ban：脱敏落错误 Log（Type=5）+ AutoBan 命中则禁用渠道（CH-3）。
             String masked = handleUpstreamFailure(
-                    dispatch, resolution, channel, authContext, failureStatus, failureDetail);
+                    dispatch, resolution, channel, upstreamModel, authContext, failureStatus, failureDetail);
             triedChannelIds.add(channel.id());
             lastFailureStatus = failureStatus;
             lastFailureMaskedMessage = masked;
@@ -260,7 +292,8 @@ public class RelayForwardUseCase {
         settle(authContext.userId(), billing);
 
         // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段（inFmt/targetProto/converted）+ channel_id + 三金额。
-        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, false);
+        //   B 用渠道级解析出的 upstreamModel（非 resolution.upstream——后者已恒等于 A）。
+        recordConsumeLog(dispatch, resolution, channel, upstreamModel, targetProto, authContext, usage, billing, false);
 
         // 透传上游 status + headers + 回转后 body（非流式）。
         return new RelayForwardResult(
@@ -296,7 +329,7 @@ public class RelayForwardUseCase {
         String requestedModel = readModelName(root);
         ModelResolution resolution =
                 resolveModel(requestedModel, authContext.userId(), authContext.group());
-        String upstreamModel = resolution.upstream();
+        String publicModel = resolution.resolvedPublic(); // A：平台公开名（选渠键 + 定价键）
         if (authContext.tokenId() != null) {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
@@ -312,13 +345,16 @@ public class RelayForwardUseCase {
             Channel channel;
             try {
                 channel = selectRelayChannelUseCase.selectChannel(
-                        authContext.group(), upstreamModel, triedChannelIds);
+                        authContext.group(), publicModel, triedChannelIds);
             } catch (NoAvailableChannelException e) {
                 if (triedChannelIds.isEmpty()) {
                     throw e;
                 }
                 return; // 重试耗尽：流已可能部分写出，静默结束（错误 Log 已逐次记录）。
             }
+
+            // ④' 渠道级底仓映射 A→B（未配则 B=A）。
+            String upstreamModel = resolveChannelUpstream(channel, publicModel);
 
             ProtocolFormat targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
             boolean passthrough = inFmt == targetProto;
@@ -333,7 +369,7 @@ public class RelayForwardUseCase {
             try {
                 upstreamHttpPort.stream(upstreamRequest, handler);
             } catch (UpstreamException e) {
-                handleUpstreamFailure(dispatch, resolution, channel, authContext,
+                handleUpstreamFailure(dispatch, resolution, channel, upstreamModel, authContext,
                         e.upstreamStatusCode(), e.getMessage());
                 triedChannelIds.add(channel.id());
                 if (RetryPolicy.shouldRetry(e.upstreamStatusCode()) && retryCount < maxRetryTimes()
@@ -353,7 +389,7 @@ public class RelayForwardUseCase {
             // 上游开流前即报错（HTTP 非 2xx）：按 RL-3 重试/禁用，未写出任何 chunk 才可换渠道重试。
             if (handler.errorStatus() != null) {
                 int failureStatus = handler.errorStatus();
-                handleUpstreamFailure(dispatch, resolution, channel, authContext,
+                handleUpstreamFailure(dispatch, resolution, channel, upstreamModel, authContext,
                         failureStatus, handler.errorDetail());
                 triedChannelIds.add(channel.id());
                 if (RetryPolicy.shouldRetry(failureStatus) && retryCount < maxRetryTimes()
@@ -391,7 +427,7 @@ public class RelayForwardUseCase {
         BillingResult billing = DualPriceBilling.compute(
                 usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
         settle(authContext.userId(), billing);
-        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, true);
+        recordConsumeLog(dispatch, resolution, channel, upstreamModel, targetProto, authContext, usage, billing, true);
     }
 
     /**
@@ -733,7 +769,7 @@ public class RelayForwardUseCase {
 
     /** 落一条消费 Log（RL-7 第⑨步，Type=2 Consume）：三段模型 + 协议三字段 + channel_id + 三金额 + 真实 usage。 */
     private void recordConsumeLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                  ProtocolFormat targetProto, RelayAuthContext authContext,
+                                  String upstreamModel, ProtocolFormat targetProto, RelayAuthContext authContext,
                                   UsageIR usage, BillingResult billing, boolean stream) {
         RelayInfo info = new RelayInfo();
         info.setStream(stream);
@@ -744,7 +780,7 @@ public class RelayForwardUseCase {
         info.setUsingGroup(authContext.group());
         info.setRequestedModel(resolution.requested());
         info.setResolvedPublicModel(resolution.resolvedPublic());
-        info.setUpstreamModelName(resolution.upstream());
+        info.setUpstreamModelName(upstreamModel);
         info.setInboundFormat(dispatch.format());
         info.setTargetProtocol(targetProto); // REQ-04: 真实目标协议（按选中渠道 type 判定）
         info.computePassthrough();           // inFmt==targetProto → protocol_converted=false
@@ -776,7 +812,7 @@ public class RelayForwardUseCase {
      * @return 脱敏后的错误描述（供重试耗尽/不可重试时构造对客户错误响应复用）
      */
     private String handleUpstreamFailure(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                         RelayAuthContext authContext, int statusCode, String rawDetail) {
+                                         String upstreamModel, RelayAuthContext authContext, int statusCode, String rawDetail) {
         String masked = MaskSensitiveError.mask(statusCode, rawDetail);
         // re_ban：仅 AutoBan=1 且命中禁用条件（401/403）才自动禁用，落 AUTO_DISABLED 并通知 root（CH-3）。
         if (RetryPolicy.shouldAutoDisable(channel.autoBan(), statusCode) && channel.autoDisable()) {
@@ -784,7 +820,7 @@ public class RelayForwardUseCase {
             notifyChannelAutoDisabled(channel, statusCode);
         }
         // re_log：脱敏后写 Log Type=5 Error（记 channel/model/status_code）。
-        recordErrorLog(dispatch, resolution, channel, authContext, masked, statusCode);
+        recordErrorLog(dispatch, resolution, channel, upstreamModel, authContext, masked, statusCode);
         return masked;
     }
 
@@ -817,14 +853,14 @@ public class RelayForwardUseCase {
 
     /** 落一条错误 Log（RL-3 re_log，Type=5 Error）：脱敏 content + channel/model/status_code。 */
     private void recordErrorLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                RelayAuthContext authContext, String maskedContent, int statusCode) {
+                                String upstreamModel, RelayAuthContext authContext, String maskedContent, int statusCode) {
         RelayInfo info = new RelayInfo();
         info.setUserId(authContext.userId());
         info.setUsername(authContext.username());
         info.setUsingGroup(authContext.group());
         info.setRequestedModel(resolution.requested());
         info.setResolvedPublicModel(resolution.resolvedPublic());
-        info.setUpstreamModelName(resolution.upstream());
+        info.setUpstreamModelName(upstreamModel);
         info.setChannelId(channel.id());
         info.setInboundFormat(dispatch.format());
         info.setTargetProtocol(dispatch.format());

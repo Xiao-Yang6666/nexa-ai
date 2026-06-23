@@ -93,6 +93,32 @@ public class ManageChannelModelCostUseCase {
     }
 
     /**
+     * 批量创建或更新成本配置（按分组/账号批量设成本倍率的应用层支撑）。
+     *
+     * <p>对每个条目复用 {@link #upsert} 的 (channel_id, upstream_model) 幂等语义，整体一个事务——
+     * 任一条目入参非法则整批回滚（{@link InvalidChannelParameterException}）。前端"批量设成本倍率"
+     * 把选中渠道 × 各自支持模型 B 展开成条目列表传入。</p>
+     *
+     * @param items 批量成本写入条目（每条含 channelId/upstreamModel/costRatio 等）
+     * @return 落库后的成本行列表（与入参同序）
+     * @throws InvalidChannelParameterException 任一条目入参非法
+     */
+    @Transactional
+    public List<ChannelModelCost> batchUpsert(List<BatchCostItem> items) {
+        if (items == null || items.isEmpty()) {
+            throw new InvalidChannelParameterException("批量成本条目不能为空");
+        }
+        return items.stream()
+                .map(it -> upsert(it.channelId(), it.upstreamModel(), it.costRatio(),
+                        it.completionCostRatio(), it.enabled(), null, it.remark()))
+                .toList();
+    }
+
+    /** 批量成本写入条目（应用层入参，接口层 DTO 映射至此）。 */
+    public record BatchCostItem(Integer channelId, String upstreamModel, BigDecimal costRatio,
+                                BigDecimal completionCostRatio, Boolean enabled, String remark) {}
+
+    /**
      * 软删除成本配置（F-6006，删后该渠道×B 成本视为缺失记 0+告警）。
      *
      * @param id 成本行 id

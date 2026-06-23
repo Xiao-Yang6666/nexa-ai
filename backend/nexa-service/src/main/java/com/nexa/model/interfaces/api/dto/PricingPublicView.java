@@ -60,6 +60,7 @@ public record PricingPublicView(
             BigDecimal basePriceRatio,
             String qualityTier,
             String displayName,
+            String description,
             String supportedEndpoint,
             BigDecimal cacheRatio
     ) {
@@ -70,7 +71,7 @@ public record PricingPublicView(
          * @return 公开定价条目
          */
         public static Item from(PublicModel m) {
-            // 显式逐字段：仅 publicName/basePriceRatio/qualityTier/displayName 来自聚合（皆公开）。
+            // 显式逐字段：仅 publicName/basePriceRatio/qualityTier/displayName/description 来自聚合（皆公开）。
             // supported_endpoint/cache_ratio 是 ML-4 契约元信息字段，public_models 表无对应列，
             // 故置 null（Jackson non_null 省略），既守契约 schema 形状又不杜撰内部数据。
             return new Item(
@@ -78,6 +79,7 @@ public record PricingPublicView(
                     m.basePriceRatio(),
                     m.qualityTier(),
                     blankToNull(m.displayName()),
+                    blankToNull(m.description()),
                     null,
                     null);
         }

@@ -54,7 +54,7 @@ export function ModelCard({ model, onOpen }: ModelCardProps) {
         <VendorAvatar vendor={model.vendor} />
         <div>
           <p className={styles.nmRow}>
-            <span className={styles.nm}>{model.modelName}</span>
+            <span className={styles.nm}>{model.displayName || model.modelName}</span>
             <TierBadge tier={model.tier} />
           </p>
           <div className={styles.vd}>{model.vendor}</div>
@@ -67,6 +67,9 @@ export function ModelCard({ model, onOpen }: ModelCardProps) {
           </span>
         ))}
       </div>
+      {model.description ? (
+        <p className={styles.desc}>{model.description}</p>
+      ) : null}
       <div className={styles.meta}>
         <span className={styles.ctx}>
           <span className={styles.k}>上下文</span>
