@@ -60,8 +60,8 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      timeout: 2000ms
-      connect-timeout: 2000ms
+      timeout: ${REDIS_TIMEOUT:2000ms}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2000ms}
 
   # --- 缓存：Redis 承载，注解式 @Cacheable/@CacheEvict（TTL/容错见 AuthCacheConfig） ---
   cache:
