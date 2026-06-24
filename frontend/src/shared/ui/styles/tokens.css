@@ -111,6 +111,19 @@ body{margin:0;font-family:var(--font-sans);background:var(--color-bg);color:var(
 a{color:var(--color-primary-500);text-decoration:none}
 code,kbd,.mono{font-family:var(--font-mono);font-size:var(--text-code)}
 
+/* ── 滚动条（全站统一；跨主题随 token 自适应，细身/圆角/hover 加深） ─────────
+   Firefox 用 scrollbar-width/color；WebKit 用 ::-webkit-scrollbar 伪元素。
+   thumb 用 padding-box + 透明边形成内缩留白，悬停加深；track 透明融底。 */
+*{scrollbar-width:thin;scrollbar-color:color-mix(in oklch, var(--color-border-strong) 90%, transparent) transparent}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{
+  background:color-mix(in oklch, var(--color-border-strong) 85%, transparent);
+  border-radius:var(--radius-full);border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-thumb:hover{
+  background:color-mix(in oklch, var(--color-text-muted) 65%, transparent);background-clip:padding-box}
+*::-webkit-scrollbar-corner{background:transparent}
+
 /* 按钮系统 */
 .btn{font-family:inherit;border:none;border-radius:var(--radius-sm);height:40px;padding:0 var(--space-4);
   font-size:var(--text-body);font-weight:var(--fw-medium);cursor:pointer;display:inline-flex;align-items:center;gap:var(--space-2);

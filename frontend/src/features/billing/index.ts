@@ -16,5 +16,7 @@ export {
   useRechargeRecords,
   useCreateTopUp,
   giftFor,
+  quotaToUsd,
+  quotaUsdValue,
 } from './model/billing.model';
 export type { BalanceVM, RechargeRecordVM } from './model/billing.model';

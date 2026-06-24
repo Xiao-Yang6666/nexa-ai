@@ -134,13 +134,86 @@
   position: absolute;
   top: calc(100% + var(--space-2));
   right: 0;
-  min-width: 168px;
+  min-width: 240px;
   z-index: 50;
   padding: var(--space-2);
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
+}
+/* 下拉头部：头像 + 用户名 + 邮箱 */
+.menuHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+.menuAvatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--color-primary-500) 22%, transparent);
+  color: var(--color-primary-700);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-h5);
+}
+.menuIdent {
+  min-width: 0;
+}
+.menuName {
+  font-size: var(--text-body);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menuEmail {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.menuMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) var(--space-3);
+}
+.menuRole {
+  font-size: var(--text-caption);
+  padding: 1px 8px;
+}
+/* 余额行 */
+.menuBalance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 var(--space-2) var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-subtle);
+}
+.menuBalanceLabel {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+}
+.menuBalanceVal {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+.menuSep {
+  height: 1px;
+  margin: var(--space-2) 0;
+  background: var(--color-border);
 }
 .menuItem {
   display: flex;
@@ -157,6 +230,7 @@
   font-weight: var(--fw-medium);
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
 }
 .menuItem:hover:not(:disabled) {
   background: var(--color-surface-sunken);
