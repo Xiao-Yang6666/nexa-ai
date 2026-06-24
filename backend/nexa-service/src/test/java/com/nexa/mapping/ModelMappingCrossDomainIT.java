@@ -1,7 +1,6 @@
 package com.nexa.mapping;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexa.relay.domain.repository.PlatformModelMappingRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.service.TwoLayerModelResolver;
 import com.nexa.relay.domain.vo.AliasScope;
@@ -32,15 +31,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 模型映射「超管写 = 转发读」跨域端到端集成测试（Slice r6b 命脉验收，连真 PostgreSQL）。
+ * 模型别名「用户写 = 转发读」跨域端到端集成测试（连真 PostgreSQL）。
  *
- * <p>本测试证明 r6b 的核心闭环：超管 / 用户经 <b>model 域</b> REST 端点写入映射后，转发引擎实际依赖的
+ * <p>本测试证明 L1 客户层别名闭环：用户经 <b>model 域</b> REST 端点写入 C→A 别名后，转发引擎实际依赖的
  * <b>relay 域</b> 仓储 + {@link TwoLayerModelResolver} 能读到同一条记录并解析出目标——即「配了即生效」。
  *
- * <p>两域的 JPA 实体（{@code ModelPlatformModelMappingJpaEntity} / {@code RelayPlatformModelMappingJpaEntity}
- * 等）共用同一张物理表（V12 {@code platform_model_mappings} / V13 {@code user_model_aliases}），
- * 仅 Hibernate 逻辑实体名不同。本测试是这一「单表共享」契约的回归护栏：一旦未来有人把任一侧改去读写
- * 另一张表，闭环即断、本测试即红。
+ * <p>L1 两域 JPA 实体共用同一张物理表（V13 {@code user_model_aliases}），仅 Hibernate 逻辑实体名不同。
+ * 本测试是这一「单表共享」契约的回归护栏。
+ *
+ * <p><b>L2 全局底仓映射（A→B）已废弃</b>：A→B 下沉为渠道级（{@code Channel.modelMapping}，由
+ * {@code RelayForwardUseCase} 选渠后解析），全局 {@code platform_model_mappings} 表已删（V30），
+ * 故 {@link TwoLayerModelResolver} 的 L2 lookup 恒等返回 {@code null}（A→B 由渠道级映射在选渠后接管）。
  *
  * <p>环境依赖：{@code @SpringBootTest} 起全栈连真 PG（{@code ddl-auto=validate} + Flyway 建表）。
  * 若 CI/本地无法连 PG，本类在上下文启动阶段失败——按既有惯例可 {@code mvn test -Dtest='!*IT'} 排除。
@@ -48,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@DisplayName("模型映射跨域闭环 IT - 超管/用户写 model 域端点 = 转发读 relay 域仓储")
+@DisplayName("模型别名跨域闭环 IT - 用户写 model 域端点 = 转发读 relay 域仓储（L1 C→A）")
 class ModelMappingCrossDomainIT {
 
     @Autowired
@@ -60,10 +61,6 @@ class ModelMappingCrossDomainIT {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    /** 转发引擎实际读取的 relay 域 L2 仓储（与 model 域 admin 写入仓储共用 platform_model_mappings 表）。 */
-    @Autowired
-    private PlatformModelMappingRepository relayL2Repo;
-
     /** 转发引擎实际读取的 relay 域 L1 仓储（与 model 域写入仓储共用 user_model_aliases 表）。 */
     @Autowired
     private UserModelAliasRepository relayL1Repo;
@@ -71,51 +68,14 @@ class ModelMappingCrossDomainIT {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
-    private String publicName;
     private String aliasName;
     private long userId;
 
     @AfterEach
     void cleanUp() {
-        if (publicName != null) {
-            jdbcTemplate.update("DELETE FROM platform_model_mappings WHERE public_name = ?", publicName);
-        }
         if (aliasName != null) {
             jdbcTemplate.update("DELETE FROM user_model_aliases WHERE alias = ?", aliasName);
         }
-    }
-
-    @Test
-    @DisplayName("超管 POST /api/platform_model_mappings 创建 A→B，relay 域仓储 + TwoLayerModelResolver 能解析出 B")
-    void adminWritesL2Mapping_relayResolverReadsUpstream() throws Exception {
-        publicName = "pub-" + UUID.randomUUID().toString().substring(0, 8);
-        String upstreamName = "upstream-" + UUID.randomUUID().toString().substring(0, 8);
-
-        // --- 超管经 model 域接口写入 A→B ---
-        String adminJwt = mintJwt(900001L, "it-admin", 10); // role=10 → admin
-        String body = """
-                {"public_name":"%s","upstream_name":"%s"}
-                """.formatted(publicName, upstreamName);
-
-        mockMvc.perform(post("/api/platform_model_mappings")
-                        .header("Authorization", "Bearer " + adminJwt)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data.public_name", is(publicName)));
-
-        // --- 转发读：relay 域 L2 仓储直接命中同一条 ---
-        assertEquals(upstreamName, relayL2Repo.findUpstreamByPublicName(publicName).orElse(null),
-                "relay 域仓储应读到超管经 model 域端点写入的 A→B 映射（单表共享）");
-
-        // --- 转发读：经转发引擎真正使用的 TwoLayerModelResolver 解析 C(=A) → A → B ---
-        ModelResolution resolution = TwoLayerModelResolver.resolve(
-                publicName,
-                alias -> relayL1Repo.findTargetByAlias(AliasScope.user(userId), alias).orElse(null),
-                pub -> relayL2Repo.findUpstreamByPublicName(pub).orElse(null));
-        assertEquals(upstreamName, resolution.upstream(), "TwoLayerModelResolver 应解析出超管配置的 B");
-        assertTrue(resolution.l2Applied(), "L2 层应命中");
     }
 
     @Test
@@ -144,11 +104,11 @@ class ModelMappingCrossDomainIT {
         assertEquals(target, relayL1Repo.findTargetByAlias(AliasScope.user(userId), aliasName).orElse(null),
                 "relay 域仓储应读到用户经 model 域端点写入的 C→A 别名（单表共享）");
 
-        // --- 转发读：TwoLayerModelResolver 解析 C → A（L2 未配则恒等，A 即最终上游）---
+        // --- 转发读：TwoLayerModelResolver 解析 C → A（L2 已下沉渠道级，此处恒等 null，A 即解析终点）---
         ModelResolution resolution = TwoLayerModelResolver.resolve(
                 aliasName,
                 alias -> relayL1Repo.findTargetByAlias(AliasScope.user(userId), alias).orElse(null),
-                pub -> relayL2Repo.findUpstreamByPublicName(pub).orElse(null));
+                pub -> null);
         assertEquals(target, resolution.resolvedPublic(), "TwoLayerModelResolver 的 L1 应解析出用户配置的 A");
         assertTrue(resolution.l1Applied(), "L1 层应命中");
     }

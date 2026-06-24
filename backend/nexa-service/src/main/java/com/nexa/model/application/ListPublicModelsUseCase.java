@@ -15,7 +15,7 @@ import java.util.List;
  *
  * <p><b>零泄露铁律（COMPAT §2 候选层 B 不可见闸）</b>：本用例仅经
  * {@link PublicModelRepository#findEnabledNames()} 取公开名 A，<b>绝不触碰 upstream_name(B)</b>
- * ——B 只存在于 PlatformModelMapping/Channel 域，本查询根本不读那些表，从源头杜绝泄露。</p>
+ * ——B 只存在于 Channel 域（渠道级 modelMapping），本查询根本不读那些表，从源头杜绝泄露。</p>
  *
  * <p>DDD：薄应用层（{@link Transactional}(readOnly) 只读事务），无领域规则；A 全集语义由
  * {@link PublicModelRepository} 守护。OpenAI {@code /v1/models} 信封格式化在接口层 DTO 完成。</p>

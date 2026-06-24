@@ -43,15 +43,6 @@ function IcInfo() {
     </svg>
   );
 }
-function IcArrow() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 12h14" /><path d="M13 6l6 6-6 6" />
-    </svg>
-  );
-}
-
 /* ════════════════════════════ 小展示组件 ════════════════════════════ */
 const TIER_CLS: Record<string, string> = {
   full: styles.tierFull,
@@ -65,17 +56,6 @@ function TierBadge({ t }: { t: string }) {
       <span className={styles.dot} />
       {TIER_LABEL[t] ?? t}
     </span>
-  );
-}
-
-function MapCell({ b, count }: { b: string; count: number }) {
-  if (!b) return <span className={styles.costWarn}>未映射 B</span>;
-  return (
-    <div className={styles.maprow}>
-      <span className={styles.mapGlyph}><IcArrow /></span>
-      <span className={styles.mapb}>{b}</span>
-      {count > 1 && <span className={styles.privTag}>+{count - 1} 个 B</span>}
-    </div>
   );
 }
 
@@ -156,7 +136,7 @@ type TabKey = 'public' | 'costs' | 'models' | 'vendors';
 /**
  * ModelsAdminPage — 模型/供应商管理（S6 admin/models-admin.html 工程化，已接真实接口）。
  * 四 Tab：对外模型 / 供应商成本 / 模型元数据 / 供应商元数据。
- * 数据源：GET /api/public_models（+ platform_model_mappings + channel/pool）、
+ * 数据源：GET /api/public_models（+ channel/pool 按对外名 A 匹配）、
  * /api/channel_model_costs、/api/models（+ /api/vendors join）、/api/vendors。
  * 缺失检测 GET /api/models/missing、上游同步预览 POST /api/models/sync/preview。
  */
@@ -380,7 +360,7 @@ export function ModelsAdminPage() {
           <section className={`${styles.noteBar} nx-fade`}>
             <IcInfo />
             <span className={styles.txt}>
-              对外模型即对客户售卖的商品（公开名 <b>A</b>）。基准售价对所有客户恒定；底仓映射 <b>A 到 B</b> 仅平台内部可见，<b>客户永不可见 B</b>。
+              对外模型即对客户售卖的商品（公开名 <b>A</b>）。基准售价对所有客户恒定；A→B 映射已下沉<b>渠道级</b>（每渠道在「渠道管理」中各自配置真实上游名 B），<b>客户永不可见 B</b>。
             </span>
           </section>
 
@@ -408,12 +388,12 @@ export function ModelsAdminPage() {
                 <thead>
                   <tr>
                     <th>对外名 (A)</th><th>品质档</th>
-                    <th>基准售价倍率</th><th>底仓映射 A 到 B（B 不可见）</th>
+                    <th>基准售价倍率</th>
                     <th>供应渠道池</th><th>状态</th><th>操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <StateRow colSpan={7} loading={pubsQuery.isLoading} error={pubsQuery.error} empty={filteredPubs.length === 0} />
+                  <StateRow colSpan={6} loading={pubsQuery.isLoading} error={pubsQuery.error} empty={filteredPubs.length === 0} />
                   {filteredPubs.map((r) => (
                     <tr key={r.id}>
                       <td className={styles.cellmono}>
@@ -422,7 +402,6 @@ export function ModelsAdminPage() {
                       </td>
                       <td><TierBadge t={r.tier} /></td>
                       <td className={styles.cellmono}>{r.priceRatio}</td>
-                      <td><MapCell b={r.b} count={r.bCount} /></td>
                       <td><PoolCell count={r.poolCount} main={r.poolMain} /></td>
                       <td><PubStateBadge on={r.on} /></td>
                       <td>
@@ -699,7 +678,7 @@ export function ModelsAdminPage() {
             </label>
           </div>
           <div className={styles.fieldHint} style={{ marginTop: 'var(--space-3)' }}>
-            底仓映射 A→B 与供应渠道池在「平台映射 / 渠道池」中单独维护，此处仅管理对外商品本身。
+            A→B 映射已下沉渠道级（在「渠道管理」中各渠道单独配置）；供应渠道池按对外名 A 匹配，此处仅管理对外商品本身。
           </div>
           {pubErr && (
             <div className={styles.fieldHint} style={{ marginTop: 'var(--space-3)', color: 'var(--color-danger)' }}>

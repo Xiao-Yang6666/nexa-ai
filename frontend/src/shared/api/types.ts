@@ -141,8 +141,5 @@ export type ChannelModelCostWriteRequest = Schemas['ChannelModelCostWriteRequest
 /** 渠道池成员（openapi ChannelPoolMember，F-6005 GET /api/channel/pool）。 */
 export type ChannelPoolMember = Schemas['ChannelPoolMember'];
 
-/** A→B 底仓映射管理视图（openapi PlatformModelMappingAdminView，F-6002）。含上游 B，仅 admin。 */
-export type PlatformModelMappingAdminView = Schemas['PlatformModelMappingAdminView'];
-
 /** 利润看板聚合项（openapi ProfitDashboardItem，F-6009 GET /api/profit/dashboard）。含成本/利润，仅 admin。 */
 export type ProfitDashboardItem = Schemas['ProfitDashboardItem'];

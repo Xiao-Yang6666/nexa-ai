@@ -46,7 +46,6 @@ export type {
   ChannelModelCostAdminView,
   ChannelModelCostWriteRequest,
   ChannelPoolMember,
-  PlatformModelMappingAdminView,
   ProfitDashboardItem,
 } from './types';
 export type { PricingPublicView, PricingModelEntry } from './pricing.types';

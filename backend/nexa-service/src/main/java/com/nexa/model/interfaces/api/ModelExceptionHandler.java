@@ -5,7 +5,6 @@ import com.nexa.shared.kernel.DomainException;
 import com.nexa.model.domain.exception.AliasCrossScopeException;
 import com.nexa.model.domain.exception.InvalidModelParameterException;
 import com.nexa.model.domain.exception.ModelMetaNotFoundException;
-import com.nexa.model.domain.exception.PlatformModelMappingNotFoundException;
 import com.nexa.model.domain.exception.PublicModelNotFoundException;
 import com.nexa.model.domain.exception.UpstreamSyncException;
 import com.nexa.model.domain.exception.UserModelAliasNotFoundException;
@@ -35,7 +34,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice(assignableTypes = {
         ModelController.class, VendorController.class, UserModelController.class,
-        PublicModelController.class, PlatformModelMappingController.class, UserModelAliasController.class})
+        PublicModelController.class, UserModelAliasController.class})
 public class ModelExceptionHandler {
 
     /**
@@ -79,17 +78,6 @@ public class ModelExceptionHandler {
      */
     @ExceptionHandler(PublicModelNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handlePublicModelNotFound(PublicModelNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-    }
-
-    /**
-     * 底仓映射不存在 → 404（F-6002）。
-     *
-     * @param e 底仓映射缺失异常
-     * @return 404 错误信封
-     */
-    @ExceptionHandler(PlatformModelMappingNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMappingNotFound(PlatformModelMappingNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
     }
 

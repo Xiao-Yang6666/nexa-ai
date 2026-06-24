@@ -15,7 +15,6 @@ import type {
   ModelMetaAdminView,
   VendorAdminView,
   ChannelModelCostAdminView,
-  PlatformModelMappingAdminView,
   ChannelPoolMember,
 } from '@/shared/api';
 import {
@@ -23,7 +22,6 @@ import {
   createPublicModel,
   updatePublicModel,
   deletePublicModel,
-  getModelMappings,
   getChannelPool,
   getChannelModelCosts,
   getModelMetas,
@@ -50,7 +48,7 @@ export const TIER_LABEL: Record<string, string> = {
   air: '经济',
 };
 
-/** 对外模型行视图模型（合并 A→B 映射 + 渠道池摘要）。 */
+/** 对外模型行视图模型（合并渠道池摘要）。 */
 export interface PublicModelVM {
   id: number;
   /** 对外名 A */
@@ -67,28 +65,21 @@ export interface PublicModelVM {
   sortOrder: number;
   /** 描述（编辑用） */
   description: string;
-  /** 映射到的真实上游 B（来自 platform_model_mappings，可能多个取首个 + 计数） */
-  b: string;
-  bCount: number;
-  /** 供应渠道池：渠道数 + 主通道名 */
+  /** 供应渠道池：渠道数 + 主通道名（按对外名 A 匹配 channel.models，A→B 由渠道级映射在转发时解析） */
   poolCount: number;
   poolMain: string;
   on: boolean;
 }
 
-/** PublicModelAdminView + 映射表 + 渠道池 → 对外模型 VM。 */
+/** PublicModelAdminView + 渠道池 → 对外模型 VM。 */
 export function toPublicModelVM(
   view: PublicModelAdminView,
-  mappings: PlatformModelMappingAdminView[],
   pool: ChannelPoolMember[],
 ): PublicModelVM {
   const a = view.public_name ?? '';
-  const myMappings = mappings.filter((m) => m.public_name === a);
-  const bList = myMappings.map((m) => m.upstream_name ?? '').filter(Boolean);
-  // 渠道池：匹配该 A 映射到的任一 B
-  const bSet = new Set(bList);
-  const myPool = pool.filter((p) => p.upstream_model && bSet.has(p.upstream_model));
-  const sortedPool = myPool.slice().sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0));
+  // 渠道池：按对外名 A 匹配（选渠键已是 A；A→B 下沉渠道级，全局不再有 B）。
+  // 后端 /api/channel/pool 已按 A 过滤，这里池成员均属该 A，无需再筛。
+  const sortedPool = pool.slice().sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0));
   const tier = view.quality_tier ?? 'air';
   return {
     id: view.id ?? 0,
@@ -100,27 +91,30 @@ export function toPublicModelVM(
     priceRatioNum: view.base_price_ratio != null ? Number(view.base_price_ratio) : 1,
     sortOrder: view.sort_order ?? 0,
     description: view.description || '',
-    b: bList[0] ?? '',
-    bCount: bList.length,
-    poolCount: myPool.length,
+    poolCount: pool.length,
     poolMain: sortedPool[0]?.channel_name ?? '',
     on: view.enabled ?? false,
   };
 }
 
-/** 对外模型 Tab 聚合查询（public_models + mappings + pool 三源合并）。 */
+/** 对外模型 Tab 聚合查询（public_models + 各 A 的渠道池，按对外名 A 匹配）。 */
 export function usePublicModels() {
   return useQuery({
     queryKey: ['model-admin', 'public-models'],
     queryFn: async () => {
-      const [pm, mp, pool] = await Promise.all([
+      const [pm, pool] = await Promise.all([
         getPublicModels(1, 200),
-        getModelMappings(1, 500),
         getChannelPool(),
       ]);
-      const mappings = mp.items ?? [];
       const poolItems = pool.items ?? [];
-      return (pm.items ?? []).map((v) => toPublicModelVM(v, mappings, poolItems));
+      // 按对外名 A 把池成员分桶（后端 pool 不带 A 维度时退化为全量；A→B 解析在转发链）。
+      return (pm.items ?? []).map((v) => {
+        const a = v.public_name ?? '';
+        const myPool = poolItems.filter(
+          (p) => !p.upstream_model || p.upstream_model.toLowerCase() === a.toLowerCase(),
+        );
+        return toPublicModelVM(v, myPool);
+      });
     },
   });
 }

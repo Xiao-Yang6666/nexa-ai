@@ -13,7 +13,7 @@ import java.util.function.Function;
  * <p>领域规则来源：COMPAT-LAYER-ARCHITECTURE §3.1/§3.2 + prd-relay RL-7。执行次序铁律：
  * <pre>
  *   第1步【客户层 L1】 C → A   (UserModelAlias，user>group 优先级，1对1 纯字符串替换)
- *   第2步【超管层 L2】 A → B   (PlatformModelMapping，全局底仓映射，1对1)
+ *   第2步【超管层 L2】 A → B   (已下沉渠道级：选渠后由 Channel.modelMapping 解析，此处 l2Lookup 传 null 恒等)
  *   最终调用 B
  * </pre>
  * <ul>

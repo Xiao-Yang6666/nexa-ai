@@ -3,7 +3,7 @@
  * 路径/方法/出参逐字对齐 openapi.yaml，不臆造字段。分页参数统一 p + page_size。
  *
  * 覆盖 ModelsAdminPage 四 Tab 所需端点：
- *  - 对外模型 public_models（含 A→B 映射 platform_model_mappings、渠道池 channel/pool）
+ *  - 对外模型 public_models（渠道池 channel/pool 按对外名 A 匹配；A→B 映射已下沉渠道级）
  *  - 供应商成本 channel_model_costs
  *  - 模型元数据 models（含 sync/preview、missing）
  *  - 供应商元数据 vendors
@@ -17,7 +17,6 @@ import type {
   VendorAdminView,
   ChannelModelCostAdminView,
   ChannelPoolMember,
-  PlatformModelMappingAdminView,
   ModelSyncDiff,
   ModelSyncResult,
 } from '@/shared/api';
@@ -47,18 +46,6 @@ export function updatePublicModel(req: PublicModelUpdateRequest): Promise<Public
 /** DELETE /api/public_models/{id} (F-6001) 删除对外模型。 */
 export function deletePublicModel(id: number): Promise<void> {
   return http.delete<void>(`/api/public_models/${id}`);
-}
-
-/* ── A→B 底仓映射 ─────────────────────────────────────────────────────── */
-export interface MappingListResponse {
-  items: PlatformModelMappingAdminView[];
-  total: number;
-}
-/** GET /api/platform_model_mappings (F-6002) */
-export function getModelMappings(page = 1, pageSize = 200): Promise<MappingListResponse> {
-  return http.get<MappingListResponse>('/api/platform_model_mappings', {
-    query: { p: page, page_size: pageSize },
-  });
 }
 
 /* ── 渠道池 ───────────────────────────────────────────────────────────── */
