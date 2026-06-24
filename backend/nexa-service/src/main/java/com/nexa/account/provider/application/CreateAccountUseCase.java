@@ -32,7 +32,7 @@ public class CreateAccountUseCase {
     public Account create(CreateAccountCommand command) {
         Account account = Account.create(
                 command.name(), command.platform(), command.type(), command.credentials(),
-                command.concurrency(), command.priority(), command.expiresAt(),
+                command.baseUrl(), command.concurrency(), command.priority(), command.expiresAt(),
                 command.autoPauseOnExpired(), command.rateMultiplier(), command.groups());
         return accountRepository.save(account);
     }

@@ -35,7 +35,7 @@ public class UpdateAccountUseCase {
         Account account = accountRepository.findById(command.id())
                 .orElseThrow(() -> new AccountNotFoundException(command.id()));
         account.update(command.name(), command.platform(), command.type(), command.credentials(),
-                command.concurrency(), command.priority(), command.expiresAt(),
+                command.baseUrl(), command.concurrency(), command.priority(), command.expiresAt(),
                 command.autoPauseOnExpired(), command.rateMultiplier(), command.groups());
         return accountRepository.save(account);
     }

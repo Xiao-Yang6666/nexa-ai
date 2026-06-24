@@ -21,6 +21,8 @@ import com.nexa.relay.domain.ir.UsageIR;
 import com.nexa.relay.domain.model.RelayLog;
 import com.nexa.relay.domain.port.ModelGroupAccessPort;
 import com.nexa.relay.domain.port.ModelGroupPricingPort;
+import com.nexa.relay.domain.port.AccountSelectionPort;
+import com.nexa.relay.domain.port.SelectedAccount;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
 import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.port.UpstreamResponse;
@@ -57,6 +59,9 @@ import java.util.Arrays;
 @Service
 public class RelayForwardUseCase {
 
+    /** account 529 过载默认冷却秒数（冷却窗内该账号不被选渠）。 */
+    private static final long DEFAULT_OVERLOAD_COOLDOWN_SECONDS = 60;
+
     private final UserModelAliasRepository l1Repo;
     private final RelayLogRepository logRepo;
     private final UpstreamHttpPort upstreamHttpPort;
@@ -69,6 +74,7 @@ public class RelayForwardUseCase {
     private final UserQuotaAccount userQuotaAccount;
     private final ModelGroupPricingPort modelGroupPricingPort;
     private final ModelGroupAccessPort modelGroupAccessPort;
+    private final AccountSelectionPort accountSelectionPort;
 
     public RelayForwardUseCase(UserModelAliasRepository l1Repo,
                                RelayLogRepository logRepo,
@@ -81,7 +87,8 @@ public class RelayForwardUseCase {
                                ChannelModelCostRepository channelModelCostRepo,
                                UserQuotaAccount userQuotaAccount,
                                ModelGroupPricingPort modelGroupPricingPort,
-                               ModelGroupAccessPort modelGroupAccessPort) {
+                               ModelGroupAccessPort modelGroupAccessPort,
+                               AccountSelectionPort accountSelectionPort) {
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
         this.upstreamHttpPort = upstreamHttpPort;
@@ -94,6 +101,7 @@ public class RelayForwardUseCase {
         this.userQuotaAccount = userQuotaAccount;
         this.modelGroupPricingPort = modelGroupPricingPort;
         this.modelGroupAccessPort = modelGroupAccessPort;
+        this.accountSelectionPort = accountSelectionPort;
     }
 
     /**
@@ -160,6 +168,25 @@ public class RelayForwardUseCase {
     }
 
     /**
+     * 转发失败时把限流/过载状态回写到所用账号（account BC 持久化，下次选渠跳过冷却窗）。
+     *
+     * <p>429 Too Many Requests → 账号进入限流（{@code markRateLimited}，恢复时刻未知传 null）；
+     * 529 Overloaded → 账号进入过载冷却（{@code markOverloaded}，默认冷却 60 秒）。其余状态码不回写
+     * 账号状态（如 5xx 服务端错误是渠道/上游问题，由 CH-3 AutoBan 处置渠道，不牵连账号可用性）。</p>
+     *
+     * @param accountId    所用账号 id
+     * @param failureStatus 上游失败状态码
+     */
+    private void writeBackAccountFailure(long accountId, int failureStatus) {
+        if (failureStatus == 429) {
+            accountSelectionPort.markRateLimited(accountId, null);
+        } else if (failureStatus == 529) {
+            long until = java.time.Instant.now().getEpochSecond() + DEFAULT_OVERLOAD_COOLDOWN_SECONDS;
+            accountSelectionPort.markOverloaded(accountId, until);
+        }
+    }
+
+    /**
      * 转发主干编排（RL-7 端到端最小可用路径：OpenAI 非流式、单渠道、不重试）。
      *
      * <p>按 prd-relay RL-7 顺序串起：① 协议识别 → ② C→A→B 两层映射 → ③ key 减法校验（REQ-06）
@@ -204,10 +231,12 @@ public class RelayForwardUseCase {
         //   不等 → ProtocolRegistry.get(inFmt).parseRequest → IR(model=B) → targetAdapter.serializeRequest。
         ProtocolFormat inFmt = dispatch.format();
         java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
+        java.util.Set<Long> triedAccountIds = new java.util.HashSet<>();
         int retryCount = 0;
         int lastFailureStatus = 502;
         String lastFailureMaskedMessage = MaskSensitiveError.mask(lastFailureStatus, null);
         Channel channel;
+        SelectedAccount successAccount = null;  // 最终成功转发所用账号（循环外计费取其 rateMultiplier）
         String upstreamModel;             // B：真实上游名，选渠后由渠道级 modelMapping 解析（每渠道可不同）
         ProtocolFormat targetProto;
         boolean passthrough;
@@ -231,19 +260,32 @@ public class RelayForwardUseCase {
             // ④' 渠道级 A→B：用选中渠道的 modelMapping 把平台名 A 解析为该渠道真实上游名 B（未配则 B=A）。
             upstreamModel = resolveChannelUpstream(channel, publicModel);
 
+            // ④'' 选 account 取凭证（group 汇合，原汁 sub2api）：从同 group 的 account 池按 priority + 限流/
+            //   过期/过载状态选一个。选到则用 account 凭证/baseUrl 发上游；选不到（account 池空/全不可用）→
+            //   优雅降级回落 channel 自带 key/baseUrl（先建后拆，不破坏现有转发）。
+            //   platform 暂传 null 不约束：channel.type 是整数码、account.platform 是字符串，二者无直接桥，
+            //   精确对齐需 type码↔platform字符串映射（超出本轮范围，留后续）；当前按 group+优先级选即可。
+            SelectedAccount account = accountSelectionPort
+                    .selectAccount(authContext.group(), null, triedAccountIds)
+                    .orElse(null);
+            String upstreamKey = account != null ? account.credentials() : channel.key();
+            String upstreamBaseUrl = (account != null && account.baseUrl() != null)
+                    ? account.baseUrl() : channel.baseUrl();
+
             // ⑤ RL-6 头尾决策 + 协议转换（REQ-04）：按选中渠道目标协议构造出站 body。
             targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
             passthrough = inFmt == targetProto;
             byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
 
             UpstreamRequest upstreamRequest = UpstreamRequest.of(
-                    "POST", channel.baseUrl(), path, channel.key(), upstreamBody,
+                    "POST", upstreamBaseUrl, path, upstreamKey, upstreamBody,
                     java.util.Map.of("Content-Type", "application/json"));
             int failureStatus;
             String failureDetail;
             try {
                 upstreamResponse = upstreamHttpPort.send(upstreamRequest);
                 if (upstreamResponse.isSuccessful()) {
+                    successAccount = account; // 记录成功账号（计费取其倍率；可能为 null=回落 channel 凭证）
                     break; // 2xx：跳出循环，按最终成功渠道走计费/落消费 Log。
                 }
                 failureStatus = upstreamResponse.statusCode();
@@ -252,6 +294,12 @@ public class RelayForwardUseCase {
                 // 上游传输层失败（连接/超时等）：纳入同一 RL-3 处置链，按其状态码驱动重试判定。
                 failureStatus = e.upstreamStatusCode();
                 failureDetail = e.getMessage();
+            }
+
+            // ④''' account 限流/过载回写（上游 429/529）：把失败状态回写到所用账号，下次选渠跳过该账号冷却窗。
+            if (account != null) {
+                writeBackAccountFailure(account.accountId(), failureStatus);
+                triedAccountIds.add(account.accountId());
             }
 
             // re_log + re_ban：脱敏落错误 Log（Type=5）+ AutoBan 命中则禁用渠道（CH-3）。

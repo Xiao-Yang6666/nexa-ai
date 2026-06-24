@@ -73,7 +73,16 @@ class RelayForwardUseCaseStreamTest {
         useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort, channelRepo,
                 new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
                 groupCode -> Optional.empty(),
-                (groupCode, userId, tokenId) -> true);
+                (groupCode, userId, tokenId) -> true,
+                // 账号选择端口：选不到账号 → 转发回落 channel 自带 key/baseUrl（保持本测试原有转发口径不变）。
+                new com.nexa.relay.domain.port.AccountSelectionPort() {
+                    @Override public Optional<com.nexa.relay.domain.port.SelectedAccount> selectAccount(
+                            String group, String platform, java.util.Set<Long> excludeAccountIds) {
+                        return Optional.empty();
+                    }
+                    @Override public void markRateLimited(long accountId, Long resetAt) { }
+                    @Override public void markOverloaded(long accountId, Long until) { }
+                });
         // passthrough 流式累计 usage 依赖 ProtocolRegistry 命中 OpenAI 适配器。
         // 注册在 @PostConstruct registerSelf()，单元测试不走 Spring 容器须手动触发。
         new com.nexa.relay.infrastructure.protocol.OpenAiProtocolAdapter(new ObjectMapper()).registerSelf();

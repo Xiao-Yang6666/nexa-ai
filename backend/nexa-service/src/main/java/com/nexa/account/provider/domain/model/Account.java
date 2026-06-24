@@ -44,6 +44,9 @@ public class Account {
     /** 凭证 JSON（敏感，绝不下发视图）。 */
     private String credentials;
 
+    /** 上游 API base url（可空；转发用，空则回落 channel.baseUrl）。 */
+    private String baseUrl;
+
     /** 并发度（>=1）。 */
     private int concurrency;
 
@@ -81,7 +84,7 @@ public class Account {
     private Long updatedTime;
 
     private Account(Long id, String name, String platform, String type, String credentials,
-                    int concurrency, int priority, AccountStatus status, Long rateLimitedAt,
+                    String baseUrl, int concurrency, int priority, AccountStatus status, Long rateLimitedAt,
                     Long rateLimitResetAt, Long overloadUntil, Long expiresAt,
                     boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
                     List<AccountGroupRef> groups, Long createdTime, Long updatedTime) {
@@ -90,6 +93,7 @@ public class Account {
         this.platform = platform;
         this.type = type;
         this.credentials = credentials;
+        this.baseUrl = baseUrl;
         this.concurrency = concurrency;
         this.priority = priority;
         this.status = status;
@@ -114,6 +118,7 @@ public class Account {
      * @param platform           供应商平台（必填）
      * @param type               账号类型（必填）
      * @param credentials        凭证 JSON（敏感，可空）
+     * @param baseUrl            上游 API base url（可空）
      * @param concurrency        并发度（可空/&lt;1→默认 3）
      * @param priority           优先级（可空/&lt;0→0；缺省 50）
      * @param expiresAt          过期时刻 epoch 秒（可空）
@@ -124,7 +129,7 @@ public class Account {
      * @throws InvalidAccountParameterException 字段非法
      */
     public static Account create(String name, String platform, String type, String credentials,
-                                 Integer concurrency, Integer priority, Long expiresAt,
+                                 String baseUrl, Integer concurrency, Integer priority, Long expiresAt,
                                  Boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
                                  List<AccountGroupRef> groups) {
         long now = Instant.now().getEpochSecond();
@@ -134,6 +139,7 @@ public class Account {
                 requireText(platform, "platform"),
                 requireText(type, "type"),
                 normalizeJson(credentials),
+                normalizeText(baseUrl),
                 normalizeConcurrency(concurrency),
                 normalizePriority(priority),
                 AccountStatus.ACTIVE,
@@ -151,12 +157,12 @@ public class Account {
      * @return 重建的账号聚合
      */
     public static Account rehydrate(Long id, String name, String platform, String type,
-                                    String credentials, int concurrency, int priority, String status,
-                                    Long rateLimitedAt, Long rateLimitResetAt, Long overloadUntil,
-                                    Long expiresAt, boolean autoPauseOnExpired,
+                                    String credentials, String baseUrl, int concurrency, int priority,
+                                    String status, Long rateLimitedAt, Long rateLimitResetAt,
+                                    Long overloadUntil, Long expiresAt, boolean autoPauseOnExpired,
                                     java.math.BigDecimal rateMultiplier,
                                     List<AccountGroupRef> groups, Long createdTime, Long updatedTime) {
-        return new Account(id, name, platform, type, credentials, concurrency, priority,
+        return new Account(id, name, platform, type, credentials, baseUrl, concurrency, priority,
                 AccountStatus.fromCode(status), rateLimitedAt, rateLimitResetAt, overloadUntil,
                 expiresAt, autoPauseOnExpired, rateMultiplier, groups, createdTime, updatedTime);
     }
@@ -169,7 +175,7 @@ public class Account {
      * status 不在编辑路径改动（启停/限流走专门方法）。刷新 updatedTime。</p>
      */
     public void update(String name, String platform, String type, String newCredentials,
-                       Integer concurrency, Integer priority, Long expiresAt,
+                       String baseUrl, Integer concurrency, Integer priority, Long expiresAt,
                        Boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
                        List<AccountGroupRef> groups) {
         this.name = requireText(name, "name");
@@ -178,6 +184,7 @@ public class Account {
         if (newCredentials != null && !newCredentials.isBlank()) {
             this.credentials = newCredentials.trim();
         }
+        this.baseUrl = normalizeText(baseUrl);
         this.concurrency = normalizeConcurrency(concurrency);
         this.priority = normalizePriority(priority);
         this.expiresAt = expiresAt;
@@ -293,6 +300,12 @@ public class Account {
         return (v == null || v.isEmpty()) ? null : v;
     }
 
+    /** 文本归一：去空白；空 → null。 */
+    private static String normalizeText(String raw) {
+        String v = raw == null ? null : raw.trim();
+        return (v == null || v.isEmpty()) ? null : v;
+    }
+
     private static int normalizeConcurrency(Integer raw) {
         return (raw == null || raw < 1) ? DEFAULT_CONCURRENCY : raw;
     }
@@ -331,6 +344,11 @@ public class Account {
     /** @return 凭证 JSON（敏感，仅基础设施层使用，绝不下发任何视图） */
     public String credentials() {
         return credentials;
+    }
+
+    /** @return 上游 API base url（可空；转发用，空则回落 channel.baseUrl） */
+    public String baseUrl() {
+        return baseUrl;
     }
 
     /** @return 并发度 */

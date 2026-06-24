@@ -31,7 +31,7 @@ class AccountTest {
     @Test
     @DisplayName("create：合法入参 → 默认启用、concurrency=3、priority=50、autoPause=true、倍率=1.0")
     void createNormal() {
-        Account a = Account.create("acc1", "openai", "api_key", "{\"key\":\"sk-x\"}",
+        Account a = Account.create("acc1", "openai", "api_key", "{\"key\":\"sk-x\"}", null,
                 null, null, null, null, null, null);
 
         assertNull(a.id(), "未持久化 id 为 null");
@@ -49,7 +49,7 @@ class AccountTest {
     @Test
     @DisplayName("create：concurrency<1 → 归一为默认 3；priority<0 → 归一为 50")
     void createNormalizesConcurrencyAndPriority() {
-        Account a = Account.create("acc", "openai", "api_key", null, 0, -5, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, 0, -5, null, null, null, null);
         assertEquals(3, a.concurrency());
         assertEquals(50, a.priority());
     }
@@ -57,7 +57,7 @@ class AccountTest {
     @Test
     @DisplayName("create：显式 concurrency/priority/倍率 生效")
     void createExplicitValues() {
-        Account a = Account.create("acc", "anthropic", "oauth", null, 10, 80, null, false,
+        Account a = Account.create("acc", "anthropic", "oauth", null, null, 10, 80, null, false,
                 new BigDecimal("1.5"), null);
         assertEquals(10, a.concurrency());
         assertEquals(80, a.priority());
@@ -68,7 +68,7 @@ class AccountTest {
     @Test
     @DisplayName("create：倍率 null/负 → 归一为 1.0")
     void createNormalizesMultiplier() {
-        Account neg = Account.create("acc", "openai", "api_key", null, null, null, null, null,
+        Account neg = Account.create("acc", "openai", "api_key", null, null, null, null, null, null,
                 new BigDecimal("-2"), null);
         assertEquals(0, BigDecimal.ONE.compareTo(neg.rateMultiplier()), "负倍率归一 1.0");
     }
@@ -77,7 +77,7 @@ class AccountTest {
     @DisplayName("create：name 缺失 → 400 文案")
     void createMissingName() {
         InvalidAccountParameterException e = assertThrows(InvalidAccountParameterException.class,
-                () -> Account.create("  ", "openai", "api_key", null, null, null, null, null, null, null));
+                () -> Account.create("  ", "openai", "api_key", null, null, null, null, null, null, null, null));
         assertEquals("name is required", e.getMessage());
     }
 
@@ -85,7 +85,7 @@ class AccountTest {
     @DisplayName("create：platform 缺失 → 400 文案")
     void createMissingPlatform() {
         InvalidAccountParameterException e = assertThrows(InvalidAccountParameterException.class,
-                () -> Account.create("acc", null, "api_key", null, null, null, null, null, null, null));
+                () -> Account.create("acc", null, "api_key", null, null, null, null, null, null, null, null));
         assertEquals("platform is required", e.getMessage());
     }
 
@@ -93,14 +93,14 @@ class AccountTest {
     @DisplayName("create：type 缺失 → 400 文案")
     void createMissingType() {
         InvalidAccountParameterException e = assertThrows(InvalidAccountParameterException.class,
-                () -> Account.create("acc", "openai", "", null, null, null, null, null, null, null));
+                () -> Account.create("acc", "openai", "", null, null, null, null, null, null, null, null));
         assertEquals("type is required", e.getMessage());
     }
 
     @Test
     @DisplayName("create：携带分组关联（字符串 group）")
     void createWithGroups() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null,
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null,
                 List.of(AccountGroupRef.of("default", 50), AccountGroupRef.of("vip", 90)));
         assertEquals(2, a.groups().size());
         assertEquals("default", a.groups().get(0).group());
@@ -112,9 +112,9 @@ class AccountTest {
     @Test
     @DisplayName("update：覆盖式更新字段；credentials 空白 → 保留原值")
     void updateKeepsCredentialsWhenBlank() {
-        Account a = Account.create("acc", "openai", "api_key", "{\"key\":\"original\"}",
+        Account a = Account.create("acc", "openai", "api_key", "{\"key\":\"original\"}", null,
                 null, null, null, null, null, null);
-        a.update("acc2", "anthropic", "oauth", "  ", 5, 70, 9999L, false, new BigDecimal("2.0"), null);
+        a.update("acc2", "anthropic", "oauth", "  ", null, 5, 70, 9999L, false, new BigDecimal("2.0"), null);
 
         assertEquals("acc2", a.name());
         assertEquals("anthropic", a.platform());
@@ -129,18 +129,18 @@ class AccountTest {
     @Test
     @DisplayName("update：显式新 credentials → 替换")
     void updateReplacesCredentials() {
-        Account a = Account.create("acc", "openai", "api_key", "{\"key\":\"original\"}",
+        Account a = Account.create("acc", "openai", "api_key", "{\"key\":\"original\"}", null,
                 null, null, null, null, null, null);
-        a.update("acc", "openai", "api_key", "{\"key\":\"new\"}", null, null, null, null, null, null);
+        a.update("acc", "openai", "api_key", "{\"key\":\"new\"}", null, null, null, null, null, null, null);
         assertEquals("{\"key\":\"new\"}", a.credentials());
     }
 
     @Test
     @DisplayName("update：name 缺失 → 400")
     void updateMissingName() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         assertThrows(InvalidAccountParameterException.class,
-                () -> a.update(null, "openai", "api_key", null, null, null, null, null, null, null));
+                () -> a.update(null, "openai", "api_key", null, null, null, null, null, null, null, null));
     }
 
     // ---- 状态迁移：enable/disable/markRateLimited/recoverFromRateLimit/markOverloaded ----
@@ -148,7 +148,7 @@ class AccountTest {
     @Test
     @DisplayName("disable → DISABLED；enable → ACTIVE 并清限流痕迹")
     void enableDisableTransition() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         a.disable();
         assertEquals(AccountStatus.DISABLED, a.status());
         a.enable();
@@ -158,7 +158,7 @@ class AccountTest {
     @Test
     @DisplayName("markRateLimited → RATE_LIMITED + 记录 resetAt")
     void markRateLimited() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         a.markRateLimited(123456L);
         assertEquals(AccountStatus.RATE_LIMITED, a.status());
         assertEquals(123456L, a.rateLimitResetAt());
@@ -168,7 +168,7 @@ class AccountTest {
     @Test
     @DisplayName("recoverFromRateLimit：限流态 → 恢复 ACTIVE 返回 true；非限流态 → false 无副作用")
     void recoverFromRateLimit() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         assertFalse(a.recoverFromRateLimit(), "ACTIVE 态无需恢复");
 
         a.markRateLimited(1L);
@@ -180,7 +180,7 @@ class AccountTest {
     @Test
     @DisplayName("markOverloaded：设置过载冷却窗，窗内不可调度，窗后自动恢复")
     void markOverloaded() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         long now = Instant.now().getEpochSecond();
         a.markOverloaded(now + 60);
         assertEquals(AccountStatus.ACTIVE, a.status(), "过载不改 status（临时冷却）");
@@ -193,14 +193,14 @@ class AccountTest {
     @Test
     @DisplayName("isSchedulable：ACTIVE 未过期未过载 → 可调度")
     void schedulableWhenActive() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         assertTrue(a.isSchedulable(Instant.now().getEpochSecond()));
     }
 
     @Test
     @DisplayName("isSchedulable：DISABLED / RATE_LIMITED → 不可调度")
     void notSchedulableWhenNotActive() {
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, null, null, null, null);
         long now = Instant.now().getEpochSecond();
         a.disable();
         assertFalse(a.isSchedulable(now));
@@ -212,7 +212,7 @@ class AccountTest {
     @DisplayName("isSchedulable：autoPause 且已过期 → 不可调度")
     void notSchedulableWhenExpired() {
         long now = Instant.now().getEpochSecond();
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, now - 100, true, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, now - 100, true, null, null);
         assertFalse(a.isSchedulable(now));
     }
 
@@ -220,7 +220,7 @@ class AccountTest {
     @DisplayName("isSchedulable：autoPause=false 即使过期仍可调度")
     void schedulableWhenExpiredButAutoPauseOff() {
         long now = Instant.now().getEpochSecond();
-        Account a = Account.create("acc", "openai", "api_key", null, null, null, now - 100, false, null, null);
+        Account a = Account.create("acc", "openai", "api_key", null, null, null, null, now - 100, false, null, null);
         assertTrue(a.isSchedulable(now));
     }
 }

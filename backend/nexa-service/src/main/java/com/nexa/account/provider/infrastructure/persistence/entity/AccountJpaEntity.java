@@ -43,6 +43,9 @@ public class AccountJpaEntity {
     @Column(name = "credentials", nullable = false, columnDefinition = "jsonb")
     private String credentials;
 
+    @Column(name = "base_url", length = 512)
+    private String baseUrl;
+
     @Column(name = "concurrency", nullable = false)
     private int concurrency;
 
@@ -120,6 +123,14 @@ public class AccountJpaEntity {
 
     public void setCredentials(String credentials) {
         this.credentials = credentials;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
     }
 
     public int getConcurrency() {

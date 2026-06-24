@@ -13,6 +13,7 @@ import java.util.List;
  * @param platform           供应商平台（必填）
  * @param type               账号类型（必填）
  * @param credentials        凭证 JSON（可空/空白=保留原值不变）
+ * @param baseUrl            上游 API base url（可空）
  * @param concurrency        并发度（可空→3）
  * @param priority           优先级（可空→50）
  * @param expiresAt          过期时刻 epoch 秒（可空）
@@ -26,6 +27,7 @@ public record UpdateAccountCommand(
         String platform,
         String type,
         String credentials,
+        String baseUrl,
         Integer concurrency,
         Integer priority,
         Long expiresAt,

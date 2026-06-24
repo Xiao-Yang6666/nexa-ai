@@ -22,6 +22,8 @@ export interface AccountView {
   name: string;
   platform: string;
   type: string;
+  /** 上游 API base url（可空） */
+  base_url?: string | null;
   concurrency: number;
   priority: number;
   /** 状态码：active / disabled / rate_limited */
@@ -44,6 +46,7 @@ export interface AccountCreateRequest {
   platform: string;
   type: string;
   credentials?: string;
+  base_url?: string;
   concurrency?: number;
   priority?: number;
   expires_at?: number;

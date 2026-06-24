@@ -132,6 +132,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         e.setType(a.type());
         // credentials jsonb 非空：领域可空 → 落库空 JSON 对象。
         e.setCredentials(a.credentials() == null ? "{}" : a.credentials());
+        e.setBaseUrl(a.baseUrl());
         e.setConcurrency(a.concurrency());
         e.setPriority(a.priority());
         e.setStatus(a.status().code());
@@ -153,6 +154,7 @@ public class AccountRepositoryImpl implements AccountRepository {
                 e.getPlatform(),
                 e.getType(),
                 "{}".equals(e.getCredentials()) ? null : e.getCredentials(),
+                e.getBaseUrl(),
                 e.getConcurrency(),
                 e.getPriority(),
                 e.getStatus(),

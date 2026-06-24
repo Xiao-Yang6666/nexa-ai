@@ -16,6 +16,7 @@ import java.util.List;
  * @param platform           供应商平台（必填）
  * @param type               账号类型（必填）
  * @param credentials        凭证 JSON（敏感，可空）
+ * @param baseUrl            上游 API base url（可空）
  * @param concurrency        并发度（可空→3）
  * @param priority           优先级（可空→50）
  * @param expiresAt          过期时刻 epoch 秒（可空）
@@ -28,6 +29,7 @@ public record AccountCreateRequest(
         @JsonProperty("platform") String platform,
         @JsonProperty("type") String type,
         @JsonProperty("credentials") String credentials,
+        @JsonProperty("base_url") String baseUrl,
         @JsonProperty("concurrency") Integer concurrency,
         @JsonProperty("priority") Integer priority,
         @JsonProperty("expires_at") Long expiresAt,
@@ -42,7 +44,7 @@ public record AccountCreateRequest(
      */
     public CreateAccountCommand toCommand() {
         return new CreateAccountCommand(
-                name, platform, type, credentials, concurrency, priority, expiresAt,
+                name, platform, type, credentials, baseUrl, concurrency, priority, expiresAt,
                 autoPauseOnExpired, rateMultiplier,
                 groups == null ? null : groups.stream().map(AccountGroupView::toDomain).toList());
     }

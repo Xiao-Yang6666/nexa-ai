@@ -16,6 +16,7 @@ import java.util.List;
  * @param name               账号名
  * @param platform           供应商平台
  * @param type               账号类型
+ * @param baseUrl            上游 API base url（可空）
  * @param concurrency        并发度
  * @param priority           优先级
  * @param status             状态码（active/disabled/rate_limited）
@@ -34,6 +35,7 @@ public record AccountView(
         @JsonProperty("name") String name,
         @JsonProperty("platform") String platform,
         @JsonProperty("type") String type,
+        @JsonProperty("base_url") String baseUrl,
         @JsonProperty("concurrency") int concurrency,
         @JsonProperty("priority") int priority,
         @JsonProperty("status") String status,
@@ -55,7 +57,7 @@ public record AccountView(
      */
     public static AccountView from(Account a) {
         return new AccountView(
-                a.id(), a.name(), a.platform(), a.type(), a.concurrency(), a.priority(),
+                a.id(), a.name(), a.platform(), a.type(), a.baseUrl(), a.concurrency(), a.priority(),
                 a.status().code(), a.rateLimitedAt(), a.rateLimitResetAt(), a.overloadUntil(),
                 a.expiresAt(), a.autoPauseOnExpired(), a.rateMultiplier(),
                 a.groups().stream().map(AccountGroupView::from).toList(),

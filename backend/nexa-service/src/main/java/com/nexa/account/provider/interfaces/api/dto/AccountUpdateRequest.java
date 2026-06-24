@@ -15,6 +15,7 @@ import java.util.List;
  * @param platform           供应商平台（必填）
  * @param type               账号类型（必填）
  * @param credentials        凭证 JSON（可空/空白=保留原值）
+ * @param baseUrl            上游 API base url（可空）
  * @param concurrency        并发度（可空→3）
  * @param priority           优先级（可空→50）
  * @param expiresAt          过期时刻 epoch 秒（可空）
@@ -27,6 +28,7 @@ public record AccountUpdateRequest(
         @JsonProperty("platform") String platform,
         @JsonProperty("type") String type,
         @JsonProperty("credentials") String credentials,
+        @JsonProperty("base_url") String baseUrl,
         @JsonProperty("concurrency") Integer concurrency,
         @JsonProperty("priority") Integer priority,
         @JsonProperty("expires_at") Long expiresAt,
@@ -42,7 +44,7 @@ public record AccountUpdateRequest(
      */
     public UpdateAccountCommand toCommand(long id) {
         return new UpdateAccountCommand(
-                id, name, platform, type, credentials, concurrency, priority, expiresAt,
+                id, name, platform, type, credentials, baseUrl, concurrency, priority, expiresAt,
                 autoPauseOnExpired, rateMultiplier,
                 groups == null ? null : groups.stream().map(AccountGroupView::toDomain).toList());
     }
