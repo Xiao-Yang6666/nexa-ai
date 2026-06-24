@@ -3,6 +3,7 @@ package com.nexa.account.provider.interfaces.api.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nexa.account.provider.domain.model.Account;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -23,6 +24,7 @@ import java.util.List;
  * @param overloadUntil      过载冷却截止 epoch 秒（可空）
  * @param expiresAt          过期时刻 epoch 秒（可空）
  * @param autoPauseOnExpired 过期自动暂停
+ * @param rateMultiplier     账号级售价倍率
  * @param groups             所属分组集合
  * @param createdTime        创建时间 epoch 秒
  * @param updatedTime        更新时间 epoch 秒
@@ -40,6 +42,7 @@ public record AccountView(
         @JsonProperty("overload_until") Long overloadUntil,
         @JsonProperty("expires_at") Long expiresAt,
         @JsonProperty("auto_pause_on_expired") boolean autoPauseOnExpired,
+        @JsonProperty("rate_multiplier") BigDecimal rateMultiplier,
         @JsonProperty("groups") List<AccountGroupView> groups,
         @JsonProperty("created_time") Long createdTime,
         @JsonProperty("updated_time") Long updatedTime) {
@@ -54,7 +57,7 @@ public record AccountView(
         return new AccountView(
                 a.id(), a.name(), a.platform(), a.type(), a.concurrency(), a.priority(),
                 a.status().code(), a.rateLimitedAt(), a.rateLimitResetAt(), a.overloadUntil(),
-                a.expiresAt(), a.autoPauseOnExpired(),
+                a.expiresAt(), a.autoPauseOnExpired(), a.rateMultiplier(),
                 a.groups().stream().map(AccountGroupView::from).toList(),
                 a.createdTime(), a.updatedTime());
     }

@@ -64,6 +64,19 @@ public interface AccountRepository {
     List<Account> findSchedulable(long now);
 
     /**
+     * 列出某分组下、给定时刻可调度的账号（供转发选 account 取凭证）。
+     *
+     * <p>先按 account_groups.group 命中该分组的账号，再用领域聚合 {@link Account#isSchedulable(long)}
+     * 终判（status=ACTIVE + 未过期 + 未在过载窗）。返回结果按账号优先级升序（小=高优先）+ 组内优先级，
+     * 由调用方/适配层决定最终选择策略。</p>
+     *
+     * @param group 字符串分组（对齐 channel/abilities 的 group）
+     * @param now   判定时刻 epoch 秒
+     * @return 该分组下可调度的账号列表
+     */
+    List<Account> findSchedulableByGroup(String group, long now);
+
+    /**
      * 按 id 删除账号（连带清理 account_groups 关联）。
      *
      * @param id 账号 id

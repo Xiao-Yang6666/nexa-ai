@@ -90,6 +90,27 @@ public class AccountRepositoryImpl implements AccountRepository {
 
     /** {@inheritDoc} */
     @Override
+    public List<Account> findSchedulableByGroup(String group, long now) {
+        String g = normalizeFilter(group);
+        if (g == null) {
+            return List.of();
+        }
+        // 1) account_groups 按 group 反查账号 id（去重）；2) 装配聚合；3) 领域 isSchedulable 终判；
+        // 4) 账号 priority 升序（小=高优先）排序，由选择适配层决定最终取哪个。
+        return groupJpa.findByGroup(g).stream()
+                .map(AccountGroupJpaEntity::getAccountId)
+                .distinct()
+                .map(jpa::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(e -> toDomain(e, loadGroups(e.getId())))
+                .filter(a -> a.isSchedulable(now))
+                .sorted(java.util.Comparator.comparingInt(Account::priority))
+                .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     @Transactional
     public void deleteById(long id) {
         // fan-in：清掉该账号的分组关联（不依赖 DB CASCADE）。
@@ -119,6 +140,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         e.setOverloadUntil(a.overloadUntil());
         e.setExpiresAt(a.expiresAt());
         e.setAutoPauseOnExpired(a.autoPauseOnExpired());
+        e.setRateMultiplier(a.rateMultiplier());
         e.setCreatedAt(a.createdTime());
         e.setUpdatedAt(a.updatedTime());
         return e;
@@ -139,6 +161,7 @@ public class AccountRepositoryImpl implements AccountRepository {
                 e.getOverloadUntil(),
                 e.getExpiresAt(),
                 e.isAutoPauseOnExpired(),
+                e.getRateMultiplier(),
                 groups,
                 e.getCreatedAt(),
                 e.getUpdatedAt());
@@ -146,7 +169,7 @@ public class AccountRepositoryImpl implements AccountRepository {
 
     private List<AccountGroupRef> loadGroups(Long accountId) {
         return groupJpa.findByAccountId(accountId).stream()
-                .map(g -> new AccountGroupRef(g.getGroupId(), g.getPriority()))
+                .map(g -> new AccountGroupRef(g.getGroup(), g.getPriority()))
                 .toList();
     }
 
@@ -166,7 +189,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         }
         List<AccountGroupJpaEntity> rows = new ArrayList<>(groups.size());
         for (AccountGroupRef ref : groups) {
-            rows.add(new AccountGroupJpaEntity(accountId, ref.groupId(), ref.priority()));
+            rows.add(new AccountGroupJpaEntity(accountId, ref.group(), ref.priority()));
         }
         groupJpa.saveAll(rows);
     }

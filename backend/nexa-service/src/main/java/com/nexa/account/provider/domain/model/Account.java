@@ -68,6 +68,9 @@ public class Account {
     /** 过期是否自动暂停（缺省 true）。 */
     private boolean autoPauseOnExpired;
 
+    /** 账号级售价倍率（>=0，默认 1.0；售价 = A倍率 × group倍率 × account倍率）。 */
+    private java.math.BigDecimal rateMultiplier;
+
     /** 所属分组关联集合（聚合内成员）。 */
     private List<AccountGroupRef> groups;
 
@@ -80,8 +83,8 @@ public class Account {
     private Account(Long id, String name, String platform, String type, String credentials,
                     int concurrency, int priority, AccountStatus status, Long rateLimitedAt,
                     Long rateLimitResetAt, Long overloadUntil, Long expiresAt,
-                    boolean autoPauseOnExpired, List<AccountGroupRef> groups,
-                    Long createdTime, Long updatedTime) {
+                    boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
+                    List<AccountGroupRef> groups, Long createdTime, Long updatedTime) {
         this.id = id;
         this.name = name;
         this.platform = platform;
@@ -95,6 +98,7 @@ public class Account {
         this.overloadUntil = overloadUntil;
         this.expiresAt = expiresAt;
         this.autoPauseOnExpired = autoPauseOnExpired;
+        this.rateMultiplier = normalizeMultiplier(rateMultiplier);
         this.groups = groups == null ? new ArrayList<>() : new ArrayList<>(groups);
         this.createdTime = createdTime;
         this.updatedTime = updatedTime;
@@ -114,13 +118,15 @@ public class Account {
      * @param priority           优先级（可空/&lt;0→0；缺省 50）
      * @param expiresAt          过期时刻 epoch 秒（可空）
      * @param autoPauseOnExpired 过期自动暂停（可空→true）
+     * @param rateMultiplier     账号级售价倍率（可空/&lt;0→1.0）
      * @param groups             所属分组集合（可空）
      * @return 待持久化的新账号（id 由仓储保存后回填）
      * @throws InvalidAccountParameterException 字段非法
      */
     public static Account create(String name, String platform, String type, String credentials,
                                  Integer concurrency, Integer priority, Long expiresAt,
-                                 Boolean autoPauseOnExpired, List<AccountGroupRef> groups) {
+                                 Boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
+                                 List<AccountGroupRef> groups) {
         long now = Instant.now().getEpochSecond();
         return new Account(
                 null,
@@ -134,6 +140,7 @@ public class Account {
                 null, null, null,
                 expiresAt,
                 autoPauseOnExpired == null || autoPauseOnExpired,
+                normalizeMultiplier(rateMultiplier),
                 groups,
                 now, now);
     }
@@ -147,10 +154,11 @@ public class Account {
                                     String credentials, int concurrency, int priority, String status,
                                     Long rateLimitedAt, Long rateLimitResetAt, Long overloadUntil,
                                     Long expiresAt, boolean autoPauseOnExpired,
+                                    java.math.BigDecimal rateMultiplier,
                                     List<AccountGroupRef> groups, Long createdTime, Long updatedTime) {
         return new Account(id, name, platform, type, credentials, concurrency, priority,
                 AccountStatus.fromCode(status), rateLimitedAt, rateLimitResetAt, overloadUntil,
-                expiresAt, autoPauseOnExpired, groups, createdTime, updatedTime);
+                expiresAt, autoPauseOnExpired, rateMultiplier, groups, createdTime, updatedTime);
     }
 
     /**
@@ -162,7 +170,8 @@ public class Account {
      */
     public void update(String name, String platform, String type, String newCredentials,
                        Integer concurrency, Integer priority, Long expiresAt,
-                       Boolean autoPauseOnExpired, List<AccountGroupRef> groups) {
+                       Boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
+                       List<AccountGroupRef> groups) {
         this.name = requireText(name, "name");
         this.platform = requireText(platform, "platform");
         this.type = requireText(type, "type");
@@ -175,6 +184,7 @@ public class Account {
         if (autoPauseOnExpired != null) {
             this.autoPauseOnExpired = autoPauseOnExpired;
         }
+        this.rateMultiplier = normalizeMultiplier(rateMultiplier);
         this.groups = groups == null ? new ArrayList<>() : new ArrayList<>(groups);
         touch();
     }
@@ -208,6 +218,19 @@ public class Account {
         this.status = AccountStatus.RATE_LIMITED;
         this.rateLimitedAt = Instant.now().getEpochSecond();
         this.rateLimitResetAt = resetAt;
+        touch();
+    }
+
+    /**
+     * 标记账号进入过载冷却（充血状态迁移，上游 529 触发）。
+     *
+     * <p>设置过载冷却截止时刻 overloadUntil；status 保持 ACTIVE（过载是临时冷却，非限流/禁用）。
+     * 冷却窗内 {@link #isSchedulable(long)} 返回 false，窗口过后自动恢复可调度，无需显式 recover。</p>
+     *
+     * @param until 过载冷却截止时刻 epoch 秒（应 &gt; now）
+     */
+    public void markOverloaded(Long until) {
+        this.overloadUntil = until;
         touch();
     }
 
@@ -278,6 +301,11 @@ public class Account {
         return (raw == null || raw < 0) ? DEFAULT_PRIORITY : raw;
     }
 
+    /** 倍率归一：null 或负 → 1.0（不打折/不加价）。 */
+    private static java.math.BigDecimal normalizeMultiplier(java.math.BigDecimal raw) {
+        return (raw == null || raw.signum() < 0) ? java.math.BigDecimal.ONE : raw;
+    }
+
     // ---- 只读访问器（聚合状态对外只读；credentials 仅基础设施层持久化用，不进视图） ----
 
     /** @return 主键，未持久化为 null */
@@ -343,6 +371,11 @@ public class Account {
     /** @return 过期是否自动暂停 */
     public boolean autoPauseOnExpired() {
         return autoPauseOnExpired;
+    }
+
+    /** @return 账号级售价倍率（>=0，默认 1.0） */
+    public java.math.BigDecimal rateMultiplier() {
+        return rateMultiplier;
     }
 
     /** @return 所属分组关联集合（只读副本） */

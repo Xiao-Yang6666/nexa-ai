@@ -3,6 +3,7 @@ package com.nexa.account.provider.interfaces.api.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nexa.account.provider.application.UpdateAccountCommand;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -18,6 +19,7 @@ import java.util.List;
  * @param priority           优先级（可空→50）
  * @param expiresAt          过期时刻 epoch 秒（可空）
  * @param autoPauseOnExpired 过期自动暂停（可空=不改）
+ * @param rateMultiplier     账号级售价倍率（可空→1.0）
  * @param groups             所属分组集合（可空）
  */
 public record AccountUpdateRequest(
@@ -29,6 +31,7 @@ public record AccountUpdateRequest(
         @JsonProperty("priority") Integer priority,
         @JsonProperty("expires_at") Long expiresAt,
         @JsonProperty("auto_pause_on_expired") Boolean autoPauseOnExpired,
+        @JsonProperty("rate_multiplier") BigDecimal rateMultiplier,
         @JsonProperty("groups") List<AccountGroupView> groups) {
 
     /**
@@ -40,7 +43,7 @@ public record AccountUpdateRequest(
     public UpdateAccountCommand toCommand(long id) {
         return new UpdateAccountCommand(
                 id, name, platform, type, credentials, concurrency, priority, expiresAt,
-                autoPauseOnExpired,
+                autoPauseOnExpired, rateMultiplier,
                 groups == null ? null : groups.stream().map(AccountGroupView::toDomain).toList());
     }
 }

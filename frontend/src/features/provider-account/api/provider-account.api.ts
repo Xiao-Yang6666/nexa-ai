@@ -7,9 +7,9 @@
  */
 import { http } from '@/shared/api';
 
-/** 账号-分组关联视图（group_id + 组内 priority）。 */
+/** 账号-分组关联视图（group 字符串 + 组内 priority，对齐 channel/abilities 的 group）。 */
 export interface AccountGroupView {
-  group_id: number;
+  group: string;
   priority?: number | null;
 }
 
@@ -31,6 +31,8 @@ export interface AccountView {
   overload_until?: number | null;
   expires_at?: number | null;
   auto_pause_on_expired: boolean;
+  /** 账号级售价倍率（>=0，默认 1.0） */
+  rate_multiplier?: number | null;
   groups?: AccountGroupView[];
   created_time?: number | null;
   updated_time?: number | null;
@@ -46,6 +48,7 @@ export interface AccountCreateRequest {
   priority?: number;
   expires_at?: number;
   auto_pause_on_expired?: boolean;
+  rate_multiplier?: number;
   groups?: AccountGroupView[];
 }
 

@@ -24,6 +24,14 @@ interface SpringDataAccountGroupJpaRepository
     List<AccountGroupJpaEntity> findByAccountId(Long accountId);
 
     /**
+     * 按分组列出关联（选 account 时按 group 反查账号成员）。
+     *
+     * @param group 字符串分组
+     * @return 该分组下的账号关联列表（含组内优先级）
+     */
+    List<AccountGroupJpaEntity> findByGroup(String group);
+
+    /**
      * 按账号 id 删除全部关联（fan-in，账号 delete/重建前清理）。
      *
      * @param accountId 账号 id

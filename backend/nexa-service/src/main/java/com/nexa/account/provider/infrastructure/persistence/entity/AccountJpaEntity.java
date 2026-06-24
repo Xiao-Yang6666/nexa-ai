@@ -67,6 +67,9 @@ public class AccountJpaEntity {
     @Column(name = "auto_pause_on_expired", nullable = false)
     private boolean autoPauseOnExpired;
 
+    @Column(name = "rate_multiplier", nullable = false, precision = 10, scale = 4)
+    private java.math.BigDecimal rateMultiplier;
+
     @Column(name = "created_at")
     private Long createdAt;
 
@@ -181,6 +184,14 @@ public class AccountJpaEntity {
 
     public void setAutoPauseOnExpired(boolean autoPauseOnExpired) {
         this.autoPauseOnExpired = autoPauseOnExpired;
+    }
+
+    public java.math.BigDecimal getRateMultiplier() {
+        return rateMultiplier;
+    }
+
+    public void setRateMultiplier(java.math.BigDecimal rateMultiplier) {
+        this.rateMultiplier = rateMultiplier;
     }
 
     public Long getCreatedAt() {

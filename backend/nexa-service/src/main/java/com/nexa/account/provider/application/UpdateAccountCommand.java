@@ -2,6 +2,7 @@ package com.nexa.account.provider.application;
 
 import com.nexa.account.provider.domain.vo.AccountGroupRef;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -16,6 +17,7 @@ import java.util.List;
  * @param priority           优先级（可空→50）
  * @param expiresAt          过期时刻 epoch 秒（可空）
  * @param autoPauseOnExpired 过期自动暂停（可空=不改）
+ * @param rateMultiplier     账号级售价倍率（可空→1.0）
  * @param groups             所属分组集合（可空）
  */
 public record UpdateAccountCommand(
@@ -28,5 +30,6 @@ public record UpdateAccountCommand(
         Integer priority,
         Long expiresAt,
         Boolean autoPauseOnExpired,
+        BigDecimal rateMultiplier,
         List<AccountGroupRef> groups) {
 }

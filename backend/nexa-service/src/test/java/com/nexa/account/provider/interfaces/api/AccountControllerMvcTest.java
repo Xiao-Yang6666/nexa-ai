@@ -95,6 +95,18 @@ class AccountControllerMvcTest {
         }
 
         @Override
+        public List<Account> findSchedulableByGroup(String group, long now) {
+            if (group == null || group.isBlank()) {
+                return List.of();
+            }
+            return store.values().stream()
+                    .filter(a -> a.isSchedulable(now))
+                    .filter(a -> a.groups().stream().anyMatch(g -> group.equals(g.group())))
+                    .sorted(java.util.Comparator.comparingInt(Account::priority))
+                    .toList();
+        }
+
+        @Override
         public void deleteById(long id) {
             store.remove(id);
         }
