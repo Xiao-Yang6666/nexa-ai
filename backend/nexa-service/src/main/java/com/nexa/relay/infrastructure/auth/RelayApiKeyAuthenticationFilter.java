@@ -23,7 +23,8 @@ import java.util.Optional;
  *
  * <p>命脉最后一环：{@code /v1/**} 中继端点的客户用 {@code tokens.key}（形如 {@code sk-...}）鉴权，
  * <b>不是</b>登录签发的 JWT。本过滤器只作用于 {@code /v1/**}（{@link #shouldNotFilter} 对非 /v1 返 true 跳过，
- * 不触碰 {@code /api/**} 的 JWT 链路）：从 {@code Authorization: Bearer <key>} 取明文 key →
+ * 不触碰 {@code /api/**} 的 JWT 链路）：从 {@code Authorization: Bearer ***（OpenAI 风格，优先）
+ * 或 {@code x-api-key: ***（Anthropic 官方 SDK 风格，回退）取明文 key →
  * {@link TokenRepository#findByKey} 反查 token → 校验启用/未过期/额度 → 构造携带真实
  * {@code userId/group/tokenId/tokenName} 的 {@link RelayApiKeyAuthentication} 注入 {@code SecurityContext}。</p>
  *
@@ -44,8 +45,11 @@ import java.util.Optional;
 @Component
 public class RelayApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
-    /** Bearer 前缀。 */
+    /** Bearer 前缀（OpenAI 风格 {@code Authorization: Bearer sk-...}）。 */
     private static final String BEARER_PREFIX = "Bearer ";
+
+    /** Anthropic 官方 SDK 风格的 API-Key 请求头（{@code x-api-key: sk-...}）。 */
+    private static final String X_API_KEY_HEADER = "x-api-key";
 
     /** 本过滤器作用的 relay 路径前缀（仅 /v1/** 走 API-Key 鉴权）。 */
     private static final String RELAY_PATH_PREFIX = "/v1/";
@@ -139,9 +143,18 @@ public class RelayApiKeyAuthenticationFilter extends OncePerRequestFilter {
      * @return 非空 key；缺失/空返回 null
      */
     private String extractApiKey(HttpServletRequest request) {
+        // 优先 OpenAI 风格：Authorization: Bearer sk-...
         String authz = request.getHeader("Authorization");
         if (authz != null && authz.startsWith(BEARER_PREFIX)) {
             String key = authz.substring(BEARER_PREFIX.length()).trim();
+            if (!key.isEmpty()) {
+                return key;
+            }
+        }
+        // 回退 Anthropic 官方 SDK 风格：x-api-key: sk-...
+        String xApiKey = request.getHeader(X_API_KEY_HEADER);
+        if (xApiKey != null) {
+            String key = xApiKey.trim();
             if (!key.isEmpty()) {
                 return key;
             }
