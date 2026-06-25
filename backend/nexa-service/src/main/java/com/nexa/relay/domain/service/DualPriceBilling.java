@@ -12,11 +12,14 @@ import java.math.RoundingMode;
  * <p>领域规则来源：COMPAT-BILLING-DECISIONS §10 + prd-relay RL-7 + BILLING-DATA-OBJECTS。核心铁律：
  * <ul>
  *   <li>第⑥步【扣客户】quota_sell = BasePriceRatio(A) × GroupRatio(分组) × tokens（客户可见，**售价只随对外模型 A + 分组折扣变化，兜底切供应商时恒定不波动**）；</li>
- *   <li>第⑦步【记成本】quota_cost = CostRatio(实际渠道, B) × tokens（**不乘折扣**，客户不可见，随实际选中渠道走）；</li>
+ *   <li>第⑦步【记成本】quota_cost = CostRatio(实际渠道, B) × AccountRatio(所用账号) × tokens（**不乘折扣、不进售价**，客户不可见，随实际选中渠道+账号走）；</li>
  *   <li>第⑨步【利润】quota_profit = quota_sell − quota_cost（可为负=亏损告警）；</li>
  *   <li>成本行缺失：quota_cost=0、quota_profit=quota_sell，Other 写 cost_missing（不阻断计费）。</li>
  * </ul>
  * </p>
+ *
+ * <p>account 级倍率（{@code accountRatio}）只乘在<b>成本侧</b>——表达不同供应商账号的真实成本差异，
+ * 不进售价，故不破坏"售价随兜底切供应商恒定不波动"铁律。null/未选中账号 → 1.0（不影响成本）。</p>
  *
  * <p>金额用 {@link BigDecimal} 计算（禁裸 float，backend-engineer §2.4 / Pitfall 7），最终配额取整为 int
  * （Log.quota_sell/cost/profit 为 integer 口径，与现网 Quota 一致）。token 用量取 IR 统一口径
@@ -34,6 +37,7 @@ public final class DualPriceBilling {
      * @param basePriceRatio A 的基准售价倍率（PublicModel.BasePriceRatio / GetModelRatio(A)）
      * @param groupRatio     分组折扣系数（GetGroupRatio(UsingGroup)）
      * @param costRatio      (实际渠道, B) 的成本倍率（ChannelModelCost.CostRatio）；null=成本行缺失
+     * @param accountRatio   所用账号的成本倍率（Account.rateMultiplier）；null=1.0（未选中账号/回落 channel）
      * @param completionRatio 出参 token 的成本/售价加权比（>1 表示 completion 更贵；1=不区分）
      * @return 双价记账结果（含 cost_missing 标记）
      */
@@ -41,21 +45,23 @@ public final class DualPriceBilling {
                                         BigDecimal basePriceRatio,
                                         BigDecimal groupRatio,
                                         BigDecimal costRatio,
+                                        BigDecimal accountRatio,
                                         BigDecimal completionRatio) {
         BigDecimal cr = completionRatio == null ? BigDecimal.ONE : completionRatio;
+        BigDecimal ar = accountRatio == null ? BigDecimal.ONE : accountRatio;
         // 加权 token = prompt + completion × completionRatio（completion 通常更贵）
         BigDecimal weightedTokens = BigDecimal.valueOf(usage.promptTokens())
                 .add(BigDecimal.valueOf(usage.completionTokens()).multiply(cr));
 
-        // ⑥ 售价：BasePriceRatio(A) × GroupRatio × weightedTokens（客户可见、恒定）
+        // ⑥ 售价：BasePriceRatio(A) × GroupRatio × weightedTokens（客户可见、恒定，不含 account 倍率）
         BigDecimal sell = basePriceRatio.multiply(groupRatio).multiply(weightedTokens);
         int quotaSell = sell.setScale(0, RoundingMode.HALF_UP).intValue();
 
-        // ⑦ 成本：CostRatio(渠道,B) × weightedTokens（不乘折扣）；缺失=0
+        // ⑦ 成本：CostRatio(渠道,B) × AccountRatio(账号) × weightedTokens（不乘折扣、不进售价）；缺失=0
         boolean costMissing = (costRatio == null);
         int quotaCost = 0;
         if (!costMissing) {
-            BigDecimal cost = costRatio.multiply(weightedTokens);
+            BigDecimal cost = costRatio.multiply(ar).multiply(weightedTokens);
             quotaCost = cost.setScale(0, RoundingMode.HALF_UP).intValue();
         }
 

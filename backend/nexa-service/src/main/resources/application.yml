@@ -45,6 +45,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    out-of-order: true
     locations: classpath:db/migration
 
   # --- Jackson：出/入参 JSON 字段名 snake_case，对齐 openapi（username/verification_code...） ---

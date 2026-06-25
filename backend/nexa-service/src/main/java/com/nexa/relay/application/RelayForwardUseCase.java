@@ -333,7 +333,7 @@ public class RelayForwardUseCase {
         BigDecimal groupRatio = resolveGroupRatio(authContext.group());
         BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel); // null = 成本行缺失
         BillingResult billing = DualPriceBilling.compute(
-                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
+                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, BigDecimal.ONE);
 
         // ⑦' 结算扣减（响应后一次性扣售价，最小闭环）。
         // TODO REQ-05 完整：补「选渠后预扣 + 响应后多退少补」分段结算（§6 第8-9/19步），本期仅响应后一次性扣 quota_sell。
@@ -469,7 +469,7 @@ public class RelayForwardUseCase {
         BigDecimal groupRatio = resolveGroupRatio(authContext.group());
         BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel);
         BillingResult billing = DualPriceBilling.compute(
-                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE);
+                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, BigDecimal.ONE);
         settle(authContext.userId(), billing);
         recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, true);
     }
