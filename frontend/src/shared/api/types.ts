@@ -72,6 +72,9 @@ export type UserLogView = Schemas['UserLogView'];
 /** 日志聚合统计（仅 Type=2 Consume；quota/rpm/tpm） */
 export type LogStat = Schemas['LogStat'];
 
+/** 用量排行榜公开快照条目（仅对外名 A + 聚合用量；绝不含成本/利润/B/供应商） */
+export type RankingPublicView = Schemas['RankingPublicView'];
+
 /** 充值下单请求（openapi TopUpRequest） */
 export type TopUpRequest = Schemas['TopUpRequest'];
 

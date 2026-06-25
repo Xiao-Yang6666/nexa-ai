@@ -9,6 +9,8 @@ import type {
   ChannelAdminView,
   ChannelCreateRequest,
   ChannelUpdateRequest,
+  ChannelModelCostAdminView,
+  ChannelModelCostWriteRequest,
 } from '@/shared/api';
 
 /** /api/channel/ 列表响应（后端 ChannelListView：items + total）。 */
@@ -82,4 +84,64 @@ export function testChannel(id: number, model?: string): Promise<unknown> {
   return http.get<unknown>(`/api/channel/test/${id}`, {
     query: model ? { model } : undefined,
   });
+}
+
+/**
+ * 按参数探测上游模型列表（新建渠道场景，无需先保存）。
+ * openapi: POST /api/channel/fetch_models (F-2026) → ApiResponse{ data: string[] }
+ */
+export function fetchUpstreamModels(req: {
+  type: number;
+  baseUrl?: string;
+  key: string;
+}): Promise<string[]> {
+  return http.post<string[]>('/api/channel/fetch_models', {
+    json: { type: req.type, base_url: req.baseUrl || undefined, key: req.key },
+  });
+}
+
+/* ── 渠道成本倍率（channel × 真实模型 B，仅 admin，客户不可见） ── */
+
+/** 成本列表响应（后端 ChannelModelCostListView：items + total）。 */
+export interface ChannelCostListResponse {
+  items: ChannelModelCostAdminView[];
+  total: number;
+}
+
+/**
+ * 查渠道成本倍率（按 channel_id 过滤取某渠道全部 B 成本）。
+ * openapi: GET /api/channel_model_costs (F-6006, adminAuth)
+ */
+export function getChannelCosts(params: {
+  channelId?: number;
+  upstreamModel?: string;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<ChannelCostListResponse> {
+  return http.get<ChannelCostListResponse>('/api/channel_model_costs', {
+    query: {
+      channel_id: params.channelId,
+      upstream_model: params.upstreamModel,
+      p: params.page,
+      page_size: params.pageSize,
+    },
+  });
+}
+
+/**
+ * 创建/更新单条成本倍率（upsert，同 channel×B 覆盖）。
+ * openapi: POST /api/channel_model_costs (F-6006)
+ */
+export function upsertChannelCost(req: ChannelModelCostWriteRequest): Promise<ChannelModelCostAdminView> {
+  return http.post<ChannelModelCostAdminView>('/api/channel_model_costs', { json: req });
+}
+
+/**
+ * 批量创建/更新成本倍率（按账号/分组批量设，逐条 upsert，整批一事务）。
+ * openapi: POST /api/channel_model_costs/batch
+ */
+export function batchUpsertChannelCosts(
+  items: ChannelModelCostWriteRequest[],
+): Promise<ChannelModelCostAdminView[]> {
+  return http.post<ChannelModelCostAdminView[]>('/api/channel_model_costs/batch', { json: items });
 }

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type UIEvent } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 // 从 account model 叶子模块导入（非 barrel）：打破 account↔shell 循环依赖。
-import { useSelf, useLogout, ROLE } from '@/features/account/model/account.model';
+import { useSelf, useLogout, ROLE, roleLabel } from '@/features/account/model/account.model';
+import { quotaToUsd } from '@/features/billing/model/billing.model';
 import { NAV } from '../nav-tree';
 import styles from './AppShell.module.css';
 
@@ -50,6 +51,13 @@ function Icon({ name, className }: { name: string; className?: string }) {
     </svg>
   );
 }
+/**
+ * 侧栏滚动位置（模块级单例）。AppShell 随每次路由切换在各 page 内重新挂载，
+ * <aside> 也随之新建，scrollTop 复位到 0 ——「点菜单后侧栏跳回顶部」的根因。
+ * 模块在 SPA 生命周期内常驻，故用模块级变量跨挂载保存滚动量，挂载时同步回填。
+ */
+let sideScrollTop = 0;
+
 export interface AppShellProps {
   /** 当前激活路由 id（如 'channels'），决定侧栏高亮 */
   activeId: string;
@@ -83,6 +91,14 @@ export function AppShell({ activeId, title, crumb, actions, userName, children }
   const self = useSelf();
   const logout = useLogout();
 
+  // 侧栏挂载时同步回填上次滚动量（避免切页跳回顶部）；滚动时持续记录。
+  const sideRef = useCallback((node: HTMLElement | null) => {
+    if (node) node.scrollTop = sideScrollTop;
+  }, []);
+  const onSideScroll = useCallback((e: UIEvent<HTMLElement>) => {
+    sideScrollTop = e.currentTarget.scrollTop;
+  }, []);
+
   // 账号下拉外部点击关闭。
   useEffect(() => {
     if (!menuOpen) return;
@@ -104,6 +120,9 @@ export function AppShell({ activeId, title, crumb, actions, userName, children }
   // 角色兜底 COMMON：refetch 瞬间 self.data undefined 时绝不升格为 admin/root。
   const currentRole = self.data?.role ?? ROLE.COMMON;
   const displayName = userName ?? self.data?.displayName ?? self.data?.username ?? '用户';
+  const email = self.data?.email ?? '';
+  const group = self.data?.group ?? '';
+  const balanceUsd = quotaToUsd(self.data?.quota);
 
   // 单一数据源按角色过滤：去掉 minRole 高于本人的项，丢弃过滤后变空的分组。
   const nav = NAV.map((grp) => ({
@@ -143,6 +162,31 @@ export function AppShell({ activeId, title, crumb, actions, userName, children }
             </button>
             {menuOpen ? (
               <div className={styles.menu} role="menu">
+                <div className={styles.menuHead}>
+                  <span className={styles.menuAvatar}>{displayName.charAt(0).toUpperCase()}</span>
+                  <div className={styles.menuIdent}>
+                    <div className={styles.menuName}>{displayName}</div>
+                    {email ? <div className={styles.menuEmail}>{email}</div> : null}
+                  </div>
+                </div>
+                <div className={styles.menuMeta}>
+                  <span className={`badge b-info ${styles.menuRole}`}>{roleLabel(currentRole)}</span>
+                  {group ? <span className={`badge b-neutral ${styles.menuRole}`}>{group}</span> : null}
+                </div>
+                <div className={styles.menuBalance}>
+                  <span className={styles.menuBalanceLabel}>账户余额</span>
+                  <span className={styles.menuBalanceVal}>{balanceUsd}</span>
+                </div>
+                <div className={styles.menuSep} />
+                <Link
+                  className={styles.menuItem}
+                  role="menuitem"
+                  href="/settings"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Icon name="settings" className={styles.menuIc} />
+                  <span>账号设置</span>
+                </Link>
                 <button
                   className={styles.menuItem}
                   type="button"
@@ -159,7 +203,7 @@ export function AppShell({ activeId, title, crumb, actions, userName, children }
         </div>
       </header>
 
-      <aside className={`${styles.side} ${open ? styles.open : ''}`}>
+      <aside ref={sideRef} onScroll={onSideScroll} className={`${styles.side} ${open ? styles.open : ''}`}>
         {nav.map((grp) => (
           <div key={grp.group} className={`${styles.navGrp} ${grp.admin ? styles.navGrpAdmin : ''}`}>
             <div className={styles.navHead}>

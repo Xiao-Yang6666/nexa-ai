@@ -10,6 +10,8 @@ export { SettingsPage } from './components/SettingsPage';
 export { UsersAdminPage } from './components/UsersAdminPage';
 export { AuthSplitLayout, Accent } from './components/AuthSplitLayout';
 export type { AuthSplitLayoutProps } from './components/AuthSplitLayout';
+export { FacadeAccountNav } from './components/FacadeAccountNav';
+export type { FacadeAccountNavProps } from './components/FacadeAccountNav';
 export {
   useLogin,
   useRegister,

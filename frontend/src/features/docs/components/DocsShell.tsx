@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
+import { FacadeAccountNav } from '@/features/account';
 import { NAV_GROUPS, type TocItem } from '../model/nav';
 
 /**
@@ -117,12 +118,7 @@ export function DocsShell({
             <span className="m">N</span>Nexa·AI 文档
           </Link>
           <span className="tb-spacer" />
-          <Link className="btn btn-glow" href="/dashboard">
-            进控制台
-            <svg viewBox="0 0 24 24">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </Link>
+          <FacadeAccountNav variant="bar" />
         </div>
       </header>
 

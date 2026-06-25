@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { FacadeAccountNav } from '@/features/account';
 import styles from './PublicShell.module.css';
 
 /** 公开站导航项，对齐 06_prototype web-public 各页顶部导航。 */
@@ -67,12 +68,7 @@ export function PublicShell({
               ))}
             </nav>
             <div className={styles.cta}>
-              <Link className={`${styles.btn} ${styles.glass}`} href="/login">
-                登录
-              </Link>
-              <Link className={`${styles.btn} ${styles.glow}`} href="/register">
-                免费开始
-              </Link>
+              <FacadeAccountNav variant="bar" />
             </div>
             <button
               type="button"
@@ -99,20 +95,7 @@ export function PublicShell({
             </Link>
           ))}
           <div className={styles.mobileCta}>
-            <Link
-              className={`${styles.btn} ${styles.glass}`}
-              href="/login"
-              onClick={() => setNavOpen(false)}
-            >
-              登录
-            </Link>
-            <Link
-              className={`${styles.btn} ${styles.glow}`}
-              href="/register"
-              onClick={() => setNavOpen(false)}
-            >
-              免费开始
-            </Link>
+            <FacadeAccountNav variant="stacked" onNavigate={() => setNavOpen(false)} />
           </div>
         </div>
       </header>

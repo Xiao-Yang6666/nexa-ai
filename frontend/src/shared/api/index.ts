@@ -23,6 +23,7 @@ export type {
   TokenCreateRequest,
   UserLogView,
   LogStat,
+  RankingPublicView,
   TopUpRequest,
   UserAdminView,
   AdminLogView,

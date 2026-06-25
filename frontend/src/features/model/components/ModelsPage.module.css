@@ -340,6 +340,18 @@
   backdrop-filter: blur(4px);
 }
 
+/* 平台配置的模型描述（来自对外模型 description） */
+.desc {
+  margin: 8px 0 0;
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: color-mix(in oklch, var(--hd-text) 62%, transparent);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* 品质徽章 */
 .tierBadge {
   display: inline-flex;
@@ -594,8 +606,11 @@
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: color-mix(in oklch, var(--hd-bg) 64%, transparent);
-  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background: color-mix(in oklch, var(--hd-bg) 70%, transparent);
+  backdrop-filter: blur(6px);
   opacity: 0;
   visibility: hidden;
   transition:
@@ -607,34 +622,39 @@
   visibility: visible;
 }
 .drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
   z-index: 61;
-  width: min(440px, 92vw);
+  width: min(560px, 100%);
+  max-height: min(86vh, 760px);
   display: flex;
   flex-direction: column;
-  background: color-mix(in oklch, var(--hd-bg2) 86%, transparent);
-  backdrop-filter: blur(20px);
-  border-left: 1px solid color-mix(in oklch, var(--hd-mint) 16%, transparent);
-  box-shadow: -30px 0 70px -30px color-mix(in oklch, var(--hd-bg) 90%, transparent);
-  transform: translateX(102%);
-  transition: transform var(--dur-3) var(--ease-out);
+  background: color-mix(in oklch, var(--hd-bg2) 92%, transparent);
+  backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in oklch, var(--hd-mint) 18%, transparent);
+  border-radius: var(--radius-xl, 20px);
+  box-shadow:
+    0 40px 90px -30px color-mix(in oklch, var(--hd-bg) 92%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--hd-mint) 6%, transparent);
+  opacity: 0;
+  transform: translateY(16px) scale(0.97);
+  transition:
+    opacity var(--dur-3) var(--ease-out),
+    transform var(--dur-3) var(--ease-out);
   overflow: hidden;
 }
 .drawerOpen {
+  opacity: 1;
   transform: none;
 }
 .drawer::before {
   content: '';
   position: absolute;
-  inset: -30% -20% auto -20%;
-  height: 50%;
+  inset: 0 0 auto 0;
+  height: 46%;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(50% 70% at 70% 0%, color-mix(in oklch, var(--color-primary-500) 26%, transparent), transparent 72%);
-  filter: blur(30px);
+  background: radial-gradient(60% 80% at 50% 0%, color-mix(in oklch, var(--color-primary-500) 22%, transparent), transparent 70%);
+  filter: blur(34px);
 }
 .dwHead {
   position: relative;
@@ -706,6 +726,18 @@
   color: var(--hd-muted);
   margin: 0 0 var(--space-3);
   font-weight: var(--fw-semibold);
+}
+.dwDesc {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: 1.6;
+  color: color-mix(in oklch, var(--hd-text) 78%, transparent);
+  white-space: pre-wrap;
+}
+.dwModelId {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  color: color-mix(in oklch, var(--hd-text) 60%, transparent);
 }
 .priceCard {
   border: 1px solid color-mix(in oklch, var(--hd-mint) 24%, transparent);

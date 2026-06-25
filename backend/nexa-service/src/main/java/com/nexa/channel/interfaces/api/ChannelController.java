@@ -20,6 +20,7 @@ import com.nexa.channel.interfaces.api.dto.ChannelAdminView;
 import com.nexa.channel.interfaces.api.dto.ChannelCreateRequest;
 import com.nexa.channel.interfaces.api.dto.ChannelListView;
 import com.nexa.channel.interfaces.api.dto.ChannelOllamaRequest;
+import com.nexa.channel.interfaces.api.dto.ChannelFetchModelsRequest;
 import com.nexa.channel.interfaces.api.dto.ChannelTagRequest;
 import com.nexa.channel.interfaces.api.dto.ChannelTestResultView;
 import com.nexa.channel.interfaces.api.dto.ChannelUpdateRequest;
@@ -313,6 +314,20 @@ public class ChannelController {
     @PostMapping("/fetch_models/{id}")
     public ApiResponse<List<String>> fetchModels(@PathVariable("id") long id) {
         return ApiResponse.okData(probeUpstreamModelsUseCase.fetch(id));
+    }
+
+    /**
+     * 按参数探测上游模型集（新建渠道场景，{@code POST /api/channel/fetch_models}，无 id、不落库）。
+     *
+     * <p>用请求体的 type/base_url/key 直接探测上游，供"新建渠道"抽屉点"获取模型列表"使用。</p>
+     *
+     * @param request 探测参数（type/base_url/key）
+     * @return 成功信封，data = 上游模型名列表
+     */
+    @PostMapping("/fetch_models")
+    public ApiResponse<List<String>> fetchModelsByParams(@RequestBody ChannelFetchModelsRequest request) {
+        return ApiResponse.okData(
+                probeUpstreamModelsUseCase.fetchByParams(request.type(), request.baseUrl(), request.key()));
     }
 
     /**

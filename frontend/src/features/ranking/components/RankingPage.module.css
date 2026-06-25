@@ -287,7 +287,7 @@
 }
 .row {
   display: grid;
-  grid-template-columns: 42px 44px 1.6fr 1.5fr auto auto;
+  grid-template-columns: 42px 44px 1.6fr 1.6fr auto auto;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
@@ -429,6 +429,56 @@
   width: 9px;
   height: 9px;
   border-radius: 50%;
+}
+
+/* ── 数据态：加载骨架 / 错误 / 空 ── */
+.skel {
+  animation: none;
+  opacity: 1;
+  background: linear-gradient(
+    100deg,
+    var(--hd-glass) 30%,
+    var(--hd-glass-strong) 50%,
+    var(--hd-glass) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s var(--ease-in-out) infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--hd-glass);
+  border: 1px solid var(--hd-line);
+  backdrop-filter: blur(8px);
+  margin-bottom: var(--space-8);
+}
+.stateTitle {
+  font-family: var(--font-brand);
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-h5);
+  color: var(--hd-text);
+}
+.stateSub {
+  color: var(--hd-muted);
+  font-size: var(--text-body-sm);
+}
+.state .btn {
+  margin-top: var(--space-2);
+  padding: 9px 18px;
+  font-size: var(--text-body-sm);
 }
 
 /* ── 响应式 ── */

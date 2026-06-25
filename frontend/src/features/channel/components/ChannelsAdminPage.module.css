@@ -271,6 +271,85 @@
   padding: var(--space-2) var(--space-3);
 }
 
+/* 模型重定向 A→B 可视化表格 */
+.mapTable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mapRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+.mapArrow {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.mapDel {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 16px;
+}
+.mapDel:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* 可输入下拉 combobox */
+.combo {
+  position: relative;
+}
+.comboDd {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md, 0 6px 20px rgba(0, 0, 0, .12));
+}
+.comboOpt {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  cursor: pointer;
+}
+.comboOpt:hover {
+  background: var(--color-bg-subtle, rgba(0, 0, 0, .04));
+}
+
+/* 模型多选已选 chip 容器 */
+.msBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  min-height: 40px;
+}
+.msBox input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  width: 100%;
+}
+
 @media (max-width: 560px) {
   .srch {
     min-width: 140px;
