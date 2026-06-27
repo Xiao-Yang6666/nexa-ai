@@ -1,5 +1,7 @@
 package com.nexa.task.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 任务并发冲突异常（F-2002 CAS 失败，RowsAffected=0 → 重试或放弃）。
  *
@@ -7,7 +9,7 @@ package com.nexa.task.domain.exception;
  * （RowsAffected>0），其余 RowsAffected=0 视为被他进程改写，应用层据此重试或放弃本次更新。
  * 本异常不映射 HTTP 状态码（内部协调用），应用层 catch 后决策重试逻辑。</p>
  */
-public class TaskConcurrencyException extends DomainException {
+public class TaskConcurrencyException extends HttpAwareDomainException {
 
     public TaskConcurrencyException(String message) {
         // 409 Conflict（内部用，不暴露给 API）

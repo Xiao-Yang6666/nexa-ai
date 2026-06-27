@@ -1,6 +1,6 @@
 package com.nexa.ops.interfaces.api;
 
-import com.nexa.ops.domain.exception.DomainException;
+import com.nexa.shared.kernel.HttpAwareDomainException;
 import com.nexa.shared.web.ApiResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * 运营与运维接口层异常处理（协议翻译：ops 领域异常 → HTTP 状态码 + 错误信封）。
  *
- * <p>DDD 铁律：领域抛业务语义异常（{@link DomainException} 子类，自携稳定 code + 建议 httpStatus），
+ * <p>DDD 铁律：领域抛业务语义异常（{@link HttpAwareDomainException} 子类，自携稳定 code + 建议 httpStatus），
  * 接口层在此集中翻译为 openapi {@code ErrorResponse}（{@code {success:false, message}}），用例/控制器
  * 因此不写 try/catch 模板代码（backend-engineer §3.2）。</p>
  *
@@ -38,8 +38,8 @@ public class OpsExceptionHandler {
      * @param e 领域异常
      * @return 对应状态码的错误信封
      */
-    @ExceptionHandler(DomainException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDomain(DomainException e) {
+    @ExceptionHandler(HttpAwareDomainException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDomain(HttpAwareDomainException e) {
         HttpStatus status = HttpStatus.resolve(e.httpStatus());
         if (status == null) {
             // 防御：未知 httpStatus 归 500（不静默吞，按服务端错误暴露）。

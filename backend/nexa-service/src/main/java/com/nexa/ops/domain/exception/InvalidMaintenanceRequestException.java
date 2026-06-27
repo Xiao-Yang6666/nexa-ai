@@ -1,5 +1,7 @@
 package com.nexa.ops.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 性能监控 / 日志清理运维入参非法（F-4022/F-4023）。
  *
@@ -7,7 +9,7 @@ package com.nexa.ops.domain.exception;
  * {@code mode} 非法→「invalid mode」；{@code value<1}→「invalid value」；
  * {@code LogDir} 未配置→报错（运维前置条件不满足）。属客户端入参/前置条件错误 → 400。</p>
  */
-public class InvalidMaintenanceRequestException extends DomainException {
+public class InvalidMaintenanceRequestException extends HttpAwareDomainException {
 
     /**
      * @param message 具体校验失败原因（对齐契约文案）

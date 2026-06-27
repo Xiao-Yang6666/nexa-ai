@@ -1,12 +1,14 @@
 package com.nexa.relay.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 上游错误异常（502，复用 RL-3 错误处置链路）。
  *
  * <p>承载上游返回的状态码与脱敏后的错误内容，供 RL-3 重试判定 / 渠道禁用 / 日志记录使用。
  * message 已经过 MaskSensitiveErrorWithStatusCode 脱敏（不含 token key / 上游凭证）。</p>
  */
-public class UpstreamException extends DomainException {
+public class UpstreamException extends HttpAwareDomainException {
 
     private final int upstreamStatusCode;
 

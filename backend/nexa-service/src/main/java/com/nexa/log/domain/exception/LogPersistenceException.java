@@ -1,5 +1,7 @@
 package com.nexa.log.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 日志读侧持久化失败（→500，包装底层数据访问异常，不吞错保留错误链）。
  *
@@ -7,7 +9,7 @@ package com.nexa.log.domain.exception;
  * 携带操作上下文（backend-engineer §3.2「错误必须 wrap 带上下文」），便于定位是哪一步出错；
  * 接口层翻译为 500 且不回显底层 message。</p>
  */
-public class LogPersistenceException extends DomainException {
+public class LogPersistenceException extends HttpAwareDomainException {
 
     /** 稳定业务错误码。 */
     public static final String CODE = "LOG_PERSISTENCE_ERROR";

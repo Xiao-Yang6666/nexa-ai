@@ -1,5 +1,7 @@
 package com.nexa.ops.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 全站选项更新值非法（F-4018 及其附着的横切配置校验 F-4032/F-4033/F-4034/F-4035）。
  *
@@ -12,7 +14,7 @@ package com.nexa.ops.domain.exception;
  * </ul>
  * 属客户端入参错误 → 400 Bad Request。</p>
  */
-public class InvalidOptionValueException extends DomainException {
+public class InvalidOptionValueException extends HttpAwareDomainException {
 
     /**
      * @param message 具体校验失败原因（中文可读，对齐契约文案；不含敏感值）

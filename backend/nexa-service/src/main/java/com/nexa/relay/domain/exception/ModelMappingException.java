@@ -1,5 +1,7 @@
 package com.nexa.relay.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 模型映射异常（404 / 拒绝）。
  *
@@ -11,7 +13,7 @@ package com.nexa.relay.domain.exception;
  * </ul>
  * </p>
  */
-public class ModelMappingException extends DomainException {
+public class ModelMappingException extends HttpAwareDomainException {
 
     public ModelMappingException(String code, int httpStatus, String message) {
         super(code, httpStatus, message);

@@ -1,6 +1,6 @@
 package com.nexa.playground.interfaces.api;
 
-import com.nexa.playground.domain.exception.DomainException;
+import com.nexa.shared.kernel.HttpAwareDomainException;
 import com.nexa.playground.domain.exception.InvalidPlaygroundRequestException;
 import com.nexa.playground.domain.exception.PlaygroundAccessDeniedException;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Playground 接口层异常处理（领域异常 → HTTP 状态码 + OpenAI 兼容错误信封，F-4038）。
  *
- * <p>DDD 铁律：领域抛业务语义异常（{@link DomainException} 子类），接口层在此集中翻译为 HTTP 状态码
+ * <p>DDD 铁律：领域抛业务语义异常（{@link HttpAwareDomainException} 子类），接口层在此集中翻译为 HTTP 状态码
  * + 错误信封 {@code {error:{type,message,code}}}（OpenAI 兼容，对齐 openapi {@code ErrorResponse} 与
  * {@code /pg/chat/completions} 的 403 定义），控制器/用例不写 try/catch（backend-engineer §3.2）。</p>
  *
@@ -41,8 +41,8 @@ public class PlaygroundExceptionHandler {
     /**
      * 其余 Playground 领域异常 → 按其建议状态码翻译。
      */
-    @ExceptionHandler(DomainException.class)
-    public ResponseEntity<Map<String, Object>> handleDomain(DomainException e) {
+    @ExceptionHandler(HttpAwareDomainException.class)
+    public ResponseEntity<Map<String, Object>> handleDomain(HttpAwareDomainException e) {
         return toError(e.httpStatus(), "server_error", e.getMessage(), e.code());
     }
 

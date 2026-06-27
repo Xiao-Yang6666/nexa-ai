@@ -1,6 +1,6 @@
 package com.nexa.task.interfaces.api;
 
-import com.nexa.task.domain.exception.DomainException;
+import com.nexa.shared.kernel.HttpAwareDomainException;
 import com.nexa.task.domain.exception.InvalidTaskParameterException;
 import com.nexa.task.domain.exception.TaskNotFoundException;
 import com.nexa.task.domain.exception.TaskPersistenceException;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * 异步任务中心接口层异常处理（协议翻译：领域异常 → HTTP 状态码 + 错误信封）。
  *
- * <p>DDD 铁律：领域抛业务语义异常（{@link DomainException} 子类，携带稳定 code），接口层在此集中
+ * <p>DDD 铁律：领域抛业务语义异常（{@link HttpAwareDomainException} 子类，携带稳定 code），接口层在此集中
  * 翻译为 openapi {@code ErrorResponse}（{@code {success:false, message}}）+ 合适 HTTP 状态码
  * （backend-engineer §3.2）。仅对 task 域控制器包生效（{@code basePackages}），不影响其它模块。</p>
  *
@@ -71,8 +71,8 @@ public class TaskExceptionHandler {
      * @param e 领域异常
      * @return 错误信封（用领域异常自带的 httpStatus）
      */
-    @ExceptionHandler(DomainException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDomain(DomainException e) {
+    @ExceptionHandler(HttpAwareDomainException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDomain(HttpAwareDomainException e) {
         return ResponseEntity.status(HttpStatus.valueOf(e.httpStatus()))
                 .body(ApiResponse.error(e.getMessage()));
     }

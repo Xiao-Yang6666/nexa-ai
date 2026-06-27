@@ -1,5 +1,7 @@
 package com.nexa.relay.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 端点级减法约束拒绝异常（key 的 EndpointLimits 命中拒绝，403）。
  *
@@ -14,7 +16,7 @@ package com.nexa.relay.domain.exception;
  *
  * <p>安全：message 仅含入站协议线值（如 {@code "claude"}，非敏感），绝不含 token key / 上游凭证。</p>
  */
-public class EndpointNotAllowedException extends DomainException {
+public class EndpointNotAllowedException extends HttpAwareDomainException {
 
     /**
      * @param inboundFormatWire 被拒的入站协议线值（如 {@code "openai"}/{@code "claude"}，非敏感）

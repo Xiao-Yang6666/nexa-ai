@@ -1,5 +1,7 @@
 package com.nexa.growth.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 增长子域持久化异常（DB 操作失败 / 唯一索引以外的数据访问错误）。
  *
@@ -7,7 +9,7 @@ package com.nexa.growth.domain.exception;
  * HTTP 500（不向客户端泄露底层细节）。注意：签到唯一索引冲突属<b>预期业务分支</b>，应转为
  * {@link AlreadyCheckedInException}（400）而非本异常。</p>
  */
-public class GrowthPersistenceException extends DomainException {
+public class GrowthPersistenceException extends HttpAwareDomainException {
 
     /** 稳定业务错误码。 */
     public static final String CODE = "GROWTH_PERSISTENCE_ERROR";

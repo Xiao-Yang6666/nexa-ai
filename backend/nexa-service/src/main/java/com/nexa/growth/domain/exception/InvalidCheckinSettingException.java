@@ -1,5 +1,7 @@
 package com.nexa.growth.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 签到配置非法异常（PRD GR-3 校验：{@code Min <= Max} 且 {@code Min/Max >= 0}）。
  *
@@ -7,7 +9,7 @@ package com.nexa.growth.domain.exception;
  * {@code CheckinSetting} 在构造时守护不变量并抛出（充血校验），管理端保存接口拒绝落库。
  * 映射 HTTP 400。</p>
  */
-public class InvalidCheckinSettingException extends DomainException {
+public class InvalidCheckinSettingException extends HttpAwareDomainException {
 
     /** 稳定业务错误码。 */
     public static final String CODE = "INVALID_CHECKIN_SETTING";

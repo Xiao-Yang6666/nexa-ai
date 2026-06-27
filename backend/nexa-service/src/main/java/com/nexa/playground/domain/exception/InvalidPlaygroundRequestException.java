@@ -1,5 +1,7 @@
 package com.nexa.playground.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * Playground 请求体非法异常（F-4038，→400）。
  *
@@ -7,7 +9,7 @@ package com.nexa.playground.domain.exception;
  * 领域规则来源：openapi {@code OpenAIChatCompletionRequest} schema 必填项 + prd Playground
  * 入参校验。message 不回显客户原始正文（避免日志/响应放大），仅给字段级稳定提示。</p>
  */
-public final class InvalidPlaygroundRequestException extends DomainException {
+public final class InvalidPlaygroundRequestException extends HttpAwareDomainException {
 
     /** 稳定业务错误码。 */
     public static final String CODE = "PLAYGROUND_INVALID_REQUEST";

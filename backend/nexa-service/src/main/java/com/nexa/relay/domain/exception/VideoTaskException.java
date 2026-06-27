@@ -1,12 +1,14 @@
 package com.nexa.relay.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 视频任务相关异常（RL-5 视频代理）。
  *
  * <p>承载 F-4046 视频内容代理的归属/终态/SSRF 三类拒绝场景，对应 openapi
  * /v1/videos/{task_id}/content 的 403/404 响应。</p>
  */
-public class VideoTaskException extends DomainException {
+public class VideoTaskException extends HttpAwareDomainException {
 
     public VideoTaskException(String code, int httpStatus, String message) {
         super(code, httpStatus, message);

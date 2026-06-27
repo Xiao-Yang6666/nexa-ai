@@ -1,5 +1,7 @@
 package com.nexa.ops.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 支付合规声明未确认或确认上下文非法（F-4030 + Compliance F-5021）。
  *
@@ -11,7 +13,7 @@ package com.nexa.ops.domain.exception;
  * 会话上下文限制（仅 dashboard）属越权语义 → 403；入参未确认属客户端错误 → 400。
  * 用单一异常携带不同 httpStatus 表达两种语义。</p>
  */
-public class PaymentComplianceException extends DomainException {
+public class PaymentComplianceException extends HttpAwareDomainException {
 
     /**
      * @param httpStatus 400（未确认）或 403（会话上下文非法）

@@ -1,11 +1,13 @@
 package com.nexa.task.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 任务不存在异常（F-2003/F-2004/F-2006/F-2007 查询未命中 → 404）。
  *
  * <p>应用层按 id/task_id 查不到任务时抛出，接口层翻译为 404 响应。</p>
  */
-public class TaskNotFoundException extends DomainException {
+public class TaskNotFoundException extends HttpAwareDomainException {
 
     public TaskNotFoundException(String message) {
         super("TASK_NOT_FOUND", 404, message);

@@ -1,5 +1,7 @@
 package com.nexa.log.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 日志查询入参非法（→400）。
  *
@@ -12,7 +14,7 @@ package com.nexa.log.domain.exception;
  * </ul>
  * message 由领域规则直接给出（与现网文案一致），接口层只翻译状态码不改文案。</p>
  */
-public class InvalidLogQueryException extends DomainException {
+public class InvalidLogQueryException extends HttpAwareDomainException {
 
     /** 稳定业务错误码。 */
     public static final String CODE = "LOG_INVALID_PARAMETER";

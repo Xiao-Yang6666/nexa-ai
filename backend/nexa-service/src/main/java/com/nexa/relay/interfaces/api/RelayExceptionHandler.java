@@ -1,6 +1,6 @@
 package com.nexa.relay.interfaces.api;
 
-import com.nexa.relay.domain.exception.DomainException;
+import com.nexa.shared.kernel.HttpAwareDomainException;
 import com.nexa.relay.domain.exception.InvalidRelayParameterException;
 import com.nexa.relay.domain.exception.ModelMappingException;
 import com.nexa.relay.domain.exception.ProtocolConversionException;
@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Relay 网关接口层异常处理（协议翻译：领域/集成异常 → HTTP 状态码 + 错误信封，RL-3 re_fmt）。
  *
- * <p>DDD 铁律：领域抛业务语义异常（{@link DomainException} 子类），接口层在此集中翻译为 HTTP 状态码
+ * <p>DDD 铁律：领域抛业务语义异常（{@link HttpAwareDomainException} 子类），接口层在此集中翻译为 HTTP 状态码
  * + 错误信封（OpenAI 格式 {@code {error:{type,message,code}}}），用例/控制器不写 try/catch。</p>
  *
  * <p>安全：message 不回显上游凭证/token key（均在 domain 层脱敏，backend-engineer §3.2）。</p>
@@ -55,8 +55,8 @@ public class RelayExceptionHandler {
         return toError(500, "server_error", "protocol conversion failed", e.code());
     }
 
-    @ExceptionHandler(DomainException.class)
-    public ResponseEntity<Map<String, Object>> handleDomain(DomainException e) {
+    @ExceptionHandler(HttpAwareDomainException.class)
+    public ResponseEntity<Map<String, Object>> handleDomain(HttpAwareDomainException e) {
         return toError(e.httpStatus(), "server_error", e.getMessage(), e.code());
     }
 

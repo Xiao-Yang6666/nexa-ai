@@ -1,6 +1,6 @@
 package com.nexa.growth.interfaces.api;
 
-import com.nexa.growth.domain.exception.DomainException;
+import com.nexa.shared.kernel.HttpAwareDomainException;
 import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * 增长子域（签到 + 邀请返利分销）接口层异常处理（协议翻译：领域异常 → HTTP 状态码 + 错误信封）。
  *
- * <p>DDD 铁律：领域抛业务语义异常（{@link DomainException} 子类，携带稳定业务错误码 {@code code()} 与建议
+ * <p>DDD 铁律：领域抛业务语义异常（{@link HttpAwareDomainException} 子类，携带稳定业务错误码 {@code code()} 与建议
  * HTTP 状态码 {@code httpStatus()}），接口层在此集中翻译为 openapi {@code ErrorResponse}
  * （{@code {success:false, message}}）+ 对应 HTTP 状态码，用例/控制器因此不写 try/catch 模板代码
  * （backend-engineer §3.2）。此前 growth 子域漏写本处理器（S8 覆盖缺口），导致签到等领域异常透传成
@@ -37,15 +37,15 @@ public class GrowthExceptionHandler {
     /**
      * 增长域领域异常统一翻译 → 领域自带的建议 HTTP 状态码 + {@code {success:false, message}} 错误信封。
      *
-     * <p>统一处理 {@link DomainException} 基类（签到未启用/今日已签/配置非法/划转非法/用户缺失/持久化失败
+     * <p>统一处理 {@link HttpAwareDomainException} 基类（签到未启用/今日已签/配置非法/划转非法/用户缺失/持久化失败
      * 等全部子类），状态码取异常自身的 {@link DomainException#httpStatus()}（PRD 钉死、单点维护），message
      * 取用户可见的领域描述。避免逐个子类重复写 handler（同状态码同信封结构）。</p>
      *
      * @param e 增长域领域异常（携带稳定 code 与建议 HTTP status）
      * @return 对应 HTTP 状态码 + 错误信封
      */
-    @ExceptionHandler(DomainException.class)
-    public ResponseEntity<ApiResponse<Void>> handleDomain(DomainException e) {
+    @ExceptionHandler(HttpAwareDomainException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDomain(HttpAwareDomainException e) {
         return ResponseEntity.status(e.httpStatus()).body(ApiResponse.error(e.getMessage()));
     }
 }

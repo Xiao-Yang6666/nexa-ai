@@ -1,5 +1,7 @@
 package com.nexa.growth.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 邀请额度划转非法异常（PRD GR-5：低于最小单位 / 邀请额度不足 / 合规校验未过）。
  *
@@ -11,7 +13,7 @@ package com.nexa.growth.domain.exception;
  * </ul>
  * 由 {@code AffiliateAccount} 聚合在划转行为内守护不变量并抛出（充血校验）。映射 HTTP 400。</p>
  */
-public class AffQuotaTransferException extends DomainException {
+public class AffQuotaTransferException extends HttpAwareDomainException {
 
     /** 稳定业务错误码。 */
     public static final String CODE = "AFF_TRANSFER_INVALID";

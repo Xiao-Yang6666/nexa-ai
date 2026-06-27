@@ -1,5 +1,7 @@
 package com.nexa.relay.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 协议适配器缺失 / 能力不支持异常（RL-4 ad_find-否、RL-6 注册表未命中、RL-2 RelayNotImplemented）。
  *
@@ -11,7 +13,7 @@ package com.nexa.relay.domain.exception;
  * </ul>
  * </p>
  */
-public class RelayNotImplementedException extends DomainException {
+public class RelayNotImplementedException extends HttpAwareDomainException {
 
     public RelayNotImplementedException(String message) {
         super("RELAY_NOT_IMPLEMENTED", 501, message);

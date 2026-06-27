@@ -1,5 +1,7 @@
 package com.nexa.relay.domain.exception;
 
+import com.nexa.shared.kernel.HttpAwareDomainException;
+
 /**
  * 模型组访问拒绝异常（私有模型组未授权访问，403，REQ-05 灵活模型组访问闸门）。
  *
@@ -10,7 +12,7 @@ package com.nexa.relay.domain.exception;
  * <p>语义为<b>权限闸门</b>（区别于 key 减法约束的自我收窄）：私有组是加法授权模型，未授权即拒绝。
  * message 仅含分组 code（非敏感），绝不含 token key / 上游凭证。</p>
  */
-public class ModelGroupAccessDeniedException extends DomainException {
+public class ModelGroupAccessDeniedException extends HttpAwareDomainException {
 
     /**
      * @param groupCode 被拒的私有模型组分组 code（非敏感）
