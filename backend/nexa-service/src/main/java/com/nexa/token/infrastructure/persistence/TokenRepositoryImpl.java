@@ -1,5 +1,7 @@
 package com.nexa.token.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.token.domain.model.Token;
 import com.nexa.token.domain.repository.TokenRepository;
 import com.nexa.token.domain.vo.Pagination;
@@ -8,7 +10,6 @@ import com.nexa.token.infrastructure.config.AuthCacheConfig;
 import com.nexa.token.infrastructure.persistence.entity.TokenJpaEntity;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,7 +100,7 @@ public class TokenRepositoryImpl implements TokenRepository {
     /** {@inheritDoc} */
     @Override
     public List<Token> findPageByUser(long userId, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         // userId 在领域为 long（兼容 BIGINT 客户端解析），DB 列为 INTEGER（DB-SCHEMA §2），强转 int。
         return jpa.findPageByUser(toIntUserId(userId), pageable).stream().map(this::toDomain).toList();
     }
@@ -113,7 +114,7 @@ public class TokenRepositoryImpl implements TokenRepository {
     /** {@inheritDoc} */
     @Override
     public List<Token> searchByUser(long userId, String keyword, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         if (kw.isEmpty()) {
             // 空关键词等价该用户全量分页（复用列表查询，避免在搜索 SQL 里堆 OR/IS NULL）。

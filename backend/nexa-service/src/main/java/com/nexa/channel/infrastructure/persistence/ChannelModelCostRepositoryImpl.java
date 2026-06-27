@@ -1,10 +1,11 @@
 package com.nexa.channel.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.channel.domain.model.ChannelModelCost;
 import com.nexa.channel.domain.repository.ChannelModelCostRepository;
 import com.nexa.channel.domain.vo.Pagination;
 import com.nexa.channel.infrastructure.persistence.entity.ChannelModelCostJpaEntity;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +55,7 @@ public class ChannelModelCostRepositoryImpl implements ChannelModelCostRepositor
     /** {@inheritDoc} */
     @Override
     public List<ChannelModelCost> findPage(Integer channelId, String upstreamModel, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         boolean hasChannel = channelId != null && channelId > 0;
         boolean hasUpstream = upstreamModel != null && !upstreamModel.isBlank();
         String b = hasUpstream ? upstreamModel.trim() : null;

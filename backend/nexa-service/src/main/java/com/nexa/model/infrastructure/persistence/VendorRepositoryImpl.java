@@ -1,10 +1,11 @@
 package com.nexa.model.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.model.domain.model.Vendor;
 import com.nexa.model.domain.repository.VendorRepository;
 import com.nexa.model.domain.vo.Pagination;
 import com.nexa.model.infrastructure.persistence.entity.VendorMetaJpaEntity;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +58,7 @@ public class VendorRepositoryImpl implements VendorRepository {
     /** {@inheritDoc} */
     @Override
     public List<Vendor> findPage(Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         return jpa.findPageOrdered(pageable).stream().map(this::toDomain).toList();
     }
 

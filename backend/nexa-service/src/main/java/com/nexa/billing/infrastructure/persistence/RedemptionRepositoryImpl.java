@@ -1,11 +1,12 @@
 package com.nexa.billing.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.billing.domain.model.Redemption;
 import com.nexa.billing.domain.repository.RedemptionRepository;
 import com.nexa.billing.domain.vo.Quota;
 import com.nexa.billing.domain.vo.RedemptionStatus;
 import com.nexa.billing.infrastructure.persistence.entity.RedemptionJpaEntity;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -63,7 +64,7 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
         int p = Math.max(page, 1);
         int size = Math.max(pageSize, 1);
         // 管理端列表按 id 降序（最新生成的码在前），结果稳定可分页。
-        Pageable pageable = PageRequest.of(p - 1, size, Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageQueries.of(p, size, Sort.by(Sort.Direction.DESC, "id"));
         org.springframework.data.domain.Page<RedemptionJpaEntity> result = jpa.findAllBy(pageable);
         List<Redemption> items = result.getContent().stream()
                 .map(RedemptionRepositoryImpl::toDomain)

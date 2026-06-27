@@ -1,10 +1,11 @@
 package com.nexa.model.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.model.domain.model.ModelMeta;
 import com.nexa.model.domain.repository.ModelMetaRepository;
 import com.nexa.model.domain.vo.Pagination;
 import com.nexa.model.infrastructure.persistence.entity.ModelMetaJpaEntity;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +60,7 @@ public class ModelMetaRepositoryImpl implements ModelMetaRepository {
     /** {@inheritDoc} */
     @Override
     public List<ModelMeta> findPage(Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         return jpa.findPageOrdered(pageable).stream().map(this::toDomain).toList();
     }
 
@@ -72,7 +73,7 @@ public class ModelMetaRepositoryImpl implements ModelMetaRepository {
     /** {@inheritDoc} */
     @Override
     public List<ModelMeta> search(String keyword, Long vendorId, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         return jpa.searchFiltered(kw, vendorId, pageable).stream().map(this::toDomain).toList();
     }

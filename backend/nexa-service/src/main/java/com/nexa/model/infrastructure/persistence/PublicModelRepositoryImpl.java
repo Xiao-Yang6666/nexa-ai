@@ -1,10 +1,11 @@
 package com.nexa.model.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.model.domain.model.PublicModel;
 import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.model.domain.vo.Pagination;
 import com.nexa.model.infrastructure.persistence.entity.PublicModelJpaEntity;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +57,7 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
     /** {@inheritDoc} */
     @Override
     public List<PublicModel> findPage(Pagination pagination, boolean enabledOnly) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         List<PublicModelJpaEntity> rows = enabledOnly
                 ? jpa.findEnabledPageOrdered(pageable)
                 : jpa.findPageOrdered(pageable);

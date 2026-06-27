@@ -1,5 +1,7 @@
 package com.nexa.account.provider.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.account.provider.domain.model.Account;
 import com.nexa.account.provider.domain.repository.AccountRepository;
 import com.nexa.account.provider.domain.vo.AccountGroupRef;
@@ -7,7 +9,6 @@ import com.nexa.account.provider.domain.vo.Pagination;
 import com.nexa.account.provider.infrastructure.persistence.entity.AccountAbilityJpaEntity;
 import com.nexa.account.provider.infrastructure.persistence.entity.AccountGroupJpaEntity;
 import com.nexa.account.provider.infrastructure.persistence.entity.AccountJpaEntity;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +65,7 @@ public class AccountRepositoryImpl implements AccountRepository {
     /** {@inheritDoc} */
     @Override
     public List<Account> findPage(String platform, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         return jpa.findPage(normalizeFilter(platform), pageable).stream()
                 .map(e -> toDomain(e, loadGroups(e.getId())))
                 .toList();

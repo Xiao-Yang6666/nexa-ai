@@ -1,5 +1,7 @@
 package com.nexa.account.infrastructure.persistence;
 
+import com.nexa.shared.persistence.PageQueries;
+
 import com.nexa.account.domain.exception.UserAlreadyExistsException;
 import com.nexa.account.domain.model.User;
 import com.nexa.account.domain.repository.UserRepository;
@@ -9,7 +11,6 @@ import com.nexa.account.domain.vo.UserStatus;
 import com.nexa.account.domain.vo.Username;
 import com.nexa.account.infrastructure.persistence.entity.UserJpaEntity;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -93,7 +94,7 @@ public class UserRepositoryImpl implements UserRepository {
         int p = Math.max(page, 1);
         int size = Math.max(pageSize, 1);
         // 列表/搜索统一按 id 升序，结果稳定可分页（API-ENDPOINTS §1.4）。
-        Pageable pageable = PageRequest.of(p - 1, size, Sort.by(Sort.Direction.ASC, "id"));
+        Pageable pageable = PageQueries.of(p, size, Sort.by(Sort.Direction.ASC, "id"));
 
         org.springframework.data.domain.Page<UserJpaEntity> result;
         if (keyword == null || keyword.isBlank()) {
