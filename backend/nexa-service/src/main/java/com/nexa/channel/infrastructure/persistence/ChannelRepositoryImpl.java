@@ -1,6 +1,5 @@
 package com.nexa.channel.infrastructure.persistence;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexa.channel.domain.exception.ChannelUpstreamException;
 import com.nexa.channel.domain.model.Channel;
 import com.nexa.channel.domain.repository.ChannelRepository;
@@ -9,7 +8,8 @@ import com.nexa.channel.domain.vo.ChannelStatus;
 import com.nexa.channel.domain.vo.MultiKeyMode;
 import com.nexa.channel.domain.vo.Pagination;
 import com.nexa.channel.infrastructure.persistence.entity.ChannelJpaEntity;
-import org.springframework.data.domain.PageRequest;
+import com.nexa.shared.persistence.JsonbCodec;
+import com.nexa.shared.persistence.PageQueries;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
@@ -35,16 +35,16 @@ import java.util.Set;
 public class ChannelRepositoryImpl implements ChannelRepository {
 
     private final SpringDataChannelJpaRepository jpa;
-    private final ObjectMapper objectMapper;
+    private final JsonbCodec jsonbCodec;
 
     /**
      * @param jpa          Spring Data JPA 仓库（infra 内部依赖）
-     * @param objectMapper JSON 编解码器（channel_info 值对象 ↔ jsonb 串）
+     * @param jsonbCodec   JSONB 编解码器（channel_info 值对象 ↔ jsonb 串，统一 wrap 异常）
      */
     public ChannelRepositoryImpl(SpringDataChannelJpaRepository jpa,
-                                 ObjectMapper objectMapper) {
+                                 JsonbCodec jsonbCodec) {
         this.jpa = jpa;
-        this.objectMapper = objectMapper;
+        this.jsonbCodec = jsonbCodec;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +66,7 @@ public class ChannelRepositoryImpl implements ChannelRepository {
     /** {@inheritDoc} */
     @Override
     public List<Channel> findPage(String group, Integer type, String tag, Integer status, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         return jpa.findPage(group, type, tag, status, pageable).stream().map(this::toDomain).toList();
     }
 
@@ -79,7 +79,7 @@ public class ChannelRepositoryImpl implements ChannelRepository {
     /** {@inheritDoc} */
     @Override
     public List<Channel> search(String keyword, Pagination pagination) {
-        Pageable pageable = PageRequest.of(pagination.page() - 1, pagination.pageSize());
+        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
         String kw = keyword == null ? "" : keyword.trim().toLowerCase();
         if (kw.isEmpty()) {
             // 空关键词等价无过滤全量分页（复用过滤查询，四维全 null）。
@@ -219,14 +219,9 @@ public class ChannelRepositoryImpl implements ChannelRepository {
         if (info == null || (!info.multiKey() && info.multiKeySize() == 0 && info.pollingIndex() == 0)) {
             return null;
         }
-        try {
-            ChannelInfoJson dto = new ChannelInfoJson(
-                    info.multiKey(), info.multiKeySize(), info.mode().wire(), info.pollingIndex());
-            return objectMapper.writeValueAsString(dto);
-        } catch (Exception ex) {
-            // 序列化失败属编程/数据异常，不吞错（保留错误链）。
-            throw new ChannelUpstreamException("failed to serialize channel_info", ex);
-        }
+        ChannelInfoJson dto = new ChannelInfoJson(
+                info.multiKey(), info.multiKeySize(), info.mode().wire(), info.pollingIndex());
+        return jsonbCodec.write(dto);
     }
 
     /**
@@ -239,13 +234,9 @@ public class ChannelRepositoryImpl implements ChannelRepository {
         if (json == null || json.isBlank()) {
             return ChannelInfo.single();
         }
-        try {
-            ChannelInfoJson dto = objectMapper.readValue(json, ChannelInfoJson.class);
-            return new ChannelInfo(dto.isMultiKey(), dto.multiKeySize(),
-                    MultiKeyMode.fromWire(dto.multiKeyMode()), dto.multiKeyPollingIndex());
-        } catch (Exception ex) {
-            throw new ChannelUpstreamException("failed to deserialize channel_info", ex);
-        }
+        ChannelInfoJson dto = jsonbCodec.read(json, ChannelInfoJson.class);
+        return new ChannelInfo(dto.isMultiKey(), dto.multiKeySize(),
+                MultiKeyMode.fromWire(dto.multiKeyMode()), dto.multiKeyPollingIndex());
     }
 
     /**
