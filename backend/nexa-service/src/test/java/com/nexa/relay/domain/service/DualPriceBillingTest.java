@@ -23,7 +23,8 @@ class DualPriceBillingTest {
                 BigDecimal.valueOf(2),    // basePriceRatio
                 BigDecimal.valueOf(0.8),  // groupRatio (vip 折扣)
                 BigDecimal.valueOf(1),    // costRatio
-                BigDecimal.ONE);
+                BigDecimal.ONE,           // accountRatio
+                BigDecimal.ONE);          // completionRatio
         // sell = 2 × 0.8 × 150 = 240
         assertEquals(240, r.quotaSell());
         // cost = 1 × 150 = 150
@@ -38,7 +39,7 @@ class DualPriceBillingTest {
         // 成本行缺失：quota_cost=0、quota_profit=quota_sell
         UsageIR usage = UsageIR.of(100, 0);  // weightedTokens=100
         BillingResult r = DualPriceBilling.compute(usage,
-                BigDecimal.ONE, BigDecimal.ONE, null, BigDecimal.ONE);
+                BigDecimal.ONE, BigDecimal.ONE, null, BigDecimal.ONE, BigDecimal.ONE);
         assertEquals(100, r.quotaSell());
         assertEquals(0, r.quotaCost());
         assertEquals(100, r.quotaProfit());
@@ -53,7 +54,8 @@ class DualPriceBillingTest {
                 BigDecimal.valueOf(1),   // base
                 BigDecimal.valueOf(0.5), // group 折扣压低售价
                 BigDecimal.valueOf(2),   // cost 倍率高
-                BigDecimal.ONE);
+                BigDecimal.ONE,          // accountRatio
+                BigDecimal.ONE);         // completionRatio
         // sell = 1×0.5×100=50, cost=2×100=200, profit=-150
         assertEquals(50, r.quotaSell());
         assertEquals(200, r.quotaCost());
@@ -67,6 +69,7 @@ class DualPriceBillingTest {
         UsageIR usage = UsageIR.of(100, 100);
         BillingResult r = DualPriceBilling.compute(usage,
                 BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ONE,
+                BigDecimal.ONE,          // accountRatio
                 BigDecimal.valueOf(3));  // completion 3倍贵
         // weighted = 100 + 100×3 = 400
         assertEquals(400, r.quotaSell());

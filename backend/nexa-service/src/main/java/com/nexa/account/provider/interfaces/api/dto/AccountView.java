@@ -26,6 +26,15 @@ import java.util.List;
  * @param expiresAt          过期时刻 epoch 秒（可空）
  * @param autoPauseOnExpired 过期自动暂停
  * @param rateMultiplier     账号级售价倍率
+ * @param modelMapping       模型映射 JSON（可空）
+ * @param weight             路由权重
+ * @param tag                标签（可空）
+ * @param autoBan            自动封禁标志
+ * @param responseTime       上次测试响应时间（毫秒，可空）
+ * @param testTime           上次测试时间 epoch 秒（可空）
+ * @param balance            账户余额 USD（可空）
+ * @param usedQuota          已用配额（可空）
+ * @param models             支持的模型列表（可空）
  * @param groups             所属分组集合
  * @param createdTime        创建时间 epoch 秒
  * @param updatedTime        更新时间 epoch 秒
@@ -45,6 +54,15 @@ public record AccountView(
         @JsonProperty("expires_at") Long expiresAt,
         @JsonProperty("auto_pause_on_expired") boolean autoPauseOnExpired,
         @JsonProperty("rate_multiplier") BigDecimal rateMultiplier,
+        @JsonProperty("model_mapping") String modelMapping,
+        @JsonProperty("weight") int weight,
+        @JsonProperty("tag") String tag,
+        @JsonProperty("auto_ban") boolean autoBan,
+        @JsonProperty("response_time") Integer responseTime,
+        @JsonProperty("test_time") Long testTime,
+        @JsonProperty("balance") BigDecimal balance,
+        @JsonProperty("used_quota") BigDecimal usedQuota,
+        @JsonProperty("models") String models,
         @JsonProperty("groups") List<AccountGroupView> groups,
         @JsonProperty("created_time") Long createdTime,
         @JsonProperty("updated_time") Long updatedTime) {
@@ -60,6 +78,8 @@ public record AccountView(
                 a.id(), a.name(), a.platform(), a.type(), a.baseUrl(), a.concurrency(), a.priority(),
                 a.status().code(), a.rateLimitedAt(), a.rateLimitResetAt(), a.overloadUntil(),
                 a.expiresAt(), a.autoPauseOnExpired(), a.rateMultiplier(),
+                a.modelMapping(), a.weight(), a.tag(), a.autoBan(),
+                a.responseTime(), a.testTime(), a.balance(), a.usedQuota(), a.models(),
                 a.groups().stream().map(AccountGroupView::from).toList(),
                 a.createdTime(), a.updatedTime());
     }

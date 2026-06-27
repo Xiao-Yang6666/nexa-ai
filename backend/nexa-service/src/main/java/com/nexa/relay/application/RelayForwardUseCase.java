@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexa.billing.application.port.UserQuotaAccount;
 import com.nexa.billing.domain.vo.Quota;
-import com.nexa.channel.domain.model.Channel;
 import com.nexa.channel.domain.model.ChannelModelCost;
 import com.nexa.channel.domain.repository.ChannelModelCostRepository;
 import com.nexa.channel.domain.repository.ChannelRepository;
@@ -47,7 +46,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Arrays;
 
 /**
  * Relay 中继转发用例（RL-1/RL-7 端到端编排：协议识别→两层映射→选渠→协议转换→调上游→计费→落 Log）。
@@ -117,15 +115,15 @@ public class RelayForwardUseCase {
     /**
      * 执行客户层模型映射 C→A（RL-7 第②步 L1）。
      *
-     * <p>A→B 不再在此解析：底仓映射已下沉为<b>渠道级</b>（选中渠道后用其 {@code modelMapping} 做 A→B，
-     * 见 {@link #resolveChannelUpstream}），故 {@link TwoLayerModelResolver} 的 L2 查找传 {@code null}
-     * （A→B 恒等于 A，由渠道级映射在选渠后接管）。这样同一对外名 A 可被不同上游渠道映射到各自的真实名 B，
+     * <p>A→B 不再在此解析：底仓映射已下沉为<b>账号级</b>（选中账号后用其 {@code modelMapping} 做 A→B，
+     * 见 {@link SelectedAccount#applyModelMapping}），故 {@link TwoLayerModelResolver} 的 L2 查找传 {@code null}
+     * （A→B 恒等于 A，由账号级映射在选账号后接管）。这样同一对外名 A 可被不同上游账号映射到各自的真实名 B，
      * 不再受"全局唯一 A→B"约束。</p>
      *
      * @param requestedModel 客户输入名 C
      * @param userId         当前 userId（L1 user scope）
      * @param group          当前分组（L1 group scope）
-     * @return 映射结果（C→A，B 暂等于 A，待渠道级解析）
+     * @return 映射结果（C→A，B 暂等于 A，待账号级解析）
      */
     public ModelResolution resolveModel(String requestedModel, long userId, String group) {
         AliasScope userScope = AliasScope.user(userId);
@@ -135,36 +133,9 @@ public class RelayForwardUseCase {
                 // L1 lookup: user > group 优先级
                 alias -> l1Repo.findTargetByAlias(userScope, alias)
                         .orElseGet(() -> l1Repo.findTargetByAlias(groupScope, alias).orElse(null)),
-                // L2 lookup: 不再走全局底仓映射——A→B 已下沉为渠道级（选渠后解析），此处恒等返回 null。
+                // L2 lookup: 不再走全局底仓映射——A→B 已下沉为账号级（选账号后解析），此处恒等返回 null。
                 publicName -> null
         );
-    }
-
-    /**
-     * 渠道级底仓映射 A→B（选渠后解析，替代原全局 platform_model_mappings 的 L2）。
-     *
-     * <p>用选中渠道的 {@code modelMapping}（JSON object {@code {"A":"B"}}）把对外/平台名 A 映射到该渠道
-     * 自己的真实上游名 B。未配映射、A 不在映射表、或映射值空白 → 恒等返回 A（B=A）。解析失败（非法 JSON）
-     * 同样恒等回落，不阻断转发。这样同一 A 可被不同渠道映射到各自的 B，A→B 不再全局唯一。</p>
-     *
-     * @param channel     选中的渠道聚合
-     * @param publicName  对外/平台名 A（C→A 后的产物，也是选渠键）
-     * @return 该渠道的真实上游名 B（未映射则 = A）
-     */
-    private String resolveChannelUpstream(Channel channel, String publicName) {
-        String mapping = channel.modelMapping();
-        if (mapping == null || mapping.isBlank()) {
-            return publicName;
-        }
-        try {
-            JsonNode node = objectMapper.readTree(mapping).path(publicName);
-            if (node.isTextual() && !node.asText().isBlank()) {
-                return node.asText();
-            }
-        } catch (IOException ignored) {
-            // 非法映射 JSON：恒等回落 B=A，不阻断转发（与"未配映射"同语义）。
-        }
-        return publicName;
     }
 
     /**
@@ -223,57 +194,49 @@ public class RelayForwardUseCase {
         // ③' 模型组访问闸门（REQ-05）：私有模型组未授权 → 403，挡在选渠/计费之前（不放行、不扣费）。
         enforceModelGroupAccess(authContext);
 
-        // ④⑤ 选渠 + 协议转换 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
-        // 计费⑥⑦/结算⑦'/消费 Log⑨ 仅在最终成功的渠道上执行（循环外成功路径），
+        // ④⑤ 选账号 + 协议转换 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
+        // 计费⑥⑦/结算⑦'/消费 Log⑨ 仅在最终成功的账号上执行（循环外成功路径），
         // 错误 Log（Type=5）每次失败都记，AutoBan 命中即禁用——不破坏既有成功路径语义。
-        // REQ-04: 头尾决策在选渠后做——targetProto 取决于选中渠道的 type，故 body 转换在循环内逐渠道进行：
-        //   inFmt == protocolOf(channel.type) → passthrough（仅改写 model 为 B 透传）；
+        // REQ-04: 头尾决策在选账号后做——targetProto 取决于选中账号的 platform，故 body 转换在循环内逐账号进行：
+        //   inFmt == protocolOfPlatform(account.platform) → passthrough（仅改写 model 为 B 透传）；
         //   不等 → ProtocolRegistry.get(inFmt).parseRequest → IR(model=B) → targetAdapter.serializeRequest。
         ProtocolFormat inFmt = dispatch.format();
-        java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
         java.util.Set<Long> triedAccountIds = new java.util.HashSet<>();
         int retryCount = 0;
         int lastFailureStatus = 502;
         String lastFailureMaskedMessage = MaskSensitiveError.mask(lastFailureStatus, null);
-        Channel channel;
         SelectedAccount successAccount = null;  // 最终成功转发所用账号（循环外计费取其 rateMultiplier）
-        String upstreamModel;             // B：真实上游名，选渠后由渠道级 modelMapping 解析（每渠道可不同）
+        String upstreamModel;             // B：真实上游名，选账号后由账号级 modelMapping 解析（每账号可不同）
         ProtocolFormat targetProto;
         boolean passthrough;
         UpstreamResponse upstreamResponse;
 
         while (true) {
-            // ④ 选渠（group×A 加权随机 + CH-5 排除已尝试渠道再选下一个，REQ-03 重载）。
-            //   选渠键为对外/平台名 A（abilities.model 列存 A）；首次选渠无候选 → 上抛 NoAvailableChannelException（503，对齐 RL-1 §4）。
-            //   重试中无更多候选（triedChannelIds 非空后耗尽）→ 终止重试，返回上游最后一次错误。
-            try {
-                channel = selectRelayChannelUseCase.selectChannel(
-                        authContext.group(), publicModel, triedChannelIds);
-            } catch (NoAvailableChannelException e) {
-                if (triedChannelIds.isEmpty()) {
-                    throw e; // 首次即无可用渠道：保持原 503 语义。
-                }
-                // 已尝试过渠道但候选耗尽（CH-5 全组耗尽）：返回最后一次上游错误（重试耗尽态）。
-                return buildErrorResult(dispatch, lastFailureStatus, lastFailureMaskedMessage);
-            }
-
-            // ④' 渠道级 A→B：用选中渠道的 modelMapping 把平台名 A 解析为该渠道真实上游名 B（未配则 B=A）。
-            upstreamModel = resolveChannelUpstream(channel, publicModel);
-
-            // ④'' 选 account 取凭证（group 汇合，原汁 sub2api）：从同 group 的 account 池按 priority + 限流/
-            //   过期/过载状态选一个。选到则用 account 凭证/baseUrl 发上游；选不到（account 池空/全不可用）→
-            //   优雅降级回落 channel 自带 key/baseUrl（先建后拆，不破坏现有转发）。
-            //   platform 暂传 null 不约束：channel.type 是整数码、account.platform 是字符串，二者无直接桥，
-            //   精确对齐需 type码↔platform字符串映射（超出本轮范围，留后续）；当前按 group+优先级选即可。
+            // ④ 选账号（group×A 加权随机 + 排除已尝试账号，REQ-03 重载）。
+            //   选账号键为对外/平台名 A（abilities.model 列存 A）；首次选无候选 → 上抛 NoAvailableChannelException（503，对齐 RL-1 §4）。
+            //   重试中无更多候选（triedAccountIds 非空后耗尽）→ 终止重试，返回上游最后一次错误。
             SelectedAccount account = accountSelectionPort
                     .selectAccount(authContext.group(), null, triedAccountIds)
                     .orElse(null);
-            String upstreamKey = account != null ? account.credentials() : channel.key();
-            String upstreamBaseUrl = (account != null && account.baseUrl() != null)
-                    ? account.baseUrl() : channel.baseUrl();
+            if (account == null) {
+                if (triedAccountIds.isEmpty()) {
+                    // 首次即无可用账号：保持原 503 语义。
+                    throw new NoAvailableChannelException("no available account for group=" + authContext.group());
+                }
+                // 已尝试过账号但候选耗尽：返回最后一次上游错误（重试耗尽态）。
+                return buildErrorResult(dispatch, lastFailureStatus, lastFailureMaskedMessage);
+            }
+            triedAccountIds.add(account.accountId());
 
-            // ⑤ RL-6 头尾决策 + 协议转换（REQ-04）：按选中渠道目标协议构造出站 body。
-            targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
+            // ④' 账号级 A→B：用选中账号的 modelMapping 把平台名 A 解析为该账号真实上游名 B（未配则 B=A）。
+            upstreamModel = account.applyModelMapping(publicModel);
+
+            // ④'' 提取账号凭证中的 API key
+            String upstreamKey = extractAccountKey(account.credentials());
+            String upstreamBaseUrl = account.baseUrl();
+
+            // ⑤ RL-6 头尾决策 + 协议转换（REQ-04）：按选中账号平台目标协议构造出站 body。
+            targetProto = ChannelProtocolMapping.protocolOfPlatform(account.platform());
             passthrough = inFmt == targetProto;
             byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
 
@@ -285,8 +248,8 @@ public class RelayForwardUseCase {
             try {
                 upstreamResponse = upstreamHttpPort.send(upstreamRequest);
                 if (upstreamResponse.isSuccessful()) {
-                    successAccount = account; // 记录成功账号（计费取其倍率；可能为 null=回落 channel 凭证）
-                    break; // 2xx：跳出循环，按最终成功渠道走计费/落消费 Log。
+                    successAccount = account;
+                    break; // 2xx：跳出循环，按成功账号走计费/落消费 Log。
                 }
                 failureStatus = upstreamResponse.statusCode();
                 failureDetail = extractErrorDetail(upstreamResponse);
@@ -296,20 +259,16 @@ public class RelayForwardUseCase {
                 failureDetail = e.getMessage();
             }
 
-            // ④''' account 限流/过载回写（上游 429/529）：把失败状态回写到所用账号，下次选渠跳过该账号冷却窗。
-            if (account != null) {
-                writeBackAccountFailure(account.accountId(), failureStatus);
-                triedAccountIds.add(account.accountId());
-            }
+            // ④''' account 限流/过载回写（上游 429/529）：把失败状态回写到所用账号。
+            writeBackAccountFailure(account.accountId(), failureStatus);
 
-            // re_log + re_ban：脱敏落错误 Log（Type=5）+ AutoBan 命中则禁用渠道（CH-3）。
-            String masked = handleUpstreamFailure(
-                    dispatch, resolution, channel, authContext, failureStatus, failureDetail);
-            triedChannelIds.add(channel.id());
+            // re_log + re_ban：脱敏落错误 Log（Type=5）+ AutoBan 命中则禁用账号（CH-3）。
+            String masked = handleAccountUpstreamFailure(
+                    dispatch, resolution, account, authContext, failureStatus, failureDetail);
             lastFailureStatus = failureStatus;
             lastFailureMaskedMessage = masked;
 
-            // re_retry + re_count：可重试码且重试次数 < RetryTimes → 换渠道重试；否则终止返错。
+            // re_retry + re_count：可重试码且重试次数 < RetryTimes → 换账号重试；否则终止返错。
             if (RetryPolicy.shouldRetry(failureStatus) && retryCount < maxRetryTimes()) {
                 retryCount++;
                 continue;
@@ -331,16 +290,17 @@ public class RelayForwardUseCase {
         //   成本行 (ChannelId,B) 缺失 → quota_cost=0、quota_profit=quota_sell、costMissing=true（不阻断，落 Log Other 写 cost_missing）。
         BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
         BigDecimal groupRatio = resolveGroupRatio(authContext.group());
-        BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel); // null = 成本行缺失
+        BigDecimal costRatio = resolveAccountCostRatio(successAccount.accountId(), upstreamModel); // null = 成本行缺失
         BillingResult billing = DualPriceBilling.compute(
-                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, BigDecimal.ONE);
+                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, successAccount.rateMultiplier());
+
 
         // ⑦' 结算扣减（响应后一次性扣售价，最小闭环）。
         // TODO REQ-05 完整：补「选渠后预扣 + 响应后多退少补」分段结算（§6 第8-9/19步），本期仅响应后一次性扣 quota_sell。
         settle(authContext.userId(), billing);
 
-        // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段（inFmt/targetProto/converted）+ channel_id + 三金额。
-        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, false);
+        // ⑨ 落 Log（RL-7 第⑨步，Type=2 Consume）：含 C/A/B 三段 + 协议三字段（inFmt/targetProto/converted）+ account_id + 三金额。
+        recordAccountConsumeLog(dispatch, resolution, successAccount.accountId(), targetProto, authContext, usage, billing, false);
 
         // 透传上游 status + headers + 回转后 body（非流式）。
         return new RelayForwardResult(
@@ -376,7 +336,7 @@ public class RelayForwardUseCase {
         String requestedModel = readModelName(root);
         ModelResolution resolution =
                 resolveModel(requestedModel, authContext.userId(), authContext.group());
-        String upstreamModel = resolution.upstream();
+        String publicModel = resolution.resolvedPublic(); // A：平台公开名
         if (authContext.tokenId() != null) {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
@@ -385,27 +345,32 @@ public class RelayForwardUseCase {
         enforceModelGroupAccess(authContext);
 
         ProtocolFormat inFmt = dispatch.format();
-        java.util.Set<Long> triedChannelIds = new java.util.HashSet<>();
+        java.util.Set<Long> triedAccountIds = new java.util.HashSet<>();
         int retryCount = 0;
 
         while (true) {
-            Channel channel;
-            try {
-                channel = selectRelayChannelUseCase.selectChannel(
-                        authContext.group(), upstreamModel, triedChannelIds);
-            } catch (NoAvailableChannelException e) {
-                if (triedChannelIds.isEmpty()) {
-                    throw e;
+            // 选账号
+            SelectedAccount account = accountSelectionPort
+                    .selectAccount(authContext.group(), null, triedAccountIds)
+                    .orElse(null);
+            if (account == null) {
+                if (triedAccountIds.isEmpty()) {
+                    throw new NoAvailableChannelException("no available account for group=" + authContext.group());
                 }
                 return; // 重试耗尽：流已可能部分写出，静默结束（错误 Log 已逐次记录）。
             }
+            triedAccountIds.add(account.accountId());
 
-            ProtocolFormat targetProto = ChannelProtocolMapping.protocolOf(channel.type().code());
+            // 账号级 A→B 映射
+            String upstreamModel = account.applyModelMapping(publicModel);
+
+            ProtocolFormat targetProto = ChannelProtocolMapping.protocolOfPlatform(account.platform());
             boolean passthrough = inFmt == targetProto;
             byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
 
+            String upstreamKey = extractAccountKey(account.credentials());
             UpstreamRequest upstreamRequest = UpstreamRequest.of(
-                    "POST", channel.baseUrl(), path, channel.key(), upstreamBody,
+                    "POST", account.baseUrl(), path, upstreamKey, upstreamBody,
                     java.util.Map.of("Content-Type", "application/json"));
 
             StreamConversionHandler handler = new StreamConversionHandler(
@@ -413,29 +378,29 @@ public class RelayForwardUseCase {
             try {
                 upstreamHttpPort.stream(upstreamRequest, handler);
             } catch (UpstreamException e) {
-                handleUpstreamFailure(dispatch, resolution, channel, authContext,
+                writeBackAccountFailure(account.accountId(), e.upstreamStatusCode());
+                handleAccountUpstreamFailure(dispatch, resolution, account, authContext,
                         e.upstreamStatusCode(), e.getMessage());
-                triedChannelIds.add(channel.id());
                 if (RetryPolicy.shouldRetry(e.upstreamStatusCode()) && retryCount < maxRetryTimes()
                         && !handler.hasWritten()) {
                     retryCount++;
                     continue;
                 }
-                // 已向客户写出 chunk 后上游中断（客户断连/上游断流）：token 已交付，必须落一条
-                // is_stream=true 计费 Log（按已累计 usage 计，缺失按 0），否则漏钱（流式主力场景）。
+                // 已向客户写出 chunk 后上游中断：按已累计 usage 落计费 Log。
                 if (handler.hasWritten()) {
-                    billStreamConsume(dispatch, resolution, channel, targetProto, authContext,
-                            upstreamModel, handler.cumulativeUsage());
+                    billAccountStreamConsume(dispatch, resolution, account.accountId(),
+                            targetProto, authContext, upstreamModel, handler.cumulativeUsage(),
+                            account.rateMultiplier());
                 }
                 return;
             }
 
-            // 上游开流前即报错（HTTP 非 2xx）：按 RL-3 重试/禁用，未写出任何 chunk 才可换渠道重试。
+            // 上游开流前即报错：按 RL-3 重试/禁用，未写出任何 chunk 才可换账号重试。
             if (handler.errorStatus() != null) {
                 int failureStatus = handler.errorStatus();
-                handleUpstreamFailure(dispatch, resolution, channel, authContext,
+                writeBackAccountFailure(account.accountId(), failureStatus);
+                handleAccountUpstreamFailure(dispatch, resolution, account, authContext,
                         failureStatus, handler.errorDetail());
-                triedChannelIds.add(channel.id());
                 if (RetryPolicy.shouldRetry(failureStatus) && retryCount < maxRetryTimes()
                         && !handler.hasWritten()) {
                     retryCount++;
@@ -448,30 +413,27 @@ public class RelayForwardUseCase {
             }
 
             // 成功：流已逐 chunk 写出，按累计 usage 走双价记账落 Log（REQ-05）。
-            billStreamConsume(dispatch, resolution, channel, targetProto, authContext,
-                    upstreamModel, handler.cumulativeUsage());
+            billAccountStreamConsume(dispatch, resolution, account.accountId(),
+                    targetProto, authContext, upstreamModel, handler.cumulativeUsage(),
+                    account.rateMultiplier());
             return;
         }
     }
 
     /**
-     * 流式调用结束的双价记账 + 结算 + 落 is_stream=true 消费 Log（REQ-05/REQ-08）。
-     *
-     * <p>无论流是正常结束（onComplete）还是已写出 chunk 后中途上游断流，只要 token 已交付给客户就必须
-     * 落一条 {@code is_stream=true} 的 Type=2 消费 Log（防漏钱）。usage 缺失（上游未回 usage / 解析失败）时
-     * {@code cumulativeUsage} 为 {@link UsageIR#ZERO}，按 0 token 计费——仍落 Log（金额 0 不阻断），保证流式
-     * 链路结束必有一条计费记录。</p>
+     * 账号版流式调用结束的双价记账 + 结算 + 落消费 Log（REQ-05/REQ-08）。
      */
-    private void billStreamConsume(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                   ProtocolFormat targetProto, RelayAuthContext authContext,
-                                   String upstreamModel, UsageIR usage) {
+    private void billAccountStreamConsume(RelayDispatch dispatch, ModelResolution resolution,
+                                          long accountId, ProtocolFormat targetProto,
+                                          RelayAuthContext authContext, String upstreamModel,
+                                          UsageIR usage, BigDecimal rateMultiplier) {
         BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
         BigDecimal groupRatio = resolveGroupRatio(authContext.group());
-        BigDecimal costRatio = resolveCostRatio(channel.id(), upstreamModel);
+        BigDecimal costRatio = resolveAccountCostRatio(accountId, upstreamModel);
         BillingResult billing = DualPriceBilling.compute(
-                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, BigDecimal.ONE);
+                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, rateMultiplier);
         settle(authContext.userId(), billing);
-        recordConsumeLog(dispatch, resolution, channel, targetProto, authContext, usage, billing, true);
+        recordAccountConsumeLog(dispatch, resolution, accountId, targetProto, authContext, usage, billing, true);
     }
 
     /**
@@ -677,34 +639,6 @@ public class RelayForwardUseCase {
     }
 
     /**
-     * 选渠占位（REQ-03 接线点）：按 group×B 匹配首个启用且声明该上游模型 B、且配置了 BaseURL 的渠道。
-     *
-     * <p>仅满足「OpenAI 非流式、单渠道、不重试」最小路径；加权随机、CH-4 亲和、CH-5 跨组容灾重试
-     * 由 REQ-03 接入 {@code ResolveChannelRouteUseCase} 后替换。无满足渠道抛
-     * {@link NoAvailableChannelException}（对齐 RL-1 §4，message 不含敏感信息）。</p>
-     */
-    private Channel selectChannelPlaceholder(String group, String upstreamModel) {
-        return channelRepo.findAll().stream()
-                .filter(c -> c.status().isEnabled())
-                .filter(c -> group.equals(c.group()))
-                .filter(c -> declaresModel(c, upstreamModel))
-                .filter(c -> c.baseUrl() != null && !c.baseUrl().isBlank())
-                .findFirst()
-                .orElseThrow(() -> new NoAvailableChannelException(
-                        "no available channel for group/model selection"));
-    }
-
-    /** 渠道 models 逗号分隔串是否声明支持给定上游模型 B。 */
-    private boolean declaresModel(Channel channel, String upstreamModel) {
-        if (channel.models() == null) {
-            return false;
-        }
-        return Arrays.stream(channel.models().split(","))
-                .map(String::trim)
-                .anyMatch(upstreamModel::equals);
-    }
-
-    /**
      * 解析上游响应体的 usage（第15步，D5 token 口径），按 targetProto 选 token 字段名。
      *
      * <p>上游响应体是 targetProto 协议格式：OpenAI 读 {@code usage.prompt_tokens/completion_tokens}，
@@ -781,17 +715,18 @@ public class RelayForwardUseCase {
     }
 
     /**
-     * 取实际选中渠道×B 的成本倍率（BL-7 成本挂渠道×B，ADR-BILL-02 不乘 GroupRatio）。
+     * 按账号查成本比率（Account-Cost Mapping，ADR-BILL-02）。
      *
-     * <p>主键 {@code (实际 ChannelId, 真实模型 B)} 查 {@link ChannelModelCostRepository}：命中且启用 →
+     * <p>主键 {@code (实际 AccountId, 真实模型 B)} 查 {@link ChannelModelCostRepository}：命中且启用 →
      * 返回 cost_ratio；缺行 / 禁用 → 返回 {@code null}（成本缺失态，由 {@link DualPriceBilling} 兜底
-     * quota_cost=0 + costMissing 标记，不阻断）。{@code channelId} 为空（不应发生）亦按缺失处理。</p>
+     * quota_cost=0 + costMissing 标记，不阻断）。{@code accountId} 为空（不应发生）亦按缺失处理。
+     * 注：当前仍复用 channel_model_costs 表，键名为 channelId，语义为上游接入提供者键。</p>
      */
-    private BigDecimal resolveCostRatio(Long channelId, String upstreamModel) {
-        if (channelId == null) {
+    private BigDecimal resolveAccountCostRatio(Long accountId, String upstreamModel) {
+        if (accountId == null) {
             return null;
         }
-        return channelModelCostRepo.findByChannelAndUpstream(channelId.intValue(), upstreamModel)
+        return channelModelCostRepo.findByChannelAndUpstream(accountId.intValue(), upstreamModel)
                 .filter(c -> Boolean.TRUE.equals(c.enabled()))
                 .map(ChannelModelCost::costRatio)
                 .orElse(null);
@@ -811,10 +746,13 @@ public class RelayForwardUseCase {
         userQuotaAccount.debit(userId, Quota.of(billing.quotaSell()));
     }
 
-    /** 落一条消费 Log（RL-7 第⑨步，Type=2 Consume）：三段模型 + 协议三字段 + channel_id + 三金额 + 真实 usage。 */
-    private void recordConsumeLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                  ProtocolFormat targetProto, RelayAuthContext authContext,
-                                  UsageIR usage, BillingResult billing, boolean stream) {
+    /**
+     * 账号版消费 Log 落库（Type=2 Consume）：三段模型 + 协议三字段 + account_id + 三金额。
+     */
+    private void recordAccountConsumeLog(RelayDispatch dispatch, ModelResolution resolution,
+                                          long accountId, ProtocolFormat targetProto,
+                                          RelayAuthContext authContext, UsageIR usage,
+                                          BillingResult billing, boolean stream) {
         RelayInfo info = new RelayInfo();
         info.setStream(stream);
         info.setUserId(authContext.userId());
@@ -826,51 +764,64 @@ public class RelayForwardUseCase {
         info.setResolvedPublicModel(resolution.resolvedPublic());
         info.setUpstreamModelName(resolution.upstream());
         info.setInboundFormat(dispatch.format());
-        info.setTargetProtocol(targetProto); // REQ-04: 真实目标协议（按选中渠道 type 判定）
-        info.computePassthrough();           // inFmt==targetProto → protocol_converted=false
-        info.setChannelId(channel.id());
-        info.setChannelType(channel.type().code());
-        // 客户端 IP / User-Agent：本期 forward 链路未透传 HttpServletRequest，
-        // 落库用空串占位（对齐 logs.ip/user_agent NOT NULL DEFAULT ''，避免 null 违约）。
-        // TODO REQ-后续: 从 RelayController 经 RelayAuthContext 透传真实 remoteAddr/UA。
+        info.setTargetProtocol(targetProto);
+        info.computePassthrough();
+        info.setChannelId(accountId); // 复用字段存储 accountId（语义为「上游接入提供者」）
+        info.setChannelType(0); // TODO: 根据 platform 映射到 type
         if (info.ip() == null) {
             info.setIp("");
         }
         if (info.userAgent() == null) {
             info.setUserAgent("");
         }
-        // 成本行缺失 → Other 写 cost_missing 诊断标记（看板可筛，不阻断；对齐 RL-7 §4）。
-        String other = billing.costMissing() ? "{\"cost_missing\":true}" : null;
+        String other = billing.costMissing() ? "{\"cost_missing\":true,\"routing_mode\":\"account-only\"}" : null;
         RelayLog log = RelayLog.consume(
                 info, usage, billing, System.currentTimeMillis() / 1000L, other);
         logRepo.save(log);
     }
 
     /**
-     * RL-3 单次上游失败处置（re_log + re_ban）：脱敏 → 落错误 Log（Type=5）→ AutoBan 命中则禁用渠道。
-     *
-     * <p>顺序遵循 PRD RL-3 §3：脱敏（MaskSensitiveErrorWithStatusCode）与禁用判定（AutoBan=1 且命中条件
-     * → DisableChannel 复用 CH-3）并行处置，两路汇到错误日志记录。禁用与否都不阻断重试判定（由调用方据
-     * {@link RetryPolicy#shouldRetry(int)} 决定换渠道还是终止）。</p>
-     *
-     * @return 脱敏后的错误描述（供重试耗尽/不可重试时构造对客户错误响应复用）
+     * 账号版错误 Log 落库（Type=5 Error）：脱敏 content + account_id/model/status_code。
      */
-    private String handleUpstreamFailure(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                         RelayAuthContext authContext, int statusCode, String rawDetail) {
-        String masked = MaskSensitiveError.mask(statusCode, rawDetail);
-        // re_ban：仅 AutoBan=1 且命中禁用条件（401/403）才自动禁用，落 AUTO_DISABLED 并通知 root（CH-3）。
-        if (RetryPolicy.shouldAutoDisable(channel.autoBan(), statusCode) && channel.autoDisable()) {
-            channelRepo.save(channel);
-            notifyChannelAutoDisabled(channel, statusCode);
+    private void recordAccountErrorLog(RelayDispatch dispatch, ModelResolution resolution,
+                                        long accountId, RelayAuthContext authContext,
+                                        String maskedContent, int statusCode) {
+        RelayInfo info = new RelayInfo();
+        info.setUserId(authContext.userId());
+        info.setUsername(authContext.username());
+        info.setTokenId(authContext.tokenId());
+        info.setTokenName(authContext.tokenName() != null ? authContext.tokenName() : "");
+        info.setUsingGroup(authContext.group());
+        info.setRequestedModel(resolution.requested());
+        info.setResolvedPublicModel(resolution.resolvedPublic());
+        info.setUpstreamModelName(resolution.upstream());
+        info.setInboundFormat(dispatch.format());
+        info.setChannelId(accountId); // 复用字段存储 accountId
+        info.setChannelType(0);
+        if (info.ip() == null) {
+            info.setIp("");
         }
-        // re_log：脱敏后写 Log Type=5 Error（记 channel/model/status_code）。
-        recordErrorLog(dispatch, resolution, channel, authContext, masked, statusCode);
-        return masked;
+        if (info.userAgent() == null) {
+            info.setUserAgent("");
+        }
+        RelayLog log = RelayLog.error(info, maskedContent, statusCode, System.currentTimeMillis() / 1000L);
+        logRepo.save(log);
     }
 
-    /** 通知 root 渠道已自动禁用（CH-3 通知；本期 server log，告警分发接入见 observability BC）。 */
-    private void notifyChannelAutoDisabled(Channel channel, int statusCode) {
-        // TODO REQ-后续: 接入 observability AlertNotifierPort 推送 root 告警；本期仅诊断日志占位。
+    /**
+     * 账号版上游失败处置（re_log + re_ban）：脱敏 → 落错误 Log（Type=5）→ AutoBan 命中则禁用账号。
+     *
+     * @return 脱敏后的错误描述
+     */
+    private String handleAccountUpstreamFailure(RelayDispatch dispatch, ModelResolution resolution,
+                                                 SelectedAccount account, RelayAuthContext authContext,
+                                                 int statusCode, String rawDetail) {
+        String masked = MaskSensitiveError.mask(statusCode, rawDetail);
+        // re_ban：仅 AutoBan 标记的账号且命中禁用条件（401/403）才自动禁用（本期仅 Log，禁用逻辑后续接入 AccountRepository）。
+        // TODO: 接入账号禁用的仓储方法 AccountRepository.save(a.disable())
+        // re_log：脱敏后写 Log Type=5 Error（记 account_id/model/status_code）。
+        recordAccountErrorLog(dispatch, resolution, account.accountId(), authContext, masked, statusCode);
+        return masked;
     }
 
     /**
@@ -895,33 +846,22 @@ public class RelayForwardUseCase {
         return new String(body, java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    /** 落一条错误 Log（RL-3 re_log，Type=5 Error）：脱敏 content + channel/model/status_code。 */
-    private void recordErrorLog(RelayDispatch dispatch, ModelResolution resolution, Channel channel,
-                                RelayAuthContext authContext, String maskedContent, int statusCode) {
-        RelayInfo info = new RelayInfo();
-        info.setUserId(authContext.userId());
-        info.setUsername(authContext.username());
-        info.setUsingGroup(authContext.group());
-        info.setRequestedModel(resolution.requested());
-        info.setResolvedPublicModel(resolution.resolvedPublic());
-        info.setUpstreamModelName(resolution.upstream());
-        info.setChannelId(channel.id());
-        info.setInboundFormat(dispatch.format());
-        info.setTargetProtocol(dispatch.format());
-        info.computePassthrough();
-        // NOT NULL 兜底（logs.token_name/ip/user_agent NOT NULL；token 上下文/请求头可能缺失时补空串）。
-        info.setTokenId(authContext.tokenId());
-        if (info.tokenName() == null) {
-            info.setTokenName(authContext.tokenName() != null ? authContext.tokenName() : "");
+    /**
+     * 解析账号凭证中的 API key（从 credentials JSON 中提取）。
+     *
+     * @param credentials 账号凭证 JSON
+     * @return key（解析失败返回 null）
+     */
+    private String extractAccountKey(String credentials) {
+        if (credentials == null || credentials.isBlank()) {
+            return null;
         }
-        if (info.ip() == null) {
-            info.setIp("");
+        try {
+            JsonNode node = objectMapper.readTree(credentials).path("key");
+            return node.isTextual() ? node.asText() : null;
+        } catch (IOException ignored) {
+            return null;
         }
-        if (info.userAgent() == null) {
-            info.setUserAgent("");
-        }
-        RelayLog log = RelayLog.error(info, maskedContent, statusCode, System.currentTimeMillis() / 1000L);
-        logRepo.save(log);
     }
 
     /**

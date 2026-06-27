@@ -19,6 +19,11 @@ import java.util.List;
  * @param expiresAt          过期时刻 epoch 秒（可空）
  * @param autoPauseOnExpired 过期自动暂停（可空=不改）
  * @param rateMultiplier     账号级售价倍率（可空→1.0）
+ * @param modelMapping       模型映射 JSON（可空）
+ * @param weight             路由权重（可空→0）
+ * @param tag                标签（可空）
+ * @param autoBan            自动封禁标志（可空=不改）
+ * @param models             支持的模型列表（可空）
  * @param groups             所属分组集合（可空）
  */
 public record UpdateAccountCommand(
@@ -33,5 +38,10 @@ public record UpdateAccountCommand(
         Long expiresAt,
         Boolean autoPauseOnExpired,
         BigDecimal rateMultiplier,
+        String modelMapping,
+        Integer weight,
+        String tag,
+        Boolean autoBan,
+        String models,
         List<AccountGroupRef> groups) {
 }

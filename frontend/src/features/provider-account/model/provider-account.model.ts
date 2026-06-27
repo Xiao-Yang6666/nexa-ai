@@ -12,10 +12,12 @@ import {
   updateAccount,
   deleteAccount,
   toggleAccount,
+  probeModels,
   type AccountView,
   type AccountCreateRequest,
   type AccountUpdateRequest,
   type AccountListResponse,
+  type ProbeModelsRequest,
 } from '../api/provider-account.api';
 
 /** 账号展示状态。 */
@@ -37,6 +39,16 @@ export interface AccountRowVM {
   st: AccountStatus;
   concurrency: number;
   priority: number;
+  weight: number;
+  tag?: string;
+  /** Base URL */
+  baseUrl?: string;
+  /** 模型映射 JSON */
+  modelMapping?: string;
+  /** 支持的模型 */
+  models?: string;
+  /** 自动封禁 */
+  autoBan: boolean;
   /** 过期时间文案（空=永久） */
   exp: string;
   /** 过期自动暂停 */
@@ -65,6 +77,12 @@ export function toAccountRowVM(view: AccountView): AccountRowVM {
     st: deriveAccountStatus(view.status),
     concurrency: view.concurrency ?? 0,
     priority: view.priority ?? 0,
+    weight: view.weight ?? 0,
+    tag: view.tag ?? undefined,
+    baseUrl: view.base_url ?? undefined,
+    modelMapping: view.model_mapping ?? undefined,
+    models: view.models ?? undefined,
+    autoBan: view.auto_ban ?? false,
     exp: exp > 0 ? fmtTime(exp) : '永久',
     autoPause: view.auto_pause_on_expired ?? true,
     updatedAt: fmtTime(view.updated_time),
@@ -123,5 +141,12 @@ export function useToggleAccount() {
   return useMutation({
     mutationFn: ({ id, enable }: { id: number; enable: boolean }) => toggleAccount(id, enable),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['provider-account'] }),
+  });
+}
+
+/** 探测上游模型列表 mutation（不影响列表缓存）。 */
+export function useProbeModels() {
+  return useMutation({
+    mutationFn: (req: ProbeModelsRequest) => probeModels(req),
   });
 }

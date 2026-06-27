@@ -22,6 +22,11 @@ import java.util.List;
  * @param expiresAt          过期时刻 epoch 秒（可空）
  * @param autoPauseOnExpired 过期自动暂停（可空→true）
  * @param rateMultiplier     账号级售价倍率（可空→1.0）
+ * @param modelMapping       模型映射 JSON（可空）
+ * @param weight             路由权重（可空→0）
+ * @param tag                标签（可空）
+ * @param autoBan            自动封禁标志（可空→false）
+ * @param models             支持的模型列表（可空）
  * @param groups             所属分组集合（可空）
  */
 public record AccountCreateRequest(
@@ -35,6 +40,11 @@ public record AccountCreateRequest(
         @JsonProperty("expires_at") Long expiresAt,
         @JsonProperty("auto_pause_on_expired") Boolean autoPauseOnExpired,
         @JsonProperty("rate_multiplier") BigDecimal rateMultiplier,
+        @JsonProperty("model_mapping") String modelMapping,
+        @JsonProperty("weight") Integer weight,
+        @JsonProperty("tag") String tag,
+        @JsonProperty("auto_ban") Boolean autoBan,
+        @JsonProperty("models") String models,
         @JsonProperty("groups") List<AccountGroupView> groups) {
 
     /**
@@ -45,7 +55,7 @@ public record AccountCreateRequest(
     public CreateAccountCommand toCommand() {
         return new CreateAccountCommand(
                 name, platform, type, credentials, baseUrl, concurrency, priority, expiresAt,
-                autoPauseOnExpired, rateMultiplier,
+                autoPauseOnExpired, rateMultiplier, modelMapping, weight, tag, autoBan, models,
                 groups == null ? null : groups.stream().map(AccountGroupView::toDomain).toList());
     }
 }

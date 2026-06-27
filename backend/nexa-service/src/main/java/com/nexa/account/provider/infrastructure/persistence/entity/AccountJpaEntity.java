@@ -73,6 +73,34 @@ public class AccountJpaEntity {
     @Column(name = "rate_multiplier", nullable = false, precision = 10, scale = 4)
     private java.math.BigDecimal rateMultiplier;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "model_mapping", columnDefinition = "jsonb")
+    private String modelMapping;
+
+    @Column(name = "weight")
+    private int weight;
+
+    @Column(name = "tag", length = 255)
+    private String tag;
+
+    @Column(name = "auto_ban")
+    private boolean autoBan;
+
+    @Column(name = "response_time")
+    private Integer responseTime;
+
+    @Column(name = "test_time")
+    private Long testTime;
+
+    @Column(name = "balance", precision = 30, scale = 6)
+    private java.math.BigDecimal balance;
+
+    @Column(name = "used_quota", precision = 30, scale = 6)
+    private java.math.BigDecimal usedQuota;
+
+    @Column(name = "models", columnDefinition = "TEXT")
+    private String models;
+
     @Column(name = "created_at")
     private Long createdAt;
 
@@ -203,6 +231,78 @@ public class AccountJpaEntity {
 
     public void setRateMultiplier(java.math.BigDecimal rateMultiplier) {
         this.rateMultiplier = rateMultiplier;
+    }
+
+    public String getModelMapping() {
+        return modelMapping;
+    }
+
+    public void setModelMapping(String modelMapping) {
+        this.modelMapping = modelMapping;
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public boolean isAutoBan() {
+        return autoBan;
+    }
+
+    public void setAutoBan(boolean autoBan) {
+        this.autoBan = autoBan;
+    }
+
+    public Integer getResponseTime() {
+        return responseTime;
+    }
+
+    public void setResponseTime(Integer responseTime) {
+        this.responseTime = responseTime;
+    }
+
+    public Long getTestTime() {
+        return testTime;
+    }
+
+    public void setTestTime(Long testTime) {
+        this.testTime = testTime;
+    }
+
+    public java.math.BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(java.math.BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public java.math.BigDecimal getUsedQuota() {
+        return usedQuota;
+    }
+
+    public void setUsedQuota(java.math.BigDecimal usedQuota) {
+        this.usedQuota = usedQuota;
+    }
+
+    public String getModels() {
+        return models;
+    }
+
+    public void setModels(String models) {
+        this.models = models;
     }
 
     public Long getCreatedAt() {

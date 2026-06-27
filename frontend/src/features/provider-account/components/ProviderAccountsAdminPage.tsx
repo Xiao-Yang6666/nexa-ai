@@ -10,6 +10,7 @@ import {
   useUpdateAccount,
   useDeleteAccount,
   useToggleAccount,
+  useProbeModels,
   type AccountStatus,
   type AccountRowVM,
 } from '../model/provider-account.model';
@@ -35,27 +36,47 @@ function StatusBadge({ st }: { st: AccountStatus }) {
 interface DrawerForm {
   name: string;
   platform: string;
-  type: string;
   credentials: string;
+  baseUrl: string;
   concurrency: string;
   priority: string;
+  weight: string;
+  tag: string;
+  models: string;
+  modelMapping: string;
+  autoBan: boolean;
   autoPause: boolean;
 }
 
 const INIT_FORM: DrawerForm = {
   name: '',
   platform: 'openai',
-  type: 'api_key',
   credentials: '',
+  baseUrl: '',
   concurrency: '3',
   priority: '50',
+  weight: '0',
+  tag: '',
+  models: '',
+  modelMapping: '',
+  autoBan: false,
   autoPause: true,
 };
 
-/** 平台预设选项（可自由输入，仅作下拉建议）。 */
-const PLATFORM_OPTIONS = ['openai', 'anthropic', 'google', 'azure'];
-/** 账号类型预设。 */
-const TYPE_OPTIONS = ['api_key', 'oauth'];
+/** 供应商平台选项（覆盖主流 LLM 供应商）。 */
+const PLATFORM_OPTIONS = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'azure', label: 'Azure OpenAI' },
+  { value: 'google', label: 'Google (Gemini)' },
+  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'mistral', label: 'Mistral' },
+  { value: 'moonshot', label: 'Moonshot (Kimi)' },
+  { value: 'zhipu', label: '智谱 (GLM)' },
+  { value: 'baichuan', label: '百川' },
+  { value: 'minimax', label: 'MiniMax' },
+  { value: 'custom', label: '自定义 (OpenAI 兼容)' },
+];
 
 const PAGE_SIZE = 20;
 
@@ -80,6 +101,10 @@ export function ProviderAccountsAdminPage() {
   const [form, setForm] = useState<DrawerForm>(INIT_FORM);
   const [saveErr, setSaveErr] = useState<string | null>(null);
 
+  // 模型探测：候选列表 + 错误
+  const [probeErr, setProbeErr] = useState<string | null>(null);
+  const [probeResult, setProbeResult] = useState<string[] | null>(null);
+
   /* ── 数据（真实接口） ── */
   const { data, isLoading, isError, error } = useAccounts({
     page,
@@ -94,6 +119,7 @@ export function ProviderAccountsAdminPage() {
   const updateMutation = useUpdateAccount();
   const deleteMutation = useDeleteAccount();
   const toggleMutation = useToggleAccount();
+  const probeMutation = useProbeModels();
 
   /* ── 客户端过滤（status/search 在当前页过滤；platform 已下推后端） ── */
   const filtered = useMemo(() => {
@@ -111,15 +137,22 @@ export function ProviderAccountsAdminPage() {
   function openDrawer(mode: 'new' | 'edit', row?: AccountRowVM) {
     setDrawerMode(mode);
     setSaveErr(null);
+    setProbeErr(null);
+    setProbeResult(null);
     if (mode === 'edit' && row) {
       setEditId(row.id);
       setForm({
         name: row.name,
         platform: row.platform,
-        type: row.type,
         credentials: '',
+        baseUrl: row.baseUrl || '',
         concurrency: String(row.concurrency),
         priority: String(row.priority),
+        weight: String(row.weight || 0),
+        tag: row.tag || '',
+        models: row.models || '',
+        modelMapping: row.modelMapping || '',
+        autoBan: row.autoBan,
         autoPause: row.autoPause,
       });
     } else {
@@ -132,44 +165,48 @@ export function ProviderAccountsAdminPage() {
     setDrawerOpen(false);
   }
 
-  /* ── 保存账号（新建 POST / 编辑 PUT，覆盖式；credentials 留空=保留原值） ── */
+  /* ── 保存账号（新建 POST / 编辑 PUT，覆盖式；API Key 留空=保留原值） ── */
   async function handleSave() {
     setSaveErr(null);
     const name = form.name.trim();
     const platform = form.platform.trim();
-    const type = form.type.trim();
     if (!name) {
       setSaveErr('请填写账号名');
       return;
     }
     if (!platform) {
-      setSaveErr('请填写供应商平台');
+      setSaveErr('请选择供应商平台');
       return;
     }
-    if (!type) {
-      setSaveErr('请填写账号类型');
+    // 新建必填 API Key；编辑留空表示保留原 API Key。
+    const apiKey = form.credentials.trim();
+    if (drawerMode === 'new' && !apiKey) {
+      setSaveErr('请填写 API Key');
       return;
     }
-    const credentials = form.credentials.trim();
+    // API Key wrap 成 credentials JSON（后端聚合保留语义：空白=保留原值）。
+    const credentials = apiKey ? JSON.stringify({ key: apiKey }) : undefined;
     const base = {
       name,
       platform,
-      type,
+      type: 'api_key', // 内部固定（OAuth 等扩展后再开放选择）
+      base_url: form.baseUrl.trim() || undefined,
       concurrency: Number(form.concurrency) || undefined,
       priority: Number(form.priority) || undefined,
       auto_pause_on_expired: form.autoPause,
+      model_mapping: form.modelMapping.trim() || undefined,
+      weight: Number(form.weight) || undefined,
+      tag: form.tag.trim() || undefined,
+      auto_ban: form.autoBan,
+      models: form.models.trim() || undefined,
     };
     try {
       if (drawerMode === 'new') {
-        await createMutation.mutateAsync({
-          ...base,
-          credentials: credentials || undefined,
-        });
+        await createMutation.mutateAsync({ ...base, credentials });
       } else if (editId != null) {
-        // 编辑：credentials 留空表示保留原凭证（后端聚合处理）
         await updateMutation.mutateAsync({
           id: editId,
-          req: { ...base, credentials: credentials || undefined },
+          req: { ...base, credentials },
         });
       }
       setDrawerOpen(false);
@@ -186,7 +223,57 @@ export function ProviderAccountsAdminPage() {
     await toggleMutation.mutateAsync({ id: row.id, enable: row.st !== 'active' });
   }
 
-  const colSpan = 9;
+  /* ── 探测上游模型列表（点"获取模型列表"按钮，用表单当前 platform/baseUrl/apiKey 调上游） ── */
+  async function handleProbe() {
+    setProbeErr(null);
+    setProbeResult(null);
+    const platform = form.platform.trim();
+    const apiKey = form.credentials.trim();
+    if (!platform) {
+      setProbeErr('请先选择供应商平台');
+      return;
+    }
+    if (!apiKey) {
+      setProbeErr('请先填写 API Key（编辑态留空时无法重新探测）');
+      return;
+    }
+    try {
+      const ids = await probeMutation.mutateAsync({
+        platform,
+        base_url: form.baseUrl.trim() || undefined,
+        api_key: apiKey,
+      });
+      setProbeResult(ids);
+      if (ids.length === 0) {
+        setProbeErr('上游返回空模型列表');
+      }
+    } catch (e) {
+      setProbeErr(e instanceof ApiError ? e.message : '获取模型列表失败');
+    }
+  }
+
+  /** 切换勾选某个候选模型（加入 / 移出 models 字段，逗号分隔保序去重）。 */
+  function toggleModelPick(modelId: string) {
+    const list = form.models
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    const idx = list.indexOf(modelId);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+    } else {
+      list.push(modelId);
+    }
+    setForm((f) => ({ ...f, models: list.join(',') }));
+  }
+
+  /** 一键全选所有探测到的模型。 */
+  function selectAllProbed() {
+    if (!probeResult || probeResult.length === 0) return;
+    setForm((f) => ({ ...f, models: probeResult.join(',') }));
+  }
+
+  const colSpan = 10;
   const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -202,21 +289,21 @@ export function ProviderAccountsAdminPage() {
     >
       {/* FilterBar */}
       <section className={`${styles.filterbar} nx-fade`}>
-        <input
+        <select
           className={styles.sel}
-          list="provider-platform-filter"
-          placeholder="全部平台"
           value={fPlatform}
           onChange={(e) => {
             setFPlatform(e.target.value);
             setPage(1);
           }}
-        />
-        <datalist id="provider-platform-filter">
+        >
+          <option value="">全部平台</option>
           {PLATFORM_OPTIONS.map((p) => (
-            <option key={p} value={p} />
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
           ))}
-        </datalist>
+        </select>
         <select
           className={styles.sel}
           value={fStatus}
@@ -246,10 +333,11 @@ export function ProviderAccountsAdminPage() {
                 <th className={`${styles.cellmono}`}>ID</th>
                 <th>账号名</th>
                 <th>平台</th>
-                <th>类型</th>
                 <th>状态</th>
                 <th>并发</th>
                 <th>优先级</th>
+                <th>权重</th>
+                <th>标签</th>
                 <th>过期</th>
                 <th>操作</th>
               </tr>
@@ -279,12 +367,13 @@ export function ProviderAccountsAdminPage() {
                     <td className={`${styles.cellmono} muted`}>{r.id}</td>
                     <td>{r.name}</td>
                     <td className="muted">{r.platform}</td>
-                    <td className="muted">{r.type}</td>
                     <td>
                       <StatusBadge st={r.st} />
                     </td>
                     <td className={styles.cellmono}>{r.concurrency}</td>
                     <td className={styles.cellmono}>{r.priority}</td>
+                    <td className={styles.cellmono}>{r.weight || 0}</td>
+                    <td className={`${styles.cellmono} muted`}>{r.tag || '-'}</td>
                     <td className={`${styles.cellmono} muted`}>{r.exp}</td>
                     <td>
                       <div className={styles.rowActs}>
@@ -351,6 +440,8 @@ export function ProviderAccountsAdminPage() {
         </div>
 
         <div className={styles.drawerBody}>
+          {/* ── 基本信息 ── */}
+          <div className={styles.sectionTitle}>基本信息</div>
           <div>
             <label className="field-label">
               账号名 <span className="field-req">*</span>
@@ -362,53 +453,76 @@ export function ProviderAccountsAdminPage() {
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
           </div>
-          <div className={styles.row2}>
-            <div>
-              <label className="field-label">
-                供应商平台 <span className="field-req">*</span>
-              </label>
-              <input
-                className="input"
-                list="provider-platform-options"
-                placeholder="openai"
-                value={form.platform}
-                onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
-              />
-              <datalist id="provider-platform-options">
-                {PLATFORM_OPTIONS.map((p) => (
-                  <option key={p} value={p} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className="field-label">
-                账号类型 <span className="field-req">*</span>
-              </label>
-              <input
-                className="input"
-                list="provider-type-options"
-                placeholder="api_key"
-                value={form.type}
-                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-              />
-              <datalist id="provider-type-options">
-                {TYPE_OPTIONS.map((t) => (
-                  <option key={t} value={t} />
-                ))}
-              </datalist>
-            </div>
-          </div>
           <div>
-            <label className="field-label">凭证 Credentials（JSON）</label>
-            <textarea
-              className={`input ${styles.taArea} ${styles.cellmono}`}
-              placeholder={'{"key":"sk-..."}'}
+            <label className="field-label">
+              供应商平台 <span className="field-req">*</span>
+            </label>
+            <select
+              className="input"
+              value={form.platform}
+              onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+            >
+              {PLATFORM_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <div className="field-hint">决定上游协议（Anthropic 走 Claude 协议，其余走 OpenAI 兼容协议）。</div>
+          </div>
+
+          {/* ── 连接配置 ── */}
+          <div className={styles.sectionTitle}>连接配置</div>
+          <div>
+            <label className="field-label">
+              API Key {drawerMode === 'new' && <span className="field-req">*</span>}
+            </label>
+            <input
+              className={`input ${styles.cellmono}`}
+              type="password"
+              autoComplete="new-password"
+              placeholder="sk-..."
               value={form.credentials}
               onChange={(e) => setForm((f) => ({ ...f, credentials: e.target.value }))}
             />
             <div className="field-hint">
               敏感凭证，保存后不再回显。
-              {drawerMode === 'edit' && '编辑时留空表示保留原凭证；填入则覆盖。'}
+              {drawerMode === 'edit' && '编辑时留空表示保留原 Key；填入则覆盖。'}
+            </div>
+          </div>
+          <div>
+            <label className="field-label">Base URL</label>
+            <input
+              className="input"
+              placeholder="留空使用平台默认地址，如 https://api.openai.com/v1"
+              value={form.baseUrl}
+              onChange={(e) => setForm((f) => ({ ...f, baseUrl: e.target.value }))}
+            />
+            <div className="field-hint">自定义/代理上游时填写；留空则用平台默认地址。</div>
+          </div>
+
+          {/* ── 路由与调度 ── */}
+          <div className={styles.sectionTitle}>路由与调度</div>
+          <div className={styles.row2}>
+            <div>
+              <label className="field-label">优先级</label>
+              <input
+                className={`input ${styles.cellmono}`}
+                value={form.priority}
+                inputMode="numeric"
+                onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
+              />
+              <div className="field-hint">数值越小越优先选用。</div>
+            </div>
+            <div>
+              <label className="field-label">权重</label>
+              <input
+                className={`input ${styles.cellmono}`}
+                value={form.weight}
+                inputMode="numeric"
+                onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))}
+              />
+              <div className="field-hint">同优先级内按权重加权随机。</div>
             </div>
           </div>
           <div className={styles.row2}>
@@ -420,16 +534,106 @@ export function ProviderAccountsAdminPage() {
                 inputMode="numeric"
                 onChange={(e) => setForm((f) => ({ ...f, concurrency: e.target.value }))}
               />
+              <div className="field-hint">该账号最大并发请求数。</div>
             </div>
             <div>
-              <label className="field-label">优先级</label>
+              <label className="field-label">标签</label>
               <input
-                className={`input ${styles.cellmono}`}
-                value={form.priority}
-                inputMode="numeric"
-                onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
+                className="input"
+                placeholder="例如：prod"
+                value={form.tag}
+                onChange={(e) => setForm((f) => ({ ...f, tag: e.target.value }))}
               />
+              <div className="field-hint">用于批量启停/操作。</div>
             </div>
+          </div>
+
+          {/* ── 模型配置 ── */}
+          <div className={styles.sectionTitle}>模型配置</div>
+          <div>
+            <div className={styles.modelsLabelRow}>
+              <label className="field-label" style={{ margin: 0 }}>
+                支持的模型
+              </label>
+              <button
+                type="button"
+                className={styles.probeBtn}
+                onClick={() => void handleProbe()}
+                disabled={probeMutation.isPending}
+              >
+                {probeMutation.isPending ? '获取中…' : '⟳ 获取模型列表'}
+              </button>
+            </div>
+            <input
+              className="input"
+              placeholder="gpt-4o, gpt-4o-mini, o1"
+              value={form.models}
+              onChange={(e) => setForm((f) => ({ ...f, models: e.target.value }))}
+            />
+            <div className="field-hint">
+              逗号分隔。可手动填写，或填好上方 API Key / Base URL 后点「获取模型列表」从上游拉取勾选。
+            </div>
+            {probeErr && (
+              <div className="field-hint" style={{ color: 'var(--color-danger)' }}>
+                {probeErr}
+              </div>
+            )}
+            {probeResult && probeResult.length > 0 && (
+              <div className={styles.probeBox}>
+                <div className={styles.probeBoxHead}>
+                  <span>探测到 {probeResult.length} 个模型，点击勾选：</span>
+                  <a onClick={selectAllProbed}>全选</a>
+                </div>
+                <div className={styles.probeChips}>
+                  {probeResult.map((m) => {
+                    const picked = form.models
+                      .split(',')
+                      .map((s) => s.trim())
+                      .includes(m);
+                    return (
+                      <button
+                        type="button"
+                        key={m}
+                        className={`${styles.probeChip}${picked ? ' ' + styles.probeChipOn : ''}`}
+                        onClick={() => toggleModelPick(m)}
+                      >
+                        {picked ? '✓ ' : ''}
+                        {m}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="field-label">模型映射（可选）</label>
+            <textarea
+              className={`input ${styles.taArea} ${styles.cellmono}`}
+              placeholder={'{"gpt-4":"gpt-4-turbo"}'}
+              value={form.modelMapping}
+              onChange={(e) => setForm((f) => ({ ...f, modelMapping: e.target.value }))}
+            />
+            <div className="field-hint">
+              JSON 格式，把对外模型名映射到上游真实模型名；未映射的保持原名。
+            </div>
+          </div>
+
+          {/* ── 高级选项 ── */}
+          <div className={styles.sectionTitle}>高级选项</div>
+          <div className={styles.swRow}>
+            <label className="field-label" style={{ margin: 0 }}>
+              失败自动封禁
+            </label>
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={form.autoBan}
+                onChange={(e) => setForm((f) => ({ ...f, autoBan: e.target.checked }))}
+              />
+              <span className="track" />
+              <span className="thumb" />
+            </label>
           </div>
           <div className={styles.swRow}>
             <label className="field-label" style={{ margin: 0 }}>

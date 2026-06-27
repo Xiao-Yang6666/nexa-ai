@@ -4,6 +4,7 @@ import com.nexa.account.provider.application.CreateAccountUseCase;
 import com.nexa.account.provider.application.DeleteAccountUseCase;
 import com.nexa.account.provider.application.GetAccountUseCase;
 import com.nexa.account.provider.application.ListAccountsUseCase;
+import com.nexa.account.provider.application.ProbeProviderModelsUseCase;
 import com.nexa.account.provider.application.ToggleAccountUseCase;
 import com.nexa.account.provider.application.UpdateAccountUseCase;
 import com.nexa.account.provider.domain.model.Account;
@@ -115,13 +116,17 @@ class AccountControllerMvcTest {
     @BeforeEach
     void setUp() {
         AccountRepository repo = new InMemoryAccountRepository();
+        // 探测端口桩：本测聚焦 CRUD/启停链路，探测用例注入一个不发网络的桩端口即可。
+        ProbeProviderModelsUseCase probeUseCase = new ProbeProviderModelsUseCase(
+                (platform, baseUrl, apiKey) -> java.util.List.of());
         AccountController controller = new AccountController(
                 new ListAccountsUseCase(repo),
                 new GetAccountUseCase(repo),
                 new CreateAccountUseCase(repo),
                 new UpdateAccountUseCase(repo),
                 new DeleteAccountUseCase(repo),
-                new ToggleAccountUseCase(repo));
+                new ToggleAccountUseCase(repo),
+                probeUseCase);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ProviderAccountExceptionHandler())
                 .build();

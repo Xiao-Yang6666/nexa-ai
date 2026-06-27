@@ -4,6 +4,7 @@ import com.nexa.account.provider.domain.model.Account;
 import com.nexa.account.provider.domain.repository.AccountRepository;
 import com.nexa.account.provider.domain.vo.AccountGroupRef;
 import com.nexa.account.provider.domain.vo.Pagination;
+import com.nexa.account.provider.infrastructure.persistence.entity.AccountAbilityJpaEntity;
 import com.nexa.account.provider.infrastructure.persistence.entity.AccountGroupJpaEntity;
 import com.nexa.account.provider.infrastructure.persistence.entity.AccountJpaEntity;
 import org.springframework.data.domain.PageRequest;
@@ -28,15 +29,19 @@ public class AccountRepositoryImpl implements AccountRepository {
 
     private final SpringDataAccountJpaRepository jpa;
     private final SpringDataAccountGroupJpaRepository groupJpa;
+    private final SpringDataAccountAbilityJpaRepository abilityJpa;
 
     /**
      * @param jpa      账号 Spring Data JPA 仓库
      * @param groupJpa 账号-分组关联 Spring Data JPA 仓库
+     * @param abilityJpa abilities 路由索引 JPA 仓库
      */
     public AccountRepositoryImpl(SpringDataAccountJpaRepository jpa,
-                                 SpringDataAccountGroupJpaRepository groupJpa) {
+                                 SpringDataAccountGroupJpaRepository groupJpa,
+                                 SpringDataAccountAbilityJpaRepository abilityJpa) {
         this.jpa = jpa;
         this.groupJpa = groupJpa;
+        this.abilityJpa = abilityJpa;
     }
 
     /** {@inheritDoc} */
@@ -46,6 +51,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         AccountJpaEntity saved = jpa.save(toEntity(account));
         account.assignId(saved.getId());
         rebuildGroups(saved.getId(), account.groups());
+        rebuildAbilities(saved.getId(), account);
         return toDomain(saved, account.groups());
     }
 
@@ -113,8 +119,8 @@ public class AccountRepositoryImpl implements AccountRepository {
     @Override
     @Transactional
     public void deleteById(long id) {
-        // fan-in：清掉该账号的分组关联（不依赖 DB CASCADE）。
         groupJpa.deleteByAccountId(id);
+        abilityJpa.deleteByAccountId(id);
         jpa.deleteById(id);
     }
 
@@ -130,7 +136,6 @@ public class AccountRepositoryImpl implements AccountRepository {
         e.setName(a.name());
         e.setPlatform(a.platform());
         e.setType(a.type());
-        // credentials jsonb 非空：领域可空 → 落库空 JSON 对象。
         e.setCredentials(a.credentials() == null ? "{}" : a.credentials());
         e.setBaseUrl(a.baseUrl());
         e.setConcurrency(a.concurrency());
@@ -142,6 +147,15 @@ public class AccountRepositoryImpl implements AccountRepository {
         e.setExpiresAt(a.expiresAt());
         e.setAutoPauseOnExpired(a.autoPauseOnExpired());
         e.setRateMultiplier(a.rateMultiplier());
+        e.setModelMapping(a.modelMapping());
+        e.setWeight(a.weight());
+        e.setTag(a.tag());
+        e.setAutoBan(a.autoBan());
+        e.setResponseTime(a.responseTime());
+        e.setTestTime(a.testTime());
+        e.setBalance(a.balance());
+        e.setUsedQuota(a.usedQuota());
+        e.setModels(a.models());
         e.setCreatedAt(a.createdTime());
         e.setUpdatedAt(a.updatedTime());
         return e;
@@ -164,6 +178,15 @@ public class AccountRepositoryImpl implements AccountRepository {
                 e.getExpiresAt(),
                 e.isAutoPauseOnExpired(),
                 e.getRateMultiplier(),
+                e.getModelMapping(),
+                e.getWeight(),
+                e.getTag(),
+                e.isAutoBan(),
+                e.getResponseTime(),
+                e.getTestTime(),
+                e.getBalance(),
+                e.getUsedQuota(),
+                e.getModels(),
                 groups,
                 e.getCreatedAt(),
                 e.getUpdatedAt());
@@ -194,5 +217,35 @@ public class AccountRepositoryImpl implements AccountRepository {
             rows.add(new AccountGroupJpaEntity(accountId, ref.group(), ref.priority()));
         }
         groupJpa.saveAll(rows);
+    }
+
+    /**
+     * 重建某账号的 abilities 路由索引（save 后调用）：先按 accountId 全删，再 fan-out 插入。
+     *
+     * @param accountId 账号 id
+     * @param account   账号聚合
+     */
+    private void rebuildAbilities(Long accountId, Account account) {
+        if (accountId == null) {
+            return;
+        }
+        abilityJpa.deleteByAccountId(accountId);
+        if (account.groups() == null || account.groups().isEmpty()) {
+            return;
+        }
+        long now = Instant.now().getEpochSecond();
+        List<AccountAbilityJpaEntity> rows = new ArrayList<>();
+        for (AccountGroupRef ref : account.groups()) {
+            rows.add(new AccountAbilityJpaEntity(
+                    accountId,
+                    ref.group(),
+                    account.models(),
+                    account.tag(),
+                    account.status().code(),
+                    now,
+                    now
+            ));
+        }
+        abilityJpa.saveAll(rows);
     }
 }

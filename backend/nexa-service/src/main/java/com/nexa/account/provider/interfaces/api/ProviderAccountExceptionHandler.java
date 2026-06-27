@@ -1,5 +1,6 @@
 package com.nexa.account.provider.interfaces.api;
 
+import com.nexa.account.provider.application.port.ProviderModelProbePort.ProviderProbeException;
 import com.nexa.account.provider.domain.exception.AccountNotFoundException;
 import com.nexa.account.provider.domain.exception.InvalidAccountParameterException;
 import com.nexa.shared.web.ApiResponse;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * <ul>
  *   <li>{@link InvalidAccountParameterException} → 400（缺失/非法入参）</li>
  *   <li>{@link AccountNotFoundException} → 404（按 id 操作但账号缺失）</li>
+ *   <li>{@link ProviderProbeException} → 502（探测上游模型列表失败）</li>
  * </ul>
  * </p>
  *
@@ -44,5 +46,16 @@ public class ProviderAccountExceptionHandler {
     @ExceptionHandler(AccountNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(AccountNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+    }
+
+    /**
+     * 探测上游模型列表失败 → 502（上游不可达/鉴权失败/解析失败）。
+     *
+     * @param e 探测异常
+     * @return 502 错误信封（不含敏感凭证）
+     */
+    @ExceptionHandler(ProviderProbeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleProbeFailure(ProviderProbeException e) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ApiResponse.error(e.getMessage()));
     }
 }

@@ -74,11 +74,17 @@ class RelayForwardUseCaseStreamTest {
                 new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
                 groupCode -> Optional.empty(),
                 (groupCode, userId, tokenId) -> true,
-                // 账号选择端口：选不到账号 → 转发回落 channel 自带 key/baseUrl（保持本测试原有转发口径不变）。
+                // 账号选择端口：返回一个 openai 账号（passthrough OpenAI→OpenAI）。
                 new com.nexa.relay.domain.port.AccountSelectionPort() {
                     @Override public Optional<com.nexa.relay.domain.port.SelectedAccount> selectAccount(
                             String group, String platform, java.util.Set<Long> excludeAccountIds) {
-                        return Optional.empty();
+                        java.util.Set<Long> excluded = excludeAccountIds == null ? java.util.Set.of() : excludeAccountIds;
+                        if (excluded.contains(1L)) {
+                            return Optional.empty();
+                        }
+                        return Optional.of(new com.nexa.relay.domain.port.SelectedAccount(
+                                1L, "{\"key\":\"sk-key1\"}", "https://up1", "openai",
+                                java.math.BigDecimal.ONE, null, "gpt-4o", null, 0));
                     }
                     @Override public void markRateLimited(long accountId, Long resetAt) { }
                     @Override public void markOverloaded(long accountId, Long until) { }
@@ -89,16 +95,8 @@ class RelayForwardUseCaseStreamTest {
         auth = new RelayAuthContext(7L, "alice", "default", null, null);
     }
 
-    private Channel openAiChannel() {
-        // type=1 → OpenAI 协议（passthrough，inFmt==targetProto）。
-        return Channel.rehydrate(1L, 1, "sk-key1", ChannelStatus.ENABLED.code(), "ch1",
-                0, "https://up1", "gpt-4o", "default", 0L, 1,
-                java.math.BigDecimal.ZERO, 0L, null, null, null, "", null, null, null, 0L);
-    }
-
     @Test
     void streamForwardsChunksToClientAndBillsAtEnd() {
-        when(selectUseCase.selectChannel(eq("default"), anyString(), any())).thenReturn(openAiChannel());
 
         // 上游 SSE：两个文本块 + 带 usage 的末块 + [DONE]，逐块回调 handler。
         doAnswer(inv -> {
@@ -144,7 +142,6 @@ class RelayForwardUseCaseStreamTest {
      */
     @Test
     void streamWithUnparseableChunkStillForwardsAndBills() {
-        when(selectUseCase.selectChannel(eq("default"), anyString(), any())).thenReturn(openAiChannel());
 
         doAnswer(inv -> {
             UpstreamHttpPort.UpstreamStreamHandler h = inv.getArgument(1);
@@ -187,7 +184,6 @@ class RelayForwardUseCaseStreamTest {
      */
     @Test
     void streamDroppedAfterPartialDeliveryStillBills() {
-        when(selectUseCase.selectChannel(eq("default"), anyString(), any())).thenReturn(openAiChannel());
 
         doAnswer(inv -> {
             UpstreamHttpPort.UpstreamStreamHandler h = inv.getArgument(1);

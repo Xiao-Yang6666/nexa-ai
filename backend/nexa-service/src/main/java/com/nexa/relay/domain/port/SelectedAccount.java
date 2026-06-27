@@ -23,5 +23,33 @@ public record SelectedAccount(
         String credentials,
         String baseUrl,
         String platform,
-        BigDecimal rateMultiplier) {
+        BigDecimal rateMultiplier,
+        String modelMapping,
+        String models,
+        String tag,
+        int weight) {
+
+    /**
+     * 应用账号级模型映射 A→B。
+     * 无映射或解析失败返回原值。
+     *
+     * @param publicModel 公开模型名 A
+     * @return 上游真实模型名 B（未映射则返回 A）
+     */
+    public String applyModelMapping(String publicModel) {
+        if (modelMapping == null || modelMapping.isBlank()) {
+            return publicModel;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                    new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readTree(modelMapping)
+                            .path(publicModel);
+            if (node.isTextual() && !node.asText().isBlank()) {
+                return node.asText();
+            }
+        } catch (Exception ignored) {
+        }
+        return publicModel;
+    }
 }

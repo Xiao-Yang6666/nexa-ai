@@ -211,6 +211,17 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+.sectionTitle {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+}
+.sectionTitle:first-child {
+  margin-top: 0;
+}
 .drawerFoot {
   display: flex;
   justify-content: flex-end;
@@ -269,6 +280,76 @@
 .taArea {
   height: 78px;
   padding: var(--space-2) var(--space-3);
+}
+
+/* ── 模型探测（获取模型列表 + 候选勾选） ── */
+.modelsLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.probeBtn {
+  height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-body-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary-500);
+  background: transparent;
+  color: var(--color-primary-500);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.probeBtn:hover:not(:disabled) {
+  background: var(--color-primary-50);
+}
+.probeBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.probeBox {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+}
+.probeBoxHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+.probeBoxHead a {
+  color: var(--color-primary-500);
+  cursor: pointer;
+}
+.probeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.probeChip {
+  padding: 3px 10px;
+  font-size: var(--text-body-sm);
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+}
+.probeChip:hover {
+  border-color: var(--color-primary-500);
+}
+.probeChipOn {
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
 }
 
 @media (max-width: 560px) {

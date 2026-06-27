@@ -77,7 +77,6 @@ export const NAV: NavGroup[] = [
     group: '资源管理',
     admin: true,
     items: [
-      { id: 'channels', label: '渠道管理', href: '/admin/channels', ic: 'server', minRole: ROLE.ADMIN },
       { id: 'provider-accounts', label: '供应商账号', href: '/admin/provider-accounts', ic: 'server', minRole: ROLE.ADMIN },
       { id: 'users', label: '用户管理', href: '/admin/users', ic: 'users', minRole: ROLE.ADMIN },
       { id: 'models', label: '模型/供应商', href: '/admin/models', ic: 'cube', minRole: ROLE.ADMIN },

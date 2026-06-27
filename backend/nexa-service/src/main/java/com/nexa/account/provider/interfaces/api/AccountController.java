@@ -4,6 +4,7 @@ import com.nexa.account.provider.application.CreateAccountUseCase;
 import com.nexa.account.provider.application.DeleteAccountUseCase;
 import com.nexa.account.provider.application.GetAccountUseCase;
 import com.nexa.account.provider.application.ListAccountsUseCase;
+import com.nexa.account.provider.application.ProbeProviderModelsUseCase;
 import com.nexa.account.provider.application.ToggleAccountUseCase;
 import com.nexa.account.provider.application.UpdateAccountUseCase;
 import com.nexa.account.provider.domain.vo.Pagination;
@@ -11,6 +12,7 @@ import com.nexa.account.provider.interfaces.api.dto.AccountCreateRequest;
 import com.nexa.account.provider.interfaces.api.dto.AccountListView;
 import com.nexa.account.provider.interfaces.api.dto.AccountUpdateRequest;
 import com.nexa.account.provider.interfaces.api.dto.AccountView;
+import com.nexa.account.provider.interfaces.api.dto.ProbeModelsRequest;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import com.nexa.shared.web.ApiResponse;
@@ -24,6 +26,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 供应商账号管理控制器（AdminAuth 端点，接口层）。
@@ -59,27 +63,31 @@ public class AccountController {
     private final UpdateAccountUseCase updateAccountUseCase;
     private final DeleteAccountUseCase deleteAccountUseCase;
     private final ToggleAccountUseCase toggleAccountUseCase;
+    private final ProbeProviderModelsUseCase probeProviderModelsUseCase;
 
     /**
-     * @param listAccountsUseCase  列表用例
-     * @param getAccountUseCase    详情用例
-     * @param createAccountUseCase 创建用例
-     * @param updateAccountUseCase 编辑用例
-     * @param deleteAccountUseCase 删除用例
-     * @param toggleAccountUseCase 启停用例
+     * @param listAccountsUseCase        列表用例
+     * @param getAccountUseCase          详情用例
+     * @param createAccountUseCase       创建用例
+     * @param updateAccountUseCase       编辑用例
+     * @param deleteAccountUseCase       删除用例
+     * @param toggleAccountUseCase       启停用例
+     * @param probeProviderModelsUseCase 探测上游模型列表用例
      */
     public AccountController(ListAccountsUseCase listAccountsUseCase,
                             GetAccountUseCase getAccountUseCase,
                             CreateAccountUseCase createAccountUseCase,
                             UpdateAccountUseCase updateAccountUseCase,
                             DeleteAccountUseCase deleteAccountUseCase,
-                            ToggleAccountUseCase toggleAccountUseCase) {
+                            ToggleAccountUseCase toggleAccountUseCase,
+                            ProbeProviderModelsUseCase probeProviderModelsUseCase) {
         this.listAccountsUseCase = listAccountsUseCase;
         this.getAccountUseCase = getAccountUseCase;
         this.createAccountUseCase = createAccountUseCase;
         this.updateAccountUseCase = updateAccountUseCase;
         this.deleteAccountUseCase = deleteAccountUseCase;
         this.toggleAccountUseCase = toggleAccountUseCase;
+        this.probeProviderModelsUseCase = probeProviderModelsUseCase;
     }
 
     /**
@@ -162,5 +170,21 @@ public class AccountController {
             @PathVariable("id") long id,
             @RequestParam(name = "enable", required = false, defaultValue = "true") boolean enable) {
         return ApiResponse.okData(AccountView.from(toggleAccountUseCase.toggle(id, enable)));
+    }
+
+    /**
+     * 探测上游模型列表（{@code POST /api/admin/accounts/probe-models}）。
+     *
+     * <p>用新建/编辑表单当前填写的 platform/base_url/api_key 直接调上游 {@code /models} 拉取候选模型，
+     * 无需先保存账号。前端"获取模型列表"按钮调用，返回的列表供用户勾选填入「支持的模型」。
+     * api_key 仅用于本次探测鉴权，不落库。</p>
+     *
+     * @param request 探测请求（platform 必填、api_key 必填、base_url 可空）
+     * @return 成功信封，data = 模型 ID 列表
+     */
+    @PostMapping("/probe-models")
+    public ApiResponse<List<String>> probeModels(@RequestBody ProbeModelsRequest request) {
+        return ApiResponse.okData(probeProviderModelsUseCase.probe(
+                request.platform(), request.baseUrl(), request.apiKey()));
     }
 }

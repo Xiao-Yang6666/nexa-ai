@@ -36,7 +36,9 @@ public class UpdateAccountUseCase {
                 .orElseThrow(() -> new AccountNotFoundException(command.id()));
         account.update(command.name(), command.platform(), command.type(), command.credentials(),
                 command.baseUrl(), command.concurrency(), command.priority(), command.expiresAt(),
-                command.autoPauseOnExpired(), command.rateMultiplier(), command.groups());
+                command.autoPauseOnExpired(), command.rateMultiplier(),
+                command.modelMapping(), command.weight(), command.tag(), command.autoBan(),
+                command.models(), command.groups());
         return accountRepository.save(account);
     }
 }

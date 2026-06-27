@@ -33,4 +33,21 @@ public final class ChannelProtocolMapping {
         }
         return ProtocolFormat.OPENAI;
     }
+
+    /**
+     * 按账号 platform 字符串判定目标上游协议（账号路由用）。
+     *
+     * @param platform 供应商平台（如 anthropic/openai/azure/cohere/google）
+     * @return 目标协议（未识别回落 {@link ProtocolFormat#OPENAI}）
+     */
+    public static ProtocolFormat protocolOfPlatform(String platform) {
+        if (platform == null) {
+            return ProtocolFormat.OPENAI;
+        }
+        String p = platform.toLowerCase();
+        if (p.contains("anthropic") || p.contains("claude")) {
+            return ProtocolFormat.CLAUDE;
+        }
+        return ProtocolFormat.OPENAI;
+    }
 }

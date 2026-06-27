@@ -26,6 +26,16 @@ export interface AccountView {
   base_url?: string | null;
   concurrency: number;
   priority: number;
+  /** 路由权重 */
+  weight: number;
+  /** 标签（批量操作用） */
+  tag?: string | null;
+  /** 自动封禁 */
+  auto_ban: boolean;
+  /** 模型映射 JSON（A→B） */
+  model_mapping?: string | null;
+  /** 支持的模型（逗号分隔） */
+  models?: string | null;
   /** 状态码：active / disabled / rate_limited */
   status: string;
   rate_limited_at?: number | null;
@@ -49,6 +59,11 @@ export interface AccountCreateRequest {
   base_url?: string;
   concurrency?: number;
   priority?: number;
+  weight?: number;
+  tag?: string;
+  auto_ban?: boolean;
+  model_mapping?: string;
+  models?: string;
   expires_at?: number;
   auto_pause_on_expired?: boolean;
   rate_multiplier?: number;
@@ -123,4 +138,20 @@ export function toggleAccount(id: number, enable: boolean): Promise<AccountView>
   return http.patch<AccountView>(`/api/admin/accounts/${id}/toggle`, {
     query: { enable },
   });
+}
+
+/** 探测上游模型列表请求（用表单当前连接信息直接探测，不落库）。 */
+export interface ProbeModelsRequest {
+  platform: string;
+  base_url?: string;
+  api_key: string;
+}
+
+/**
+ * 探测上游模型列表。
+ * POST /api/admin/accounts/probe-models → ApiResponse{ data: string[] }
+ * 用表单填写的 platform/base_url/api_key 调上游 /models 拉候选模型，无需先保存账号。
+ */
+export function probeModels(req: ProbeModelsRequest): Promise<string[]> {
+  return http.post<string[]>('/api/admin/accounts/probe-models', { json: req });
 }

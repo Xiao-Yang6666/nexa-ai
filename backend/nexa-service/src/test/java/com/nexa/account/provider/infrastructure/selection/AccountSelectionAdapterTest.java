@@ -114,6 +114,7 @@ class AccountSelectionAdapterTest {
     private static Account acc(String name, String platform, int priority, String group) {
         return Account.create(name, platform, "api_key", "{\"key\":\"" + name + "-cred\"}",
                 null, null, priority, null, null, null,
+                null, null, null, null, null,
                 List.of(com.nexa.account.provider.domain.vo.AccountGroupRef.of(group, 50)));
     }
 

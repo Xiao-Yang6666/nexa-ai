@@ -74,6 +74,33 @@ public class Account {
     /** 账号级售价倍率（>=0，默认 1.0；售价 = A倍率 × group倍率 × account倍率）。 */
     private java.math.BigDecimal rateMultiplier;
 
+    /** 模型映射 JSON（A→B，可空；如 {"gpt-4":"gpt-4-turbo"}）。 */
+    private String modelMapping;
+
+    /** 路由权重（>=0，默认 0）。 */
+    private int weight;
+
+    /** 标签（可空，批量操作用）。 */
+    private String tag;
+
+    /** 自动封禁标志（失败达阈值自动禁用）。 */
+    private boolean autoBan;
+
+    /** 上次测试响应时间（毫秒，可空）。 */
+    private Integer responseTime;
+
+    /** 上次测试时间 epoch 秒（可空）。 */
+    private Long testTime;
+
+    /** 账户余额 USD（可空）。 */
+    private java.math.BigDecimal balance;
+
+    /** 已用配额（可空）。 */
+    private java.math.BigDecimal usedQuota;
+
+    /** 支持的模型列表（逗号分隔，可空）。 */
+    private String models;
+
     /** 所属分组关联集合（聚合内成员）。 */
     private List<AccountGroupRef> groups;
 
@@ -87,6 +114,9 @@ public class Account {
                     String baseUrl, int concurrency, int priority, AccountStatus status, Long rateLimitedAt,
                     Long rateLimitResetAt, Long overloadUntil, Long expiresAt,
                     boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
+                    String modelMapping, int weight, String tag, boolean autoBan,
+                    Integer responseTime, Long testTime, java.math.BigDecimal balance,
+                    java.math.BigDecimal usedQuota, String models,
                     List<AccountGroupRef> groups, Long createdTime, Long updatedTime) {
         this.id = id;
         this.name = name;
@@ -103,6 +133,15 @@ public class Account {
         this.expiresAt = expiresAt;
         this.autoPauseOnExpired = autoPauseOnExpired;
         this.rateMultiplier = normalizeMultiplier(rateMultiplier);
+        this.modelMapping = normalizeJson(modelMapping);
+        this.weight = weight < 0 ? 0 : weight;
+        this.tag = normalizeText(tag);
+        this.autoBan = autoBan;
+        this.responseTime = responseTime;
+        this.testTime = testTime;
+        this.balance = balance;
+        this.usedQuota = usedQuota;
+        this.models = normalizeText(models);
         this.groups = groups == null ? new ArrayList<>() : new ArrayList<>(groups);
         this.createdTime = createdTime;
         this.updatedTime = updatedTime;
@@ -124,6 +163,11 @@ public class Account {
      * @param expiresAt          过期时刻 epoch 秒（可空）
      * @param autoPauseOnExpired 过期自动暂停（可空→true）
      * @param rateMultiplier     账号级售价倍率（可空/&lt;0→1.0）
+     * @param modelMapping       模型映射 JSON（可空）
+     * @param weight             路由权重（可空/&lt;0→0）
+     * @param tag                标签（可空）
+     * @param autoBan            自动封禁标志
+     * @param models             支持的模型列表（可空）
      * @param groups             所属分组集合（可空）
      * @return 待持久化的新账号（id 由仓储保存后回填）
      * @throws InvalidAccountParameterException 字段非法
@@ -131,7 +175,8 @@ public class Account {
     public static Account create(String name, String platform, String type, String credentials,
                                  String baseUrl, Integer concurrency, Integer priority, Long expiresAt,
                                  Boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
-                                 List<AccountGroupRef> groups) {
+                                 String modelMapping, Integer weight, String tag, Boolean autoBan,
+                                 String models, List<AccountGroupRef> groups) {
         long now = Instant.now().getEpochSecond();
         return new Account(
                 null,
@@ -147,6 +192,12 @@ public class Account {
                 expiresAt,
                 autoPauseOnExpired == null || autoPauseOnExpired,
                 normalizeMultiplier(rateMultiplier),
+                modelMapping,
+                weight == null || weight < 0 ? 0 : weight,
+                tag,
+                autoBan != null && autoBan,
+                null, null, null, null,
+                models,
                 groups,
                 now, now);
     }
@@ -161,10 +212,15 @@ public class Account {
                                     String status, Long rateLimitedAt, Long rateLimitResetAt,
                                     Long overloadUntil, Long expiresAt, boolean autoPauseOnExpired,
                                     java.math.BigDecimal rateMultiplier,
+                                    String modelMapping, int weight, String tag, boolean autoBan,
+                                    Integer responseTime, Long testTime, java.math.BigDecimal balance,
+                                    java.math.BigDecimal usedQuota, String models,
                                     List<AccountGroupRef> groups, Long createdTime, Long updatedTime) {
         return new Account(id, name, platform, type, credentials, baseUrl, concurrency, priority,
                 AccountStatus.fromCode(status), rateLimitedAt, rateLimitResetAt, overloadUntil,
-                expiresAt, autoPauseOnExpired, rateMultiplier, groups, createdTime, updatedTime);
+                expiresAt, autoPauseOnExpired, rateMultiplier,
+                modelMapping, weight, tag, autoBan, responseTime, testTime, balance, usedQuota, models,
+                groups, createdTime, updatedTime);
     }
 
     /**
@@ -177,7 +233,8 @@ public class Account {
     public void update(String name, String platform, String type, String newCredentials,
                        String baseUrl, Integer concurrency, Integer priority, Long expiresAt,
                        Boolean autoPauseOnExpired, java.math.BigDecimal rateMultiplier,
-                       List<AccountGroupRef> groups) {
+                       String modelMapping, Integer weight, String tag, Boolean autoBan,
+                       String models, List<AccountGroupRef> groups) {
         this.name = requireText(name, "name");
         this.platform = requireText(platform, "platform");
         this.type = requireText(type, "type");
@@ -192,6 +249,11 @@ public class Account {
             this.autoPauseOnExpired = autoPauseOnExpired;
         }
         this.rateMultiplier = normalizeMultiplier(rateMultiplier);
+        this.modelMapping = normalizeJson(modelMapping);
+        this.weight = weight == null || weight < 0 ? 0 : weight;
+        this.tag = normalizeText(tag);
+        this.autoBan = autoBan != null && autoBan;
+        this.models = normalizeText(models);
         this.groups = groups == null ? new ArrayList<>() : new ArrayList<>(groups);
         touch();
     }
@@ -255,6 +317,56 @@ public class Account {
         this.rateLimitResetAt = null;
         touch();
         return true;
+    }
+
+    /**
+     * 应用模型映射（A→B，充血查询）。
+     *
+     * <p>从 modelMapping JSON 解析公开模型 A 映射到上游模型 B。
+     * 无映射或解析失败返回原值（身份映射 B=A）。</p>
+     *
+     * @param publicModel 公开模型名 A
+     * @return 上游模型名 B（未映射返回 A）
+     */
+    public String applyModelMapping(String publicModel) {
+        if (modelMapping == null || modelMapping.isBlank()) {
+            return publicModel;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                    .readTree(modelMapping)
+                    .path(publicModel);
+            if (node.isTextual() && !node.asText().isBlank()) {
+                return node.asText();
+            }
+        } catch (Exception ignored) {
+        }
+        return publicModel;
+    }
+
+    /**
+     * 记录测试结果（充血行为）。
+     *
+     * @param responseTimeMs 响应时间（毫秒）
+     */
+    public void recordTestResult(int responseTimeMs) {
+        this.responseTime = responseTimeMs;
+        this.testTime = Instant.now().getEpochSecond();
+        touch();
+    }
+
+    /**
+     * 更新余额（充血行为）。
+     *
+     * @param delta 余额变化量（可正可负）
+     */
+    public void updateBalance(java.math.BigDecimal delta) {
+        if (delta == null) {
+            return;
+        }
+        this.balance = (this.balance == null ? java.math.BigDecimal.ZERO : this.balance).add(delta);
+        touch();
     }
 
     /**
@@ -394,6 +506,51 @@ public class Account {
     /** @return 账号级售价倍率（>=0，默认 1.0） */
     public java.math.BigDecimal rateMultiplier() {
         return rateMultiplier;
+    }
+
+    /** @return 模型映射 JSON（可空） */
+    public String modelMapping() {
+        return modelMapping;
+    }
+
+    /** @return 路由权重（>=0） */
+    public int weight() {
+        return weight;
+    }
+
+    /** @return 标签（可空） */
+    public String tag() {
+        return tag;
+    }
+
+    /** @return 自动封禁标志 */
+    public boolean autoBan() {
+        return autoBan;
+    }
+
+    /** @return 上次测试响应时间（毫秒，可空） */
+    public Integer responseTime() {
+        return responseTime;
+    }
+
+    /** @return 上次测试时间 epoch 秒（可空） */
+    public Long testTime() {
+        return testTime;
+    }
+
+    /** @return 账户余额 USD（可空） */
+    public java.math.BigDecimal balance() {
+        return balance;
+    }
+
+    /** @return 已用配额（可空） */
+    public java.math.BigDecimal usedQuota() {
+        return usedQuota;
+    }
+
+    /** @return 支持的模型列表（逗号分隔，可空） */
+    public String models() {
+        return models;
     }
 
     /** @return 所属分组关联集合（只读副本） */

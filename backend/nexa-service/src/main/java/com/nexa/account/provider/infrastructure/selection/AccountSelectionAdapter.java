@@ -94,7 +94,9 @@ public class AccountSelectionAdapter implements AccountSelectionPort {
     }
 
     private SelectedAccount toSelected(Account a) {
-        return new SelectedAccount(a.id(), a.credentials(), a.baseUrl(), a.platform(), a.rateMultiplier());
+        return new SelectedAccount(
+                a.id(), a.credentials(), a.baseUrl(), a.platform(), a.rateMultiplier(),
+                a.modelMapping(), a.models(), a.tag(), a.weight());
     }
 
     private long now() {
