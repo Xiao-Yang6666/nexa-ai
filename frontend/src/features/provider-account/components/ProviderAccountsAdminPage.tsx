@@ -78,6 +78,42 @@ const PLATFORM_OPTIONS = [
   { value: 'custom', label: '自定义 (OpenAI 兼容)' },
 ];
 
+/* ── 模型重定向 A→B 可视化行 ── */
+interface MapRow {
+  a: string; // 对外模型名
+  b: string; // 上游真实模型名
+}
+
+/**
+ * 把 model_mapping JSON 串解析成可视化行。
+ * 解析成功返回行数组；非法 JSON / 非对象返回 null（调用方回退到原始文本编辑）。
+ */
+function parseMapping(json: string): MapRow[] | null {
+  const s = json.trim();
+  if (!s) return [];
+  try {
+    const obj = JSON.parse(s);
+    if (obj == null || typeof obj !== 'object' || Array.isArray(obj)) return null;
+    return Object.entries(obj as Record<string, unknown>).map(([a, b]) => ({
+      a,
+      b: typeof b === 'string' ? b : String(b ?? ''),
+    }));
+  } catch {
+    return null;
+  }
+}
+
+/** 把可视化行序列化回 model_mapping JSON 串（仅纳入 A、B 均非空的行；空映射返回 ''）。 */
+function serializeMapping(rows: MapRow[]): string {
+  const obj: Record<string, string> = {};
+  for (const { a, b } of rows) {
+    const ka = a.trim();
+    const vb = b.trim();
+    if (ka && vb) obj[ka] = vb;
+  }
+  return Object.keys(obj).length === 0 ? '' : JSON.stringify(obj);
+}
+
 const PAGE_SIZE = 20;
 
 /**
@@ -104,6 +140,11 @@ export function ProviderAccountsAdminPage() {
   // 模型探测：候选列表 + 错误
   const [probeErr, setProbeErr] = useState<string | null>(null);
   const [probeResult, setProbeResult] = useState<string[] | null>(null);
+
+  // 模型重定向 A→B 可视化编辑：mapRows 为 UI 真相源；mappingRaw=true 时
+  // 表示 modelMapping 是无法结构化解析的遗留 JSON，回退到原始文本编辑避免丢数据。
+  const [mapRows, setMapRows] = useState<MapRow[]>([]);
+  const [mappingRaw, setMappingRaw] = useState(false);
 
   /* ── 数据（真实接口） ── */
   const { data, isLoading, isError, error } = useAccounts({
@@ -141,6 +182,10 @@ export function ProviderAccountsAdminPage() {
     setProbeResult(null);
     if (mode === 'edit' && row) {
       setEditId(row.id);
+      const mm = row.modelMapping || '';
+      const parsed = parseMapping(mm);
+      setMapRows(parsed ?? []);
+      setMappingRaw(parsed === null);
       setForm({
         name: row.name,
         platform: row.platform,
@@ -151,12 +196,14 @@ export function ProviderAccountsAdminPage() {
         weight: String(row.weight || 0),
         tag: row.tag || '',
         models: row.models || '',
-        modelMapping: row.modelMapping || '',
+        modelMapping: mm,
         autoBan: row.autoBan,
         autoPause: row.autoPause,
       });
     } else {
       setEditId(null);
+      setMapRows([]);
+      setMappingRaw(false);
       setForm(INIT_FORM);
     }
     setDrawerOpen(true);
@@ -271,6 +318,38 @@ export function ProviderAccountsAdminPage() {
   function selectAllProbed() {
     if (!probeResult || probeResult.length === 0) return;
     setForm((f) => ({ ...f, models: probeResult.join(',') }));
+  }
+
+  /* ── 模型重定向 A→B 可视化行编辑：每次变更即序列化回 form.modelMapping（单一真相源） ── */
+  function commitMapRows(next: MapRow[]) {
+    setMapRows(next);
+    setForm((f) => ({ ...f, modelMapping: serializeMapping(next) }));
+  }
+  function addMapRow() {
+    commitMapRows([...mapRows, { a: '', b: '' }]);
+  }
+  function updateMapRow(idx: number, key: 'a' | 'b', val: string) {
+    commitMapRows(mapRows.map((r, i) => (i === idx ? { ...r, [key]: val } : r)));
+  }
+  function removeMapRow(idx: number) {
+    commitMapRows(mapRows.filter((_, i) => i !== idx));
+  }
+  /** 从「支持模型 A」列表一键预填映射行（A=B 占位，运营再改 B），跳过已存在的 A。 */
+  function prefillMapFromModels() {
+    const existing = new Set(mapRows.map((r) => r.a.trim()));
+    const aList = form.models
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && !existing.has(s));
+    if (aList.length === 0) return;
+    commitMapRows([...mapRows, ...aList.map((a) => ({ a, b: a }))]);
+  }
+  /** 从遗留 JSON 文本切回可视化编辑（解析成功才切，失败保持原文本态）。 */
+  function switchToVisualMapping() {
+    const parsed = parseMapping(form.modelMapping);
+    if (parsed === null) return;
+    setMapRows(parsed);
+    setMappingRaw(false);
   }
 
   const colSpan = 10;
@@ -607,16 +686,82 @@ export function ProviderAccountsAdminPage() {
             )}
           </div>
           <div>
-            <label className="field-label">模型映射（可选）</label>
-            <textarea
-              className={`input ${styles.taArea} ${styles.cellmono}`}
-              placeholder={'{"gpt-4":"gpt-4-turbo"}'}
-              value={form.modelMapping}
-              onChange={(e) => setForm((f) => ({ ...f, modelMapping: e.target.value }))}
-            />
-            <div className="field-hint">
-              JSON 格式，把对外模型名映射到上游真实模型名；未映射的保持原名。
+            <div className={styles.modelsLabelRow}>
+              <label className="field-label" style={{ margin: 0 }}>
+                模型重定向 A→B（可选）
+              </label>
+              {!mappingRaw && (
+                <button type="button" className={styles.probeBtn} onClick={prefillMapFromModels}>
+                  ＋ 从支持模型预填
+                </button>
+              )}
             </div>
+
+            {mappingRaw ? (
+              /* 遗留非结构化 JSON：保留原始文本编辑，避免丢运营已填数据；可一键切回可视化。 */
+              <>
+                <textarea
+                  className={`input ${styles.taArea} ${styles.cellmono}`}
+                  placeholder={'{"gpt-4":"gpt-4-turbo"}'}
+                  value={form.modelMapping}
+                  onChange={(e) => setForm((f) => ({ ...f, modelMapping: e.target.value }))}
+                />
+                <div className="field-hint">
+                  当前为原始 JSON 格式（无法结构化解析）。
+                  <button
+                    type="button"
+                    className={styles.linkBtn}
+                    onClick={switchToVisualMapping}
+                  >
+                    转为可视化编辑
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {mapRows.length > 0 && (
+                  <div className={styles.mapTable}>
+                    <div className={styles.mapHeadRow}>
+                      <span>对外模型名 (A)</span>
+                      <span />
+                      <span>上游真实名 (B)</span>
+                      <span />
+                    </div>
+                    {mapRows.map((r, idx) => (
+                      <div className={styles.mapRow} key={idx}>
+                        <input
+                          className={`input ${styles.cellmono}`}
+                          placeholder="gpt-4"
+                          value={r.a}
+                          onChange={(e) => updateMapRow(idx, 'a', e.target.value)}
+                        />
+                        <span className={styles.mapArrow}>→</span>
+                        <input
+                          className={`input ${styles.cellmono}`}
+                          placeholder="gpt-4-turbo"
+                          value={r.b}
+                          onChange={(e) => updateMapRow(idx, 'b', e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className={styles.mapDelBtn}
+                          onClick={() => removeMapRow(idx)}
+                          aria-label="删除此映射"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className={styles.mapAddBtn} onClick={addMapRow}>
+                  ＋ 添加映射
+                </button>
+                <div className="field-hint">
+                  把对外模型名 (A) 重定向到上游真实模型名 (B)；未配置的模型保持原名转发。
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── 高级选项 ── */}

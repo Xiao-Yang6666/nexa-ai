@@ -352,6 +352,71 @@
   color: var(--color-primary-600);
 }
 
+/* ── 模型重定向 A→B 可视化表格 ── */
+.mapTable {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.mapHeadRow {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr 28px;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  padding: 0 2px;
+}
+.mapRow {
+  display: grid;
+  grid-template-columns: 1fr 24px 1fr 28px;
+  gap: 8px;
+  align-items: center;
+}
+.mapArrow {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+.mapDelBtn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.mapDelBtn:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+.mapAddBtn {
+  padding: 5px 12px;
+  font-size: var(--text-body-sm);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.mapAddBtn:hover {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-600);
+}
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  color: var(--color-primary-600);
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
 @media (max-width: 560px) {
   .srch {
     min-width: 140px;
