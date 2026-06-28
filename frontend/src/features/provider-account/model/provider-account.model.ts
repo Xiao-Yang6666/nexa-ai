@@ -57,6 +57,8 @@ export interface AccountRowVM {
   updatedAt: string;
   /** 所属分组数 */
   groupCount: number;
+  /** 所属分组名列表（用于分组列展示 + 分组筛选） */
+  groupNames: string[];
 }
 
 function fmtTime(ts: number | undefined | null): string {
@@ -87,6 +89,7 @@ export function toAccountRowVM(view: AccountView): AccountRowVM {
     autoPause: view.auto_pause_on_expired ?? true,
     updatedAt: fmtTime(view.updated_time),
     groupCount: view.groups?.length ?? 0,
+    groupNames: (view.groups ?? []).map((g) => g.group).filter((g) => !!g),
   };
 }
 

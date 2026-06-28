@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { ApiError } from '@/shared/api';
@@ -14,6 +14,12 @@ import {
   type AccountStatus,
   type AccountRowVM,
 } from '../model/provider-account.model';
+import {
+  useChannelModelCosts,
+  useBatchUpsertChannelModelCosts,
+  useDeleteChannelModelCost,
+  type ChannelModelCostWriteRequest,
+} from '../model/channel-model-cost.model';
 import styles from './ProviderAccountsAdminPage.module.css';
 
 const ST_MAP: Record<AccountStatus, { cls: string; tone: string; lab: string }> = {
@@ -114,6 +120,18 @@ function serializeMapping(rows: MapRow[]): string {
   return Object.keys(obj).length === 0 ? '' : JSON.stringify(obj);
 }
 
+/* ── 每模型成本倍率编辑行 ── */
+interface CostRow {
+  /** 上游真实模型名 B（成本表唯一键的一部分，转发按 B 查成本） */
+  model: string;
+  /** 输入成本倍率文本（受控输入，保存时 parse） */
+  cost: string;
+  /** 输出成本倍率文本（空/0=回落 cost×现网 completion_ratio） */
+  completion: string;
+  /** 是否启用该成本行 */
+  enabled: boolean;
+}
+
 const PAGE_SIZE = 20;
 
 /**
@@ -126,6 +144,7 @@ export function ProviderAccountsAdminPage() {
   const [fPlatform, setFPlatform] = useState('');
   const [fStatus, setFStatus] = useState('');
   const [fSearch, setFSearch] = useState('');
+  const [fGroup, setFGroup] = useState('');
 
   // 分页
   const [page, setPage] = useState(1);
@@ -146,6 +165,20 @@ export function ProviderAccountsAdminPage() {
   const [mapRows, setMapRows] = useState<MapRow[]>([]);
   const [mappingRaw, setMappingRaw] = useState(false);
 
+  // 每模型成本倍率编辑（仅编辑态可用，channel_id=account.id）。costRows 为 UI 真相源，
+  // 打开抽屉时由 useChannelModelCosts 拉到的真实成本行填充；保存时整批 upsert + 删除被移除的行。
+  const [costRows, setCostRows] = useState<CostRow[]>([]);
+  // 记录抽屉打开时已存在的成本行 id（按 upstream_model 索引），用于保存时算出被删除的行。
+  const [costBaseline, setCostBaseline] = useState<Record<string, number>>({});
+
+  // 批量设成本面板：对当前筛选结果的所有账号，按指定模型 B + 倍率批量 upsert。
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchModel, setBatchModel] = useState('');
+  const [batchCost, setBatchCost] = useState('');
+  const [batchCompletion, setBatchCompletion] = useState('');
+  const [batchErr, setBatchErr] = useState<string | null>(null);
+  const [batchDone, setBatchDone] = useState<number | null>(null);
+
   /* ── 数据（真实接口） ── */
   const { data, isLoading, isError, error } = useAccounts({
     page,
@@ -162,17 +195,46 @@ export function ProviderAccountsAdminPage() {
   const toggleMutation = useToggleAccount();
   const probeMutation = useProbeModels();
 
-  /* ── 客户端过滤（status/search 在当前页过滤；platform 已下推后端） ── */
+  // 成本倍率：编辑态拉该账号现有成本行（填充 costRows）；保存时批量 upsert + 删除被移除行。
+  const costAccountId = drawerOpen && drawerMode === 'edit' ? editId : null;
+  const { data: costData } = useChannelModelCosts(costAccountId);
+  const batchCostMutation = useBatchUpsertChannelModelCosts();
+  const deleteCostMutation = useDeleteChannelModelCost();
+
+  // 成本行拉到后填充 costRows + 记录 baseline（用于保存时算删除）。
+  useEffect(() => {
+    if (!costData) return;
+    const rows: CostRow[] = costData.rows.map((c) => ({
+      model: c.upstream_model,
+      cost: c.cost_ratio != null ? String(c.cost_ratio) : '',
+      completion: c.completion_cost_ratio != null ? String(c.completion_cost_ratio) : '',
+      enabled: c.enabled ?? true,
+    }));
+    const baseline: Record<string, number> = {};
+    for (const c of costData.rows) baseline[c.upstream_model] = c.id;
+    setCostRows(rows);
+    setCostBaseline(baseline);
+  }, [costData]);
+
+  /* ── 客户端过滤（status/search/group 在当前页过滤；platform 已下推后端） ── */
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       if (fStatus && r.st !== fStatus) return false;
+      if (fGroup && !r.groupNames.includes(fGroup)) return false;
       if (fSearch) {
         const q = fSearch.toLowerCase();
         if (!r.name.toLowerCase().includes(q) && !String(r.id).includes(q)) return false;
       }
       return true;
     });
-  }, [rows, fStatus, fSearch]);
+  }, [rows, fStatus, fSearch, fGroup]);
+
+  /* ── 分组筛选选项：从当前页账号的分组名汇总去重 ── */
+  const groupOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) for (const g of r.groupNames) set.add(g);
+    return Array.from(set).sort();
+  }, [rows]);
 
   /* ── 抽屉 ── */
   function openDrawer(mode: 'new' | 'edit', row?: AccountRowVM) {
@@ -186,6 +248,9 @@ export function ProviderAccountsAdminPage() {
       const parsed = parseMapping(mm);
       setMapRows(parsed ?? []);
       setMappingRaw(parsed === null);
+      // 成本行由 useChannelModelCosts → useEffect 异步填充；先清空避免串号显示上一个账号的成本。
+      setCostRows([]);
+      setCostBaseline({});
       setForm({
         name: row.name,
         platform: row.platform,
@@ -204,6 +269,8 @@ export function ProviderAccountsAdminPage() {
       setEditId(null);
       setMapRows([]);
       setMappingRaw(false);
+      setCostRows([]);
+      setCostBaseline({});
       setForm(INIT_FORM);
     }
     setDrawerOpen(true);
@@ -255,10 +322,93 @@ export function ProviderAccountsAdminPage() {
           id: editId,
           req: { ...base, credentials },
         });
+        // 账号保存成功后同步成本行（仅编辑态，channel_id=account.id）。
+        await syncCostRows(editId);
       }
       setDrawerOpen(false);
     } catch (e) {
       setSaveErr(e instanceof ApiError ? e.message : '保存失败，请稍后重试');
+    }
+  }
+
+  /**
+   * 把 costRows 同步到后端（编辑态）：
+   * - 有效行（model 非空 + cost 可解析为非负数）整批 upsert；
+   * - baseline 中存在、但当前 costRows 已移除的 model，逐条 delete（删后视为缺失记 0+告警）。
+   * channel_id 取 accountId（= account.id）。
+   */
+  async function syncCostRows(accountId: number) {
+    const valid = costRows.filter((r) => r.model.trim() !== '');
+    const currentModels = new Set(valid.map((r) => r.model.trim()));
+
+    const items: ChannelModelCostWriteRequest[] = [];
+    for (const r of valid) {
+      const cost = r.cost.trim() === '' ? undefined : Number(r.cost);
+      const completion = r.completion.trim() === '' ? undefined : Number(r.completion);
+      if (cost != null && (Number.isNaN(cost) || cost < 0)) continue;
+      if (completion != null && (Number.isNaN(completion) || completion < 0)) continue;
+      items.push({
+        channel_id: accountId,
+        upstream_model: r.model.trim(),
+        cost_ratio: cost,
+        completion_cost_ratio: completion,
+        enabled: r.enabled,
+      });
+    }
+    if (items.length > 0) {
+      await batchCostMutation.mutateAsync(items);
+    }
+    // 删除被移除的成本行。
+    const removed = Object.entries(costBaseline).filter(([m]) => !currentModels.has(m));
+    for (const [, id] of removed) {
+      await deleteCostMutation.mutateAsync(id);
+    }
+  }
+
+  /* ── 批量设成本：对当前筛选结果的所有账号，按指定模型 B + 倍率整批 upsert ── */
+  function openBatch() {
+    setBatchModel('');
+    setBatchCost('');
+    setBatchCompletion('');
+    setBatchErr(null);
+    setBatchDone(null);
+    setBatchOpen(true);
+  }
+  async function handleBatchApply() {
+    setBatchErr(null);
+    setBatchDone(null);
+    const model = batchModel.trim();
+    if (!model) {
+      setBatchErr('请填写上游模型 B');
+      return;
+    }
+    const cost = batchCost.trim() === '' ? undefined : Number(batchCost);
+    const completion = batchCompletion.trim() === '' ? undefined : Number(batchCompletion);
+    if (cost != null && (Number.isNaN(cost) || cost < 0)) {
+      setBatchErr('输入倍率需为非负数');
+      return;
+    }
+    if (completion != null && (Number.isNaN(completion) || completion < 0)) {
+      setBatchErr('输出倍率需为非负数');
+      return;
+    }
+    const targets = filtered.filter((r) => r.id > 0);
+    if (targets.length === 0) {
+      setBatchErr('当前筛选结果无可设置的账号');
+      return;
+    }
+    const items: ChannelModelCostWriteRequest[] = targets.map((r) => ({
+      channel_id: r.id,
+      upstream_model: model,
+      cost_ratio: cost,
+      completion_cost_ratio: completion,
+      enabled: true,
+    }));
+    try {
+      await batchCostMutation.mutateAsync(items);
+      setBatchDone(items.length);
+    } catch (e) {
+      setBatchErr(e instanceof ApiError ? e.message : '批量设置失败，请稍后重试');
     }
   }
 
@@ -352,7 +502,39 @@ export function ProviderAccountsAdminPage() {
     setMappingRaw(false);
   }
 
-  const colSpan = 10;
+  /* ── 每模型成本倍率行编辑 ── */
+  function addCostRow() {
+    setCostRows((rs) => [...rs, { model: '', cost: '', completion: '', enabled: true }]);
+  }
+  function updateCostRow(idx: number, patch: Partial<CostRow>) {
+    setCostRows((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  }
+  function removeCostRow(idx: number) {
+    setCostRows((rs) => rs.filter((_, i) => i !== idx));
+  }
+  /**
+   * 从「模型重定向」的 B 列表（无映射时回落支持模型 A 列表）一键预填成本行，跳过已存在的 model。
+   * 成本按 B 维度计（转发按 B 查成本），故优先取映射后的 B。
+   */
+  function prefillCostFromModels() {
+    const existing = new Set(costRows.map((r) => r.model.trim()));
+    const fromMap = mapRows.map((r) => r.b.trim()).filter((b) => b.length > 0);
+    const fromModels = form.models
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    // 合并去重：映射 B + 支持模型（含未映射、保持原名的）。
+    const candidates = Array.from(new Set([...fromMap, ...fromModels])).filter(
+      (m) => !existing.has(m),
+    );
+    if (candidates.length === 0) return;
+    setCostRows((rs) => [
+      ...rs,
+      ...candidates.map((model) => ({ model, cost: '', completion: '', enabled: true })),
+    ]);
+  }
+
+  const colSpan = 11;
   const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -393,6 +575,18 @@ export function ProviderAccountsAdminPage() {
           <option value="disabled">禁用</option>
           <option value="rate_limited">限流</option>
         </select>
+        <select
+          className={styles.sel}
+          value={fGroup}
+          onChange={(e) => setFGroup(e.target.value)}
+        >
+          <option value="">全部分组</option>
+          {groupOptions.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
         <input
           className={styles.srch}
           type="search"
@@ -401,6 +595,9 @@ export function ProviderAccountsAdminPage() {
           onChange={(e) => setFSearch(e.target.value)}
         />
         <span className={styles.grow} />
+        <Button variant="ghost" size="sm" onClick={openBatch}>
+          批量设成本
+        </Button>
       </section>
 
       {/* 表格 */}
@@ -416,6 +613,7 @@ export function ProviderAccountsAdminPage() {
                 <th>并发</th>
                 <th>优先级</th>
                 <th>权重</th>
+                <th>分组</th>
                 <th>标签</th>
                 <th>过期</th>
                 <th>操作</th>
@@ -452,6 +650,22 @@ export function ProviderAccountsAdminPage() {
                     <td className={styles.cellmono}>{r.concurrency}</td>
                     <td className={styles.cellmono}>{r.priority}</td>
                     <td className={styles.cellmono}>{r.weight || 0}</td>
+                    <td>
+                      {r.groupNames.length === 0 ? (
+                        <span className="muted">-</span>
+                      ) : (
+                        <span className={styles.groupChips}>
+                          {r.groupNames.slice(0, 2).map((g) => (
+                            <span key={g} className={styles.groupChip}>
+                              {g}
+                            </span>
+                          ))}
+                          {r.groupNames.length > 2 && (
+                            <span className={styles.groupMore}>+{r.groupNames.length - 2}</span>
+                          )}
+                        </span>
+                      )}
+                    </td>
                     <td className={`${styles.cellmono} muted`}>{r.tag || '-'}</td>
                     <td className={`${styles.cellmono} muted`}>{r.exp}</td>
                     <td>
@@ -764,6 +978,89 @@ export function ProviderAccountsAdminPage() {
             )}
           </div>
 
+          {/* ── 每模型成本倍率（仅编辑态：channel_id=account.id；新建态先存账号再配） ── */}
+          <div>
+            <div className={styles.modelsLabelRow}>
+              <label className="field-label" style={{ margin: 0 }}>
+                成本倍率（按上游模型 B）
+              </label>
+              {drawerMode === 'edit' && (
+                <button type="button" className={styles.probeBtn} onClick={prefillCostFromModels}>
+                  ＋ 从模型预填
+                </button>
+              )}
+            </div>
+
+            {drawerMode === 'new' ? (
+              <div className="field-hint">先保存账号后，重新打开编辑即可按上游模型配置成本倍率。</div>
+            ) : (
+              <>
+                {costRows.length > 0 && (
+                  <div className={styles.costTable}>
+                    <div className={styles.costHeadRow}>
+                      <span>上游模型 (B)</span>
+                      <span>输入倍率</span>
+                      <span>输出倍率</span>
+                      <span>启用</span>
+                      <span />
+                    </div>
+                    {costRows.map((r, idx) => (
+                      <div className={styles.costRow} key={idx}>
+                        <input
+                          className={`input ${styles.cellmono}`}
+                          placeholder="gpt-4-turbo"
+                          value={r.model}
+                          onChange={(e) => updateCostRow(idx, { model: e.target.value })}
+                        />
+                        <input
+                          className="input"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="1.0"
+                          value={r.cost}
+                          onChange={(e) => updateCostRow(idx, { cost: e.target.value })}
+                        />
+                        <input
+                          className="input"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0=回落"
+                          value={r.completion}
+                          onChange={(e) => updateCostRow(idx, { completion: e.target.value })}
+                        />
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={r.enabled}
+                            onChange={(e) => updateCostRow(idx, { enabled: e.target.checked })}
+                          />
+                          <span className="track" />
+                          <span className="thumb" />
+                        </label>
+                        <button
+                          type="button"
+                          className={styles.mapDelBtn}
+                          onClick={() => removeCostRow(idx)}
+                          aria-label="删除此成本行"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className={styles.mapAddBtn} onClick={addCostRow}>
+                  ＋ 添加成本行
+                </button>
+                <div className="field-hint">
+                  成本按上游真实模型 B 计（转发按 B 查成本）；输出倍率留空或 0 时回落「输入倍率×现网补全比」。
+                </div>
+              </>
+            )}
+          </div>
+
           {/* ── 高级选项 ── */}
           <div className={styles.sectionTitle}>高级选项</div>
           <div className={styles.swRow}>
@@ -813,6 +1110,98 @@ export function ProviderAccountsAdminPage() {
           </Button>
         </div>
       </aside>
+
+      {/* 批量设成本面板（中央模态） */}
+      {batchOpen && (
+        <div className={styles.modalScrim} onClick={() => setBatchOpen(false)}>
+          <div
+            className={styles.modalCard}
+            role="dialog"
+            aria-label="批量设成本"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.drawerHead}>
+              <h2 className={styles.drawerTitle}>批量设成本倍率</h2>
+              <button
+                className={styles.drawerX}
+                onClick={() => setBatchOpen(false)}
+                aria-label="关闭"
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className="field-hint" style={{ marginBottom: 'var(--space-3)' }}>
+                将对<b>当前筛选结果的 {filtered.filter((r) => r.id > 0).length} 个账号</b>
+                按下方模型与倍率批量 upsert（同模型已有则覆盖）。
+              </div>
+              <div>
+                <label className="field-label">上游模型 B</label>
+                <input
+                  className={`input ${styles.cellmono}`}
+                  placeholder="gpt-4-turbo"
+                  value={batchModel}
+                  onChange={(e) => setBatchModel(e.target.value)}
+                />
+              </div>
+              <div className={styles.row2} style={{ marginTop: 'var(--space-3)' }}>
+                <div>
+                  <label className="field-label">输入倍率</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="1.0"
+                    value={batchCost}
+                    onChange={(e) => setBatchCost(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="field-label">输出倍率</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0=回落"
+                    value={batchCompletion}
+                    onChange={(e) => setBatchCompletion(e.target.value)}
+                  />
+                </div>
+              </div>
+              {batchErr && (
+                <div
+                  className="field-hint"
+                  style={{ marginTop: 'var(--space-3)', color: 'var(--color-danger)' }}
+                >
+                  {batchErr}
+                </div>
+              )}
+              {batchDone != null && (
+                <div
+                  className="field-hint"
+                  style={{ marginTop: 'var(--space-3)', color: 'var(--color-success)' }}
+                >
+                  已对 {batchDone} 个账号设置成功。
+                </div>
+              )}
+            </div>
+            <div className={styles.drawerFoot}>
+              <Button variant="ghost" onClick={() => setBatchOpen(false)}>
+                关闭
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleBatchApply}
+                disabled={batchCostMutation.isPending}
+              >
+                {batchCostMutation.isPending ? '设置中…' : '批量应用'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

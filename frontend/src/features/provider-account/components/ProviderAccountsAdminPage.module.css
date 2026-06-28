@@ -417,6 +417,77 @@
   text-decoration: underline;
 }
 
+/* ── 每模型成本倍率表格 ── */
+.costTable {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.costHeadRow {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 44px 28px;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  padding: 0 2px;
+}
+.costRow {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 44px 28px;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── 分组列 chip ── */
+.groupChips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.groupChip {
+  padding: 1px 8px;
+  font-size: var(--text-body-sm);
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+.groupMore {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+}
+
+/* ── 批量设成本中央模态 ── */
+.modalScrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-4);
+}
+.modalCard {
+  width: 100%;
+  max-width: 460px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: var(--shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.25));
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+.modalBody {
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
 @media (max-width: 560px) {
   .srch {
     min-width: 140px;
