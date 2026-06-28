@@ -116,9 +116,10 @@ class AccountControllerMvcTest {
     @BeforeEach
     void setUp() {
         AccountRepository repo = new InMemoryAccountRepository();
-        // 探测端口桩：本测聚焦 CRUD/启停链路，探测用例注入一个不发网络的桩端口即可。
+        // 探测端口桩：本测聚焦 CRUD/启停链路，探测用例注入不发网络的桩探测端口 + 不落库的桩登记端口即可。
         ProbeProviderModelsUseCase probeUseCase = new ProbeProviderModelsUseCase(
-                (platform, baseUrl, apiKey) -> java.util.List.of());
+                (platform, baseUrl, apiKey) -> java.util.List.of(),
+                names -> 0);
         AccountController controller = new AccountController(
                 new ListAccountsUseCase(repo),
                 new GetAccountUseCase(repo),
