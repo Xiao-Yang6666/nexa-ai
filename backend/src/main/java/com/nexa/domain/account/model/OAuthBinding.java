@@ -17,7 +17,7 @@ import java.util.Objects;
  *
  * <p>充血而非贫血（backend-engineer §2.2）：绑定的不变量（user/provider/providerUserId 必非空、
  * 绑定归属校验）在本实体方法上守护，应用层只编排。本类零框架依赖（不 import JPA/Spring），
- * 与 JPA 实体 {@code UserOAuthBindingJpaEntity} 分离，可纯单测。</p>
+ * 与 JPA 实体 {@code UserOAuthBindingPO} 分离，可纯单测。</p>
  *
  * <p>不变量：
  * <ul>

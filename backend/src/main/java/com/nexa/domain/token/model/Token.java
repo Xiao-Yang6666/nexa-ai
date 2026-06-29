@@ -19,7 +19,7 @@ import java.util.Objects;
  * 令牌限界上下文的一致性边界，所有不变量与状态迁移在聚合方法上守护（backend-engineer §2.2 充血、
  * §2.4 战术完整）。</p>
  *
- * <p>零框架依赖（不 import JPA/Spring/Jackson），与 JPA 实体 {@code TokenJpaEntity} 分离，可纯单测。
+ * <p>零框架依赖（不 import JPA/Spring/Jackson），与 JPA 实体 {@code TokenPO} 分离，可纯单测。
  * 字段对齐 DB-SCHEMA §2 tokens 表 + openapi TokenUserVO/TokenCreateRequest。</p>
  *
  * <p>不变量：

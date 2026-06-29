@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.routing.persistence;
 
-import com.nexa.infrastructure.routing.persistence.entity.AffinityCacheJpaEntity;
+import com.nexa.infrastructure.routing.persistence.po.AffinityCachePO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,7 +16,7 @@ import java.util.Optional;
  * {@link com.nexa.domain.routing.repository.AffinityCacheRepository}。</p>
  */
 @Repository
-public interface SpringDataAffinityCacheJpaRepository extends JpaRepository<AffinityCacheJpaEntity, Long> {
+public interface SpringDataAffinityCacheJpaRepository extends JpaRepository<AffinityCachePO, Long> {
 
     /**
      * 按三元组（rule_name, key_fingerprint, using_group）查找一条缓存。
@@ -28,9 +28,9 @@ public interface SpringDataAffinityCacheJpaRepository extends JpaRepository<Affi
      * @param usingGroup     使用分组（可空）
      * @return 命中返回实体，否则空
      */
-    @Query("SELECT c FROM AffinityCacheJpaEntity c WHERE c.ruleName = :rule AND c.keyFingerprint = :fp "
+    @Query("SELECT c FROM AffinityCachePO c WHERE c.ruleName = :rule AND c.keyFingerprint = :fp "
             + "AND ((:grp IS NULL AND c.usingGroup IS NULL) OR c.usingGroup = :grp)")
-    Optional<AffinityCacheJpaEntity> findByTriplet(@Param("rule") String ruleName,
+    Optional<AffinityCachePO> findByTriplet(@Param("rule") String ruleName,
                                                    @Param("fp") String keyFingerprint,
                                                    @Param("grp") String usingGroup);
 
@@ -40,7 +40,7 @@ public interface SpringDataAffinityCacheJpaRepository extends JpaRepository<Affi
      * @return 删除条数
      */
     @Modifying
-    @Query("DELETE FROM AffinityCacheJpaEntity c")
+    @Query("DELETE FROM AffinityCachePO c")
     int deleteAllEntries();
 
     /**
@@ -50,6 +50,6 @@ public interface SpringDataAffinityCacheJpaRepository extends JpaRepository<Affi
      * @return 删除条数
      */
     @Modifying
-    @Query("DELETE FROM AffinityCacheJpaEntity c WHERE c.ruleName = :rule")
+    @Query("DELETE FROM AffinityCachePO c WHERE c.ruleName = :rule")
     int deleteByRuleName(@Param("rule") String ruleName);
 }

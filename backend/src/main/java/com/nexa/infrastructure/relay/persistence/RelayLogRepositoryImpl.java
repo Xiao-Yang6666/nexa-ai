@@ -2,7 +2,7 @@ package com.nexa.infrastructure.relay.persistence;
 
 import com.nexa.domain.relay.model.RelayLog;
 import com.nexa.domain.relay.repository.RelayLogRepository;
-import com.nexa.infrastructure.relay.persistence.entity.LogJpaEntity;
+import com.nexa.infrastructure.relay.persistence.po.LogPO;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -23,7 +23,7 @@ public class RelayLogRepositoryImpl implements RelayLogRepository {
 
     @Override
     public void save(RelayLog log) {
-        LogJpaEntity e = new LogJpaEntity();
+        LogPO e = new LogPO();
         e.setUserId(toInt(log.userId()));
         e.setCreatedAt(log.createdAt());
         e.setType(log.type() == null ? 0 : log.type().code());
@@ -53,7 +53,7 @@ public class RelayLogRepositoryImpl implements RelayLogRepository {
         e.setQuotaSell(log.quotaSell());
         e.setQuotaCost(log.quotaCost());
         e.setQuotaProfit(log.quotaProfit());
-        LogJpaEntity saved = jpa.save(e);
+        LogPO saved = jpa.save(e);
         log.assignId(saved.getId());
     }
 

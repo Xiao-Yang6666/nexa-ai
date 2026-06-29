@@ -2,7 +2,7 @@ package com.nexa.infrastructure.ops.persistence;
 
 import com.nexa.domain.ops.setup.SetupMarker;
 import com.nexa.domain.ops.setup.SetupRepository;
-import com.nexa.infrastructure.ops.persistence.entity.SetupJpaEntity;
+import com.nexa.infrastructure.ops.persistence.po.SetupPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +50,7 @@ public class SetupRepositoryImpl implements SetupRepository {
             return false;
         }
         try {
-            jpa.save(new SetupJpaEntity(marker.id(), marker.version(), marker.initializedAt()));
+            jpa.save(new SetupPO(marker.id(), marker.version(), marker.initializedAt()));
             return true;
         } catch (DataIntegrityViolationException e) {
             // 并发竞态：两个请求同时通过 existsById 检查后抢插，DB 主键唯一约束让其一失败。
@@ -59,7 +59,7 @@ public class SetupRepositoryImpl implements SetupRepository {
         }
     }
 
-    private SetupMarker toDomain(SetupJpaEntity e) {
+    private SetupMarker toDomain(SetupPO e) {
         return SetupMarker.rehydrate(
                 e.getId(),
                 e.getVersion(),

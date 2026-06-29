@@ -5,7 +5,7 @@ import com.nexa.shared.persistence.PageQueries;
 import com.nexa.domain.model.model.PublicModel;
 import com.nexa.domain.model.repository.PublicModelRepository;
 import com.nexa.domain.model.vo.Pagination;
-import com.nexa.infrastructure.model.persistence.entity.PublicModelJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.PublicModelPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * 领域仓储 {@link PublicModelRepository} 的 JPA 实现（基础设施层适配器，F-6001/F-6004）。
  *
  * <p>DDD 依赖倒置落地：domain 定接口，本类用 {@link SpringDataPublicModelJpaRepository} + 实体↔领域映射实现。
- * 领域聚合 {@link PublicModel} 与 {@link PublicModelJpaEntity} 分离（domain 不感知 Hibernate）。
+ * 领域聚合 {@link PublicModel} 与 {@link PublicModelPO} 分离（domain 不感知 Hibernate）。
  * 软删除用 deleted_at。</p>
  */
 @Repository
@@ -34,7 +34,7 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
     /** {@inheritDoc} */
     @Override
     public PublicModel save(PublicModel model) {
-        PublicModelJpaEntity saved = jpa.save(toEntity(model));
+        PublicModelPO saved = jpa.save(toEntity(model));
         model.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -58,7 +58,7 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
     @Override
     public List<PublicModel> findPage(Pagination pagination, boolean enabledOnly) {
         Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
-        List<PublicModelJpaEntity> rows = enabledOnly
+        List<PublicModelPO> rows = enabledOnly
                 ? jpa.findEnabledPageOrdered(pageable)
                 : jpa.findPageOrdered(pageable);
         return rows.stream().map(this::toDomain).toList();
@@ -91,8 +91,8 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
 
     // ---- 领域聚合 <-> JPA 实体映射 ----
 
-    private PublicModelJpaEntity toEntity(PublicModel m) {
-        PublicModelJpaEntity e = new PublicModelJpaEntity();
+    private PublicModelPO toEntity(PublicModel m) {
+        PublicModelPO e = new PublicModelPO();
         e.setId(m.id());
         e.setPublicName(m.publicName());
         e.setBasePriceRatio(m.basePriceRatio());
@@ -107,7 +107,7 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
         return e;
     }
 
-    private PublicModel toDomain(PublicModelJpaEntity e) {
+    private PublicModel toDomain(PublicModelPO e) {
         return PublicModel.builder()
                 .id(e.getId())
                 .publicName(e.getPublicName())

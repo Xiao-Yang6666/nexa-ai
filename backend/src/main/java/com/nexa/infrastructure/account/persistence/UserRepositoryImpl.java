@@ -9,7 +9,7 @@ import com.nexa.domain.account.vo.Email;
 import com.nexa.domain.account.vo.Role;
 import com.nexa.domain.account.vo.UserStatus;
 import com.nexa.domain.account.vo.Username;
-import com.nexa.infrastructure.account.persistence.entity.UserJpaEntity;
+import com.nexa.infrastructure.account.persistence.po.UserPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,7 +24,7 @@ import java.util.Optional;
  *
  * <p>DDD 依赖倒置落地：domain 定义 {@code UserRepository} 接口，本类用
  * {@link SpringDataUserJpaRepository} + 聚合↔实体映射实现它（backend-engineer §2.3）。
- * 领域聚合 {@link User} 与 JPA 实体 {@link UserJpaEntity} 分离，映射集中在此处，
+ * 领域聚合 {@link User} 与 JPA 实体 {@link UserPO} 分离，映射集中在此处，
  * domain 因此不感知 Hibernate。</p>
  *
  * <p>并发查重兜底：注册并发竞态下 {@code existsByUsername} 可能漏判，最终由 users.username
@@ -74,9 +74,9 @@ public class UserRepositoryImpl implements UserRepository {
      */
     @Override
     public User save(User user) {
-        UserJpaEntity entity = toEntity(user);
+        UserPO entity = toEntity(user);
         try {
-            UserJpaEntity saved = jpa.saveAndFlush(entity);
+            UserPO saved = jpa.saveAndFlush(entity);
             // 保存后把数据库生成的 id 回填回聚合，供注册用例发事件 / 接口层回显。
             user.assignId(saved.getId());
             return toDomain(saved);
@@ -96,7 +96,7 @@ public class UserRepositoryImpl implements UserRepository {
         // 列表/搜索统一按 id 升序，结果稳定可分页（API-ENDPOINTS §1.4）。
         Pageable pageable = PageQueries.of(p, size, Sort.by(Sort.Direction.ASC, "id"));
 
-        org.springframework.data.domain.Page<UserJpaEntity> result;
+        org.springframework.data.domain.Page<UserPO> result;
         if (keyword == null || keyword.isBlank()) {
             result = jpa.findAllBy(pageable);
         } else {
@@ -127,8 +127,8 @@ public class UserRepositoryImpl implements UserRepository {
      * @param user 用户聚合
      * @return 待持久化的 JPA 实体
      */
-    private static UserJpaEntity toEntity(User user) {
-        UserJpaEntity e = new UserJpaEntity();
+    private static UserPO toEntity(User user) {
+        UserPO e = new UserPO();
         e.setId(user.id());
         e.setUsername(user.username().value());
         e.setPassword(user.passwordHash());
@@ -161,7 +161,7 @@ public class UserRepositoryImpl implements UserRepository {
      * @param e JPA 实体
      * @return 重建的用户聚合
      */
-    private static User toDomain(UserJpaEntity e) {
+    private static User toDomain(UserPO e) {
         Email email = (e.getEmail() == null || e.getEmail().isBlank())
                 ? null
                 : Email.of(e.getEmail());

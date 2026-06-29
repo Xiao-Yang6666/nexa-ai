@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.account.persistence;
 
-import com.nexa.infrastructure.account.persistence.entity.UserOAuthBindingJpaEntity;
+import com.nexa.infrastructure.account.persistence.po.UserOAuthBindingPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.Optional;
  * {@code domain.repository.OAuthBindingRepository}。派生查询对齐复合唯一约束
  * {@code ux_provider_userid (provider, provider_user_id)} 与 {@code ux_user_provider (user_id, provider)}。</p>
  */
-interface SpringDataOAuthBindingJpaRepository extends JpaRepository<UserOAuthBindingJpaEntity, Long> {
+interface SpringDataOAuthBindingJpaRepository extends JpaRepository<UserOAuthBindingPO, Long> {
 
     /**
      * 按 (provider, providerUserId) 反查绑定（OAuth 登录核心查询）。
@@ -22,7 +22,7 @@ interface SpringDataOAuthBindingJpaRepository extends JpaRepository<UserOAuthBin
      * @param providerUserId 第三方账号 id
      * @return 命中实体，否则空（复合唯一，至多一条）
      */
-    Optional<UserOAuthBindingJpaEntity> findByProviderAndProviderUserId(String provider, String providerUserId);
+    Optional<UserOAuthBindingPO> findByProviderAndProviderUserId(String provider, String providerUserId);
 
     /**
      * 按 (userId, provider) 查绑定（绑定查重 / 解绑定位）。
@@ -31,7 +31,7 @@ interface SpringDataOAuthBindingJpaRepository extends JpaRepository<UserOAuthBin
      * @param provider provider 标识串
      * @return 命中实体，否则空（复合唯一，至多一条）
      */
-    Optional<UserOAuthBindingJpaEntity> findByUserIdAndProvider(Long userId, String provider);
+    Optional<UserOAuthBindingPO> findByUserIdAndProvider(Long userId, String provider);
 
     /**
      * 列出某用户的全部绑定（管理端查询 F-1027 / 本人查询）。
@@ -39,7 +39,7 @@ interface SpringDataOAuthBindingJpaRepository extends JpaRepository<UserOAuthBin
      * @param userId 本站用户 id
      * @return 绑定列表（按建表顺序，可能为空）
      */
-    List<UserOAuthBindingJpaEntity> findByUserId(Long userId);
+    List<UserOAuthBindingPO> findByUserId(Long userId);
 
     /**
      * 按 (userId, providerRefId) 查自定义 provider 绑定（按 provider_id 解绑定位，F-1026/1027）。
@@ -51,5 +51,5 @@ interface SpringDataOAuthBindingJpaRepository extends JpaRepository<UserOAuthBin
      * @param providerRefId 自定义 provider 整数主键
      * @return 命中实体，否则空
      */
-    Optional<UserOAuthBindingJpaEntity> findByUserIdAndProviderRefId(Long userId, Long providerRefId);
+    Optional<UserOAuthBindingPO> findByUserIdAndProviderRefId(Long userId, Long providerRefId);
 }

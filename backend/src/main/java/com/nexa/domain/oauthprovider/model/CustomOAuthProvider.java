@@ -13,7 +13,7 @@ import java.util.Objects;
  * 用户随后可经 {@code /api/oauth/{name}} 走该 provider 登录/绑定（F-1025）。本聚合是 oauthprovider
  * 限界上下文的一致性边界，配置不变量（字段非空/长度/端点合法）在聚合方法上守护（backend-engineer §2.2 充血）。</p>
  *
- * <p>零框架依赖（不 import JPA/Spring），与 JPA 实体 {@code CustomOAuthProviderJpaEntity} 分离，可纯单测。
+ * <p>零框架依赖（不 import JPA/Spring），与 JPA 实体 {@code CustomOAuthProviderPO} 分离，可纯单测。
  * 字段对齐 openapi {@code CustomOAuthProviderVO} + V4 迁移 {@code custom_oauth_providers}。</p>
  *
  * <p>不变量：

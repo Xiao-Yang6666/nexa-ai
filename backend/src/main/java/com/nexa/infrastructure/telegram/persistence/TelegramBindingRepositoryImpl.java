@@ -4,7 +4,7 @@ import com.nexa.domain.telegram.exception.TelegramBindingConflictException;
 import com.nexa.domain.telegram.model.TelegramBinding;
 import com.nexa.domain.telegram.repository.TelegramBindingRepository;
 import com.nexa.domain.telegram.vo.TelegramId;
-import com.nexa.infrastructure.telegram.persistence.entity.TelegramBindingJpaEntity;
+import com.nexa.infrastructure.telegram.persistence.po.TelegramBindingPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +16,7 @@ import java.util.Optional;
  *
  * <p>DDD 依赖倒置落地：domain 定义 {@code TelegramBindingRepository} 接口，本类用
  * {@link SpringDataTelegramBindingJpaRepository} + 实体↔领域映射实现它（backend-engineer §2.3）。
- * 领域实体 {@link TelegramBinding} 与 JPA 实体 {@link TelegramBindingJpaEntity} 分离，映射集中于此，
+ * 领域实体 {@link TelegramBinding} 与 JPA 实体 {@link TelegramBindingPO} 分离，映射集中于此，
  * domain 因此不感知 Hibernate。</p>
  *
  * <p>并发冲突兜底：建绑定并发竞态下，{@code telegram_id} / {@code user_id} 唯一索引在 {@code save}
@@ -56,9 +56,9 @@ public class TelegramBindingRepositoryImpl implements TelegramBindingRepository 
      */
     @Override
     public TelegramBinding save(TelegramBinding binding) {
-        TelegramBindingJpaEntity entity = toEntity(binding);
+        TelegramBindingPO entity = toEntity(binding);
         try {
-            TelegramBindingJpaEntity saved = jpa.saveAndFlush(entity);
+            TelegramBindingPO saved = jpa.saveAndFlush(entity);
             // 保存后把数据库生成的 id 回填回领域实体。
             binding.assignId(saved.getId());
             return toDomain(saved);
@@ -76,8 +76,8 @@ public class TelegramBindingRepositoryImpl implements TelegramBindingRepository 
      * @param binding 领域绑定实体
      * @return 待持久化的 JPA 实体
      */
-    private static TelegramBindingJpaEntity toEntity(TelegramBinding binding) {
-        TelegramBindingJpaEntity e = new TelegramBindingJpaEntity();
+    private static TelegramBindingPO toEntity(TelegramBinding binding) {
+        TelegramBindingPO e = new TelegramBindingPO();
         e.setId(binding.id());
         e.setUserId(binding.userId());
         e.setTelegramId(binding.telegramId().value());
@@ -93,7 +93,7 @@ public class TelegramBindingRepositoryImpl implements TelegramBindingRepository 
      * @param e JPA 实体
      * @return 重建的领域绑定实体
      */
-    private static TelegramBinding toDomain(TelegramBindingJpaEntity e) {
+    private static TelegramBinding toDomain(TelegramBindingPO e) {
         Instant createdAt = e.getCreatedAt() == null
                 ? Instant.now()
                 : Instant.ofEpochSecond(e.getCreatedAt());

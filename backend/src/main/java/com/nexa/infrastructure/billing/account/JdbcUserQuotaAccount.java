@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * <p><b>跨 bounded context 防腐适配器</b>：计费域需给用户余额入账（{@code users.quota += amount}），
  * 但 {@code users} 表归账号域（com.nexa.account）所有。为不反向依赖账号域聚合/JPA 实体，本适配器
  * 用 {@link JdbcTemplate} 直接对 {@code users} 表做<b>原子自增</b>与读取——只触碰 id/quota 两列，
- * 不复用 account 的 {@code UserJpaEntity}（避免 context 耦合，也避免两个 JPA 实体映射同一张表在
+ * 不复用 account 的 {@code UserPO}（避免 context 耦合，也避免两个 JPA 实体映射同一张表在
  * {@code ddl-auto=validate} 下的潜在冲突）。</p>
  *
  * <p>原子性：用 SQL 级 {@code quota = quota + ?} 而非「读-改-写」，杜绝并发充值/兑换的丢更新

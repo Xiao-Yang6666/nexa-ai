@@ -18,7 +18,7 @@ import com.nexa.domain.relay.vo.RelayInfo;
  * 错误日志为 Type=5(Error)（RL-3 re_log，content 经脱敏后写）。</p>
  *
  * <p>{@code modelName} 取值 = {@code requestedModel}(C)，保留现网报表语义（DB-SCHEMA §5 口径）。
- * 零框架依赖，与 {@code LogJpaEntity} 分离。</p>
+ * 零框架依赖，与 {@code LogPO} 分离。</p>
  */
 public class RelayLog {
 

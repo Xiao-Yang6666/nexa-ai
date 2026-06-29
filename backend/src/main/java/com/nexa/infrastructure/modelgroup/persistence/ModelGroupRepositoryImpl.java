@@ -8,7 +8,7 @@ import com.nexa.domain.modelgroup.repository.ModelGroupRepository;
 import com.nexa.domain.modelgroup.vo.AccessPolicy;
 import com.nexa.domain.modelgroup.vo.ModelGroupStatus;
 import com.nexa.domain.modelgroup.vo.ModelNames;
-import com.nexa.infrastructure.modelgroup.persistence.entity.ModelGroupJpaEntity;
+import com.nexa.infrastructure.modelgroup.persistence.po.ModelGroupPO;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -83,7 +83,7 @@ public class ModelGroupRepositoryImpl implements ModelGroupRepository {
     /** {@inheritDoc} */
     @Override
     public ModelGroup save(ModelGroup group) {
-        ModelGroupJpaEntity saved = jpa.save(toEntity(group));
+        ModelGroupPO saved = jpa.save(toEntity(group));
         group.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -91,11 +91,11 @@ public class ModelGroupRepositoryImpl implements ModelGroupRepository {
     /** {@inheritDoc} */
     @Override
     public boolean softDelete(long id, long nowEpochSec) {
-        Optional<ModelGroupJpaEntity> existing = jpa.findById(id);
+        Optional<ModelGroupPO> existing = jpa.findById(id);
         if (existing.isEmpty()) {
             return false;
         }
-        ModelGroupJpaEntity entity = existing.get();
+        ModelGroupPO entity = existing.get();
         entity.setDeletedAt(nowEpochSec);
         jpa.save(entity);
         return true;
@@ -103,8 +103,8 @@ public class ModelGroupRepositoryImpl implements ModelGroupRepository {
 
     // ---- 聚合 <-> 实体映射（基础设施层内部，领域不可见） ----
 
-    private ModelGroupJpaEntity toEntity(ModelGroup g) {
-        ModelGroupJpaEntity e = new ModelGroupJpaEntity();
+    private ModelGroupPO toEntity(ModelGroup g) {
+        ModelGroupPO e = new ModelGroupPO();
         e.setId(g.id());
         e.setName(g.name());
         e.setCode(g.code());
@@ -118,7 +118,7 @@ public class ModelGroupRepositoryImpl implements ModelGroupRepository {
         return e;
     }
 
-    private ModelGroup toDomain(ModelGroupJpaEntity e) {
+    private ModelGroup toDomain(ModelGroupPO e) {
         return ModelGroup.builder()
                 .id(e.getId())
                 .name(e.getName())

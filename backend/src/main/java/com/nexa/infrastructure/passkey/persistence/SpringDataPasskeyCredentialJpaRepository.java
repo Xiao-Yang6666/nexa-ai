@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.passkey.persistence;
 
-import com.nexa.infrastructure.passkey.persistence.entity.PasskeyCredentialJpaEntity;
+import com.nexa.infrastructure.passkey.persistence.po.PasskeyCredentialPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -12,7 +12,7 @@ import java.util.Optional;
  * {@code PasskeyCredentialRepository}）。提供按 user_id / credential_id 的派生查询（对齐 DB 唯一索引）。</p>
  */
 public interface SpringDataPasskeyCredentialJpaRepository
-        extends JpaRepository<PasskeyCredentialJpaEntity, Long> {
+        extends JpaRepository<PasskeyCredentialPO, Long> {
 
     /**
      * 按归属用户查找凭据（user_id 唯一索引，至多一条）。
@@ -20,7 +20,7 @@ public interface SpringDataPasskeyCredentialJpaRepository
      * @param userId 用户 id
      * @return 命中返回实体，否则空
      */
-    Optional<PasskeyCredentialJpaEntity> findByUserId(Long userId);
+    Optional<PasskeyCredentialPO> findByUserId(Long userId);
 
     /**
      * 按 credential id 查找凭据（credential_id 唯一索引）。
@@ -28,7 +28,7 @@ public interface SpringDataPasskeyCredentialJpaRepository
      * @param credentialId WebAuthn credential id
      * @return 命中返回实体，否则空
      */
-    Optional<PasskeyCredentialJpaEntity> findByCredentialId(String credentialId);
+    Optional<PasskeyCredentialPO> findByCredentialId(String credentialId);
 
     /**
      * 删除指定用户的全部凭据（user_id 唯一，至多删一条）。

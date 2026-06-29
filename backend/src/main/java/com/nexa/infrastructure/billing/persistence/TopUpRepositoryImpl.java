@@ -5,7 +5,7 @@ import com.nexa.domain.billing.repository.TopUpRepository;
 import com.nexa.domain.billing.vo.Money;
 import com.nexa.domain.billing.vo.PaymentStatus;
 import com.nexa.domain.billing.vo.Quota;
-import com.nexa.infrastructure.billing.persistence.entity.TopUpJpaEntity;
+import com.nexa.infrastructure.billing.persistence.po.TopUpPO;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -42,7 +42,7 @@ public class TopUpRepositoryImpl implements TopUpRepository {
     /** {@inheritDoc} */
     @Override
     public TopUp save(TopUp topUp) {
-        TopUpJpaEntity saved = jpa.save(toEntity(topUp));
+        TopUpPO saved = jpa.save(toEntity(topUp));
         topUp.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -55,8 +55,8 @@ public class TopUpRepositoryImpl implements TopUpRepository {
      * @param t 充值订单聚合
      * @return 待持久化的 JPA 实体
      */
-    private static TopUpJpaEntity toEntity(TopUp t) {
-        TopUpJpaEntity e = new TopUpJpaEntity();
+    private static TopUpPO toEntity(TopUp t) {
+        TopUpPO e = new TopUpPO();
         e.setId(t.id());
         e.setUserId(t.userId());
         e.setAmount(t.amount() == null ? null : t.amount().value());
@@ -76,7 +76,7 @@ public class TopUpRepositoryImpl implements TopUpRepository {
      * @param e JPA 实体
      * @return 重建的充值订单聚合
      */
-    private static TopUp toDomain(TopUpJpaEntity e) {
+    private static TopUp toDomain(TopUpPO e) {
         // 值对象构造期的空值兜底（Quota.of/Money.of）留在此处，状态/字段装配走 Builder 具名链式。
         return TopUp.builder()
                 .id(e.getId())

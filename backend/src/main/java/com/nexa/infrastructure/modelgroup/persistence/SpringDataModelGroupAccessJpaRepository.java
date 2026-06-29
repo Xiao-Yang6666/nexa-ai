@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.modelgroup.persistence;
 
-import com.nexa.infrastructure.modelgroup.persistence.entity.ModelGroupAccessJpaEntity;
+import com.nexa.infrastructure.modelgroup.persistence.po.ModelGroupAccessPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,10 +13,10 @@ import java.util.List;
  *
  * <p>仅供 {@link ModelGroupAccessRepositoryImpl} 内部使用。授权关系无软删除（撤销即物理删除）。</p>
  */
-interface SpringDataModelGroupAccessJpaRepository extends JpaRepository<ModelGroupAccessJpaEntity, Long> {
+interface SpringDataModelGroupAccessJpaRepository extends JpaRepository<ModelGroupAccessPO, Long> {
 
     /** 列出某模型组的全部授权记录。 */
-    List<ModelGroupAccessJpaEntity> findByModelGroupId(Long modelGroupId);
+    List<ModelGroupAccessPO> findByModelGroupId(Long modelGroupId);
 
     /** 授权重复探测。 */
     boolean existsByModelGroupIdAndSubjectTypeAndSubjectId(
@@ -34,7 +34,7 @@ interface SpringDataModelGroupAccessJpaRepository extends JpaRepository<ModelGro
      * @param subjectId   主体主键
      * @return 模型组 id 列表
      */
-    @Query("SELECT a.modelGroupId FROM ModelGroupAccessJpaEntity a "
+    @Query("SELECT a.modelGroupId FROM ModelGroupAccessPO a "
             + "WHERE a.subjectType = :subjectType AND a.subjectId = :subjectId")
     List<Long> findGroupIdsBySubject(@Param("subjectType") String subjectType,
                                      @Param("subjectId") Long subjectId);

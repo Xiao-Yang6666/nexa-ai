@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.growth.persistence;
 
-import com.nexa.infrastructure.growth.persistence.entity.CheckinJpaEntity;
+import com.nexa.infrastructure.growth.persistence.po.CheckinPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +15,7 @@ import java.util.Optional;
  * {@code domain.repository.CheckinRepository}。范围查询用 {@code checkin_date BETWEEN}（字符串
  * {@code YYYY-MM-DD} 字典序与日期序一致，可直接比较）。累计统计用聚合查询。</p>
  */
-interface SpringDataCheckinJpaRepository extends JpaRepository<CheckinJpaEntity, Long> {
+interface SpringDataCheckinJpaRepository extends JpaRepository<CheckinPO, Long> {
 
     /**
      * 判某用户某日是否已签（GR-1 查重）。
@@ -33,7 +33,7 @@ interface SpringDataCheckinJpaRepository extends JpaRepository<CheckinJpaEntity,
      * @param checkinDate 日期
      * @return 命中实体（可空）
      */
-    Optional<CheckinJpaEntity> findByUserIdAndCheckinDate(Integer userId, String checkinDate);
+    Optional<CheckinPO> findByUserIdAndCheckinDate(Integer userId, String checkinDate);
 
     /**
      * 累计签到次数（GR-2 total_checkins）。
@@ -49,7 +49,7 @@ interface SpringDataCheckinJpaRepository extends JpaRepository<CheckinJpaEntity,
      * @param userId 用户 id
      * @return 历史累计额度（可空）
      */
-    @Query("SELECT COALESCE(SUM(c.quotaAwarded), 0) FROM CheckinJpaEntity c WHERE c.userId = :userId")
+    @Query("SELECT COALESCE(SUM(c.quotaAwarded), 0) FROM CheckinPO c WHERE c.userId = :userId")
     long sumQuotaByUserId(@Param("userId") Integer userId);
 
     /**
@@ -64,13 +64,13 @@ interface SpringDataCheckinJpaRepository extends JpaRepository<CheckinJpaEntity,
      * @return 范围内记录（日期降序）
      */
     @Query("""
-            SELECT c FROM CheckinJpaEntity c
+            SELECT c FROM CheckinPO c
             WHERE c.userId = :userId
               AND c.checkinDate >= :startDate
               AND c.checkinDate <= :endDate
             ORDER BY c.checkinDate DESC
             """)
-    List<CheckinJpaEntity> findRange(@Param("userId") Integer userId,
+    List<CheckinPO> findRange(@Param("userId") Integer userId,
                                      @Param("startDate") String startDate,
                                      @Param("endDate") String endDate);
 }

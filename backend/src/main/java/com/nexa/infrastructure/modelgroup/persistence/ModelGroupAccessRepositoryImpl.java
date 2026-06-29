@@ -3,7 +3,7 @@ package com.nexa.infrastructure.modelgroup.persistence;
 import com.nexa.domain.modelgroup.model.ModelGroupAccess;
 import com.nexa.domain.modelgroup.repository.ModelGroupAccessRepository;
 import com.nexa.domain.modelgroup.vo.AccessSubjectType;
-import com.nexa.infrastructure.modelgroup.persistence.entity.ModelGroupAccessJpaEntity;
+import com.nexa.infrastructure.modelgroup.persistence.po.ModelGroupAccessPO;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,7 +29,7 @@ public class ModelGroupAccessRepositoryImpl implements ModelGroupAccessRepositor
     /** {@inheritDoc} */
     @Override
     public ModelGroupAccess save(ModelGroupAccess access) {
-        ModelGroupAccessJpaEntity saved = jpa.save(toEntity(access));
+        ModelGroupAccessPO saved = jpa.save(toEntity(access));
         access.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -79,8 +79,8 @@ public class ModelGroupAccessRepositoryImpl implements ModelGroupAccessRepositor
 
     // ---- 聚合 <-> 实体映射 ----
 
-    private ModelGroupAccessJpaEntity toEntity(ModelGroupAccess a) {
-        ModelGroupAccessJpaEntity e = new ModelGroupAccessJpaEntity();
+    private ModelGroupAccessPO toEntity(ModelGroupAccess a) {
+        ModelGroupAccessPO e = new ModelGroupAccessPO();
         e.setId(a.id());
         e.setModelGroupId(a.modelGroupId());
         e.setSubjectType(a.subjectType().wireValue());
@@ -89,7 +89,7 @@ public class ModelGroupAccessRepositoryImpl implements ModelGroupAccessRepositor
         return e;
     }
 
-    private ModelGroupAccess toDomain(ModelGroupAccessJpaEntity e) {
+    private ModelGroupAccess toDomain(ModelGroupAccessPO e) {
         return ModelGroupAccess.rehydrate(
                 e.getId(),
                 e.getModelGroupId(),

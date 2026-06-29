@@ -15,7 +15,7 @@ import java.util.List;
  * 并发度、优先级、状态（启用/禁用/限流）、限流与过载时间窗、过期与自动暂停、所属分组集合。
  * 本聚合是账号限界上下文的一致性边界，不变量与状态迁移在聚合方法上守护。</p>
  *
- * <p>零框架依赖（不 import JPA/Spring/Jackson），与 JPA 实体 {@code AccountJpaEntity} 分离，可纯单测。
+ * <p>零框架依赖（不 import JPA/Spring/Jackson），与 JPA 实体 {@code AccountPO} 分离，可纯单测。
  * 时间字段统一 epoch 秒 Long（对齐 channel 现网习惯）。状态以字符串码持久化（对齐参考表）。</p>
  *
  * <p>不变量：name/platform 非空；type 非空；concurrency>=1；priority>=0；status 非空。

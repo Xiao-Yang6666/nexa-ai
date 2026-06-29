@@ -5,7 +5,7 @@ import com.nexa.shared.persistence.PageQueries;
 import com.nexa.domain.model.model.Vendor;
 import com.nexa.domain.model.repository.VendorRepository;
 import com.nexa.domain.model.vo.Pagination;
-import com.nexa.infrastructure.model.persistence.entity.VendorMetaJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.VendorMetaPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * 领域仓储 {@link VendorRepository} 的 JPA 实现（基础设施层适配器，F-3018）。
  *
  * <p>DDD 依赖倒置落地：domain 定接口，本类用 {@link SpringDataVendorMetaJpaRepository} + 实体↔领域
- * 映射实现。领域聚合 {@link Vendor} 与 {@link VendorMetaJpaEntity} 分离（domain 不感知 Hibernate，
+ * 映射实现。领域聚合 {@link Vendor} 与 {@link VendorMetaPO} 分离（domain 不感知 Hibernate，
  * backend-engineer §2.3）。软删除用 deleted_at（与 tokens 等表惯例一致）。</p>
  */
 @Repository
@@ -34,8 +34,8 @@ public class VendorRepositoryImpl implements VendorRepository {
     /** {@inheritDoc} */
     @Override
     public Vendor save(Vendor vendor) {
-        VendorMetaJpaEntity entity = toEntity(vendor);
-        VendorMetaJpaEntity saved = jpa.save(entity);
+        VendorMetaPO entity = toEntity(vendor);
+        VendorMetaPO saved = jpa.save(entity);
         vendor.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -94,8 +94,8 @@ public class VendorRepositoryImpl implements VendorRepository {
 
     // ---- 领域聚合 <-> JPA 实体映射 ----
 
-    private VendorMetaJpaEntity toEntity(Vendor v) {
-        VendorMetaJpaEntity e = new VendorMetaJpaEntity();
+    private VendorMetaPO toEntity(Vendor v) {
+        VendorMetaPO e = new VendorMetaPO();
         e.setId(v.id());
         e.setName(v.name());
         e.setIcon(v.icon());
@@ -105,7 +105,7 @@ public class VendorRepositoryImpl implements VendorRepository {
         return e;
     }
 
-    private Vendor toDomain(VendorMetaJpaEntity e) {
+    private Vendor toDomain(VendorMetaPO e) {
         return Vendor.rehydrate(e.getId(), e.getName(), e.getIcon(), e.getStatus(),
                 e.getCreatedTime(), e.getUpdatedTime());
     }

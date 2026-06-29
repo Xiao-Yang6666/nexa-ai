@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * <p><b>跨 bounded context 防腐适配器</b>：增长域签到发额度（GR-1）、邀请额度划转（GR-5）需给用户余额
  * 入账（{@code users.quota += amount}），但 {@code users} 表归账号域所有。为不反向依赖账号域聚合/JPA
  * 实体，本适配器用 {@link JdbcTemplate} 直接对 {@code users} 表做<b>原子自增</b>——只触碰 id/quota 两列，
- * 不复用 account 的 {@code UserJpaEntity}（避免 context 耦合与两个 JPA 实体映射同一表在
+ * 不复用 account 的 {@code UserPO}（避免 context 耦合与两个 JPA 实体映射同一表在
  * {@code ddl-auto=validate} 下的冲突）。与计费域 {@code JdbcUserQuotaAccount} 同策略。</p>
  *
  * <p>原子性：SQL 级 {@code quota = quota + ?} 而非读-改-写，杜绝并发丢更新；与签到记录写入 / 邀请额度

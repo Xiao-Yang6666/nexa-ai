@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.ops.persistence;
 
-import com.nexa.infrastructure.ops.persistence.entity.SetupJpaEntity;
+import com.nexa.infrastructure.ops.persistence.po.SetupPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  *
  * <p>仅供 {@link SetupRepositoryImpl} 内部使用。单行哨兵表，主键为 Integer（固定 1）。</p>
  */
-interface SpringDataSetupJpaRepository extends JpaRepository<SetupJpaEntity, Integer> {
+interface SpringDataSetupJpaRepository extends JpaRepository<SetupPO, Integer> {
 }

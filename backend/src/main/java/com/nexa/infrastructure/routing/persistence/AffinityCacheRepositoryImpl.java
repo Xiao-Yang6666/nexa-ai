@@ -3,7 +3,7 @@ package com.nexa.infrastructure.routing.persistence;
 import com.nexa.domain.routing.repository.AffinityCacheRepository;
 import com.nexa.domain.routing.vo.AffinityCacheEntry;
 import com.nexa.domain.routing.vo.AffinityCacheKey;
-import com.nexa.infrastructure.routing.persistence.entity.AffinityCacheJpaEntity;
+import com.nexa.infrastructure.routing.persistence.po.AffinityCachePO;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +45,8 @@ public class AffinityCacheRepositoryImpl implements AffinityCacheRepository {
     @Transactional
     public void put(AffinityCacheKey key, AffinityCacheEntry entry) {
         String fp = key.fingerprint();
-        AffinityCacheJpaEntity entity = jpa.findByTriplet(key.ruleName(), fp, key.usingGroup())
-                .orElseGet(AffinityCacheJpaEntity::new);
+        AffinityCachePO entity = jpa.findByTriplet(key.ruleName(), fp, key.usingGroup())
+                .orElseGet(AffinityCachePO::new);
         entity.setRuleName(key.ruleName());
         entity.setKeyFingerprint(fp);
         entity.setUsingGroup(key.usingGroup());
@@ -86,7 +86,7 @@ public class AffinityCacheRepositoryImpl implements AffinityCacheRepository {
                 });
     }
 
-    private AffinityCacheEntry toDomain(AffinityCacheJpaEntity e) {
+    private AffinityCacheEntry toDomain(AffinityCachePO e) {
         return new AffinityCacheEntry(
                 e.getChannelId(), e.getHitCount(),
                 Instant.ofEpochSecond(e.getLastHitAt()),

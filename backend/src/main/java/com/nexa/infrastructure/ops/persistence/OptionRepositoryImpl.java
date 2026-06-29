@@ -2,7 +2,7 @@ package com.nexa.infrastructure.ops.persistence;
 
 import com.nexa.domain.ops.option.Option;
 import com.nexa.domain.ops.option.OptionRepository;
-import com.nexa.infrastructure.ops.persistence.entity.OptionJpaEntity;
+import com.nexa.infrastructure.ops.persistence.po.OptionPO;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +48,7 @@ public class OptionRepositoryImpl implements OptionRepository {
     @Transactional
     public void save(Option option) {
         // merge 语义：key 已存在则更新 value，否则插入（F-4018 覆盖式幂等）。
-        jpa.save(new OptionJpaEntity(option.keyName(), option.value()));
+        jpa.save(new OptionPO(option.keyName(), option.value()));
     }
 
     /** {@inheritDoc} */
@@ -62,7 +62,7 @@ public class OptionRepositoryImpl implements OptionRepository {
         jpa.deleteById(key.trim());
     }
 
-    private Option toDomain(OptionJpaEntity e) {
+    private Option toDomain(OptionPO e) {
         return Option.of(e.getKey(), e.getValue());
     }
 }

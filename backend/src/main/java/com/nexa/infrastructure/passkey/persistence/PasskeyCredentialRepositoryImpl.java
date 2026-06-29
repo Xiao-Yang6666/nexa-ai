@@ -6,7 +6,7 @@ import com.nexa.domain.passkey.repository.PasskeyCredentialRepository;
 import com.nexa.domain.passkey.vo.AuthenticatorFlags;
 import com.nexa.domain.passkey.vo.CredentialId;
 import com.nexa.domain.passkey.vo.SignCount;
-import com.nexa.infrastructure.passkey.persistence.entity.PasskeyCredentialJpaEntity;
+import com.nexa.infrastructure.passkey.persistence.po.PasskeyCredentialPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,7 @@ import java.util.Optional;
  *
  * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link SpringDataPasskeyCredentialJpaRepository}
  * + 实体↔领域映射实现它。领域聚合 {@link PasskeyCredential} 与 JPA 实体
- * {@link PasskeyCredentialJpaEntity} 分离，映射集中在此处，domain 因此不感知 Hibernate
+ * {@link PasskeyCredentialPO} 分离，映射集中在此处，domain 因此不感知 Hibernate
  * （backend-engineer §2.3）。user_id/credential_id 唯一索引冲突翻译为领域异常（不吞错）。</p>
  */
 @Repository
@@ -36,9 +36,9 @@ public class PasskeyCredentialRepositoryImpl implements PasskeyCredentialReposit
     /** {@inheritDoc} */
     @Override
     public PasskeyCredential save(PasskeyCredential credential) {
-        PasskeyCredentialJpaEntity entity = toEntity(credential);
+        PasskeyCredentialPO entity = toEntity(credential);
         try {
-            PasskeyCredentialJpaEntity saved = jpa.saveAndFlush(entity);
+            PasskeyCredentialPO saved = jpa.saveAndFlush(entity);
             credential.assignId(saved.getId());
             return toDomain(saved);
         } catch (DataIntegrityViolationException e) {
@@ -76,8 +76,8 @@ public class PasskeyCredentialRepositoryImpl implements PasskeyCredentialReposit
      * @param c 领域聚合
      * @return 待持久化的 JPA 实体
      */
-    private static PasskeyCredentialJpaEntity toEntity(PasskeyCredential c) {
-        PasskeyCredentialJpaEntity e = new PasskeyCredentialJpaEntity();
+    private static PasskeyCredentialPO toEntity(PasskeyCredential c) {
+        PasskeyCredentialPO e = new PasskeyCredentialPO();
         e.setId(c.id());
         e.setUserId(c.userId());
         e.setCredentialId(c.credentialId().value());
@@ -102,7 +102,7 @@ public class PasskeyCredentialRepositoryImpl implements PasskeyCredentialReposit
      * @param e JPA 实体
      * @return 重建的领域聚合
      */
-    private static PasskeyCredential toDomain(PasskeyCredentialJpaEntity e) {
+    private static PasskeyCredential toDomain(PasskeyCredentialPO e) {
         SignCount signCount = SignCount.of(e.getSignCount() == null ? 0L : e.getSignCount());
         AuthenticatorFlags flags = new AuthenticatorFlags(
                 Boolean.TRUE.equals(e.getUserPresent()),

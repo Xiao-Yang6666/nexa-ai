@@ -16,7 +16,7 @@ import java.util.Objects;
  * </ul>
  * </p>
  *
- * <p>零框架依赖，与 {@code UserModelAliasJpaEntity} 分离。</p>
+ * <p>零框架依赖，与 {@code UserModelAliasPO} 分离。</p>
  */
 public class UserModelAlias {
 

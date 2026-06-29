@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.token.persistence;
 
-import com.nexa.infrastructure.token.persistence.entity.TokenJpaEntity;
+import com.nexa.infrastructure.token.persistence.po.TokenPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,7 +16,7 @@ import java.util.List;
  * {@code domain.repository.TokenRepository}。self-scope 一律通过 SQL 强制 user_id 过滤（ROLE-PERMISSION-MATRIX §3）。
  * 软删除查询由 {@code @SQLRestriction("deleted_at IS NULL")} 自动过滤；写软删用 {@code @Modifying UPDATE}。</p>
  */
-interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Long> {
+interface SpringDataTokenJpaRepository extends JpaRepository<TokenPO, Long> {
 
     /**
      * 按明文 key 等值查询（F-3012 用量查询 tokenReadAuth 反查；软删由 @SQLRestriction 过滤）。
@@ -24,7 +24,7 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @param key 完整明文 key
      * @return 命中实体（可空）
      */
-    java.util.Optional<TokenJpaEntity> findByKey(String key);
+    java.util.Optional<TokenPO> findByKey(String key);
 
     /**
      * 分页查询某用户的令牌（F-3002 列表，按 id 降序——新建在前）。
@@ -35,8 +35,8 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @param pageable 分页
      * @return 当前页实体
      */
-    @Query("SELECT t FROM TokenJpaEntity t WHERE t.userId = :userId ORDER BY t.id DESC")
-    List<TokenJpaEntity> findPageByUser(@Param("userId") int userId, Pageable pageable);
+    @Query("SELECT t FROM TokenPO t WHERE t.userId = :userId ORDER BY t.id DESC")
+    List<TokenPO> findPageByUser(@Param("userId") int userId, Pageable pageable);
 
     /**
      * 统计某用户的令牌总数（F-3002 total）。
@@ -44,7 +44,7 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @param userId 归属用户 id
      * @return 总数
      */
-    @Query("SELECT COUNT(t) FROM TokenJpaEntity t WHERE t.userId = :userId")
+    @Query("SELECT COUNT(t) FROM TokenPO t WHERE t.userId = :userId")
     long countByUser(@Param("userId") int userId);
 
     /**
@@ -58,12 +58,12 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @return 当前页实体
      */
     @Query("""
-            SELECT t FROM TokenJpaEntity t
+            SELECT t FROM TokenPO t
             WHERE t.userId = :userId
               AND LOWER(COALESCE(t.name, '')) LIKE CONCAT('%', :keyword, '%')
             ORDER BY t.id DESC
             """)
-    List<TokenJpaEntity> searchByUser(@Param("userId") int userId,
+    List<TokenPO> searchByUser(@Param("userId") int userId,
                                       @Param("keyword") String keyword,
                                       Pageable pageable);
 
@@ -75,7 +75,7 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @return 命中数
      */
     @Query("""
-            SELECT COUNT(t) FROM TokenJpaEntity t
+            SELECT COUNT(t) FROM TokenPO t
             WHERE t.userId = :userId
               AND LOWER(COALESCE(t.name, '')) LIKE CONCAT('%', :keyword, '%')
             """)
@@ -88,8 +88,8 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @param ids    id 集合
      * @return 命中且归属该用户的实体列表
      */
-    @Query("SELECT t FROM TokenJpaEntity t WHERE t.userId = :userId AND t.id IN :ids")
-    List<TokenJpaEntity> findByUserAndIds(@Param("userId") int userId, @Param("ids") List<Long> ids);
+    @Query("SELECT t FROM TokenPO t WHERE t.userId = :userId AND t.id IN :ids")
+    List<TokenPO> findByUserAndIds(@Param("userId") int userId, @Param("ids") List<Long> ids);
 
     /**
      * 软删除单个令牌（F-3007，写 deleted_at）。
@@ -102,7 +102,7 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      * @return 受影响行数（0=已删/不存在，1=本次删除）
      */
     @Modifying
-    @Query("UPDATE TokenJpaEntity t SET t.deletedAt = :deletedAt WHERE t.id = :id AND t.deletedAt IS NULL")
+    @Query("UPDATE TokenPO t SET t.deletedAt = :deletedAt WHERE t.id = :id AND t.deletedAt IS NULL")
     int softDeleteById(@Param("id") long id, @Param("deletedAt") long deletedAt);
 
     /**
@@ -115,7 +115,7 @@ interface SpringDataTokenJpaRepository extends JpaRepository<TokenJpaEntity, Lon
      */
     @Modifying
     @Query("""
-            UPDATE TokenJpaEntity t SET t.deletedAt = :deletedAt
+            UPDATE TokenPO t SET t.deletedAt = :deletedAt
             WHERE t.userId = :userId AND t.id IN :ids AND t.deletedAt IS NULL
             """)
     int softDeleteByUserAndIds(@Param("userId") int userId,

@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.model.persistence;
 
-import com.nexa.infrastructure.model.persistence.entity.UserModelAliasJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.UserModelAliasPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,17 +16,17 @@ import java.util.Optional;
  * 越权 self-scope 护栏在应用层落地，仓储层仅按 (scope_type, scope_id) 过滤。</p>
  *
  * <p>注意：JPQL {@code FROM} 用 Hibernate 实体逻辑名 {@code ModelUserModelAliasJpaEntity}
- * （与 relay 包同名类区分）；Java 泛型/返回类型用真实类名 {@link UserModelAliasJpaEntity}。</p>
+ * （与 relay 包同名类区分）；Java 泛型/返回类型用真实类名 {@link UserModelAliasPO}。</p>
  */
-interface SpringDataUserModelAliasJpaRepository extends JpaRepository<UserModelAliasJpaEntity, Long> {
+interface SpringDataUserModelAliasJpaRepository extends JpaRepository<UserModelAliasPO, Long> {
 
     /** 按 (scope_type, scope_id, alias) 查（uk_scope_alias 幂等键）。 */
-    Optional<UserModelAliasJpaEntity> findByScopeTypeAndScopeIdAndAlias(
+    Optional<UserModelAliasPO> findByScopeTypeAndScopeIdAndAlias(
             String scopeType, String scopeId, String alias);
 
     /** 列出某 (scope_type, scope_id) 下全部映射（alias 升序）。 */
     @Query("SELECT a FROM ModelUserModelAliasJpaEntity a WHERE a.scopeType = :scopeType AND a.scopeId = :scopeId ORDER BY a.alias ASC")
-    List<UserModelAliasJpaEntity> findByScopeTypeAndScopeId(
+    List<UserModelAliasPO> findByScopeTypeAndScopeId(
             @Param("scopeType") String scopeType, @Param("scopeId") String scopeId);
 
     /**
@@ -40,7 +40,7 @@ interface SpringDataUserModelAliasJpaRepository extends JpaRepository<UserModelA
                OR (a.scopeType = 'group' AND a.scopeId IN :groups)
             ORDER BY a.scopeType ASC, a.alias ASC
             """)
-    List<UserModelAliasJpaEntity> findByUserAndGroups(
+    List<UserModelAliasPO> findByUserAndGroups(
             @Param("userId") String userId, @Param("groups") List<String> groups);
 
     /** 软删除（仅对存活行生效）。 */

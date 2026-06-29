@@ -17,7 +17,7 @@ import com.nexa.domain.log.vo.LogType;
  * </p>
  *
  * <p>充血模型（backend-engineer §2.2）：日志类型判定（{@link #isConsume()}）、token 合计
- * （{@link #totalTokens()}）等查询行为挂在聚合上，而非散落到 service。零框架依赖（与 LogReadJpaEntity 分离）。</p>
+ * （{@link #totalTokens()}）等查询行为挂在聚合上，而非散落到 service。零框架依赖（与 LogReadPO 分离）。</p>
  *
  * <p>领域规则来源：prd 日志与用量 F-4001~F-4013；DB-SCHEMA §5；COMPAT-LAYER-DATA-OBJECTS §3.1
  * 「客户看不到 B」三道闸之一（序列化层在接口 DTO，本聚合持全字段）。</p>

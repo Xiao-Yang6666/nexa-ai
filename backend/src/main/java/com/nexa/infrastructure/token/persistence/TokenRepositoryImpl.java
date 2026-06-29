@@ -7,7 +7,7 @@ import com.nexa.domain.token.repository.TokenRepository;
 import com.nexa.domain.token.vo.Pagination;
 import com.nexa.domain.token.vo.TokenStatus;
 import com.nexa.infrastructure.token.config.AuthCacheConfig;
-import com.nexa.infrastructure.token.persistence.entity.TokenJpaEntity;
+import com.nexa.infrastructure.token.persistence.po.TokenPO;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +22,7 @@ import java.util.Optional;
  * 领域仓储 {@link TokenRepository} 的 JPA 实现（基础设施层适配器，F-3001~F-3012）。
  *
  * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link SpringDataTokenJpaRepository}
- * + 实体↔领域映射实现它。领域聚合 {@link Token} 与 JPA 实体 {@link TokenJpaEntity} 分离，
+ * + 实体↔领域映射实现它。领域聚合 {@link Token} 与 JPA 实体 {@link TokenPO} 分离，
  * 映射集中在此处，domain 因此不感知 Hibernate（backend-engineer §2.3）。</p>
  *
  * <p>self-scope 强制：列表/搜索/批量取明文/批量删 一律带 {@code userId} 维度，仓储层 SQL 显式过滤，
@@ -46,8 +46,8 @@ public class TokenRepositoryImpl implements TokenRepository {
     /** {@inheritDoc} */
     @Override
     public Token save(Token token) {
-        TokenJpaEntity entity = toEntity(token);
-        TokenJpaEntity saved = jpa.save(entity);
+        TokenPO entity = toEntity(token);
+        TokenPO saved = jpa.save(entity);
         if (token.id() == null) {
             // 新建保存后回填自增主键到聚合（编辑路径已带 id 不需回填）。
             token.assignId(saved.getId());
@@ -161,8 +161,8 @@ public class TokenRepositoryImpl implements TokenRepository {
 
     // ---- 实体 ↔ 领域映射 ----
 
-    private TokenJpaEntity toEntity(Token token) {
-        TokenJpaEntity e = new TokenJpaEntity();
+    private TokenPO toEntity(Token token) {
+        TokenPO e = new TokenPO();
         e.setId(token.id());
         e.setUserId(toIntUserId(token.userId()));
         e.setKey(token.key());
@@ -184,7 +184,7 @@ public class TokenRepositoryImpl implements TokenRepository {
         return e;
     }
 
-    private Token toDomain(TokenJpaEntity e) {
+    private Token toDomain(TokenPO e) {
         // 数值列 null 兜底（userId/expiredTime/remainQuota/usedQuota → 0）与 name/allowIps/group/
         // endpointLimits 的 null 归一空串，统一收敛在 Token.Builder 内，这里只做状态码解析与
         // modelLimits 空串归一（其余直传）。

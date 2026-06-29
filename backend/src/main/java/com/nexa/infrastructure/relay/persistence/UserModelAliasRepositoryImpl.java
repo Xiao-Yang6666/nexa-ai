@@ -3,7 +3,7 @@ package com.nexa.infrastructure.relay.persistence;
 import com.nexa.domain.relay.model.UserModelAlias;
 import com.nexa.domain.relay.repository.UserModelAliasRepository;
 import com.nexa.domain.relay.vo.AliasScope;
-import com.nexa.infrastructure.relay.persistence.entity.UserModelAliasJpaEntity;
+import com.nexa.infrastructure.relay.persistence.po.UserModelAliasPO;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -28,7 +28,7 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
     @Override
     public Optional<String> findTargetByAlias(AliasScope scope, String alias) {
         return jpa.findEnabledByScopeAndAlias(scope.type().wire(), scope.id(), alias)
-                .map(UserModelAliasJpaEntity::getTarget);
+                .map(UserModelAliasPO::getTarget);
     }
 
     @Override
@@ -43,9 +43,9 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
 
     @Override
     public void save(UserModelAlias alias) {
-        UserModelAliasJpaEntity entity = alias.id() == null
-                ? new UserModelAliasJpaEntity()
-                : jpa.findById(alias.id()).orElseGet(UserModelAliasJpaEntity::new);
+        UserModelAliasPO entity = alias.id() == null
+                ? new UserModelAliasPO()
+                : jpa.findById(alias.id()).orElseGet(UserModelAliasPO::new);
         entity.setScopeType(alias.scope().type().wire());
         entity.setScopeId(alias.scope().id());
         entity.setAlias(alias.alias());
@@ -64,7 +64,7 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
         });
     }
 
-    private UserModelAlias toDomain(UserModelAliasJpaEntity e) {
+    private UserModelAlias toDomain(UserModelAliasPO e) {
         AliasScope scope = new AliasScope(AliasScope.ScopeType.fromWire(e.getScopeType()), e.getScopeId());
         return UserModelAlias.builder()
                 .id(e.getId())

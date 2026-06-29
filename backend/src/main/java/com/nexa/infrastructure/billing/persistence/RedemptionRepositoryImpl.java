@@ -6,7 +6,7 @@ import com.nexa.domain.billing.model.Redemption;
 import com.nexa.domain.billing.repository.RedemptionRepository;
 import com.nexa.domain.billing.vo.Quota;
 import com.nexa.domain.billing.vo.RedemptionStatus;
-import com.nexa.infrastructure.billing.persistence.entity.RedemptionJpaEntity;
+import com.nexa.infrastructure.billing.persistence.po.RedemptionPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -42,7 +42,7 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
     /** {@inheritDoc} */
     @Override
     public Redemption save(Redemption redemption) {
-        RedemptionJpaEntity saved = jpa.save(toEntity(redemption));
+        RedemptionPO saved = jpa.save(toEntity(redemption));
         redemption.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -50,7 +50,7 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
     /** {@inheritDoc} */
     @Override
     public List<Redemption> saveAll(List<Redemption> redemptions) {
-        List<RedemptionJpaEntity> entities = redemptions.stream()
+        List<RedemptionPO> entities = redemptions.stream()
                 .map(RedemptionRepositoryImpl::toEntity)
                 .toList();
         return jpa.saveAll(entities).stream()
@@ -65,7 +65,7 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
         int size = Math.max(pageSize, 1);
         // 管理端列表按 id 降序（最新生成的码在前），结果稳定可分页。
         Pageable pageable = PageQueries.of(p, size, Sort.by(Sort.Direction.DESC, "id"));
-        org.springframework.data.domain.Page<RedemptionJpaEntity> result = jpa.findAllBy(pageable);
+        org.springframework.data.domain.Page<RedemptionPO> result = jpa.findAllBy(pageable);
         List<Redemption> items = result.getContent().stream()
                 .map(RedemptionRepositoryImpl::toDomain)
                 .toList();
@@ -80,8 +80,8 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
      * @param r 兑换码聚合
      * @return 待持久化的 JPA 实体
      */
-    private static RedemptionJpaEntity toEntity(Redemption r) {
-        RedemptionJpaEntity e = new RedemptionJpaEntity();
+    private static RedemptionPO toEntity(Redemption r) {
+        RedemptionPO e = new RedemptionPO();
         e.setId(r.id());
         e.setUserId(r.creatorUserId());
         e.setKey(r.key());
@@ -102,7 +102,7 @@ public class RedemptionRepositoryImpl implements RedemptionRepository {
      * @param e JPA 实体
      * @return 重建的兑换码聚合
      */
-    private static Redemption toDomain(RedemptionJpaEntity e) {
+    private static Redemption toDomain(RedemptionPO e) {
         // 过期时间 null→0（永不过期）的兜底已收敛进 Redemption.Builder.expiredTime，此处不再三元。
         return Redemption.builder()
                 .id(e.getId())

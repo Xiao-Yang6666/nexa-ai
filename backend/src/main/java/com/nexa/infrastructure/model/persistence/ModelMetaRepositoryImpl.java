@@ -5,7 +5,7 @@ import com.nexa.shared.persistence.PageQueries;
 import com.nexa.domain.model.model.ModelMeta;
 import com.nexa.domain.model.repository.ModelMetaRepository;
 import com.nexa.domain.model.vo.Pagination;
-import com.nexa.infrastructure.model.persistence.entity.ModelMetaJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.ModelMetaPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +20,7 @@ import java.util.Optional;
  * 领域仓储 {@link ModelMetaRepository} 的 JPA 实现（基础设施层适配器，F-3013~F-3021）。
  *
  * <p>DDD 依赖倒置落地：domain 定接口，本类用 {@link SpringDataModelMetaJpaRepository} + 实体↔领域
- * 映射实现。领域聚合 {@link ModelMeta} 与 {@link ModelMetaJpaEntity} 分离（backend-engineer §2.3）。
+ * 映射实现。领域聚合 {@link ModelMeta} 与 {@link ModelMetaPO} 分离（backend-engineer §2.3）。
  * 关键词搜索在本层归一为小写空白（搜索 SQL 不感知归一前的脏值）。软删除用 deleted_at。</p>
  */
 @Repository
@@ -36,8 +36,8 @@ public class ModelMetaRepositoryImpl implements ModelMetaRepository {
     /** {@inheritDoc} */
     @Override
     public ModelMeta save(ModelMeta model) {
-        ModelMetaJpaEntity entity = toEntity(model);
-        ModelMetaJpaEntity saved = jpa.save(entity);
+        ModelMetaPO entity = toEntity(model);
+        ModelMetaPO saved = jpa.save(entity);
         model.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -113,8 +113,8 @@ public class ModelMetaRepositoryImpl implements ModelMetaRepository {
 
     // ---- 领域聚合 <-> JPA 实体映射 ----
 
-    private ModelMetaJpaEntity toEntity(ModelMeta m) {
-        ModelMetaJpaEntity e = new ModelMetaJpaEntity();
+    private ModelMetaPO toEntity(ModelMeta m) {
+        ModelMetaPO e = new ModelMetaPO();
         e.setId(m.id());
         e.setModelName(m.modelName());
         e.setStatus(m.status().code());
@@ -130,7 +130,7 @@ public class ModelMetaRepositoryImpl implements ModelMetaRepository {
         return e;
     }
 
-    private ModelMeta toDomain(ModelMetaJpaEntity e) {
+    private ModelMeta toDomain(ModelMetaPO e) {
         return ModelMeta.builder()
                 .id(e.getId())
                 .modelName(e.getModelName())

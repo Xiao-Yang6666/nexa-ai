@@ -15,7 +15,7 @@ import java.util.Objects;
  * {@code user_id}、唯一 {@code credential_id}）——<b>每用户至多一条 passkey</b>（DB user_id 唯一索引兜底，
  * 重复注册由仓储/用例按归属覆盖或拒绝）。</p>
  *
- * <p>零框架依赖（不 import JPA/Spring），与 JPA 实体 {@code PasskeyCredentialJpaEntity} 分离，可纯单测。
+ * <p>零框架依赖（不 import JPA/Spring），与 JPA 实体 {@code PasskeyCredentialPO} 分离，可纯单测。
  * WebAuthn 的密码学验签（attestation/assertion 验证）<b>不在</b>本聚合内——那属于基础设施层 ceremony
  * 端口（{@code WebAuthnRelyingParty}）职责；本聚合只承载验签<b>通过后</b>的凭据状态与领域不变量
  * （签名计数器单调递增、克隆告警）。</p>

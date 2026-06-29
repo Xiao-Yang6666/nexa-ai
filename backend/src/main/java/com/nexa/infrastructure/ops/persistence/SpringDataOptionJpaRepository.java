@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.ops.persistence;
 
-import com.nexa.infrastructure.ops.persistence.entity.OptionJpaEntity;
+import com.nexa.infrastructure.ops.persistence.po.OptionPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -10,5 +10,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * {@code domain.option.OptionRepository}。主键为 String（key）。覆盖式写入用 {@code save}
  * （JPA merge 语义：存在更新、不存在插入，对齐 F-4018 幂等）。</p>
  */
-interface SpringDataOptionJpaRepository extends JpaRepository<OptionJpaEntity, String> {
+interface SpringDataOptionJpaRepository extends JpaRepository<OptionPO, String> {
 }

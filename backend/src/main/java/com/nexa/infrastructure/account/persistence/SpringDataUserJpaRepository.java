@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.account.persistence;
 
-import com.nexa.infrastructure.account.persistence.entity.UserJpaEntity;
+import com.nexa.infrastructure.account.persistence.po.UserPO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +16,7 @@ import java.util.Optional;
  * <p>仅供 {@link UserRepositoryImpl} 内部使用，不直接暴露给应用/领域层——领域只认
  * {@code domain.repository.UserRepository}。命名 {@code SpringDataUserJpaRepository} 以区分领域仓储。</p>
  */
-interface SpringDataUserJpaRepository extends JpaRepository<UserJpaEntity, Long> {
+interface SpringDataUserJpaRepository extends JpaRepository<UserPO, Long> {
 
     /**
      * 按用户名查实体。
@@ -24,7 +24,7 @@ interface SpringDataUserJpaRepository extends JpaRepository<UserJpaEntity, Long>
      * @param username 用户名
      * @return 命中实体，否则空
      */
-    Optional<UserJpaEntity> findByUsername(String username);
+    Optional<UserPO> findByUsername(String username);
 
     /**
      * 用户名是否存在。
@@ -42,7 +42,7 @@ interface SpringDataUserJpaRepository extends JpaRepository<UserJpaEntity, Long>
      * @param email 邮箱
      * @return 命中实体，否则空
      */
-    Optional<UserJpaEntity> findByEmail(String email);
+    Optional<UserPO> findByEmail(String email);
 
     /**
      * 全量分页查询（管理端列表，F-1008，无关键词）。
@@ -52,7 +52,7 @@ interface SpringDataUserJpaRepository extends JpaRepository<UserJpaEntity, Long>
      * @param pageable 分页参数（页码/页大小/排序）
      * @return 当页实体
      */
-    Page<UserJpaEntity> findAllBy(Pageable pageable);
+    Page<UserPO> findAllBy(Pageable pageable);
 
     /**
      * 关键词分页搜索（管理端搜索，F-1008）。
@@ -66,12 +66,12 @@ interface SpringDataUserJpaRepository extends JpaRepository<UserJpaEntity, Long>
      * @return 命中实体当页
      */
     @Query("""
-            SELECT u FROM UserJpaEntity u
+            SELECT u FROM UserPO u
             WHERE LOWER(u.username) LIKE LOWER(:keyword)
                OR LOWER(u.email) LIKE LOWER(:keyword)
                OR LOWER(u.group) LIKE LOWER(:keyword)
             """)
-    Page<UserJpaEntity> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+    Page<UserPO> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     /**
      * 软删除：写 {@code deleted_at} 时间戳（管理端删除，F-1010 delete）。
@@ -84,6 +84,6 @@ interface SpringDataUserJpaRepository extends JpaRepository<UserJpaEntity, Long>
      * @return 受影响行数
      */
     @Modifying
-    @Query("UPDATE UserJpaEntity u SET u.deletedAt = :deletedAt WHERE u.id = :id")
+    @Query("UPDATE UserPO u SET u.deletedAt = :deletedAt WHERE u.id = :id")
     int markDeleted(@Param("id") long id, @Param("deletedAt") long deletedAt);
 }

@@ -10,7 +10,7 @@ import com.nexa.domain.log.vo.ProfitDashboardEntry;
 import com.nexa.domain.log.vo.ProfitDimension;
 import com.nexa.domain.log.vo.QuotaDataPoint;
 import com.nexa.domain.log.vo.RankingEntry;
-import com.nexa.infrastructure.log.persistence.entity.LogReadJpaEntity;
+import com.nexa.infrastructure.log.persistence.po.LogReadPO;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -47,7 +47,7 @@ public class LogRepositoryImpl implements LogRepository {
         try {
             // PageRequest 以「页号 = offset/limit」承载偏移（limit 已归一 ≤100）。
             int page = limit > 0 ? offset / limit : 0;
-            List<LogReadJpaEntity> rows = jpa.findByFilter(
+            List<LogReadPO> rows = jpa.findByFilter(
                     toInt(query.userId()),
                     typeCode(query.typeFilter()),
                     query.startTimestamp(),
@@ -61,7 +61,7 @@ public class LogRepositoryImpl implements LogRepository {
                     query.upstreamRequestId(),
                     PageRequest.of(page, limit));
             List<LogEntry> result = new ArrayList<>(rows.size());
-            for (LogReadJpaEntity e : rows) {
+            for (LogReadPO e : rows) {
                 result.add(toDomain(e));
             }
             return result;
@@ -94,9 +94,9 @@ public class LogRepositoryImpl implements LogRepository {
     public List<LogEntry> findByTokenId(long tokenId, int limit) {
         try {
             int cap = limit > 0 ? limit : TOKEN_LOG_LIMIT;
-            List<LogReadJpaEntity> rows = jpa.findConsumeByToken((int) tokenId, PageRequest.of(0, cap));
+            List<LogReadPO> rows = jpa.findConsumeByToken((int) tokenId, PageRequest.of(0, cap));
             List<LogEntry> result = new ArrayList<>(rows.size());
-            for (LogReadJpaEntity e : rows) {
+            for (LogReadPO e : rows) {
                 result.add(toDomain(e));
             }
             return result;
@@ -201,7 +201,7 @@ public class LogRepositoryImpl implements LogRepository {
     @Override
     public void recordAudit(LogEntry entry) {
         try {
-            LogReadJpaEntity e = new LogReadJpaEntity();
+            LogReadPO e = new LogReadPO();
             e.setUserId(toInt(entry.userId()));
             e.setCreatedAt(entry.createdAt());
             e.setType(entry.type() == null ? 0 : entry.type().code());
@@ -244,7 +244,7 @@ public class LogRepositoryImpl implements LogRepository {
 
     // ===================== 映射与窄化 =====================
 
-    private LogEntry toDomain(LogReadJpaEntity e) {
+    private LogEntry toDomain(LogReadPO e) {
         return LogEntry.rebuild()
                 .id(e.getId())
                 .userId(toLong(e.getUserId()))

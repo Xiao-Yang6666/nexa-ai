@@ -4,7 +4,7 @@ import com.nexa.domain.account.exception.OAuthBindingConflictException;
 import com.nexa.domain.account.model.OAuthBinding;
 import com.nexa.domain.account.repository.OAuthBindingRepository;
 import com.nexa.domain.account.vo.OAuthProvider;
-import com.nexa.infrastructure.account.persistence.entity.UserOAuthBindingJpaEntity;
+import com.nexa.infrastructure.account.persistence.po.UserOAuthBindingPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
  *
  * <p>DDD 依赖倒置落地：domain 定义 {@code OAuthBindingRepository} 接口，本类用
  * {@link SpringDataOAuthBindingJpaRepository} + 实体↔领域映射实现它（backend-engineer §2.3）。
- * 领域实体 {@link OAuthBinding} 与 JPA 实体 {@link UserOAuthBindingJpaEntity} 分离，映射集中在此处，
+ * 领域实体 {@link OAuthBinding} 与 JPA 实体 {@link UserOAuthBindingPO} 分离，映射集中在此处，
  * domain 因此不感知 Hibernate。</p>
  *
  * <p>内建 vs 自定义 provider 落库策略（V5 迁移）：
@@ -68,9 +68,9 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
      */
     @Override
     public OAuthBinding save(OAuthBinding binding) {
-        UserOAuthBindingJpaEntity entity = toEntity(binding);
+        UserOAuthBindingPO entity = toEntity(binding);
         try {
-            UserOAuthBindingJpaEntity saved = jpa.saveAndFlush(entity);
+            UserOAuthBindingPO saved = jpa.saveAndFlush(entity);
             // 保存后把数据库生成的 id 回填回领域实体。
             binding.assignId(saved.getId());
             return toDomain(saved);
@@ -145,8 +145,8 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
      * @param binding 领域绑定实体
      * @return 待持久化的 JPA 实体
      */
-    private static UserOAuthBindingJpaEntity toEntity(OAuthBinding binding) {
-        UserOAuthBindingJpaEntity e = new UserOAuthBindingJpaEntity();
+    private static UserOAuthBindingPO toEntity(OAuthBinding binding) {
+        UserOAuthBindingPO e = new UserOAuthBindingPO();
         e.setId(binding.id());
         e.setUserId(binding.userId());
         e.setProvider(providerColumn(binding));
@@ -169,7 +169,7 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
      * @param e JPA 实体
      * @return 重建的领域绑定实体
      */
-    private static OAuthBinding toDomain(UserOAuthBindingJpaEntity e) {
+    private static OAuthBinding toDomain(UserOAuthBindingPO e) {
         Instant createdAt = e.getCreatedAt() == null
                 ? Instant.now()
                 : Instant.ofEpochSecond(e.getCreatedAt());

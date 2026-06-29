@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.model.persistence;
 
-import com.nexa.infrastructure.model.persistence.entity.PublicModelJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.PublicModelPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,40 +16,40 @@ import java.util.Optional;
  * <p>仅供 {@link PublicModelRepositoryImpl} 内部使用。软删除查询由 {@code @SQLRestriction("deleted_at IS NULL")}
  * 自动过滤；写软删用 {@code @Modifying UPDATE}。</p>
  */
-interface SpringDataPublicModelJpaRepository extends JpaRepository<PublicModelJpaEntity, Long> {
+interface SpringDataPublicModelJpaRepository extends JpaRepository<PublicModelPO, Long> {
 
     /** 按对外名 A 等值查询（uk_public_name 幂等键查重）。 */
-    Optional<PublicModelJpaEntity> findByPublicName(String publicName);
+    Optional<PublicModelPO> findByPublicName(String publicName);
 
     /** 分页列表（sort_order/id 升序）。 */
-    @Query("SELECT m FROM PublicModelJpaEntity m ORDER BY m.sortOrder ASC, m.id ASC")
-    List<PublicModelJpaEntity> findPageOrdered(Pageable pageable);
+    @Query("SELECT m FROM PublicModelPO m ORDER BY m.sortOrder ASC, m.id ASC")
+    List<PublicModelPO> findPageOrdered(Pageable pageable);
 
     /** 仅 enabled=true 的分页列表。 */
-    @Query("SELECT m FROM PublicModelJpaEntity m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
-    List<PublicModelJpaEntity> findEnabledPageOrdered(Pageable pageable);
+    @Query("SELECT m FROM PublicModelPO m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
+    List<PublicModelPO> findEnabledPageOrdered(Pageable pageable);
 
     /** 全部总数。 */
     long count();
 
     /** 仅 enabled=true 的总数。 */
-    @Query("SELECT COUNT(m) FROM PublicModelJpaEntity m WHERE m.enabled = true")
+    @Query("SELECT COUNT(m) FROM PublicModelPO m WHERE m.enabled = true")
     long countEnabled();
 
     /**
      * 上架公开名 A 列表（F-6003 候选层来源，F-6004 全员可用判定；不含任何 B，UserVO 安全）。
      */
-    @Query("SELECT m.publicName FROM PublicModelJpaEntity m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
+    @Query("SELECT m.publicName FROM PublicModelPO m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
     List<String> findEnabledPublicNames();
 
     /**
      * 全部上架对外模型完整行（F-2048 公开价格页定价主体；不分页，按 sort_order/id 升序）。
      */
-    @Query("SELECT m FROM PublicModelJpaEntity m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
-    List<PublicModelJpaEntity> findAllEnabledOrdered();
+    @Query("SELECT m FROM PublicModelPO m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
+    List<PublicModelPO> findAllEnabledOrdered();
 
     /** 软删除（仅对存活行生效）。 */
     @Modifying
-    @Query("UPDATE PublicModelJpaEntity m SET m.deletedAt = :deletedAt WHERE m.id = :id AND m.deletedAt IS NULL")
+    @Query("UPDATE PublicModelPO m SET m.deletedAt = :deletedAt WHERE m.id = :id AND m.deletedAt IS NULL")
     int softDeleteById(@Param("id") long id, @Param("deletedAt") long deletedAt);
 }

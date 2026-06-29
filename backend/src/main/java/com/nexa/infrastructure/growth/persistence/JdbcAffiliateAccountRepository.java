@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * <p><b>跨 bounded context 防腐适配器</b>：邀请返利状态是 {@code users} 表 aff_* 列（{@code aff_code/
  * aff_count/aff_quota/aff_history/inviter_id}，DB-SCHEMA §1）的投影，而 {@code users} 表归账号域。增长域
- * 用本 JDBC 适配器只触碰 aff_* 列读写——不复用账号域 {@code UserJpaEntity}（避免 context 耦合与重复
+ * 用本 JDBC 适配器只触碰 aff_* 列读写——不复用账号域 {@code UserPO}（避免 context 耦合与重复
  * 映射同表）。与计费域 {@code JdbcUserQuotaAccount}、本域 {@code JdbcUserQuotaAccount} 同策略。</p>
  *
  * <p>原子写：返利入账与额度扣减用 SQL 级原子自增/条件 UPDATE（CAS），杜绝并发丢更新 / 超额扣减。

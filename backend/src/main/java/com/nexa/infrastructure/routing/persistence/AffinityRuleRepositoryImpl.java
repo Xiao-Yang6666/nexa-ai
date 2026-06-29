@@ -8,8 +8,8 @@ import com.nexa.domain.routing.repository.AffinityRuleRepository;
 import com.nexa.domain.routing.vo.AffinitySettings;
 import com.nexa.domain.routing.vo.KeySource;
 import com.nexa.domain.routing.vo.KeySourceType;
-import com.nexa.infrastructure.routing.persistence.entity.AffinityRuleJpaEntity;
-import com.nexa.infrastructure.routing.persistence.entity.AffinitySettingsJpaEntity;
+import com.nexa.infrastructure.routing.persistence.po.AffinityRulePO;
+import com.nexa.infrastructure.routing.persistence.po.AffinitySettingsPO;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -46,8 +46,8 @@ public class AffinityRuleRepositoryImpl implements AffinityRuleRepository {
 
     @Override
     public void save(AffinityRule rule) {
-        Optional<AffinityRuleJpaEntity> existing = jpaRule.findByName(rule.name());
-        AffinityRuleJpaEntity entity = existing.orElseGet(AffinityRuleJpaEntity::new);
+        Optional<AffinityRulePO> existing = jpaRule.findByName(rule.name());
+        AffinityRulePO entity = existing.orElseGet(AffinityRulePO::new);
         mapToEntity(rule, entity);
         jpaRule.save(entity);
     }
@@ -81,7 +81,7 @@ public class AffinityRuleRepositoryImpl implements AffinityRuleRepository {
 
     @Override
     public void saveSettings(AffinitySettings settings) {
-        AffinitySettingsJpaEntity entity = jpaSettings.findById(1).orElseGet(AffinitySettingsJpaEntity::new);
+        AffinitySettingsPO entity = jpaSettings.findById(1).orElseGet(AffinitySettingsPO::new);
         entity.setId(1);
         entity.setEnabled(settings.enabled());
         entity.setSwitchOnSuccess(settings.switchOnSuccess());
@@ -93,7 +93,7 @@ public class AffinityRuleRepositoryImpl implements AffinityRuleRepository {
 
     // ---- 映射方法 ----
 
-    private void mapToEntity(AffinityRule rule, AffinityRuleJpaEntity e) {
+    private void mapToEntity(AffinityRule rule, AffinityRulePO e) {
         e.setName(rule.name());
         e.setEnabled(rule.enabled());
         e.setModelRegex(rule.modelRegex());
@@ -110,7 +110,7 @@ public class AffinityRuleRepositoryImpl implements AffinityRuleRepository {
         e.setUpdatedTime(now);
     }
 
-    private AffinityRule toDomain(AffinityRuleJpaEntity e) {
+    private AffinityRule toDomain(AffinityRulePO e) {
         return AffinityRule.builder()
                 .enabled(e.isEnabled())
                 .name(e.getName())

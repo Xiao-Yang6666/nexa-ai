@@ -5,7 +5,7 @@ import com.nexa.domain.growth.exception.GrowthPersistenceException;
 import com.nexa.domain.growth.model.Checkin;
 import com.nexa.domain.growth.repository.CheckinRepository;
 import com.nexa.domain.growth.vo.CheckinDate;
-import com.nexa.infrastructure.growth.persistence.entity.CheckinJpaEntity;
+import com.nexa.infrastructure.growth.persistence.po.CheckinPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -44,7 +44,7 @@ public class CheckinRepositoryImpl implements CheckinRepository {
     @Override
     public Checkin save(Checkin checkin) {
         try {
-            CheckinJpaEntity saved = jpa.save(toEntity(checkin));
+            CheckinPO saved = jpa.save(toEntity(checkin));
             checkin.assignId(saved.getId());
             return toDomain(saved);
         } catch (DataIntegrityViolationException ex) {
@@ -89,8 +89,8 @@ public class CheckinRepositoryImpl implements CheckinRepository {
      * @param c 签到记录聚合
      * @return 待持久化实体
      */
-    private CheckinJpaEntity toEntity(Checkin c) {
-        CheckinJpaEntity e = new CheckinJpaEntity();
+    private CheckinPO toEntity(Checkin c) {
+        CheckinPO e = new CheckinPO();
         e.setId(c.id());
         e.setUserId((int) c.userId());
         e.setCheckinDate(c.checkinDate().toWire());
@@ -105,7 +105,7 @@ public class CheckinRepositoryImpl implements CheckinRepository {
      * @param e JPA 实体
      * @return 重建的签到记录聚合
      */
-    private Checkin toDomain(CheckinJpaEntity e) {
+    private Checkin toDomain(CheckinPO e) {
         return Checkin.rehydrate(
                 e.getId(),
                 e.getUserId() == null ? 0L : e.getUserId(),

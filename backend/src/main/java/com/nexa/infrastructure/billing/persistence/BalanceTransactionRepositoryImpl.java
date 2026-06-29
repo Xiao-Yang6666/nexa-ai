@@ -3,7 +3,7 @@ package com.nexa.infrastructure.billing.persistence;
 import com.nexa.domain.billing.model.BalanceTransaction;
 import com.nexa.domain.billing.repository.BalanceTransactionRepository;
 import com.nexa.domain.billing.vo.BalanceTransactionType;
-import com.nexa.infrastructure.billing.persistence.entity.BalanceTransactionJpaEntity;
+import com.nexa.infrastructure.billing.persistence.po.BalanceTransactionPO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -28,7 +28,7 @@ public class BalanceTransactionRepositoryImpl implements BalanceTransactionRepos
     /** {@inheritDoc} */
     @Override
     public BalanceTransaction save(BalanceTransaction tx) {
-        BalanceTransactionJpaEntity saved = jpa.save(toEntity(tx));
+        BalanceTransactionPO saved = jpa.save(toEntity(tx));
         tx.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -43,8 +43,8 @@ public class BalanceTransactionRepositoryImpl implements BalanceTransactionRepos
 
     // ---- 领域 <-> 实体映射 ----
 
-    private BalanceTransactionJpaEntity toEntity(BalanceTransaction t) {
-        BalanceTransactionJpaEntity e = new BalanceTransactionJpaEntity();
+    private BalanceTransactionPO toEntity(BalanceTransaction t) {
+        BalanceTransactionPO e = new BalanceTransactionPO();
         e.setId(t.id());
         e.setUserId(t.userId());
         e.setType(t.type().wireValue());
@@ -56,7 +56,7 @@ public class BalanceTransactionRepositoryImpl implements BalanceTransactionRepos
         return e;
     }
 
-    private BalanceTransaction toDomain(BalanceTransactionJpaEntity e) {
+    private BalanceTransaction toDomain(BalanceTransactionPO e) {
         return BalanceTransaction.rehydrate(
                 e.getId(),
                 e.getUserId() == null ? 0L : e.getUserId(),

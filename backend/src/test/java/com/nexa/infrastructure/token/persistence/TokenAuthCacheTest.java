@@ -4,7 +4,7 @@ import com.nexa.domain.token.model.Token;
 import com.nexa.domain.token.repository.TokenRepository;
 import com.nexa.domain.token.vo.TokenStatus;
 import com.nexa.infrastructure.token.config.AuthCacheConfig;
-import com.nexa.infrastructure.token.persistence.entity.TokenJpaEntity;
+import com.nexa.infrastructure.token.persistence.po.TokenPO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,8 +90,8 @@ class TokenAuthCacheTest {
         verify(jpa, times(2)).findByKey(KEY);
     }
 
-    private static TokenJpaEntity entity() {
-        TokenJpaEntity e = new TokenJpaEntity();
+    private static TokenPO entity() {
+        TokenPO e = new TokenPO();
         e.setId(1L);
         e.setUserId(42);
         e.setKey(KEY);

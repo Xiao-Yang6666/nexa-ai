@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.relay.persistence;
 
-import com.nexa.infrastructure.relay.persistence.entity.UserModelAliasJpaEntity;
+import com.nexa.infrastructure.relay.persistence.po.UserModelAliasPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,21 +16,21 @@ import java.util.Optional;
  * {@link com.nexa.domain.relay.repository.UserModelAliasRepository}。</p>
  *
  * <p>注意：JPQL {@code FROM} 用 Hibernate 实体逻辑名 {@code RelayUserModelAliasJpaEntity}
- * （与 model 包同名类区分）；Java 泛型/返回类型用真实类名 {@link UserModelAliasJpaEntity}。</p>
+ * （与 model 包同名类区分）；Java 泛型/返回类型用真实类名 {@link UserModelAliasPO}。</p>
  */
 @Repository
-public interface SpringDataUserModelAliasRepository extends JpaRepository<UserModelAliasJpaEntity, Long> {
+public interface SpringDataUserModelAliasRepository extends JpaRepository<UserModelAliasPO, Long> {
 
     @Query("SELECT a FROM RelayUserModelAliasJpaEntity a WHERE a.scopeType = :scopeType AND a.scopeId = :scopeId "
             + "AND a.alias = :alias AND a.enabled = true AND a.deletedAt IS NULL")
-    Optional<UserModelAliasJpaEntity> findEnabledByScopeAndAlias(@Param("scopeType") String scopeType,
+    Optional<UserModelAliasPO> findEnabledByScopeAndAlias(@Param("scopeType") String scopeType,
                                                                 @Param("scopeId") String scopeId,
                                                                 @Param("alias") String alias);
 
     @Query("SELECT a FROM RelayUserModelAliasJpaEntity a WHERE a.id = :id AND a.deletedAt IS NULL")
-    Optional<UserModelAliasJpaEntity> findActiveById(@Param("id") Long id);
+    Optional<UserModelAliasPO> findActiveById(@Param("id") Long id);
 
     @Query("SELECT a FROM RelayUserModelAliasJpaEntity a WHERE a.scopeType = :scopeType AND a.scopeId = :scopeId "
             + "AND a.deletedAt IS NULL ORDER BY a.alias ASC")
-    List<UserModelAliasJpaEntity> findByScope(@Param("scopeType") String scopeType, @Param("scopeId") String scopeId);
+    List<UserModelAliasPO> findByScope(@Param("scopeType") String scopeType, @Param("scopeId") String scopeId);
 }

@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.account.provider.persistence;
 
-import com.nexa.infrastructure.account.provider.persistence.entity.AccountAbilityJpaEntity;
+import com.nexa.infrastructure.account.provider.persistence.po.AccountAbilityPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Ability 路由索引 Spring Data JPA 仓储（账号维度，V33 重建）。
  */
-public interface SpringDataAccountAbilityJpaRepository extends JpaRepository<AccountAbilityJpaEntity, Long> {
+public interface SpringDataAccountAbilityJpaRepository extends JpaRepository<AccountAbilityPO, Long> {
 
     /**
      * 删除指定账号的所有 ability 记录（fan-in）。
@@ -19,7 +19,7 @@ public interface SpringDataAccountAbilityJpaRepository extends JpaRepository<Acc
      * @param accountId 账号 id
      */
     @Modifying
-    @Query("DELETE FROM AccountAbilityJpaEntity a WHERE a.accountId = :accountId")
+    @Query("DELETE FROM AccountAbilityPO a WHERE a.accountId = :accountId")
     void deleteByAccountId(@Param("accountId") Long accountId);
 
     /**
@@ -31,8 +31,8 @@ public interface SpringDataAccountAbilityJpaRepository extends JpaRepository<Acc
      * @param group 分组
      * @return 该分组下 ACTIVE 的 ability 行
      */
-    @Query("SELECT a FROM AccountAbilityJpaEntity a WHERE a.group = :group AND a.status = 'active'")
-    List<AccountAbilityJpaEntity> findActiveByGroup(@Param("group") String group);
+    @Query("SELECT a FROM AccountAbilityPO a WHERE a.group = :group AND a.status = 'active'")
+    List<AccountAbilityPO> findActiveByGroup(@Param("group") String group);
 
     /**
      * 按模型粗筛 status=active 的 ability 行（方案乙：选账号按模型 A 反查，跨全部分组）。
@@ -45,6 +45,6 @@ public interface SpringDataAccountAbilityJpaRepository extends JpaRepository<Acc
      * @param modelLike 形如 {@code %模型名%} 的 LIKE 模式
      * @return 粗筛命中的 ACTIVE ability 行
      */
-    @Query("SELECT a FROM AccountAbilityJpaEntity a WHERE a.status = 'active' AND a.models LIKE :modelLike")
-    List<AccountAbilityJpaEntity> findActiveByModelLike(@Param("modelLike") String modelLike);
+    @Query("SELECT a FROM AccountAbilityPO a WHERE a.status = 'active' AND a.models LIKE :modelLike")
+    List<AccountAbilityPO> findActiveByModelLike(@Param("modelLike") String modelLike);
 }

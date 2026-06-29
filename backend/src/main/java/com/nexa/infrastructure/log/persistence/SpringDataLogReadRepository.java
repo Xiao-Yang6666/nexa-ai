@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.log.persistence;
 
-import com.nexa.infrastructure.log.persistence.entity.LogReadJpaEntity;
+import com.nexa.infrastructure.log.persistence.po.LogReadPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,7 +20,7 @@ import java.util.List;
  * <p>self-scope：{@code userId} 维度由可空参数控制，自助查询永远传非空 userId（用例层从认证上下文取，
  * 防伪造），管理端传 null=全站（ROLE-PERMISSION-MATRIX §3）。</p>
  */
-interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Long> {
+interface SpringDataLogReadRepository extends JpaRepository<LogReadPO, Long> {
 
     /**
      * 多条件过滤分页查询日志（F-4001 管理端 / F-4002 自助；按 created_at,id 降序新→旧）。
@@ -29,7 +29,7 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
      * 模型按 model_name(=C) 口径过滤（与现网报表一致）。</p>
      */
     @Query("""
-            SELECT l FROM LogReadJpaEntity l
+            SELECT l FROM LogReadPO l
             WHERE (:userId IS NULL OR l.userId = :userId)
               AND (:type IS NULL OR l.type = :type)
               AND (:startTs IS NULL OR l.createdAt >= :startTs)
@@ -43,7 +43,7 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
               AND (:upstreamRequestId IS NULL OR l.upstreamRequestId = :upstreamRequestId)
             ORDER BY l.createdAt DESC, l.id DESC
             """)
-    List<LogReadJpaEntity> findByFilter(@Param("userId") Integer userId,
+    List<LogReadPO> findByFilter(@Param("userId") Integer userId,
                                         @Param("type") Integer type,
                                         @Param("startTs") Long startTs,
                                         @Param("endTs") Long endTs,
@@ -60,7 +60,7 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
      * 多条件过滤计数（F-4001/F-4002 分页 total，维度与 {@link #findByFilter} 一致）。
      */
     @Query("""
-            SELECT COUNT(l) FROM LogReadJpaEntity l
+            SELECT COUNT(l) FROM LogReadPO l
             WHERE (:userId IS NULL OR l.userId = :userId)
               AND (:type IS NULL OR l.type = :type)
               AND (:startTs IS NULL OR l.createdAt >= :startTs)
@@ -93,11 +93,11 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
      * @return 该令牌消费日志（新→旧）
      */
     @Query("""
-            SELECT l FROM LogReadJpaEntity l
+            SELECT l FROM LogReadPO l
             WHERE l.tokenId = :tokenId AND l.type = 2
             ORDER BY l.createdAt DESC, l.id DESC
             """)
-    List<LogReadJpaEntity> findConsumeByToken(@Param("tokenId") Integer tokenId, Pageable pageable);
+    List<LogReadPO> findConsumeByToken(@Param("tokenId") Integer tokenId, Pageable pageable);
 
     /**
      * 聚合消费日志的 [请求数, quota 总和, token 总和]（F-4004/F-4005；强制 Type=2）。
@@ -109,7 +109,7 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
             SELECT COUNT(l),
                    COALESCE(SUM(l.quota), 0),
                    COALESCE(SUM(l.promptTokens + l.completionTokens), 0)
-            FROM LogReadJpaEntity l
+            FROM LogReadPO l
             WHERE l.type = 2
               AND (:userId IS NULL OR l.userId = :userId)
               AND (:startTs IS NULL OR l.createdAt >= :startTs)
@@ -273,6 +273,6 @@ interface SpringDataLogReadRepository extends JpaRepository<LogReadJpaEntity, Lo
      * @return 受影响（匿名化）行数
      */
     @Modifying
-    @Query("UPDATE LogReadJpaEntity l SET l.username = :anon WHERE l.userId = :userId")
+    @Query("UPDATE LogReadPO l SET l.username = :anon WHERE l.userId = :userId")
     int anonymizeByUserId(@Param("userId") Integer userId, @Param("anon") String anonymizedUsername);
 }

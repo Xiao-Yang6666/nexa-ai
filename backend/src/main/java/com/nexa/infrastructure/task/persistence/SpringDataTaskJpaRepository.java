@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.task.persistence;
 
-import com.nexa.infrastructure.task.persistence.entity.TaskJpaEntity;
+import com.nexa.infrastructure.task.persistence.po.TaskPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * {@code @Modifying UPDATE ... WHERE status=:fromStatus}（乐观锁守卫，RowsAffected>0 才算赢）。
  * F-2003/F-2004 动态过滤用 JPQL 的 {@code (:param IS NULL OR ...)} 惯用法（null 参数跳过该维度）。</p>
  */
-interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long> {
+interface SpringDataTaskJpaRepository extends JpaRepository<TaskPO, Long> {
 
     /**
      * 按 task_id 查询（F-2006/F-2007）。
@@ -26,7 +26,7 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
      * @param taskId 任务 ID
      * @return 命中实体（可空）
      */
-    Optional<TaskJpaEntity> findByTaskId(String taskId);
+    Optional<TaskPO> findByTaskId(String taskId);
 
     /**
      * 按 task_id + user_id 查询（self-scope 归属验证，F-2003）。
@@ -35,7 +35,7 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
      * @param userId 归属用户 id
      * @return 命中实体（可空）
      */
-    Optional<TaskJpaEntity> findByTaskIdAndUserId(String taskId, Integer userId);
+    Optional<TaskPO> findByTaskIdAndUserId(String taskId, Integer userId);
 
     /**
      * CAS 条件更新（F-2002 UpdateWithStatus）。
@@ -57,7 +57,7 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
      */
     @Modifying
     @Query("""
-            UPDATE TaskJpaEntity t SET
+            UPDATE TaskPO t SET
                 t.status = :toStatus,
                 t.failReason = :failReason,
                 t.startTime = :startTime,
@@ -95,7 +95,7 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
      * @return 当前页实体
      */
     @Query("""
-            SELECT t FROM TaskJpaEntity t
+            SELECT t FROM TaskPO t
             WHERE (:taskId IS NULL OR t.taskId = :taskId)
               AND (:userId IS NULL OR t.userId = :userId)
               AND (:channelId IS NULL OR t.channelId = :channelId)
@@ -106,7 +106,7 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
               AND (:endTime IS NULL OR t.submitTime <= :endTime)
             ORDER BY t.id DESC
             """)
-    List<TaskJpaEntity> findPage(@Param("taskId") String taskId,
+    List<TaskPO> findPage(@Param("taskId") String taskId,
                                  @Param("userId") Integer userId,
                                  @Param("channelId") Integer channelId,
                                  @Param("platform") String platform,
@@ -130,7 +130,7 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
      * @return 总数
      */
     @Query("""
-            SELECT COUNT(t) FROM TaskJpaEntity t
+            SELECT COUNT(t) FROM TaskPO t
             WHERE (:taskId IS NULL OR t.taskId = :taskId)
               AND (:userId IS NULL OR t.userId = :userId)
               AND (:channelId IS NULL OR t.channelId = :channelId)
@@ -160,12 +160,12 @@ interface SpringDataTaskJpaRepository extends JpaRepository<TaskJpaEntity, Long>
      * @return 超时候选实体
      */
     @Query("""
-            SELECT t FROM TaskJpaEntity t
+            SELECT t FROM TaskPO t
             WHERE (t.progress IS NULL OR t.progress <> '100%')
               AND t.status NOT IN ('FAILURE', 'SUCCESS')
               AND t.submitTime IS NOT NULL
               AND t.submitTime < :cutoff
             ORDER BY t.submitTime ASC
             """)
-    List<TaskJpaEntity> findTimedOut(@Param("cutoff") long cutoff, Pageable pageable);
+    List<TaskPO> findTimedOut(@Param("cutoff") long cutoff, Pageable pageable);
 }

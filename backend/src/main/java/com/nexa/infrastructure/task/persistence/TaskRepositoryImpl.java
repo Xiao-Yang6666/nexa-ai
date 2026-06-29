@@ -10,7 +10,7 @@ import com.nexa.domain.task.vo.BillingContext;
 import com.nexa.domain.task.vo.TaskPlatform;
 import com.nexa.domain.task.vo.TaskQuery;
 import com.nexa.domain.task.vo.TaskStatus;
-import com.nexa.infrastructure.task.persistence.entity.TaskJpaEntity;
+import com.nexa.infrastructure.task.persistence.po.TaskPO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -53,7 +53,7 @@ public class TaskRepositoryImpl implements TaskRepository {
     /** {@inheritDoc} */
     @Override
     public Task save(Task task) {
-        TaskJpaEntity saved = jpa.save(toEntity(task));
+        TaskPO saved = jpa.save(toEntity(task));
         task.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -127,8 +127,8 @@ public class TaskRepositoryImpl implements TaskRepository {
      * @param t 任务聚合
      * @return 待持久化的 JPA 实体
      */
-    private TaskJpaEntity toEntity(Task t) {
-        TaskJpaEntity e = new TaskJpaEntity();
+    private TaskPO toEntity(Task t) {
+        TaskPO e = new TaskPO();
         e.setId(t.id());
         e.setTaskId(t.taskId());
         e.setPlatform(t.platform() == null ? null : t.platform().toWire());
@@ -157,7 +157,7 @@ public class TaskRepositoryImpl implements TaskRepository {
      * @param e JPA 实体
      * @return 重建的任务聚合
      */
-    private Task toDomain(TaskJpaEntity e) {
+    private Task toDomain(TaskPO e) {
         // 具名链式装配：每个 getter 对位到自解释的 Builder 方法，避免 20 位位置参数误位。
         return Task.builder()
                 .id(e.getId())

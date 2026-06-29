@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.model.persistence;
 
-import com.nexa.infrastructure.model.persistence.entity.ModelMetaJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.ModelMetaPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * {@code :param IS NULL OR ...} 惯用法）；软删除查询由 {@code @SQLRestriction} 自动过滤，写软删用
  * {@code @Modifying UPDATE}。供应商计数用聚合查询一次取回（F-3013 enrich 避免 N+1）。</p>
  */
-interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEntity, Long> {
+interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaPO, Long> {
 
     /**
      * 按模型名等值查询（F-3015/F-3016/F-3019 幂等键查重）。
@@ -26,7 +26,7 @@ interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEnt
      * @param modelName 模型名
      * @return 命中实体
      */
-    Optional<ModelMetaJpaEntity> findByModelName(String modelName);
+    Optional<ModelMetaPO> findByModelName(String modelName);
 
     /**
      * 分页列表（按 id 升序，F-3013）。
@@ -34,8 +34,8 @@ interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEnt
      * @param pageable 分页
      * @return 当前页实体
      */
-    @Query("SELECT m FROM ModelMetaJpaEntity m ORDER BY m.id ASC")
-    List<ModelMetaJpaEntity> findPageOrdered(Pageable pageable);
+    @Query("SELECT m FROM ModelMetaPO m ORDER BY m.id ASC")
+    List<ModelMetaPO> findPageOrdered(Pageable pageable);
 
     /**
      * 关键词 + 供应商过滤分页搜索（F-3014）。
@@ -48,14 +48,14 @@ interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEnt
      * @return 当前页实体
      */
     @Query("""
-            SELECT m FROM ModelMetaJpaEntity m
+            SELECT m FROM ModelMetaPO m
             WHERE (:vendorId IS NULL OR m.vendorId = :vendorId)
               AND (LOWER(m.modelName) LIKE CONCAT('%', :keyword, '%')
                    OR LOWER(COALESCE(m.tags, '')) LIKE CONCAT('%', :keyword, '%')
                    OR LOWER(COALESCE(m.description, '')) LIKE CONCAT('%', :keyword, '%'))
             ORDER BY m.id ASC
             """)
-    List<ModelMetaJpaEntity> searchFiltered(@Param("keyword") String keyword,
+    List<ModelMetaPO> searchFiltered(@Param("keyword") String keyword,
                                             @Param("vendorId") Long vendorId,
                                             Pageable pageable);
 
@@ -67,7 +67,7 @@ interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEnt
      * @return 命中数
      */
     @Query("""
-            SELECT COUNT(m) FROM ModelMetaJpaEntity m
+            SELECT COUNT(m) FROM ModelMetaPO m
             WHERE (:vendorId IS NULL OR m.vendorId = :vendorId)
               AND (LOWER(m.modelName) LIKE CONCAT('%', :keyword, '%')
                    OR LOWER(COALESCE(m.tags, '')) LIKE CONCAT('%', :keyword, '%')
@@ -80,7 +80,7 @@ interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEnt
      *
      * @return [vendorId, count] 行（vendorId 可能为 null）
      */
-    @Query("SELECT m.vendorId, COUNT(m) FROM ModelMetaJpaEntity m GROUP BY m.vendorId")
+    @Query("SELECT m.vendorId, COUNT(m) FROM ModelMetaPO m GROUP BY m.vendorId")
     List<Object[]> countGroupByVendor();
 
     /**
@@ -91,6 +91,6 @@ interface SpringDataModelMetaJpaRepository extends JpaRepository<ModelMetaJpaEnt
      * @return 受影响行数
      */
     @Modifying
-    @Query("UPDATE ModelMetaJpaEntity m SET m.deletedAt = :deletedAt WHERE m.id = :id AND m.deletedAt IS NULL")
+    @Query("UPDATE ModelMetaPO m SET m.deletedAt = :deletedAt WHERE m.id = :id AND m.deletedAt IS NULL")
     int softDeleteById(@Param("id") long id, @Param("deletedAt") long deletedAt);
 }

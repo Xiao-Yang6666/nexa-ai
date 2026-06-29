@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.routing.selection;
 
 import com.nexa.infrastructure.account.provider.persistence.SpringDataAccountAbilityJpaRepository;
-import com.nexa.infrastructure.account.provider.persistence.entity.AccountAbilityJpaEntity;
+import com.nexa.infrastructure.account.provider.persistence.po.AccountAbilityPO;
 import com.nexa.application.routing.port.ChannelSelectionPort;
 import com.nexa.domain.routing.vo.ChannelCandidate;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,7 @@ public class AbilityBackedChannelSelectionAdapter implements ChannelSelectionPor
     public ChannelCandidate selectChannel(String group, String model, int priorityRetry,
                                           Set<Long> excludeChannelIds) {
         if (group == null || model == null) return null;
-        List<AccountAbilityJpaEntity> satisfied = abilityRepository.findActiveByGroup(group).stream()
+        List<AccountAbilityPO> satisfied = abilityRepository.findActiveByGroup(group).stream()
                 .filter(a -> declaresModel(a.getModels(), model))
                 .toList();
         if (satisfied.isEmpty()) return null;
@@ -57,7 +57,7 @@ public class AbilityBackedChannelSelectionAdapter implements ChannelSelectionPor
         // priorityRetry 作为简单下标偏移（账号优先级在 account 聚合内做精细排序，此处简化）。
         int idx = Math.max(0, priorityRetry);
         if (idx >= satisfied.size()) return null;
-        AccountAbilityJpaEntity picked = satisfied.get(idx);
+        AccountAbilityPO picked = satisfied.get(idx);
         return new ChannelCandidate(picked.getAccountId(), group, 0L, 0);
     }
 

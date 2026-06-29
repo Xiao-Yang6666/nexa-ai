@@ -4,7 +4,7 @@ import com.nexa.domain.oauthprovider.exception.InvalidCustomOAuthProviderExcepti
 import com.nexa.domain.oauthprovider.model.CustomOAuthProvider;
 import com.nexa.domain.oauthprovider.repository.CustomOAuthProviderRepository;
 import com.nexa.domain.oauthprovider.vo.OAuthEndpoints;
-import com.nexa.infrastructure.oauthprovider.persistence.entity.CustomOAuthProviderJpaEntity;
+import com.nexa.infrastructure.oauthprovider.persistence.po.CustomOAuthProviderPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +17,7 @@ import java.util.Optional;
  *
  * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link SpringDataCustomOAuthProviderJpaRepository}
  * + 实体↔领域映射实现它。领域聚合 {@link CustomOAuthProvider} 与 JPA 实体
- * {@link CustomOAuthProviderJpaEntity} 分离，映射集中在此处，domain 因此不感知 Hibernate
+ * {@link CustomOAuthProviderPO} 分离，映射集中在此处，domain 因此不感知 Hibernate
  * （backend-engineer §2.3）。name 唯一索引冲突翻译为领域异常（不吞错）。</p>
  */
 @Repository
@@ -35,9 +35,9 @@ public class CustomOAuthProviderRepositoryImpl implements CustomOAuthProviderRep
     /** {@inheritDoc} */
     @Override
     public CustomOAuthProvider save(CustomOAuthProvider provider) {
-        CustomOAuthProviderJpaEntity entity = toEntity(provider);
+        CustomOAuthProviderPO entity = toEntity(provider);
         try {
-            CustomOAuthProviderJpaEntity saved = jpa.saveAndFlush(entity);
+            CustomOAuthProviderPO saved = jpa.saveAndFlush(entity);
             provider.assignId(saved.getId());
             return toDomain(saved);
         } catch (DataIntegrityViolationException e) {
@@ -81,8 +81,8 @@ public class CustomOAuthProviderRepositoryImpl implements CustomOAuthProviderRep
      * @param p 领域聚合
      * @return 待持久化的 JPA 实体
      */
-    private static CustomOAuthProviderJpaEntity toEntity(CustomOAuthProvider p) {
-        CustomOAuthProviderJpaEntity e = new CustomOAuthProviderJpaEntity();
+    private static CustomOAuthProviderPO toEntity(CustomOAuthProvider p) {
+        CustomOAuthProviderPO e = new CustomOAuthProviderPO();
         e.setId(p.id());
         e.setName(p.name());
         e.setClientId(p.clientId());
@@ -103,7 +103,7 @@ public class CustomOAuthProviderRepositoryImpl implements CustomOAuthProviderRep
      * @param e JPA 实体
      * @return 重建的领域聚合
      */
-    private static CustomOAuthProvider toDomain(CustomOAuthProviderJpaEntity e) {
+    private static CustomOAuthProvider toDomain(CustomOAuthProviderPO e) {
         OAuthEndpoints endpoints = OAuthEndpoints.of(
                 e.getAuthorizationEndpoint(), e.getTokenEndpoint(), e.getUserinfoEndpoint());
         Instant createdAt = e.getCreatedAt() == null ? Instant.now() : Instant.ofEpochSecond(e.getCreatedAt());

@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.telegram.persistence;
 
-import com.nexa.infrastructure.telegram.persistence.entity.TelegramBindingJpaEntity;
+import com.nexa.infrastructure.telegram.persistence.po.TelegramBindingPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -12,7 +12,7 @@ import java.util.Optional;
  * {@code domain.repository.TelegramBindingRepository}。派生查询对齐唯一约束
  * {@code ux_telegram_id (telegram_id)} 与 {@code ux_telegram_user_id (user_id)}。</p>
  */
-interface SpringDataTelegramBindingJpaRepository extends JpaRepository<TelegramBindingJpaEntity, Long> {
+interface SpringDataTelegramBindingJpaRepository extends JpaRepository<TelegramBindingPO, Long> {
 
     /**
      * 按 telegram_id 反查绑定（Telegram 登录核心查询 F-1051 / 绑定唯一性判定 F-1054）。
@@ -20,7 +20,7 @@ interface SpringDataTelegramBindingJpaRepository extends JpaRepository<TelegramB
      * @param telegramId Telegram 账号 id 串
      * @return 命中实体，否则空（唯一，至多一条）
      */
-    Optional<TelegramBindingJpaEntity> findByTelegramId(String telegramId);
+    Optional<TelegramBindingPO> findByTelegramId(String telegramId);
 
     /**
      * 按 user_id 查绑定（本站账号是否已绑 Telegram）。
@@ -28,5 +28,5 @@ interface SpringDataTelegramBindingJpaRepository extends JpaRepository<TelegramB
      * @param userId 本站用户 id
      * @return 命中实体，否则空（唯一，至多一条）
      */
-    Optional<TelegramBindingJpaEntity> findByUserId(Long userId);
+    Optional<TelegramBindingPO> findByUserId(Long userId);
 }

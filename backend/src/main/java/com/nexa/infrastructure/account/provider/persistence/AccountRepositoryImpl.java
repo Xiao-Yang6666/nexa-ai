@@ -6,9 +6,9 @@ import com.nexa.domain.account.provider.model.Account;
 import com.nexa.domain.account.provider.repository.AccountRepository;
 import com.nexa.domain.account.provider.vo.AccountGroupRef;
 import com.nexa.domain.account.provider.vo.Pagination;
-import com.nexa.infrastructure.account.provider.persistence.entity.AccountAbilityJpaEntity;
-import com.nexa.infrastructure.account.provider.persistence.entity.AccountGroupJpaEntity;
-import com.nexa.infrastructure.account.provider.persistence.entity.AccountJpaEntity;
+import com.nexa.infrastructure.account.provider.persistence.po.AccountAbilityPO;
+import com.nexa.infrastructure.account.provider.persistence.po.AccountGroupPO;
+import com.nexa.infrastructure.account.provider.persistence.po.AccountPO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +49,7 @@ public class AccountRepositoryImpl implements AccountRepository {
     @Override
     @Transactional
     public Account save(Account account) {
-        AccountJpaEntity saved = jpa.save(toEntity(account));
+        AccountPO saved = jpa.save(toEntity(account));
         account.assignId(saved.getId());
         rebuildGroups(saved.getId(), account.groups());
         rebuildAbilities(saved.getId(), account);
@@ -113,7 +113,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         // 1) account_groups 按 group 反查账号 id（去重）；2) 装配聚合；3) 领域 isSchedulable 终判；
         // 4) 账号 priority 升序（小=高优先）排序，由选择适配层决定最终取哪个。
         return groupJpa.findByGroup(g).stream()
-                .map(AccountGroupJpaEntity::getAccountId)
+                .map(AccountGroupPO::getAccountId)
                 .distinct()
                 .map(jpa::findById)
                 .filter(Optional::isPresent)
@@ -136,7 +136,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         // 4) priority 升序（小=高优先）。售价分组与调度解耦：此处不看 group。
         String like = "%" + m + "%";
         return abilityJpa.findActiveByModelLike(like).stream()
-                .map(AccountAbilityJpaEntity::getAccountId)
+                .map(AccountAbilityPO::getAccountId)
                 .distinct()
                 .map(jpa::findById)
                 .filter(Optional::isPresent)
@@ -163,8 +163,8 @@ public class AccountRepositoryImpl implements AccountRepository {
 
     // ---- 领域聚合 <-> JPA 实体映射（基础设施层内部，领域不可见） ----
 
-    private AccountJpaEntity toEntity(Account a) {
-        AccountJpaEntity e = new AccountJpaEntity();
+    private AccountPO toEntity(Account a) {
+        AccountPO e = new AccountPO();
         e.setId(a.id());
         e.setName(a.name());
         e.setPlatform(a.platform());
@@ -194,7 +194,7 @@ public class AccountRepositoryImpl implements AccountRepository {
         return e;
     }
 
-    private Account toDomain(AccountJpaEntity e, List<AccountGroupRef> groups) {
+    private Account toDomain(AccountPO e, List<AccountGroupRef> groups) {
         return Account.rehydrate(
                 e.getId(),
                 e.getName(),
@@ -245,9 +245,9 @@ public class AccountRepositoryImpl implements AccountRepository {
         if (groups == null || groups.isEmpty()) {
             return;
         }
-        List<AccountGroupJpaEntity> rows = new ArrayList<>(groups.size());
+        List<AccountGroupPO> rows = new ArrayList<>(groups.size());
         for (AccountGroupRef ref : groups) {
-            rows.add(new AccountGroupJpaEntity(accountId, ref.group(), ref.priority()));
+            rows.add(new AccountGroupPO(accountId, ref.group(), ref.priority()));
         }
         groupJpa.saveAll(rows);
     }
@@ -267,9 +267,9 @@ public class AccountRepositoryImpl implements AccountRepository {
             return;
         }
         long now = Instant.now().getEpochSecond();
-        List<AccountAbilityJpaEntity> rows = new ArrayList<>();
+        List<AccountAbilityPO> rows = new ArrayList<>();
         for (AccountGroupRef ref : account.groups()) {
-            rows.add(new AccountAbilityJpaEntity(
+            rows.add(new AccountAbilityPO(
                     accountId,
                     ref.group(),
                     account.models(),

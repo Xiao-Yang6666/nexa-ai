@@ -3,7 +3,7 @@ package com.nexa.infrastructure.model.persistence;
 import com.nexa.domain.model.model.UserModelAlias;
 import com.nexa.domain.model.repository.UserModelAliasRepository;
 import com.nexa.domain.model.vo.AliasScopeType;
-import com.nexa.infrastructure.model.persistence.entity.UserModelAliasJpaEntity;
+import com.nexa.infrastructure.model.persistence.po.UserModelAliasPO;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +30,7 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
     /** {@inheritDoc} */
     @Override
     public UserModelAlias save(UserModelAlias alias) {
-        UserModelAliasJpaEntity saved = jpa.save(toEntity(alias));
+        UserModelAliasPO saved = jpa.save(toEntity(alias));
         alias.assignId(saved.getId());
         return toDomain(saved);
     }
@@ -76,8 +76,8 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
 
     // ---- 领域聚合 <-> JPA 实体映射 ----
 
-    private UserModelAliasJpaEntity toEntity(UserModelAlias a) {
-        UserModelAliasJpaEntity e = new UserModelAliasJpaEntity();
+    private UserModelAliasPO toEntity(UserModelAlias a) {
+        UserModelAliasPO e = new UserModelAliasPO();
         e.setId(a.id());
         e.setScopeType(a.scopeType().code());
         e.setScopeId(a.scopeId());
@@ -89,7 +89,7 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
         return e;
     }
 
-    private UserModelAlias toDomain(UserModelAliasJpaEntity e) {
+    private UserModelAlias toDomain(UserModelAliasPO e) {
         return UserModelAlias.builder()
                 .id(e.getId())
                 .scopeType(AliasScopeType.fromCode(e.getScopeType()))

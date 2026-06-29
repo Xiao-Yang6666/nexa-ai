@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.billing.persistence;
 
-import com.nexa.infrastructure.billing.persistence.entity.RedemptionJpaEntity;
+import com.nexa.infrastructure.billing.persistence.po.RedemptionPO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,7 +13,7 @@ import java.util.Optional;
  * <p>仅供 {@link RedemptionRepositoryImpl} 内部使用，不暴露给应用/领域层——领域只认
  * {@code domain.repository.RedemptionRepository}。</p>
  */
-interface SpringDataRedemptionJpaRepository extends JpaRepository<RedemptionJpaEntity, Long> {
+interface SpringDataRedemptionJpaRepository extends JpaRepository<RedemptionPO, Long> {
 
     /**
      * 按明文 Key 查实体。
@@ -21,7 +21,7 @@ interface SpringDataRedemptionJpaRepository extends JpaRepository<RedemptionJpaE
      * @param key 兑换码明文
      * @return 命中实体，否则空
      */
-    Optional<RedemptionJpaEntity> findByKey(String key);
+    Optional<RedemptionPO> findByKey(String key);
 
     /**
      * 全量分页查询（管理端列表，{@code @SQLRestriction} 自动过滤软删除行）。
@@ -29,5 +29,5 @@ interface SpringDataRedemptionJpaRepository extends JpaRepository<RedemptionJpaE
      * @param pageable 分页参数
      * @return 当页实体
      */
-    Page<RedemptionJpaEntity> findAllBy(Pageable pageable);
+    Page<RedemptionPO> findAllBy(Pageable pageable);
 }

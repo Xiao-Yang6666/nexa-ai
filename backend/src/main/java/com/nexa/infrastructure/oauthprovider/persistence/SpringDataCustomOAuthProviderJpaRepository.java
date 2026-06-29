@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.oauthprovider.persistence;
 
-import com.nexa.infrastructure.oauthprovider.persistence.entity.CustomOAuthProviderJpaEntity;
+import com.nexa.infrastructure.oauthprovider.persistence.po.CustomOAuthProviderPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -12,7 +12,7 @@ import java.util.Optional;
  * {@code domain.repository.CustomOAuthProviderRepository}。按 name 唯一索引派生查询。</p>
  */
 interface SpringDataCustomOAuthProviderJpaRepository
-        extends JpaRepository<CustomOAuthProviderJpaEntity, Long> {
+        extends JpaRepository<CustomOAuthProviderPO, Long> {
 
     /**
      * 按 name（路由标识）查 provider。
@@ -20,5 +20,5 @@ interface SpringDataCustomOAuthProviderJpaRepository
      * @param name provider 路由标识
      * @return 命中实体，否则空（name 唯一，至多一条）
      */
-    Optional<CustomOAuthProviderJpaEntity> findByName(String name);
+    Optional<CustomOAuthProviderPO> findByName(String name);
 }

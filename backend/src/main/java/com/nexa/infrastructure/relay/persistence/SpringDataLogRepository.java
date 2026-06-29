@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.relay.persistence;
 
-import com.nexa.infrastructure.relay.persistence.entity.LogJpaEntity;
+import com.nexa.infrastructure.relay.persistence.po.LogPO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,5 +11,5 @@ import org.springframework.stereotype.Repository;
  * {@link com.nexa.domain.relay.repository.RelayLogRepository}。本 BC 只写日志，读由 billing/log 模块负责。</p>
  */
 @Repository
-public interface SpringDataLogRepository extends JpaRepository<LogJpaEntity, Long> {
+public interface SpringDataLogRepository extends JpaRepository<LogPO, Long> {
 }
