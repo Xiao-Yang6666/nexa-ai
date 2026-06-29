@@ -41,6 +41,20 @@ public interface UserQuotaAccount {
     void debit(long userId, Quota amount);
 
     /**
+     * 从用户余额扣减，<b>扣到 0 为止</b>（管理员手动扣费，不允许欠费）。
+     *
+     * <p>原子语义：{@code users.quota = GREATEST(quota - amount, 0)}，并返回<b>实际扣减额</b>
+     * （= 扣前余额与请求额的较小者）。请求额超出当前余额时只扣到 0；实扣额用于记账变流水。
+     * 单条 SQL 原子完成（先读后扣放在同一事务/语句），杜绝并发竞态。</p>
+     *
+     * @param userId 目标用户 id（&gt; 0）
+     * @param amount 期望扣减额（quota，&gt;= 0）
+     * @return 实际扣减额（quota，&lt;= amount）
+     * @throws com.nexa.billing.domain.exception.InvalidBillingParameterException 用户不存在时
+     */
+    Quota debitToZero(long userId, Quota amount);
+
+    /**
      * 查询用户当前余额（用于回执展示，可选）。
      *
      * @param userId 目标用户 id

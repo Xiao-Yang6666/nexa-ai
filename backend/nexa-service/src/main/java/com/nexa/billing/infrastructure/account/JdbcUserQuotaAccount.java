@@ -65,6 +65,27 @@ public class JdbcUserQuotaAccount implements UserQuotaAccount {
 
     /** {@inheritDoc} */
     @Override
+    public Quota debitToZero(long userId, Quota amount) {
+        if (amount.isZero()) {
+            return Quota.ZERO;
+        }
+        // 原子「扣到 0」并用 CTE 捕获扣前/扣后余额：实扣 = 扣前 - 扣后。
+        // 软删用户不扣减；无命中行 → 用户不存在/已删，抛错由上层翻译。
+        Long actual = jdbcTemplate.query(
+                "WITH before AS (SELECT id, quota AS q FROM users WHERE id = ? AND deleted_at IS NULL), "
+                        + "upd AS (UPDATE users SET quota = GREATEST(quota - ?, 0) "
+                        + "WHERE id = (SELECT id FROM before) RETURNING quota AS q) "
+                        + "SELECT before.q - upd.q FROM before, upd",
+                rs -> rs.next() ? rs.getLong(1) : null,
+                userId, amount.value());
+        if (actual == null) {
+            throw new InvalidBillingParameterException("cannot debit quota: user not found or deleted, id=" + userId);
+        }
+        return Quota.of(Math.max(actual, 0L));
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public Quota balanceOf(long userId) {
         Long balance = jdbcTemplate.query(
                 "SELECT quota FROM users WHERE id = ? AND deleted_at IS NULL",

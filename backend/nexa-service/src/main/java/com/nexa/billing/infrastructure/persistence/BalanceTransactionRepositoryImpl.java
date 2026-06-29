@@ -1,0 +1,70 @@
+package com.nexa.billing.infrastructure.persistence;
+
+import com.nexa.billing.domain.model.BalanceTransaction;
+import com.nexa.billing.domain.repository.BalanceTransactionRepository;
+import com.nexa.billing.domain.vo.BalanceTransactionType;
+import com.nexa.billing.infrastructure.persistence.entity.BalanceTransactionJpaEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+/**
+ * 账变流水仓储 {@link BalanceTransactionRepository} 的 JPA 实现（基础设施层适配器）。
+ *
+ * <p>DDD 依赖倒置：domain 定接口，本类用 {@link SpringDataBalanceTransactionJpaRepository} +
+ * 实体↔领域映射实现。账变为不可变历史事实，仅 save（新增）+ findByUser（查）。</p>
+ */
+@Repository
+public class BalanceTransactionRepositoryImpl implements BalanceTransactionRepository {
+
+    private final SpringDataBalanceTransactionJpaRepository jpa;
+
+    /** @param jpa Spring Data JPA 仓库（infra 内部依赖） */
+    public BalanceTransactionRepositoryImpl(SpringDataBalanceTransactionJpaRepository jpa) {
+        this.jpa = jpa;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public BalanceTransaction save(BalanceTransaction tx) {
+        BalanceTransactionJpaEntity saved = jpa.save(toEntity(tx));
+        tx.assignId(saved.getId());
+        return toDomain(saved);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<BalanceTransaction> findByUser(long userId, int limit) {
+        int safeLimit = limit <= 0 ? 50 : Math.min(limit, 500);
+        return jpa.findByUserIdOrderByCreatedTimeDesc(userId, PageRequest.of(0, safeLimit))
+                .stream().map(this::toDomain).toList();
+    }
+
+    // ---- 领域 <-> 实体映射 ----
+
+    private BalanceTransactionJpaEntity toEntity(BalanceTransaction t) {
+        BalanceTransactionJpaEntity e = new BalanceTransactionJpaEntity();
+        e.setId(t.id());
+        e.setUserId(t.userId());
+        e.setType(t.type().wireValue());
+        e.setAmount(t.amount());
+        e.setBalanceAfter(t.balanceAfter());
+        e.setOperatorId(t.operatorId());
+        e.setRemark(t.remark());
+        e.setCreatedTime(t.createdTime());
+        return e;
+    }
+
+    private BalanceTransaction toDomain(BalanceTransactionJpaEntity e) {
+        return BalanceTransaction.rehydrate(
+                e.getId(),
+                e.getUserId() == null ? 0L : e.getUserId(),
+                BalanceTransactionType.fromWire(e.getType()),
+                e.getAmount() == null ? 0L : e.getAmount(),
+                e.getBalanceAfter() == null ? 0L : e.getBalanceAfter(),
+                e.getOperatorId(),
+                e.getRemark(),
+                e.getCreatedTime() == null ? 0L : e.getCreatedTime());
+    }
+}
