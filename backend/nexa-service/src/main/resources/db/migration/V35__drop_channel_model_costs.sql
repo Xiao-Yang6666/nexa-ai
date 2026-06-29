@@ -1,0 +1,13 @@
+-- =============================================================================
+-- V35: 删除 channel_model_costs 表 — 二维成本配置（渠道×上游模型 B）彻底下线
+--
+-- 背景：成本计费口径重设计（2026-06）。原"每账号×每上游模型 B"的二维成本倍率表
+--   （channel_model_costs，V21 建）被废弃，成本改为"每账号一个倍率"——直接用
+--   accounts.rate_multiplier（V31 已建）参与计费：
+--     quota_cost = BasePriceRatio(A) × Account.rateMultiplier × tokens
+--   转发链路（RelayForwardUseCase）已不再查本表，DualPriceBilling 成本侧改用账号倍率，
+--   ChannelModelCost 全套领域/持久化/接口类已从代码删除。
+--
+-- 幂等：IF EXISTS 保证可重复执行；本表无被其它表 FK 引用，直接 DROP。
+-- =============================================================================
+DROP TABLE IF EXISTS channel_model_costs CASCADE;
