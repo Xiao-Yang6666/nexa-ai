@@ -14,6 +14,7 @@ import {
   updateToken,
   deleteToken,
   getTokenKey,
+  getUserGroups,
 } from '../api/token.api';
 
 /** quota（积分）→ USD 数值。new-api 惯例 $1 = 500000 quota。 */
@@ -169,5 +170,32 @@ export function useDeleteToken() {
 export function useTokenKey() {
   return useMutation({
     mutationFn: (id: number) => getTokenKey(id),
+  });
+}
+
+/** 可选套餐分组项（创建 key 时绑定）：code + 展示名 + 折扣倍率。 */
+export interface GroupOptionVM {
+  code: string;
+  name: string;
+  /** 分组折扣倍率（×系数） */
+  ratio: number;
+}
+
+/**
+ * 可选套餐分组列表 hook（套餐制：apikey 必须绑定一个有权限且存在的分组）。
+ *
+ * 数据源 GET /api/user/self/model_groups（USER 鉴权）：返回公开 + 已授权私有、
+ * 且启用+模型集非空的分组。后端创建 key 时也用同一可访问集合校验，杜绝孤儿分组。
+ */
+export function useUserGroups() {
+  return useQuery({
+    queryKey: ['token', 'groups'],
+    queryFn: () => getUserGroups(),
+    select: (data): GroupOptionVM[] =>
+      (data ?? []).map((g) => ({
+        code: g.code,
+        name: g.name,
+        ratio: Number(g.priceRatio) || 1,
+      })),
   });
 }

@@ -56,6 +56,13 @@ public interface AccountRepository {
     List<Account> findByPlatform(String platform);
 
     /**
+     * 列出全部账号（不过滤状态），供跨上下文只读集成（模型目录/缺失检测投影账号支持的模型名）。
+     *
+     * @return 全部账号列表
+     */
+    List<Account> findAll();
+
+    /**
      * 列出在给定时刻可调度的账号（供调度子系统）。
      *
      * @param now 判定时刻 epoch 秒
@@ -73,8 +80,26 @@ public interface AccountRepository {
      * @param group 字符串分组（对齐 channel/abilities 的 group）
      * @param now   判定时刻 epoch 秒
      * @return 该分组下可调度的账号列表
+     * @deprecated 方案乙：选账号已改为按模型 A 反查（{@link #findSchedulableByModel}），分组只用于售价，
+     *             不再参与上游账号调度。保留本方法仅为兼容存量调用，新链路勿用。
      */
+    @Deprecated
     List<Account> findSchedulableByGroup(String group, long now);
+
+    /**
+     * 列出可服务给定模型 A、且在给定时刻可调度的账号（方案乙：选账号按模型反查，跨全部分组）。
+     *
+     * <p>用 {@code abilities} 反向索引按模型粗筛 ACTIVE 行 → 去重 accountId → 装配聚合 →
+     * 领域 {@link Account#supportsModel(String)} 精确包含校验（剔除 LIKE 子串误命中）→
+     * {@link Account#isSchedulable(long)} 终判（ACTIVE+未过期+未过载）→ priority 升序（小=高优先）。
+     * 售价分组（modelgroup）与本调度彻底解耦：账号能否被选只取决于「是否声明支持该模型 + 是否可调度」，
+     * 不再看分组字符串。</p>
+     *
+     * @param model 客户请求并解析出的平台模型名 A
+     * @param now   判定时刻 epoch 秒
+     * @return 可服务该模型且可调度的账号列表（priority 升序）
+     */
+    List<Account> findSchedulableByModel(String model, long now);
 
     /**
      * 按 id 删除账号（连带清理 account_groups 关联）。

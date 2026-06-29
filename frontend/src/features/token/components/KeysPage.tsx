@@ -8,7 +8,9 @@ import {
   useDeleteToken,
   useToggleToken,
   useTokenKey,
+  useUserGroups,
   type TokenRowVM,
+  type GroupOptionVM,
 } from '../model/token.model';
 import type { TokenCreateRequest } from '@/shared/api';
 import styles from './KeysPage.module.css';
@@ -76,12 +78,17 @@ function KeyRow({
 
   const copyKey = async () => {
     try {
-      const k = revealed ?? row.keyMasked;
+      // 复制必须是明文：未揭示时先拉明文再写剪贴板（旧实现会复制脱敏值，等于复制了错的 key）。
+      let k = revealed;
+      if (!k) {
+        k = await reveal.mutateAsync(row.id);
+        setRevealed(k);
+      }
       await navigator.clipboard.writeText(k);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
-      /* 忽略剪贴板异常 */
+      /* 错误由全局提示处理 */
     }
   };
 
@@ -92,11 +99,17 @@ function KeyRow({
 
   const copyCurl = async () => {
     try {
-      await navigator.clipboard.writeText(curlText(proto, displayKey));
+      // 同样确保 cURL 里嵌的是明文 key（否则示例不可用）。
+      let k = revealed;
+      if (!k) {
+        k = await reveal.mutateAsync(row.id);
+        setRevealed(k);
+      }
+      await navigator.clipboard.writeText(curlText(proto, k));
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
-      /* 忽略剪贴板异常 */
+      /* 错误由全局提示处理 */
     }
   };
 
@@ -276,22 +289,33 @@ function CreateDrawer({
   onClose,
   onSubmit,
   isSubmitting,
+  groups,
+  groupsLoading,
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (req: TokenCreateRequest) => void;
   isSubmitting: boolean;
+  groups: GroupOptionVM[];
+  groupsLoading: boolean;
 }) {
   const [name, setName] = useState('');
   const [limit, setLimit] = useState('500');
   const [unlimited, setUnlimited] = useState(false);
   const [expired, setExpired] = useState('-1');
+  const [group, setGroup] = useState('');
+
+  // 分组列表到达后，缺省选中首个套餐（避免用户漏选导致 key 不绑分组）。
+  if (!group && groups.length > 0) {
+    setGroup(groups[0].code);
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !group) return;
     const req: TokenCreateRequest = {
       name: name.trim(),
+      group,
       unlimited_quota: unlimited,
       remain_quota: unlimited ? undefined : Math.max(0, Math.round(Number(limit) || 0)) * 500_000,
       expired_time: Number(expired),
@@ -325,6 +349,33 @@ function CreateDrawer({
                 required
               />
               <div className="field-hint">用于在列表中识别此密钥的用途。</div>
+            </div>
+            <div className={styles.fld}>
+              <label className="field-label">
+                套餐分组 <span className="field-req">*</span>
+              </label>
+              <select
+                className="input"
+                value={group}
+                onChange={(e) => setGroup(e.target.value)}
+                disabled={groupsLoading || groups.length === 0}
+                required
+              >
+                {groupsLoading ? (
+                  <option value="">加载分组中…</option>
+                ) : groups.length === 0 ? (
+                  <option value="">暂无可用分组</option>
+                ) : (
+                  groups.map((g) => (
+                    <option key={g.code} value={g.code}>
+                      {g.name}（{g.code} · ×{g.ratio.toFixed(2)}）
+                    </option>
+                  ))
+                )}
+              </select>
+              <div className="field-hint">
+                分组决定此密钥<b>可调用的模型</b>与<b>计费倍率</b>。需要别的价位/模型？换个分组再建一把 key。
+              </div>
             </div>
             <div className={styles.fld}>
               <label className="field-label">额度上限（USD）</label>
@@ -370,7 +421,7 @@ function CreateDrawer({
             <button className="btn btn-sec" type="button" onClick={onClose}>
               取消
             </button>
-            <button className="btn btn-primary" type="submit" disabled={isSubmitting || !name.trim()}>
+            <button className="btn btn-primary" type="submit" disabled={isSubmitting || !name.trim() || !group}>
               {isSubmitting ? '生成中…' : '生成密钥'}
             </button>
           </div>
@@ -393,6 +444,7 @@ export function KeysPage() {
   const create = useCreateToken();
   const toggle = useToggleToken();
   const del = useDeleteToken();
+  const { data: groups, isLoading: groupsLoading } = useUserGroups();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [confirm, setConfirm] = useState<{ kind: 'delete' | 'toggle'; id: number; name: string; enable?: boolean } | null>(null);
@@ -421,34 +473,38 @@ export function KeysPage() {
 
   return (
     <AppShell activeId="keys" title="API 密钥" crumb={['控制台', 'API 密钥']} actions={actions}>
-      {/* 闭环导航：API 密钥 ↔ 模型映射 ↔ 分组 */}
+      {/* 闭环导航：API 密钥 ↔ 分组 */}
       <div className={`${styles.loopnav} nx-fade`}>
         <a className={styles.cur} aria-current="page">
           API 密钥
         </a>
         <span className={styles.sep}>·</span>
-        <a href="/model-map">我的模型映射</a>
-        <span className={styles.sep}>·</span>
         <a href="/recharge">分组与折扣</a>
       </div>
 
-      {/* 当前分组小卡 */}
+      {/* 套餐分组说明卡（数据驱动：套餐制下每把 key 绑定一个分组，决定可用模型与计费倍率） */}
       <div className={`${styles.grpcard} nx-fade`}>
-        <span className={styles.gcBadge}>VIP</span>
+        <span className={styles.gcBadge}>套餐</span>
         <div className={styles.gcBlock}>
-          <span className={styles.gcK}>当前分组</span>
-          <span className={styles.gcV}>VIP 会员</span>
+          <span className={styles.gcK}>可选套餐分组</span>
+          <span className={styles.gcV}>
+            {groupsLoading ? '加载中…' : `${groups?.length ?? 0} 个`}
+          </span>
         </div>
         <div className={styles.gcBlock}>
-          <span className={styles.gcK}>折扣系数</span>
-          <span className={`${styles.gcV} ${styles.gcDisc}`}>×0.85</span>
+          <span className={styles.gcK}>倍率区间</span>
+          <span className={`${styles.gcV} ${styles.gcDisc}`}>
+            {groups && groups.length > 0
+              ? `×${Math.min(...groups.map((g) => g.ratio)).toFixed(2)} ~ ×${Math.max(...groups.map((g) => g.ratio)).toFixed(2)}`
+              : '—'}
+          </span>
         </div>
         <div className={styles.gcSpacer} />
         <div className={styles.gcUp}>
-          分组只决定 <b>折扣系数</b>，不限制可用模型。累计充值满 <b>$2,000</b> 升 SVIP（×0.75）。
+          每把密钥绑定<b>一个套餐分组</b>，分组决定<b>可调用的模型</b>与<b>计费倍率</b>。创建密钥时选择对应套餐。
         </div>
         <a className="btn btn-sec btn-sm" href="/recharge">
-          升级 / 查看分组
+          查看套餐分组
         </a>
       </div>
 
@@ -518,6 +574,8 @@ export function KeysPage() {
         onClose={() => setDrawerOpen(false)}
         onSubmit={onCreate}
         isSubmitting={create.isPending}
+        groups={groups ?? []}
+        groupsLoading={groupsLoading}
       />
 
       {confirm ? (

@@ -3,7 +3,10 @@
  * 路径/方法/入参/出参逐字对齐 openapi.yaml，不臆造字段。
  */
 import { http } from '@/shared/api';
-import type { UserView, LoginPayload, RegisterPayload, UserAdminView, Pagination } from '@/shared/api';
+import type {
+  UserView, LoginPayload, RegisterPayload, UserAdminView, Pagination,
+  BalanceTransactionView, AdminBalanceAdjustRequest,
+} from '@/shared/api';
 
 /** /api/user/ 管理端用户列表查询参数（对齐 openapi F-1008，分页）。 */
 export interface UserListQuery {
@@ -23,6 +26,32 @@ export interface UserAdminPage extends Pagination {
 export function listUsers(query: UserListQuery = {}): Promise<UserAdminPage> {
   return http.get<UserAdminPage>('/api/user/', {
     query: { page: query.page, page_size: query.page_size },
+  });
+}
+
+/**
+ * 管理员给用户充值。
+ * openapi: POST /api/user/{id}/credit (adminAuth) → ApiResponse{ data: number(USD) }
+ */
+export function creditUser(id: number, req: AdminBalanceAdjustRequest): Promise<number> {
+  return http.post<number>(`/api/user/${id}/credit`, { json: req });
+}
+
+/**
+ * 管理员给用户扣费（扣到 0 为止）。
+ * openapi: POST /api/user/{id}/debit (adminAuth) → ApiResponse{ data: number(USD) }
+ */
+export function debitUser(id: number, req: AdminBalanceAdjustRequest): Promise<number> {
+  return http.post<number>(`/api/user/${id}/debit`, { json: req });
+}
+
+/**
+ * 用户账变流水（充值/扣费/兑换/自助）。
+ * openapi: GET /api/user/{id}/balance-logs (adminAuth) → ApiResponse{ data: BalanceTransactionView[] }
+ */
+export function getBalanceLogs(id: number, limit = 50): Promise<BalanceTransactionView[]> {
+  return http.get<BalanceTransactionView[]>(`/api/user/${id}/balance-logs`, {
+    query: { limit },
   });
 }
 

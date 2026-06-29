@@ -32,6 +32,7 @@ class ModelGroupAccessAdapterTest {
 
     private static final long USER = 10L;
     private static final long TOKEN = 20L;
+    private static final String MODEL = "gpt-4o"; // 各桩组勾选的模型
 
     private StubGroupRepo groups;
     private StubAccessRepo access;
@@ -47,35 +48,43 @@ class ModelGroupAccessAdapterTest {
     @Test
     @DisplayName("无对应模型组的分组 → 放行")
     void unknownGroupAllowed() {
-        assertTrue(adapter.isAccessible("default", USER, TOKEN));
+        assertTrue(adapter.isAccessible("default", USER, TOKEN, MODEL));
     }
 
     @Test
     @DisplayName("空白 code → 放行")
     void blankAllowed() {
-        assertTrue(adapter.isAccessible("", USER, TOKEN));
-        assertTrue(adapter.isAccessible(null, USER, TOKEN));
+        assertTrue(adapter.isAccessible("", USER, TOKEN, MODEL));
+        assertTrue(adapter.isAccessible(null, USER, TOKEN, MODEL));
     }
 
     @Test
-    @DisplayName("PUBLIC 组 → 放行")
+    @DisplayName("PUBLIC 组且模型在组内 → 放行")
     void publicAllowed() {
         groups.put(1L, "free", AccessPolicy.PUBLIC);
-        assertTrue(adapter.isAccessible("free", USER, TOKEN));
+        assertTrue(adapter.isAccessible("free", USER, TOKEN, MODEL));
     }
 
     @Test
-    @DisplayName("AUTO_LEVEL 组 → 放行（闸门不收窄）")
+    @DisplayName("模型不在分组勾选列表 → 拒绝（套餐制命脉）")
+    void modelNotInGroupDenied() {
+        groups.put(1L, "free", AccessPolicy.PUBLIC);
+        assertFalse(adapter.isAccessible("free", USER, TOKEN, "claude-3-opus"),
+                "free 组只勾了 gpt-4o，调组外模型应 403");
+    }
+
+    @Test
+    @DisplayName("AUTO_LEVEL 组且模型在组内 → 放行（闸门不收窄）")
     void autoLevelAllowed() {
         groups.put(2L, "auto", AccessPolicy.AUTO_LEVEL);
-        assertTrue(adapter.isAccessible("auto", USER, TOKEN));
+        assertTrue(adapter.isAccessible("auto", USER, TOKEN, MODEL));
     }
 
     @Test
     @DisplayName("PRIVATE 组无授权 → 拒绝")
     void privateNoGrantDenied() {
         groups.put(3L, "premium", AccessPolicy.PRIVATE);
-        assertFalse(adapter.isAccessible("premium", USER, TOKEN));
+        assertFalse(adapter.isAccessible("premium", USER, TOKEN, MODEL));
     }
 
     @Test
@@ -83,7 +92,7 @@ class ModelGroupAccessAdapterTest {
     void privateUserGrantAllowed() {
         groups.put(3L, "premium", AccessPolicy.PRIVATE);
         access.save(ModelGroupAccess.grant(3L, AccessSubjectType.USER, USER, 1L));
-        assertTrue(adapter.isAccessible("premium", USER, TOKEN));
+        assertTrue(adapter.isAccessible("premium", USER, TOKEN, MODEL));
     }
 
     @Test
@@ -91,7 +100,7 @@ class ModelGroupAccessAdapterTest {
     void privateTokenGrantAllowed() {
         groups.put(3L, "premium", AccessPolicy.PRIVATE);
         access.save(ModelGroupAccess.grant(3L, AccessSubjectType.TOKEN, TOKEN, 1L));
-        assertTrue(adapter.isAccessible("premium", USER, TOKEN));
+        assertTrue(adapter.isAccessible("premium", USER, TOKEN, MODEL));
     }
 
     @Test
@@ -99,7 +108,7 @@ class ModelGroupAccessAdapterTest {
     void privateOtherSubjectDenied() {
         groups.put(3L, "premium", AccessPolicy.PRIVATE);
         access.save(ModelGroupAccess.grant(3L, AccessSubjectType.USER, 999L, 1L));
-        assertFalse(adapter.isAccessible("premium", USER, TOKEN));
+        assertFalse(adapter.isAccessible("premium", USER, TOKEN, MODEL));
     }
 
     @Test
@@ -107,7 +116,7 @@ class ModelGroupAccessAdapterTest {
     void privateNullTokenUsesUser() {
         groups.put(3L, "premium", AccessPolicy.PRIVATE);
         access.save(ModelGroupAccess.grant(3L, AccessSubjectType.USER, USER, 1L));
-        assertTrue(adapter.isAccessible("premium", USER, null));
+        assertTrue(adapter.isAccessible("premium", USER, null, MODEL));
     }
 
     // ===== 桩仓储 =====

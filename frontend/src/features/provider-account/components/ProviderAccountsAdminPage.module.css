@@ -158,22 +158,28 @@
 }
 .drawer {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 440px;
+  top: 50%;
+  left: 50%;
+  width: 720px;
   max-width: 92vw;
+  max-height: 90vh;
   z-index: 61;
-  transform: translateX(100%);
+  transform: translate(-50%, -50%) scale(0.96);
+  opacity: 0;
+  visibility: hidden;
   background: var(--color-bg-elevated);
-  border-left: 1px solid var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
-  transition: transform var(--dur-2) var(--ease-out);
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out),
+    visibility var(--dur-2) var(--ease-out);
 }
 .drawer.on {
-  transform: none;
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
 }
 .drawerHead {
   display: flex;
@@ -417,29 +423,6 @@
   text-decoration: underline;
 }
 
-/* ── 每模型成本倍率表格 ── */
-.costTable {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-.costHeadRow {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 44px 28px;
-  gap: 8px;
-  align-items: center;
-  font-size: var(--text-body-sm);
-  color: var(--color-text-muted);
-  padding: 0 2px;
-}
-.costRow {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 44px 28px;
-  gap: 8px;
-  align-items: center;
-}
-
 /* ── 分组列 chip ── */
 .groupChips {
   display: inline-flex;
@@ -461,7 +444,7 @@
   color: var(--color-text-muted);
 }
 
-/* ── 批量设成本中央模态 ── */
+/* ── 中央模态（模型测试等） ── */
 .modalScrim {
   position: fixed;
   inset: 0;
@@ -488,8 +471,58 @@
   overflow-y: auto;
 }
 
+/* 流式测试逐字光标（闪烁） */
+.caret {
+  display: inline-block;
+  margin-left: 1px;
+  color: var(--color-primary, var(--color-text));
+  animation: caretBlink 1s step-end infinite;
+}
+@keyframes caretBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
 @media (max-width: 560px) {
   .srch {
     min-width: 140px;
   }
+}
+
+/* ── 账号编辑：所属价格分组勾选 ── */
+.groupPicker {
+  margin-top: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.groupOpt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-body-sm);
+}
+.groupOpt:hover {
+  background: color-mix(in oklch, var(--color-text) 6%, transparent);
+}
+.groupOptOn {
+  background: color-mix(in oklch, var(--color-success) 10%, transparent);
+}
+.groupOpt input {
+  flex: none;
+}
+.groupOpt > span:nth-of-type(1) {
+  flex: 1;
 }

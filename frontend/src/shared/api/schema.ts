@@ -73,6 +73,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        /** @description 登录标识，可填用户名或邮箱（后端先按用户名匹配，查不到再按邮箱兜底匹配，二选一均可登入）。 */
                         username: string;
                         password: string;
                     };
@@ -651,6 +652,139 @@ export interface paths {
                 403: components["responses"]["ForbiddenError"];
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/{id}/credit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 管理员给用户充值 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AdminBalanceAdjustRequest"];
+                };
+            };
+            responses: {
+                /** @description 充值成功，data=充值后余额(USD) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: number;
+                        };
+                    };
+                };
+                403: components["responses"]["ForbiddenError"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/{id}/debit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 管理员给用户扣费（扣到 0 为止） */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AdminBalanceAdjustRequest"];
+                };
+            };
+            responses: {
+                /** @description 扣费成功，data=扣费后余额(USD) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: number;
+                        };
+                    };
+                };
+                403: components["responses"]["ForbiddenError"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/{id}/balance-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 用户账变流水（充值/扣费/兑换/自助） */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 账变流水列表（时间倒序） */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuccessResponse"] & {
+                            data?: components["schemas"]["BalanceTransactionView"][];
+                        };
+                    };
+                };
+                403: components["responses"]["ForbiddenError"];
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4915,198 +5049,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/prefill_group": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** 预填分组列表（按 type 下拉填充） */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description 可选，缺省返回全部 */
-                    type?: "model" | "tag" | "endpoint";
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description 预填分组列表（AdminView） */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApiResponse"] & {
-                            data?: components["schemas"]["PrefillGroupAdminView"][];
-                        };
-                    };
-                };
-                /** @description type 非法枚举 → 400 invalid type */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                403: components["responses"]["ForbiddenError"];
-            };
-        };
-        /** 预填分组更新（名称冲突校验） */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PrefillGroupUpdateRequest"];
-                };
-            };
-            responses: {
-                /** @description 更新后预填分组（AdminView） */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApiResponse"] & {
-                            data?: components["schemas"]["PrefillGroupAdminView"];
-                        };
-                    };
-                };
-                403: components["responses"]["ForbiddenError"];
-                /** @description id 不存在 → prefill group not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                /** @description 新 name 与同 type 他组冲突 → prefill group name conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        /** 预填分组创建 */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["PrefillGroupCreateRequest"];
-                };
-            };
-            responses: {
-                /** @description 创建后预填分组（AdminView） */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ApiResponse"] & {
-                            data?: components["schemas"]["PrefillGroupAdminView"];
-                        };
-                    };
-                };
-                /** @description name/type required */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-                403: components["responses"]["ForbiddenError"];
-                /** @description 同 type 下 name 冲突 → prefill group name conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/prefill_group/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * 预填分组软删除
-         * @description 按 id 软删除（gorm.DeletedAt），保留历史不物理移除。
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description 软删成功 */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["SuccessResponse"];
-                    };
-                };
-                403: components["responses"]["ForbiddenError"];
-                /** @description id 不存在 → prefill group not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ErrorResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/models": {
         parameters: {
             query?: never;
@@ -6808,6 +6750,28 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** @description 管理员充值/扣费请求（amount 以 USD 计） */
+        AdminBalanceAdjustRequest: {
+            /** @description USD 金额（> 0） */
+            amount: number;
+            remark?: string;
+        };
+        /** @description 账变流水视图（amount/balance_after 以 USD 计） */
+        BalanceTransactionView: {
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            type?: "ADMIN_CREDIT" | "ADMIN_DEBIT" | "REDEEM" | "TOPUP";
+            /** @description 变动额（USD，带正负） */
+            amount?: number;
+            /** @description 变动后余额（USD） */
+            balance_after?: number;
+            /** Format: int64 */
+            operator_id?: number;
+            remark?: string;
+            /** Format: int64 */
+            created_time?: number;
+        };
         /** @description 个人设置（dto.UserSetting）；含语言/边栏偏好与额度预警配置（F-4037） */
         UserSetting: {
             /** @enum {string} */
@@ -7066,8 +7030,17 @@ export interface components {
                 model_name?: string;
                 /** @description 基准价（折扣=1 口径） */
                 base_price_ratio?: number;
-                quality_tier?: string;
                 display_name?: string;
+                description?: string;
+                /** @description 该模型所在的可见价格分组及倍率（分组价格对比，仅公开 PUBLIC 子集，零泄露） */
+                groups?: {
+                    /** @description 分组展示名 */
+                    name?: string;
+                    /** @description 分组编码 */
+                    code?: string;
+                    /** @description 分组售价倍率（售价 = base_price_ratio × ratio） */
+                    ratio?: number;
+                }[];
                 supported_endpoint?: string;
                 cache_ratio?: number;
             }[];
@@ -7152,8 +7125,6 @@ export interface components {
             id?: number;
             /** @description 对外名 A */
             public_name?: string;
-            /** @enum {string} */
-            quality_tier?: "full" | "max" | "air";
             base_price_ratio?: number;
             use_price?: boolean;
             base_price?: number;
@@ -7170,7 +7141,6 @@ export interface components {
         PublicModelUserView: {
             /** @description 对外名 A */
             public_name?: string;
-            quality_tier?: string;
             display_name?: string;
             /** @description 基准价 */
             base_price_ratio?: number;
@@ -7178,8 +7148,6 @@ export interface components {
         };
         PublicModelCreateRequest: {
             public_name: string;
-            /** @enum {string} */
-            quality_tier?: "full" | "max" | "air";
             base_price_ratio?: number;
             use_price?: boolean;
             base_price?: number;
@@ -7190,13 +7158,13 @@ export interface components {
         };
         PublicModelUpdateRequest: {
             id: number;
-            quality_tier?: string;
             base_price_ratio?: number;
             use_price?: boolean;
             base_price?: number;
             enabled?: boolean;
             display_name?: string;
             sort_order?: number;
+            description?: string;
         };
         /** @description 超管底仓映射 A→B（仅 admin/root，客户绝不可见 upstream_name） */
         PlatformModelMappingAdminView: {
@@ -7559,26 +7527,6 @@ export interface components {
             privacy_policy_enabled?: boolean;
             default_use_auto_group?: boolean;
             [key: string]: unknown;
-        };
-        PrefillGroupAdminView: {
-            id?: number;
-            name?: string;
-            /** @enum {string} */
-            type?: "model" | "tag" | "endpoint";
-            items?: string[];
-            /** Format: int64 */
-            created_time?: number;
-        };
-        PrefillGroupCreateRequest: {
-            name: string;
-            /** @enum {string} */
-            type: "model" | "tag" | "endpoint";
-            items?: string[];
-        };
-        PrefillGroupUpdateRequest: {
-            id: number;
-            name?: string;
-            items?: string[];
         };
         /** @description 用量排行榜快照（公开视图，绝不含成本/利润/B/供应商） */
         RankingPublicView: {

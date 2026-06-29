@@ -410,7 +410,8 @@ class UserTest {
             User root = userWithRole(Role.ROOT, UserStatus.ENABLED);
             assertThrows(RoleHierarchyViolationException.class,
                     () -> root.updateProfileByAdmin(
-                            "newname", null, "vip", 999L, "remark", UserStatus.DISABLED, Role.ADMIN));
+                            "newname", null, "vip", 999L, "remark", UserStatus.DISABLED,
+                            java.math.BigDecimal.ONE, Role.ADMIN));
             // 护栏先于任何字段写入：越权时资料/状态保持原样。
             assertEquals(UserStatus.ENABLED, root.status());
             assertNull(root.displayName());

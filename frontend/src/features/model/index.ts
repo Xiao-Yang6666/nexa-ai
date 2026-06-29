@@ -5,7 +5,7 @@
 export { ModelsPage } from './components/ModelsPage';
 export { ModelMapPage } from './components/ModelMapPage';
 export { useModelCatalog, toModelCardVMs, modelDisplayMeta } from './model/model.model';
-export type { ModelCardVM, QualityTier, ModelDisplayMeta } from './model/model.model';
+export type { ModelCardVM, ModelDisplayMeta } from './model/model.model';
 export { vendorIcon, VENDOR_ICONS } from './model/vendors';
 export type { VendorIcon } from './model/vendors';
 export {

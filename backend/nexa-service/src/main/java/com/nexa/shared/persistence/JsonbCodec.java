@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>背景：多个 bounded context 的 {@code XxxRepositoryImpl} 把领域值对象 ↔ {@code jsonb} 列字符串
  * 互转时，各自手写 {@code try { objectMapper.writeValueAsString(...) } catch (...) { throw wrap }}
- * 样板（channel/modelgroup/prefill/routing/task 等 ≥5 份同构 try-catch）。本类收敛该样板：
+ * 样板（channel/modelgroup/routing/task 等 ≥5 份同构 try-catch）。本类收敛该样板：
  * 统一用注入的全局 {@link ObjectMapper}（沿用 application.yml 的 SNAKE_CASE 等全局配置），
  * 序列化/反序列化失败统一 wrap 成 {@link JsonbCodecException}（不吞错、保留错误链，backend-engineer §3.2）。</p>
  *

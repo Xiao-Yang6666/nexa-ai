@@ -7,9 +7,15 @@
  * 管理端视图：UserAdminView 本就是 adminAuth 全字段视图，无客户端零泄露约束
  * （零泄露铁律只约束 self-scope 客户视图；管理后台展示全链）。
  */
-import { useQuery } from '@tanstack/react-query';
-import type { UserAdminView } from '@/shared/api';
-import { listUsers, type UserListQuery } from '../api/account.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { UserAdminView, BalanceTransactionView } from '@/shared/api';
+import {
+  listUsers,
+  creditUser,
+  debitUser,
+  getBalanceLogs,
+  type UserListQuery,
+} from '../api/account.api';
 
 /** quota（积分）→ USD 数值。new-api 惯例 $1 = 500000 quota。 */
 export const QUOTA_PER_USD = 500_000;
@@ -92,5 +98,50 @@ export function useAdminUsers(query: UserListQuery) {
       page: page.page ?? 1,
       pageSize: page.page_size ?? query.page_size ?? 20,
     }),
+  });
+}
+
+/* ── 余额充值/扣费 + 账变流水 ─────────────────────────────────────────── */
+
+/** 账变类型中文标签 + 徽章 class。 */
+export const BALANCE_TYPE_MAP: Record<string, { lab: string; cls: string }> = {
+  ADMIN_CREDIT: { lab: '管理员充值', cls: 'b-suc' },
+  ADMIN_DEBIT: { lab: '管理员扣费', cls: 'b-dan' },
+  REDEEM: { lab: '兑换码', cls: 'b-neutral' },
+  TOPUP: { lab: '自助充值', cls: 'b-suc' },
+};
+
+/** 管理员充值 mutation（成功后刷新用户列表 + 该用户账变流水）。 */
+export function useCreditUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount, remark }: { id: number; amount: number; remark?: string }) =>
+      creditUser(id, { amount, remark }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['account', 'admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['account', 'balance-logs', vars.id] });
+    },
+  });
+}
+
+/** 管理员扣费 mutation（扣到 0；成功后刷新用户列表 + 账变流水）。 */
+export function useDebitUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount, remark }: { id: number; amount: number; remark?: string }) =>
+      debitUser(id, { amount, remark }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['account', 'admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['account', 'balance-logs', vars.id] });
+    },
+  });
+}
+
+/** 某用户账变流水查询 hook（弹窗打开时启用）。 */
+export function useBalanceLogs(userId: number | null) {
+  return useQuery<BalanceTransactionView[]>({
+    queryKey: ['account', 'balance-logs', userId],
+    queryFn: () => getBalanceLogs(userId as number),
+    enabled: userId != null && userId > 0,
   });
 }

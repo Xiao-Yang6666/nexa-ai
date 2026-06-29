@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import { useAdminUsers, type UserRole } from '@/features/account/model/users-admin.model';
+import { UserBalanceModal } from './UserBalanceModal';
 import {
   useModelGroups,
   useUserModelGroups,
@@ -44,6 +45,8 @@ export function UsersAdminPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerUser, setDrawerUser] = useState<{ id: number; name: string; mode: 'manage' | 'edit' | 'new' } | null>(null);
+  /** 余额管理弹窗目标用户（null=关闭）。 */
+  const [balanceUser, setBalanceUser] = useState<{ id: number; name: string; balanceUsd: number } | null>(null);
 
   // 真后端：GET /api/user/?page&page_size（分页在服务端）。
   const { data, isLoading, isError, error } = useAdminUsers({ page, page_size: PAGE_SIZE });
@@ -216,7 +219,7 @@ export function UsersAdminPage() {
                         <div className={styles.rowActs}>
                           <a onClick={() => openDrawer('edit', u.id, u.username)}>编辑</a>
                           <a onClick={() => openDrawer('manage', u.id, u.username)}>管理</a>
-                          <a>绑定</a>
+                          <a onClick={() => setBalanceUser({ id: u.id, name: u.username, balanceUsd: u.quotaUsd })}>充值</a>
                           <a>重置</a>
                         </div>
                       </td>
@@ -320,6 +323,9 @@ export function UsersAdminPage() {
           <Button>保存变更</Button>
         </div>
       </aside>
+
+      {/* 余额管理弹窗（居中） */}
+      <UserBalanceModal user={balanceUser} onClose={() => setBalanceUser(null)} />
     </AppShell>
   );
 }

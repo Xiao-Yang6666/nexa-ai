@@ -5,6 +5,7 @@ import com.nexa.account.provider.application.DeleteAccountUseCase;
 import com.nexa.account.provider.application.GetAccountUseCase;
 import com.nexa.account.provider.application.ListAccountsUseCase;
 import com.nexa.account.provider.application.ProbeProviderModelsUseCase;
+import com.nexa.account.provider.application.TestProviderModelUseCase;
 import com.nexa.account.provider.application.ToggleAccountUseCase;
 import com.nexa.account.provider.application.UpdateAccountUseCase;
 import com.nexa.account.provider.domain.model.Account;
@@ -91,6 +92,11 @@ class AccountControllerMvcTest {
         }
 
         @Override
+        public List<Account> findAll() {
+            return new java.util.ArrayList<>(store.values());
+        }
+
+        @Override
         public List<Account> findSchedulable(long now) {
             return store.values().stream().filter(a -> a.isSchedulable(now)).toList();
         }
@@ -108,6 +114,18 @@ class AccountControllerMvcTest {
         }
 
         @Override
+        public List<Account> findSchedulableByModel(String model, long now) {
+            if (model == null || model.isBlank()) {
+                return List.of();
+            }
+            return store.values().stream()
+                    .filter(a -> a.isSchedulable(now))
+                    .filter(a -> a.supportsModel(model))
+                    .sorted(java.util.Comparator.comparingInt(Account::priority))
+                    .toList();
+        }
+
+        @Override
         public void deleteById(long id) {
             store.remove(id);
         }
@@ -120,6 +138,28 @@ class AccountControllerMvcTest {
         ProbeProviderModelsUseCase probeUseCase = new ProbeProviderModelsUseCase(
                 (platform, baseUrl, apiKey) -> java.util.List.of(),
                 names -> 0);
+        // 模型测试用例桩：本测聚焦 CRUD/启停链路，注入不发网络的桩测试端口即可。
+        TestProviderModelUseCase testModelUseCase = new TestProviderModelUseCase(
+                repo,
+                new com.nexa.account.provider.application.port.ProviderModelTestPort() {
+                    @Override
+                    public com.nexa.account.provider.application.port.ProviderModelTestPort
+                            .ProviderModelTestResult testChat(String platform, String baseUrl,
+                            String apiKey, String model, String prompt) {
+                        return new com.nexa.account.provider.application.port.ProviderModelTestPort
+                                .ProviderModelTestResult(0L, "");
+                    }
+
+                    @Override
+                    public void testChatStream(String platform, String baseUrl, String apiKey,
+                            String model, String prompt,
+                            com.nexa.account.provider.application.port.ProviderModelTestPort
+                                    .TestStreamListener listener) {
+                        listener.onComplete(new com.nexa.account.provider.application.port
+                                .ProviderModelTestPort.ProviderModelTestResult(0L, ""));
+                    }
+                },
+                new com.fasterxml.jackson.databind.ObjectMapper());
         AccountController controller = new AccountController(
                 new ListAccountsUseCase(repo),
                 new GetAccountUseCase(repo),
@@ -127,7 +167,8 @@ class AccountControllerMvcTest {
                 new UpdateAccountUseCase(repo),
                 new DeleteAccountUseCase(repo),
                 new ToggleAccountUseCase(repo),
-                probeUseCase);
+                probeUseCase,
+                testModelUseCase);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ProviderAccountExceptionHandler())
                 .build();

@@ -23,8 +23,9 @@ import java.util.Map;
  * <ul>
  *   <li>{@code models[].model_name}        对外名 A（public_name，客户可见商品键）</li>
  *   <li>{@code models[].base_price_ratio}   基准售价倍率（折扣=1 口径，对客户恒定）</li>
- *   <li>{@code models[].quality_tier}       品质档（full/max/air，纯展示分组）</li>
  *   <li>{@code models[].display_name}       展示名</li>
+ *   <li>{@code models[].description}        描述</li>
+ *   <li>{@code models[].groups}             该模型所在的可见价格分组及倍率（分组价格对比，公开 PUBLIC 子集）</li>
  *   <li>{@code models[].supported_endpoint} 支持端点（ML-4 元信息；本商品目录无该列 → 空）</li>
  *   <li>{@code models[].cache_ratio}        缓存倍率（ML-4 元信息；本商品目录无该列 → 省略）</li>
  *   <li>{@code group_ratio}                 仅当前可用分组的折扣系数（匿名 → 公开分组 free=1.0）</li>
@@ -50,36 +51,38 @@ public record PricingPublicView(
      *
      * @param modelName         对外名 A（public_name）
      * @param basePriceRatio    基准售价倍率（折扣=1 口径）
-     * @param qualityTier       品质档
      * @param displayName       展示名
+     * @param description       平台配置的描述
+     * @param groups            该模型所在的可见价格分组及倍率（分组价格对比；无则空列表）
      * @param supportedEndpoint 支持端点（商品目录无此列 → null，按 non_null 省略）
      * @param cacheRatio        缓存倍率（商品目录无此列 → null，按 non_null 省略）
      */
     public record Item(
             String modelName,
             BigDecimal basePriceRatio,
-            String qualityTier,
             String displayName,
             String description,
+            List<GroupPrice> groups,
             String supportedEndpoint,
             BigDecimal cacheRatio
     ) {
         /**
-         * 由领域聚合裁剪为公开定价条目（<b>零泄露投影</b>：只读公开字段，成本/利润/B/渠道根本不取）。
+         * 由领域聚合 + 可见分组裁剪为公开定价条目（<b>零泄露投影</b>：只读公开字段，成本/利润/B/渠道根本不取）。
          *
-         * @param m 上架对外模型聚合
+         * @param m      上架对外模型聚合
+         * @param groups 该模型所在的可见价格分组（公开 PUBLIC 子集，可空 → 空列表）
          * @return 公开定价条目
          */
-        public static Item from(PublicModel m) {
-            // 显式逐字段：仅 publicName/basePriceRatio/qualityTier/displayName/description 来自聚合（皆公开）。
+        public static Item from(PublicModel m, List<GroupPrice> groups) {
+            // 显式逐字段：仅 publicName/basePriceRatio/displayName/description 来自聚合（皆公开）。
             // supported_endpoint/cache_ratio 是 ML-4 契约元信息字段，public_models 表无对应列，
             // 故置 null（Jackson non_null 省略），既守契约 schema 形状又不杜撰内部数据。
             return new Item(
                     m.publicName(),
                     m.basePriceRatio(),
-                    m.qualityTier(),
                     blankToNull(m.displayName()),
                     blankToNull(m.description()),
+                    groups == null ? List.of() : groups,
                     null,
                     null);
         }
@@ -88,5 +91,15 @@ public record PricingPublicView(
         private static String blankToNull(String s) {
             return (s == null || s.isBlank()) ? null : s;
         }
+    }
+
+    /**
+     * 单个价格分组的公开定价（分组价格对比条目，零泄露：仅展示名/编码/倍率）。
+     *
+     * @param name  分组展示名
+     * @param code  分组编码
+     * @param ratio 分组售价倍率（售价 = 模型 base_price_ratio × 本倍率）
+     */
+    public record GroupPrice(String name, String code, BigDecimal ratio) {
     }
 }

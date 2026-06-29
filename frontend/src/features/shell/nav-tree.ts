@@ -45,7 +45,8 @@ export const NAV: NavGroup[] = [
     group: '接入',
     items: [
       { id: 'keys', label: 'API 密钥', href: '/keys', ic: 'key', minRole: ROLE.COMMON },
-      { id: 'model-map', label: '模型映射', href: '/model-map', ic: 'share', minRole: ROLE.COMMON },
+      // 用户自助模型映射（L1）暂下线，先保证核心全流程跑通，后期再优化：
+      // { id: 'model-map', label: '模型映射', href: '/model-map', ic: 'share', minRole: ROLE.COMMON },
       { id: 'usage', label: '用量统计', href: '/usage', ic: 'bar', minRole: ROLE.COMMON },
       { id: 'tasks', label: '异步任务', href: '/tasks', ic: 'tasks', minRole: ROLE.COMMON },
     ],
@@ -79,17 +80,14 @@ export const NAV: NavGroup[] = [
     items: [
       { id: 'provider-accounts', label: '供应商账号', href: '/admin/provider-accounts', ic: 'server', minRole: ROLE.ADMIN },
       { id: 'users', label: '用户管理', href: '/admin/users', ic: 'users', minRole: ROLE.ADMIN },
-      { id: 'models', label: '模型/供应商', href: '/admin/models', ic: 'cube', minRole: ROLE.ADMIN },
-      { id: 'model-groups', label: '模型组管理', href: '/admin/model-groups', ic: 'layers', minRole: ROLE.ADMIN },
-      { id: 'groups', label: '预填分组', href: '/admin/groups', ic: 'layers', minRole: ROLE.ADMIN },
+      { id: 'models', label: '模型', href: '/admin/models', ic: 'cube', minRole: ROLE.ADMIN },
+      { id: 'model-groups', label: '价格分组', href: '/admin/model-groups', ic: 'layers', minRole: ROLE.ADMIN },
     ],
   },
   {
     group: '运营',
     admin: true,
     items: [
-      { id: 'tasks-monitor', label: '任务监控', href: '/admin/tasks-monitor', ic: 'tasks', minRole: ROLE.ADMIN },
-      { id: 'billing-rules', label: '计费规则', href: '/admin/billing-rules', ic: 'calc', minRole: ROLE.ADMIN },
       { id: 'profit', label: '利润分析', href: '/admin/profit', ic: 'pulse', minRole: ROLE.ADMIN },
       { id: 'redeem', label: '兑换码', href: '/admin/redeem', ic: 'ticket', minRole: ROLE.ADMIN },
     ],

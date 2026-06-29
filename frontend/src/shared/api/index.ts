@@ -44,9 +44,9 @@ export type {
   ModelSyncResult,
   VendorAdminView,
   VendorWriteRequest,
-  ChannelModelCostAdminView,
-  ChannelModelCostWriteRequest,
   ChannelPoolMember,
   ProfitDashboardItem,
+  BalanceTransactionView,
+  AdminBalanceAdjustRequest,
 } from './types';
 export type { PricingPublicView, PricingModelEntry } from './pricing.types';

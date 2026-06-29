@@ -56,7 +56,7 @@ class ModelSquareClosedLoopTest {
     @Test
     @DisplayName("超管上架模型 → 用户可见列表与对外全集均查得到")
     void adminEnableThenVisible() {
-        admin.create("gpt-4o", null, BigDecimal.ONE, false, null, true, "GPT-4o", 0, null);
+        admin.create("gpt-4o", BigDecimal.ONE, false, null, true, "GPT-4o", 0, null);
 
         assertTrue(square.visibleModels(USER_ID).contains("gpt-4o"));
         assertTrue(publicList.listEnabledPublicNames().contains("gpt-4o"));
@@ -66,11 +66,11 @@ class ModelSquareClosedLoopTest {
     @DisplayName("超管下架模型 → 用户可见列表与对外全集均查不到")
     void adminDisableThenInvisible() {
         PublicModel created =
-                admin.create("claude-opus", null, BigDecimal.ONE, false, null, true, "Opus", 0, null);
+                admin.create("claude-opus", BigDecimal.ONE, false, null, true, "Opus", 0, null);
         assertTrue(square.visibleModels(USER_ID).contains("claude-opus"));
 
         // 下架（enabled=false）。
-        admin.update(created.id(), null, null, null, null, false, null, null);
+        admin.update(created.id(), null, null, null, false, null, null, null);
 
         assertFalse(square.visibleModels(USER_ID).contains("claude-opus"));
         assertFalse(publicList.listEnabledPublicNames().contains("claude-opus"));
@@ -80,7 +80,7 @@ class ModelSquareClosedLoopTest {
     @DisplayName("超管软删模型 → 移出对外全集与可见列表")
     void adminDeleteThenInvisible() {
         PublicModel created =
-                admin.create("gemini-pro", null, BigDecimal.ONE, false, null, true, "Gemini", 0, null);
+                admin.create("gemini-pro", BigDecimal.ONE, false, null, true, "Gemini", 0, null);
         assertTrue(square.visibleModels(USER_ID).contains("gemini-pro"));
 
         admin.delete(created.id());
@@ -92,10 +92,10 @@ class ModelSquareClosedLoopTest {
     @Test
     @DisplayName("可见列表为上架全集去重保序，下架项被剔除")
     void visibleListIsEnabledOnlyOrdered() {
-        admin.create("model-a", null, BigDecimal.ONE, false, null, true, "A", 1, null);
-        PublicModel b = admin.create("model-b", null, BigDecimal.ONE, false, null, true, "B", 2, null);
-        admin.create("model-c", null, BigDecimal.ONE, false, null, true, "C", 3, null);
-        admin.update(b.id(), null, null, null, null, false, null, null); // 下架 b
+        admin.create("model-a", BigDecimal.ONE, false, null, true, "A", 1, null);
+        PublicModel b = admin.create("model-b", BigDecimal.ONE, false, null, true, "B", 2, null);
+        admin.create("model-c", BigDecimal.ONE, false, null, true, "C", 3, null);
+        admin.update(b.id(), null, null, null, false, null, null, null); // 下架 b
 
         assertEquals(List.of("model-a", "model-c"), square.visibleModels(USER_ID));
     }

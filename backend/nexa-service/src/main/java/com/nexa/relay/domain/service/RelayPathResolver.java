@@ -88,4 +88,35 @@ public final class RelayPathResolver {
         }
         return path;
     }
+
+    /**
+     * 解析<b>出站</b>请求路径（RL-6 协议转换缺口补全）：发往上游时，URL path 必须随<b>目标协议</b>走，
+     * 而非透传客户入站 path。否则 OpenAI 入站（{@code /v1/chat/completions}）经协议转换发给 Anthropic
+     * 上游时，body 已转成 Claude 格式但 path 仍是 OpenAI 端点 → 上游 404。
+     *
+     * <p>映射规则：
+     * <ul>
+     *   <li>{@code originalPath} 与目标协议同源（passthrough）→ 原样透传（保留客户私有子路径/查询）；</li>
+     *   <li>目标 {@link ProtocolFormat#CLAUDE} → {@code /v1/messages}（Anthropic 原生端点）；</li>
+     *   <li>目标 {@link ProtocolFormat#OPENAI} → {@code /v1/chat/completions}（OpenAI chat 端点）；</li>
+     *   <li>其余协议（Gemini/Embedding/Responses 等本期未实现转换）→ 原样透传（不阻断）。</li>
+     * </ul>
+     * 仅覆盖本期已实现协议转换的 chat 主路径；embeddings/responses 等专用端点的出站路径映射待后续补全。</p>
+     *
+     * @param targetProto  选中账号平台对应的目标协议
+     * @param originalPath 客户入站原始路径
+     * @param passthrough  入站协议是否等于目标协议（true=同源直转，路径原样透传）
+     * @return 发往上游的出站路径
+     */
+    public static String outboundPath(ProtocolFormat targetProto, String originalPath, boolean passthrough) {
+        if (passthrough || targetProto == null) {
+            return originalPath;
+        }
+        return switch (targetProto) {
+            case CLAUDE -> "/v1/messages";
+            case OPENAI -> "/v1/chat/completions";
+            // 其余协议本期无 chat body 转换实现，路径原样透传（回落，不阻断）。
+            default -> originalPath;
+        };
+    }
 }

@@ -53,3 +53,21 @@ export function deleteToken(id: number): Promise<void> {
 export function getTokenKey(id: number): Promise<string> {
   return http.post<string>(`/api/token/${id}/key`);
 }
+
+/**
+ * 拉取当前用户可选套餐分组（套餐制：创建 key 必须绑定一个有权限且存在的分组）。
+ * 后端 USER 端点，返回公开 + 已授权私有、且启用+模型集非空的分组。
+ * GET /api/user/self/model_groups → ApiResponse{ data: UserGroupOption[] }
+ */
+export interface UserGroupOption {
+  code: string;
+  name: string;
+  /** 分组售价倍率（折扣=1 口径，前端展示 ×系数） */
+  priceRatio: number;
+  /** 该套餐勾选的可用模型（对外名 A） */
+  models: string[];
+}
+
+export function getUserGroups(): Promise<UserGroupOption[]> {
+  return http.get<UserGroupOption[]>('/api/user/self/model_groups');
+}

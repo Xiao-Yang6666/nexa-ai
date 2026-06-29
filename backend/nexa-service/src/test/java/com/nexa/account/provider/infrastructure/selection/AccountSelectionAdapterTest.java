@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link AccountSelectionAdapter} 单测：group 选 account、优先级、platform 软对齐、排除重试、限流/过载回写。
+ * {@link AccountSelectionAdapter} 单测：方案乙——按模型 A 选 account、优先级、platform 软对齐、排除重试、限流/过载回写。
  *
  * <p>用内存桩仓储走真实充血聚合(Account.create/markRateLimited 等)，不引入 Mockito 行为脚本。</p>
  */
@@ -31,14 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AccountSelectionAdapterTest {
 
     @Test
-    @DisplayName("按 group 选可调度账号，priority 升序取最高优先(数小)")
+    @DisplayName("按模型选可调度账号，priority 升序取最高优先(数小)")
     void selectsByPriorityAscending() {
         StubRepo repo = new StubRepo();
-        repo.add(acc("low", "openai", 80, "g1"));
-        repo.add(acc("high", "openai", 10, "g1"));
+        repo.add(acc("low", "openai", 80, "m1"));
+        repo.add(acc("high", "openai", 10, "m1"));
         AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
 
-        SelectedAccount sel = adapter.selectAccount("g1", null, Set.of()).orElseThrow();
+        SelectedAccount sel = adapter.selectAccount("m1", null, Set.of()).orElseThrow();
         assertEquals("{\"key\":\"high-cred\"}", sel.credentials(), "应选 priority=10 的高优先账号");
         assertEquals("openai", sel.platform());
     }
@@ -47,11 +47,11 @@ class AccountSelectionAdapterTest {
     @DisplayName("platform 软对齐：优先选平台匹配的账号")
     void prefersPlatformMatch() {
         StubRepo repo = new StubRepo();
-        repo.add(acc("openai-acc", "openai", 10, "g1")); // 更高优先但平台不匹配
-        repo.add(acc("anthropic-acc", "anthropic", 50, "g1"));
+        repo.add(acc("openai-acc", "openai", 10, "m1")); // 更高优先但平台不匹配
+        repo.add(acc("anthropic-acc", "anthropic", 50, "m1"));
         AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
 
-        SelectedAccount sel = adapter.selectAccount("g1", "anthropic", Set.of()).orElseThrow();
+        SelectedAccount sel = adapter.selectAccount("m1", "anthropic", Set.of()).orElseThrow();
         assertEquals("{\"key\":\"anthropic-acc-cred\"}", sel.credentials(), "平台匹配优先于纯优先级");
     }
 
@@ -59,10 +59,10 @@ class AccountSelectionAdapterTest {
     @DisplayName("platform 无匹配 → 放宽约束回落到全池最高优先")
     void fallsBackWhenNoPlatformMatch() {
         StubRepo repo = new StubRepo();
-        repo.add(acc("openai-acc", "openai", 10, "g1"));
+        repo.add(acc("openai-acc", "openai", 10, "m1"));
         AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
 
-        SelectedAccount sel = adapter.selectAccount("g1", "gemini", Set.of()).orElseThrow();
+        SelectedAccount sel = adapter.selectAccount("m1", "gemini", Set.of()).orElseThrow();
         assertEquals("{\"key\":\"openai-acc-cred\"}", sel.credentials(), "无 gemini 账号 → 放宽选 openai");
     }
 
@@ -70,37 +70,46 @@ class AccountSelectionAdapterTest {
     @DisplayName("排除已尝试账号(重试)→ 取次优先")
     void excludesTriedAccounts() {
         StubRepo repo = new StubRepo();
-        Account high = acc("high", "openai", 10, "g1");
-        Account low = acc("low", "openai", 80, "g1");
+        Account high = acc("high", "openai", 10, "m1");
+        Account low = acc("low", "openai", 80, "m1");
         repo.add(high);
         repo.add(low);
         AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
 
-        SelectedAccount sel = adapter.selectAccount("g1", null, Set.of(high.id())).orElseThrow();
+        SelectedAccount sel = adapter.selectAccount("m1", null, Set.of(high.id())).orElseThrow();
         assertEquals("{\"key\":\"low-cred\"}", sel.credentials(), "排除 high 后取 low");
     }
 
     @Test
-    @DisplayName("空 group / 无可用账号 → empty")
+    @DisplayName("账号不支持该模型 → 不入选")
+    void excludesAccountsNotSupportingModel() {
+        StubRepo repo = new StubRepo();
+        repo.add(acc("only-m2", "openai", 10, "m2"));
+        AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
+        assertTrue(adapter.selectAccount("m1", null, Set.of()).isEmpty(), "无账号支持 m1 → empty");
+    }
+
+    @Test
+    @DisplayName("空模型 / 无可用账号 → empty")
     void emptyWhenNoAccount() {
         StubRepo repo = new StubRepo();
         AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
-        assertTrue(adapter.selectAccount("g1", null, Set.of()).isEmpty(), "无账号 → empty");
-        assertTrue(adapter.selectAccount("  ", null, Set.of()).isEmpty(), "空 group → empty");
+        assertTrue(adapter.selectAccount("m1", null, Set.of()).isEmpty(), "无账号 → empty");
+        assertTrue(adapter.selectAccount("  ", null, Set.of()).isEmpty(), "空模型 → empty");
     }
 
     @Test
     @DisplayName("markRateLimited / markOverloaded 回写账号状态并持久化")
     void writesBackRateLimitAndOverload() {
         StubRepo repo = new StubRepo();
-        Account a = acc("a", "openai", 10, "g1");
+        Account a = acc("a", "openai", 10, "m1");
         repo.add(a);
         AccountSelectionAdapter adapter = new AccountSelectionAdapter(repo);
 
         adapter.markRateLimited(a.id(), 9999L);
         assertEquals(AccountStatus.RATE_LIMITED, repo.findById(a.id()).orElseThrow().status());
 
-        Account b = acc("b", "openai", 10, "g1");
+        Account b = acc("b", "openai", 10, "m1");
         repo.add(b);
         long until = Instant.now().getEpochSecond() + 60;
         adapter.markOverloaded(b.id(), until);
@@ -111,11 +120,11 @@ class AccountSelectionAdapterTest {
 
     // ---- helpers ----
 
-    private static Account acc(String name, String platform, int priority, String group) {
+    private static Account acc(String name, String platform, int priority, String model) {
         return Account.create(name, platform, "api_key", "{\"key\":\"" + name + "-cred\"}",
                 null, null, priority, null, null, null,
-                null, null, null, null, null,
-                List.of(com.nexa.account.provider.domain.vo.AccountGroupRef.of(group, 50)));
+                null, null, null, null, model,
+                List.of(com.nexa.account.provider.domain.vo.AccountGroupRef.of("default", 50)));
     }
 
     /** 内存桩仓储：仅实现 adapter 用到的方法，走真实充血聚合。 */
@@ -142,6 +151,7 @@ class AccountSelectionAdapterTest {
         }
 
         @Override
+        @Deprecated
         public List<Account> findSchedulableByGroup(String group, long now) {
             if (group == null || group.isBlank()) {
                 return List.of();
@@ -150,6 +160,21 @@ class AccountSelectionAdapterTest {
             for (Account a : store.values()) {
                 boolean inGroup = a.groups().stream().anyMatch(g -> group.equals(g.group()));
                 if (inGroup && a.isSchedulable(now)) {
+                    out.add(a);
+                }
+            }
+            out.sort(Comparator.comparingInt(Account::priority));
+            return out;
+        }
+
+        @Override
+        public List<Account> findSchedulableByModel(String model, long now) {
+            if (model == null || model.isBlank()) {
+                return List.of();
+            }
+            List<Account> out = new ArrayList<>();
+            for (Account a : store.values()) {
+                if (a.supportsModel(model) && a.isSchedulable(now)) {
                     out.add(a);
                 }
             }
@@ -169,6 +194,11 @@ class AccountSelectionAdapterTest {
 
         @Override
         public List<Account> findByPlatform(String platform) {
+            return List.copyOf(store.values());
+        }
+
+        @Override
+        public List<Account> findAll() {
             return List.copyOf(store.values());
         }
 

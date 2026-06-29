@@ -6,6 +6,7 @@
  * - credentials 绝不在列表/视图出现（后端不下发）。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getModelGroups } from '@/features/modelgroup/api/modelgroup.api';
 import {
   getAccounts,
   createAccount,
@@ -13,11 +14,13 @@ import {
   deleteAccount,
   toggleAccount,
   probeModels,
+  testModel,
   type AccountView,
   type AccountCreateRequest,
   type AccountUpdateRequest,
   type AccountListResponse,
   type ProbeModelsRequest,
+  type TestModelRequest,
 } from '../api/provider-account.api';
 
 /** 账号展示状态。 */
@@ -53,6 +56,8 @@ export interface AccountRowVM {
   exp: string;
   /** 过期自动暂停 */
   autoPause: boolean;
+  /** 账号级成本倍率（默认 1.0） */
+  rateMultiplier: number;
   /** 更新时间文案 */
   updatedAt: string;
   /** 所属分组数 */
@@ -87,6 +92,7 @@ export function toAccountRowVM(view: AccountView): AccountRowVM {
     autoBan: view.auto_ban ?? false,
     exp: exp > 0 ? fmtTime(exp) : '永久',
     autoPause: view.auto_pause_on_expired ?? true,
+    rateMultiplier: view.rate_multiplier ?? 1,
     updatedAt: fmtTime(view.updated_time),
     groupCount: view.groups?.length ?? 0,
     groupNames: (view.groups ?? []).map((g) => g.group).filter((g) => !!g),
@@ -153,3 +159,28 @@ export function useProbeModels() {
     mutationFn: (req: ProbeModelsRequest) => probeModels(req),
   });
 }
+
+/** 模型连通性测试 mutation（对已保存账号的指定模型发一次 chat 调用，不影响列表缓存）。 */
+export function useTestModel() {
+  return useMutation({
+    mutationFn: ({ id, req }: { id: number; req: TestModelRequest }) => testModel(id, req),
+  });
+}
+
+/**
+ * 价格分组选项（账号编辑抽屉「所属分组」勾选源）。
+ *
+ * 账号通过 group（=价格分组 code）供货：用户令牌 group → 选该 group 下的账号 → 用该组倍率定价。
+ * 勾选已有价格分组即把账号 group 对齐到分组 code，避免手敲拼错供不上货。
+ */
+export function useAccountGroupOptions() {
+  return useQuery({
+    queryKey: ['provider-account', 'group-options'],
+    queryFn: async () => {
+      const groups = await getModelGroups();
+      return groups.map((g) => ({ code: g.code, name: g.name, ratio: g.base_price_ratio }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { AppShell } from '@/features/shell';
 import { ApiError } from '@/shared/api';
 import {
@@ -8,7 +7,6 @@ import {
   type TrendPoint,
   type ModelDistItem,
   type TopChannelItem,
-  type HealthItem,
 } from '../model/admin-dashboard.model';
 import styles from './AdminDashboardPage.module.css';
 
@@ -143,10 +141,9 @@ function TopChannelBars({ data }: { data: TopChannelItem[] }) {
 /**
  * AdminDashboardPage — 管理后台全局概览（S6 admin/admin-dashboard.html 工程化，已接真实接口）。
  *
- * 数据组合自三个管理端接口（后端无单一聚合端点）：
+ * 数据组合自两个管理端接口（后端无单一聚合端点）：
  *  - GET /api/data/（按日配额）→ KPI 今日/区间请求量、消费额、趋势、模型分布
  *  - GET /api/profit/dashboard?dimension=channel → Top 渠道售出额
- *  - GET /api/channel/ → 渠道健康度计数
  */
 export function AdminDashboardPage() {
   const { data, isLoading, isError, error } = useAdminDashboard(30);
@@ -155,8 +152,6 @@ export function AdminDashboardPage() {
   const trend: TrendPoint[] = data?.trend ?? [];
   const modelDist: ModelDistItem[] = data?.modelDist ?? [];
   const topChannels: TopChannelItem[] = data?.topChannels ?? [];
-  const health: HealthItem[] = data?.health ?? [];
-  const healthTotal = health.reduce((s, i) => s + i.cnt, 0) || 1;
   const totalReq = trend.reduce((s, t) => s + t.count, 0);
 
   if (isError) {
@@ -219,7 +214,7 @@ export function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* 图表区 2：Top 渠道横向柱状 + 渠道健康度 */}
+      {/* 图表区 2：Top 渠道横向柱状 */}
       <section className={styles.chartGrid2}>
         <div className={`${styles.chartCard} nx-fade`}>
           <div className={styles.chartHead}>
@@ -229,34 +224,6 @@ export function AdminDashboardPage() {
             </div>
           </div>
           {isLoading ? <div className={styles.chartEmpty}>加载中…</div> : <TopChannelBars data={topChannels} />}
-        </div>
-        <div className={`${styles.chartCard} nx-fade`}>
-          <div className={styles.chartHead}>
-            <div>
-              <h3 className={styles.chartTitle}>渠道健康度</h3>
-              <div className={styles.chartSub}>按状态计数 · 共 {data?.channelTotal ?? 0} 个渠道</div>
-            </div>
-          </div>
-          <div className={styles.healthRow}>
-            {health.map((it) => {
-              const pct = Math.round((it.cnt / healthTotal) * 100);
-              return (
-                <div key={it.lab} className={styles.healthItem}>
-                  <span className={styles.healthLab}>
-                    <span className="dot" style={{ background: `var(${it.tone})` }} />
-                    {it.lab}
-                  </span>
-                  <span className={styles.healthBar}>
-                    <i className={styles.healthBarInner} style={{ width: `${pct}%`, background: `var(${it.tone})` }} />
-                  </span>
-                  <span className={styles.healthCnt}>{it.cnt}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className={styles.healthFoot}>
-            <Link className="btn-link" href="/admin/channels">进入渠道管理</Link>
-          </div>
         </div>
       </section>
     </AppShell>

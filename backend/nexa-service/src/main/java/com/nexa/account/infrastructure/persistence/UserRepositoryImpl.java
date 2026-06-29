@@ -142,6 +142,7 @@ public class UserRepositoryImpl implements UserRepository {
         e.setGroup(user.group());     // F-1013 分组随聚合落库
         e.setRemark(user.remark());   // F-1014 备注随聚合落库
         e.setSetting(user.setting()); // F-1014 个人设置随聚合落库
+        e.setDiscountRatio(user.discountRatio()); // 用户专属折扣随聚合落库
         if (user.id() == null) {
             // 仅新建时落 created_at；非空数值列给默认 0，避免 NOT NULL/约束在首存时报错。
             e.setCreatedAt(Instant.now().getEpochSecond());
@@ -184,6 +185,7 @@ public class UserRepositoryImpl implements UserRepository {
                 .usedQuota(e.getUsedQuota())
                 .requestCount(e.getRequestCount() == null ? null : e.getRequestCount().longValue())
                 .createdAt(e.getCreatedAt())
+                .discountRatio(e.getDiscountRatio())
                 .build();
     }
 }

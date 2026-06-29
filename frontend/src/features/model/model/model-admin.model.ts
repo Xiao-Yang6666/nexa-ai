@@ -1,10 +1,10 @@
 /**
  * features/model/model/model-admin.model — 模型/供应商管理端视图模型 + React Query hooks。
  *
- * 服务于 ModelsAdminPage 四 Tab：对外模型 / 供应商成本 / 模型元数据 / 供应商元数据。
+ * 服务于 ModelsAdminPage 三 Tab：对外模型 / 模型元数据 / 供应商元数据。
  * DTO→VM 在此收敛；组件只消费 VM，不直接碰 snake_case 契约字段。
  *
- * 客户视图铁律：本域为管理端能力，A→B 映射/上游 B/成本仅 admin 可见——这些 VM 仅在
+ * 客户视图铁律：本域为管理端能力，仅 admin 可见——这些 VM 仅在
  * 管理后台（AdminShell）使用，不流向任何客户 self-scope 视图。
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,178 +12,21 @@ import type {
   PublicModelAdminView,
   PublicModelCreateRequest,
   PublicModelUpdateRequest,
-  ModelMetaAdminView,
   VendorAdminView,
-  ChannelModelCostAdminView,
-  ChannelPoolMember,
 } from '@/shared/api';
+import { getModelGroups, updateModelGroup } from '@/features/modelgroup/api/modelgroup.api';
 import {
   getPublicModels,
   createPublicModel,
   updatePublicModel,
   deletePublicModel,
-  getChannelPool,
-  getChannelModelCosts,
   getModelMetas,
-  getMissingModels,
-  previewModelSync,
-  executeModelSync,
   getVendors,
 } from '../api/model-admin.api';
 
-function fmtTime(ts: number | undefined): string {
-  if (!ts) return '—';
-  const d = new Date(ts * 1000);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
-/* ── 对外模型 Tab ─────────────────────────────────────────────────────── */
-
-/** 品质档（后端枚举 full|max|air）。 */
-export type Tier = 'full' | 'max' | 'air';
-export const TIER_LABEL: Record<string, string> = {
-  full: '旗舰',
-  max: '增强',
-  air: '经济',
-};
-
-/** 对外模型行视图模型（合并渠道池摘要）。 */
-export interface PublicModelVM {
-  id: number;
-  /** 对外名 A */
-  a: string;
-  /** 展示名 */
-  disp: string;
-  tier: Tier | string;
-  tierLabel: string;
-  /** 基准价倍率文案 */
-  priceRatio: string;
-  /** 基准价倍率原值（编辑用） */
-  priceRatioNum: number;
-  /** 排序（编辑用） */
-  sortOrder: number;
-  /** 描述（编辑用） */
-  description: string;
-  /** 供应渠道池：渠道数 + 主通道名（按对外名 A 匹配 channel.models，A→B 由渠道级映射在转发时解析） */
-  poolCount: number;
-  poolMain: string;
-  on: boolean;
-}
-
-/** PublicModelAdminView + 渠道池 → 对外模型 VM。 */
-export function toPublicModelVM(
-  view: PublicModelAdminView,
-  pool: ChannelPoolMember[],
-): PublicModelVM {
-  const a = view.public_name ?? '';
-  // 渠道池：按对外名 A 匹配（选渠键已是 A；A→B 下沉渠道级，全局不再有 B）。
-  // 后端 /api/channel/pool 已按 A 过滤，这里池成员均属该 A，无需再筛。
-  const sortedPool = pool.slice().sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0));
-  const tier = view.quality_tier ?? 'air';
-  return {
-    id: view.id ?? 0,
-    a,
-    disp: view.display_name || a,
-    tier,
-    tierLabel: TIER_LABEL[tier] ?? tier,
-    priceRatio: view.base_price_ratio != null ? `×${Number(view.base_price_ratio).toFixed(2)}` : '—',
-    priceRatioNum: view.base_price_ratio != null ? Number(view.base_price_ratio) : 1,
-    sortOrder: view.sort_order ?? 0,
-    description: view.description || '',
-    poolCount: pool.length,
-    poolMain: sortedPool[0]?.channel_name ?? '',
-    on: view.enabled ?? false,
-  };
-}
-
-/** 对外模型 Tab 聚合查询（public_models + 各 A 的渠道池，按对外名 A 匹配）。 */
-export function usePublicModels() {
-  return useQuery({
-    queryKey: ['model-admin', 'public-models'],
-    queryFn: async () => {
-      const [pm, pool] = await Promise.all([
-        getPublicModels(1, 200),
-        getChannelPool(),
-      ]);
-      const poolItems = pool.items ?? [];
-      // 按对外名 A 把池成员分桶（后端 pool 不带 A 维度时退化为全量；A→B 解析在转发链）。
-      return (pm.items ?? []).map((v) => {
-        const a = v.public_name ?? '';
-        const myPool = poolItems.filter(
-          (p) => !p.upstream_model || p.upstream_model.toLowerCase() === a.toLowerCase(),
-        );
-        return toPublicModelVM(v, myPool);
-      });
-    },
-  });
-}
-
-/* ── 供应商成本 Tab ───────────────────────────────────────────────────── */
-
-/** 成本行视图模型（按真实模型 B 分组用）。 */
-export interface CostRowVM {
-  id: number;
-  channelId: number;
-  /** 真实模型 B */
-  b: string;
-  /** 成本倍率文案 */
-  cost: string;
-  costNum: number | null;
-  /** 是否未配（cost 缺失） */
-  unset: boolean;
-  on: boolean;
-  upd: string;
-  remark: string;
-}
-
-/** 成本按 B 分组后的视图模型。 */
-export interface CostGroupVM {
-  b: string;
-  rows: CostRowVM[];
-}
-
-export function toCostRowVM(view: ChannelModelCostAdminView): CostRowVM {
-  const c = view.cost_ratio;
-  return {
-    id: view.id ?? 0,
-    channelId: view.channel_id ?? 0,
-    b: view.upstream_model ?? '',
-    cost: c != null ? Number(c).toFixed(2) : '',
-    costNum: c != null ? Number(c) : null,
-    unset: c == null,
-    on: view.enabled ?? false,
-    upd: fmtTime(view.updated_time),
-    remark: view.remark || '',
-  };
-}
-
-/** 供应商成本 Tab 查询（按 B 分组）。 */
-export function useChannelCosts() {
-  return useQuery({
-    queryKey: ['model-admin', 'costs'],
-    queryFn: async () => {
-      const res = await getChannelModelCosts({ page: 1, pageSize: 500 });
-      const rows = (res.items ?? []).map(toCostRowVM);
-      const groups = new Map<string, CostRowVM[]>();
-      rows.forEach((r) => {
-        const arr = groups.get(r.b) ?? [];
-        arr.push(r);
-        groups.set(r.b, arr);
-      });
-      return Array.from(groups.entries()).map(([b, gr]) => ({ b, rows: gr }) as CostGroupVM);
-    },
-  });
-}
-
-/* ── 模型元数据 Tab ───────────────────────────────────────────────────── */
+/* ── 模型状态派生（底层元数据上架/下架/预发布）─────────────────────────── */
 
 export type ModelState = 'on' | 'off' | 'pre';
-export const MODEL_STATE_MAP: Record<ModelState, { cls: string; tone: string; lab: string }> = {
-  on: { cls: 'b-suc', tone: '--color-success', lab: '上架' },
-  off: { cls: 'b-dan', tone: '--color-danger', lab: '下架' },
-  pre: { cls: 'b-warn', tone: '--color-warning', lab: '预发布' },
-};
 
 /** 由后端 status 码派生展示状态。1=上架 / 0或2=下架 / 3=预发布（按 new-api 习惯，未知回落下架）。 */
 function deriveModelState(status: number | undefined): ModelState {
@@ -192,45 +35,7 @@ function deriveModelState(status: number | undefined): ModelState {
   return 'off';
 }
 
-export interface ModelMetaVM {
-  id: number;
-  nm: string;
-  vendorId: number;
-  /** 供应商名（由 vendor 列表 join） */
-  ven: string;
-  st: ModelState;
-  tags: string[];
-  endpoints: string;
-}
-
-export function toModelMetaVM(view: ModelMetaAdminView, vendorName: Map<number, string>): ModelMetaVM {
-  return {
-    id: view.id ?? 0,
-    nm: view.model_name ?? '',
-    vendorId: view.vendor_id ?? 0,
-    ven: view.vendor_id ? (vendorName.get(view.vendor_id) ?? `#${view.vendor_id}`) : '—',
-    st: deriveModelState(view.status),
-    tags: (view.tags || '').split(',').map((t) => t.trim()).filter(Boolean),
-    endpoints: view.endpoints || '',
-  };
-}
-
-/** 模型元数据 Tab 查询（models join vendors 取供应商名）。 */
-export function useModelMetas() {
-  return useQuery({
-    queryKey: ['model-admin', 'metas'],
-    queryFn: async () => {
-      const [models, vendors] = await Promise.all([getModelMetas(1, 200), getVendors(1, 200)]);
-      const vendorName = new Map<number, string>();
-      (vendors.items ?? []).forEach((v) => {
-        if (v.id != null) vendorName.set(v.id, v.name ?? `#${v.id}`);
-      });
-      return (models.items ?? []).map((m) => toModelMetaVM(m, vendorName));
-    },
-  });
-}
-
-/* ── 供应商元数据 Tab ─────────────────────────────────────────────────── */
+/* ── 供应商元数据 ─────────────────────────────────────────────────────── */
 
 export type VendorState = 'on' | 'off';
 export interface VendorVM {
@@ -255,27 +60,6 @@ export function useVendors() {
       const res = await getVendors(1, 200);
       return (res.items ?? []).map(toVendorVM);
     },
-  });
-}
-
-/* ── 缺失检测 / 同步预览 / 同步执行 ──────────────────────────────────── */
-
-/** 缺失模型检测 mutation（按需触发）。 */
-export function useMissingModels() {
-  return useMutation({ mutationFn: () => getMissingModels() });
-}
-
-/** 上游同步预览 mutation。 */
-export function useModelSyncPreview() {
-  return useMutation({ mutationFn: (locale?: string) => previewModelSync(locale) });
-}
-
-/** 上游同步执行 mutation。成功后刷新模型管理域。 */
-export function useModelSyncExecute() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (req: { overwrite?: boolean; models?: string[] } = {}) => executeModelSync(req),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin'] }),
   });
 }
 
@@ -312,4 +96,187 @@ export function useDeletePublicModel() {
 export function useInvalidateModelAdmin() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: ['model-admin'] });
+}
+
+/* ── 统一模型视图（以底层真实模型为主体，合并广场上架状态 + 所在价格分组）──────── */
+
+/** 统一模型行视图：一行 = 一个底层真实模型，附其广场上架状态与所在价格分组。 */
+export interface UnifiedModelVM {
+  /** 模型名（model_metas.model_name，对外名 A 默认取此值） */
+  name: string;
+  /** 供应商名 */
+  vendor: string;
+  /** 底层元数据状态（上架/下架/预发布——指上游可用性，非广场） */
+  metaState: ModelState;
+  /** 标签 */
+  tags: string[];
+  /** 是否已上架到广场（存在对应 public_models 记录） */
+  onSquare: boolean;
+  /** 已上架时的 public_model id（编辑/下架用） */
+  publicModelId?: number;
+  /** 已上架时是否启用（enabled） */
+  enabled: boolean;
+  /** 基准价倍率（已上架才有） */
+  basePriceRatio?: number;
+  /** 展示名（已上架才有） */
+  displayName?: string;
+  /** 描述（已上架才有） */
+  description?: string;
+  /** 所在价格分组（按模型名匹配 model_groups.models[]，忽略大小写） */
+  groups: { id: number; name: string; ratio: number }[];
+}
+
+/** 价格分组精简项（抽屉勾选用）。 */
+export interface GroupOptionVM {
+  id: number;
+  name: string;
+  code: string;
+  ratio: number;
+  /** 该模型当前是否已在此组 */
+  joined: boolean;
+}
+
+/**
+ * 统一模型查询：model_metas（左表，全部真实模型）⟕ public_models（哪些已上架）
+ * ⟕ model_groups（反查所在组）。以模型名为连接键（忽略大小写）。
+ */
+export function useUnifiedModels() {
+  return useQuery({
+    queryKey: ['model-admin', 'unified'],
+    queryFn: async () => {
+      const [metasRes, vendorsRes, pmRes, groups] = await Promise.all([
+        getModelMetas(1, 200),
+        getVendors(1, 200),
+        getPublicModels(1, 200),
+        getModelGroups(),
+      ]);
+      const vendorName = new Map<number, string>();
+      (vendorsRes.items ?? []).forEach((v) => {
+        if (v.id != null) vendorName.set(v.id, v.name ?? `#${v.id}`);
+      });
+      // public_models 按 public_name（小写）索引，供 join。
+      const pubByName = new Map<string, PublicModelAdminView>();
+      (pmRes.items ?? []).forEach((p) => {
+        if (p.public_name) pubByName.set(p.public_name.toLowerCase(), p);
+      });
+      const groupsOf = (name: string) => {
+        const lower = name.toLowerCase();
+        return groups
+          .filter((g) => (g.models ?? []).some((m) => m.toLowerCase() === lower))
+          .map((g) => ({ id: g.id, name: g.name, ratio: g.base_price_ratio }));
+      };
+      return (metasRes.items ?? []).map((m): UnifiedModelVM => {
+        const name = m.model_name ?? '';
+        const pub = pubByName.get(name.toLowerCase());
+        return {
+          name,
+          vendor: m.vendor_id ? (vendorName.get(m.vendor_id) ?? `#${m.vendor_id}`) : '—',
+          metaState: deriveModelState(m.status),
+          tags: (m.tags || '').split(',').map((t) => t.trim()).filter(Boolean),
+          onSquare: pub != null,
+          publicModelId: pub?.id ?? undefined,
+          enabled: pub?.enabled ?? false,
+          basePriceRatio: pub?.base_price_ratio != null ? Number(pub.base_price_ratio) : undefined,
+          displayName: pub?.display_name || undefined,
+          description: pub?.description || undefined,
+          groups: groupsOf(name),
+        };
+      });
+    },
+  });
+}
+
+/** 全部价格分组（抽屉勾选数据源），标记某模型是否已在各组。 */
+export function useGroupOptions(modelName: string | null) {
+  return useQuery({
+    queryKey: ['model-admin', 'group-options', modelName],
+    queryFn: async (): Promise<GroupOptionVM[]> => {
+      const groups = await getModelGroups();
+      const lower = (modelName ?? '').toLowerCase();
+      return groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        code: g.code,
+        ratio: g.base_price_ratio,
+        joined: (g.models ?? []).some((m) => m.toLowerCase() === lower),
+      }));
+    },
+    enabled: modelName != null,
+  });
+}
+
+/**
+ * 同步某模型在各价格分组的归属（覆盖式 diff）。
+ * targetGroupIds = 该模型最终应属于的分组 id 集合；与各组当前 models[] diff 后增删。
+ */
+async function syncModelGroups(modelName: string, targetGroupIds: number[]): Promise<void> {
+  const groups = await getModelGroups();
+  const lower = modelName.toLowerCase();
+  const target = new Set(targetGroupIds);
+  for (const g of groups) {
+    const models = g.models ?? [];
+    const has = models.some((m) => m.toLowerCase() === lower);
+    const should = target.has(g.id);
+    if (has === should) continue;
+    const next = should
+      ? [...models, modelName]
+      : models.filter((m) => m.toLowerCase() !== lower);
+    await updateModelGroup(g.id, { models: next });
+  }
+}
+
+/** 上架/管理模型的入参（统一编排：建/改 public_model + 同步分组归属）。 */
+export interface ShelveModelInput {
+  /** 已上架时的 public_model id（管理场景传，上架场景空） */
+  publicModelId?: number;
+  publicName: string;
+  displayName?: string;
+  basePriceRatio: number;
+  description?: string;
+  enabled: boolean;
+  /** 最终应归属的价格分组 id 集合 */
+  groupIds: number[];
+}
+
+/**
+ * 上架/管理模型 mutation：
+ * 1) 无 id → createPublicModel；有 id → updatePublicModel；
+ * 2) syncModelGroups 覆盖式同步该模型在各组的归属。
+ * 失败逐步抛出（公开模型已建但分组未全同步时，可重新「管理」补）。
+ */
+export function useShelveModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ShelveModelInput) => {
+      if (input.publicModelId == null) {
+        await createPublicModel({
+          public_name: input.publicName,
+          display_name: input.displayName,
+          base_price_ratio: input.basePriceRatio,
+          description: input.description,
+          enabled: input.enabled,
+        });
+      } else {
+        await updatePublicModel({
+          id: input.publicModelId,
+          base_price_ratio: input.basePriceRatio,
+          display_name: input.displayName,
+          description: input.description,
+          enabled: input.enabled,
+        });
+      }
+      await syncModelGroups(input.publicName, input.groupIds);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin'] }),
+  });
+}
+
+/** 下架模型 mutation（保留分组关联，仅 enabled=false，便于重新上架）。 */
+export function useUnshelveModel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (publicModelId: number) =>
+      updatePublicModel({ id: publicModelId, enabled: false }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['model-admin'] }),
+  });
 }

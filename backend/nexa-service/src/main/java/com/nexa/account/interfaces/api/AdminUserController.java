@@ -10,10 +10,13 @@ import com.nexa.account.application.SearchUsersUseCase;
 import com.nexa.account.application.UpdateUserProfileCommand;
 import com.nexa.account.application.UpdateUserProfileUseCase;
 import com.nexa.account.domain.vo.Role;
+import com.nexa.account.interfaces.api.dto.AdminBalanceAdjustRequest;
 import com.nexa.account.interfaces.api.dto.AdminCreateUserRequest;
 import com.nexa.account.interfaces.api.dto.AdminManageUserRequest;
 import com.nexa.account.interfaces.api.dto.AdminUpdateUserRequest;
 import com.nexa.account.interfaces.api.dto.AdminUserView;
+import com.nexa.account.interfaces.api.dto.BalanceTransactionView;
+import com.nexa.billing.application.AdminAdjustBalanceUseCase;
 import com.nexa.shared.web.ApiResponse;
 import com.nexa.shared.web.PageView;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
@@ -22,6 +25,7 @@ import com.nexa.shared.security.interfaces.annotation.CurrentActor;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +33,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 /**
@@ -64,21 +70,28 @@ public class AdminUserController {
     private final CreateUserByAdminUseCase createUserByAdminUseCase;
     private final ManageUserUseCase manageUserUseCase;
     private final UpdateUserProfileUseCase updateUserProfileUseCase;
+    private final AdminAdjustBalanceUseCase adminAdjustBalanceUseCase;
+
+    /** $1 = 500000 quota（与前端 QUOTA_PER_USD 一致）。 */
+    private static final BigDecimal QUOTA_PER_USD = BigDecimal.valueOf(500_000L);
 
     /**
      * @param searchUsersUseCase       用户搜索用例（F-1008）
      * @param createUserByAdminUseCase 管理端创建用户用例（F-1009）
      * @param manageUserUseCase        用户状态管理用例（F-1010）
      * @param updateUserProfileUseCase 更新用户资料用例（F-1011/1013/1014）
+     * @param adminAdjustBalanceUseCase 管理员余额充值/扣费用例
      */
     public AdminUserController(SearchUsersUseCase searchUsersUseCase,
                                CreateUserByAdminUseCase createUserByAdminUseCase,
                                ManageUserUseCase manageUserUseCase,
-                               UpdateUserProfileUseCase updateUserProfileUseCase) {
+                               UpdateUserProfileUseCase updateUserProfileUseCase,
+                               AdminAdjustBalanceUseCase adminAdjustBalanceUseCase) {
         this.searchUsersUseCase = searchUsersUseCase;
         this.createUserByAdminUseCase = createUserByAdminUseCase;
         this.manageUserUseCase = manageUserUseCase;
         this.updateUserProfileUseCase = updateUserProfileUseCase;
+        this.adminAdjustBalanceUseCase = adminAdjustBalanceUseCase;
     }
 
     /**
@@ -190,8 +203,77 @@ public class AdminUserController {
                 request.quota(),
                 request.remark(),
                 request.status(),
+                request.discountRatio(),
                 operator.role().code());
         updateUserProfileUseCase.update(command);
         return ApiResponse.ok("update user success");
+    }
+
+    /**
+     * 管理员给用户充值（{@code POST /api/user/{id}/credit}）。
+     *
+     * @param id       目标用户 id
+     * @param request  充值请求（amount USD &gt; 0）
+     * @param operator 认证主体（提供操作者 id）
+     * @return 成功信封，data = 充值后余额（USD）
+     */
+    @PostMapping("/{id}/credit")
+    public ApiResponse<BigDecimal> credit(
+            @PathVariable("id") long id,
+            @RequestBody AdminBalanceAdjustRequest request,
+            @CurrentActor AuthenticatedActor operator) {
+        long quota = toQuota(request.amount());
+        long after = adminAdjustBalanceUseCase
+                .credit(id, quota, operator.userId(), request.remark()).value();
+        return ApiResponse.okData(toUsd(after));
+    }
+
+    /**
+     * 管理员给用户扣费（扣到 0 为止，{@code POST /api/user/{id}/debit}）。
+     *
+     * @param id       目标用户 id
+     * @param request  扣费请求（amount USD &gt; 0）
+     * @param operator 认证主体（提供操作者 id）
+     * @return 成功信封，data = 扣费后余额（USD）
+     */
+    @PostMapping("/{id}/debit")
+    public ApiResponse<BigDecimal> debit(
+            @PathVariable("id") long id,
+            @RequestBody AdminBalanceAdjustRequest request,
+            @CurrentActor AuthenticatedActor operator) {
+        long quota = toQuota(request.amount());
+        long after = adminAdjustBalanceUseCase
+                .debit(id, quota, operator.userId(), request.remark()).value();
+        return ApiResponse.okData(toUsd(after));
+    }
+
+    /**
+     * 查询用户账变流水（{@code GET /api/user/{id}/balance-logs}）。
+     *
+     * @param id    目标用户 id
+     * @param limit 返回上限（缺省 50）
+     * @return 成功信封，data = 账变流水列表（时间倒序）
+     */
+    @GetMapping("/{id}/balance-logs")
+    public ApiResponse<List<BalanceTransactionView>> balanceLogs(
+            @PathVariable("id") long id,
+            @RequestParam(name = "limit", required = false, defaultValue = "50") int limit) {
+        List<BalanceTransactionView> items = adminAdjustBalanceUseCase.logs(id, limit).stream()
+                .map(BalanceTransactionView::from)
+                .toList();
+        return ApiResponse.okData(items);
+    }
+
+    /** USD → quota（向下取整为整数 quota）。 */
+    private static long toQuota(BigDecimal usd) {
+        if (usd == null) {
+            return 0L;
+        }
+        return usd.multiply(QUOTA_PER_USD).setScale(0, RoundingMode.FLOOR).longValueExact();
+    }
+
+    /** quota → USD（标度 6）。 */
+    private static BigDecimal toUsd(long quota) {
+        return BigDecimal.valueOf(quota).divide(QUOTA_PER_USD, 6, RoundingMode.HALF_UP);
     }
 }

@@ -3,7 +3,6 @@
 import { useRef } from 'react';
 import type { ModelCardVM } from '../model/model.model';
 import { VendorAvatar } from './VendorAvatar';
-import { TierBadge } from './TierBadge';
 import styles from './ModelsPage.module.css';
 
 /** 价格格式化：<1 保 3 位、≥1 保 2 位，去尾零。 */
@@ -19,8 +18,8 @@ export interface ModelCardProps {
 
 /**
  * ModelCard — 模型广场卡片。
- * 头像 + 名称 + 品质徽章 + 标签 + 上下文 + 基准价（高亮）+ 省X% 营销标。
- * Spotlight 光斑随鼠标移动（--mx/--my）。点击/回车打开详情抽屉。
+ * 头像 + 名称 + 标签 + 上下文 + 起步价（多分组时显示"N 档可选 · $X 起"）。
+ * Spotlight 光斑随鼠标移动（--mx/--my）。点击/回车打开详情抽屉看分组价格对比。
  *
  * 零泄露：只展示 VM 白名单字段——无成本/利润/上游模型 B/供应商。
  */
@@ -34,6 +33,9 @@ export function ModelCard({ model, onOpen }: ModelCardProps) {
     el.style.setProperty('--mx', `${e.clientX - r.left}px`);
     el.style.setProperty('--my', `${e.clientY - r.top}px`);
   };
+
+  // 多分组：卡片价以「起步价」展示（$X 起），点开详情看完整对比。
+  const multiGroup = model.groups.length > 1;
 
   return (
     <button
@@ -55,7 +57,6 @@ export function ModelCard({ model, onOpen }: ModelCardProps) {
         <div>
           <p className={styles.nmRow}>
             <span className={styles.nm}>{model.displayName || model.modelName}</span>
-            <TierBadge tier={model.tier} />
           </p>
           <div className={styles.vd}>{model.vendor}</div>
         </div>
@@ -75,18 +76,14 @@ export function ModelCard({ model, onOpen }: ModelCardProps) {
           <span className={styles.k}>上下文</span>
           <span className={styles.v}>{model.ctx}</span>
         </span>
-        {model.basePrice != null ? (
+        {model.fromPrice != null ? (
           <div className={styles.price}>
-            {model.savePercent != null ? (
-              <span className={styles.save}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-                省 {model.savePercent}%
-              </span>
+            {multiGroup ? (
+              <span className={styles.save}>{model.groups.length} 档可选</span>
             ) : null}
             <span className={styles.priceNexa}>
-              ${fmtPrice(model.basePrice)}
+              {multiGroup ? <span className={styles.u}>低至 </span> : null}
+              ${fmtPrice(model.fromPrice)}
               <span className={styles.u}> /1M</span>
             </span>
           </div>

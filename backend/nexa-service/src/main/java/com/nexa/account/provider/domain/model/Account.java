@@ -553,6 +553,29 @@ public class Account {
         return models;
     }
 
+    /**
+     * 是否精确支持某模型名（方案乙：选账号按模型 A 反查的精确判定，充血行为）。
+     *
+     * <p>{@link #models} 是逗号分隔串，本方法按逗号切分后<b>精确</b>比对（去首尾空白），避免 SQL LIKE
+     * 粗筛的子串误命中（如 "gpt-4" 误命中 "gpt-4o"）。models 为空（账号未声明可服务模型）时返回
+     * {@code false}（无声明即不可按模型选中，避免空账号被误选）。</p>
+     *
+     * @param model 待判定模型名 A（null/空白→false）
+     * @return 精确命中返回 {@code true}
+     */
+    public boolean supportsModel(String model) {
+        if (model == null || model.isBlank() || models == null || models.isBlank()) {
+            return false;
+        }
+        String target = model.trim();
+        for (String m : models.split(",")) {
+            if (target.equals(m.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** @return 所属分组关联集合（只读副本） */
     public List<AccountGroupRef> groups() {
         return List.copyOf(groups);

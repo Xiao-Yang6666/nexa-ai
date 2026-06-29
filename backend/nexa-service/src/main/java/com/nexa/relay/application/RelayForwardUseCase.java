@@ -5,9 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexa.billing.application.port.UserQuotaAccount;
 import com.nexa.billing.domain.vo.Quota;
-import com.nexa.channel.domain.model.ChannelModelCost;
-import com.nexa.channel.domain.repository.ChannelModelCostRepository;
-import com.nexa.channel.domain.repository.ChannelRepository;
 import com.nexa.model.domain.model.PublicModel;
 import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.exception.InvalidRelayParameterException;
@@ -37,7 +34,6 @@ import com.nexa.relay.domain.service.TwoLayerModelResolver;
 import com.nexa.relay.domain.vo.AliasScope;
 import com.nexa.relay.domain.vo.BillingResult;
 import com.nexa.relay.domain.vo.ChannelProtocolMapping;
-import com.nexa.routing.application.SelectRelayChannelUseCase;
 import com.nexa.relay.domain.vo.ModelResolution;
 import com.nexa.relay.domain.vo.ProtocolFormat;
 import com.nexa.relay.domain.vo.RelayDispatch;
@@ -63,43 +59,37 @@ public class RelayForwardUseCase {
     private final UserModelAliasRepository l1Repo;
     private final RelayLogRepository logRepo;
     private final UpstreamHttpPort upstreamHttpPort;
-    private final ChannelRepository channelRepo;
     private final ObjectMapper objectMapper;
     private final KeyLimitGuard keyLimitGuard;
-    private final SelectRelayChannelUseCase selectRelayChannelUseCase;
     private final PublicModelRepository publicModelRepo;
-    private final ChannelModelCostRepository channelModelCostRepo;
     private final UserQuotaAccount userQuotaAccount;
     private final ModelGroupPricingPort modelGroupPricingPort;
     private final ModelGroupAccessPort modelGroupAccessPort;
     private final AccountSelectionPort accountSelectionPort;
+    private final com.nexa.relay.domain.port.UserDiscountPort userDiscountPort;
 
     public RelayForwardUseCase(UserModelAliasRepository l1Repo,
                                RelayLogRepository logRepo,
                                UpstreamHttpPort upstreamHttpPort,
-                               ChannelRepository channelRepo,
                                ObjectMapper objectMapper,
                                KeyLimitGuard keyLimitGuard,
-                               SelectRelayChannelUseCase selectRelayChannelUseCase,
                                PublicModelRepository publicModelRepo,
-                               ChannelModelCostRepository channelModelCostRepo,
                                UserQuotaAccount userQuotaAccount,
                                ModelGroupPricingPort modelGroupPricingPort,
                                ModelGroupAccessPort modelGroupAccessPort,
-                               AccountSelectionPort accountSelectionPort) {
+                               AccountSelectionPort accountSelectionPort,
+                               com.nexa.relay.domain.port.UserDiscountPort userDiscountPort) {
         this.l1Repo = l1Repo;
         this.logRepo = logRepo;
         this.upstreamHttpPort = upstreamHttpPort;
-        this.channelRepo = channelRepo;
         this.objectMapper = objectMapper;
         this.keyLimitGuard = keyLimitGuard;
-        this.selectRelayChannelUseCase = selectRelayChannelUseCase;
         this.publicModelRepo = publicModelRepo;
-        this.channelModelCostRepo = channelModelCostRepo;
         this.userQuotaAccount = userQuotaAccount;
         this.modelGroupPricingPort = modelGroupPricingPort;
         this.modelGroupAccessPort = modelGroupAccessPort;
         this.accountSelectionPort = accountSelectionPort;
+        this.userDiscountPort = userDiscountPort;
     }
 
     /**
@@ -126,14 +116,13 @@ public class RelayForwardUseCase {
      * @return 映射结果（C→A，B 暂等于 A，待账号级解析）
      */
     public ModelResolution resolveModel(String requestedModel, long userId, String group) {
-        AliasScope userScope = AliasScope.user(userId);
-        AliasScope groupScope = AliasScope.group(group);
+        // 用户自助模型映射（L1 别名）已下线：C→A 恒等（requested 即 A），不再查 l1Repo。
+        // A→B 由选账号后的账号级 modelMapping 接管（L2 传 null）。后期再优化用户级映射能力。
         return TwoLayerModelResolver.resolve(
                 requestedModel,
-                // L1 lookup: user > group 优先级
-                alias -> l1Repo.findTargetByAlias(userScope, alias)
-                        .orElseGet(() -> l1Repo.findTargetByAlias(groupScope, alias).orElse(null)),
-                // L2 lookup: 不再走全局底仓映射——A→B 已下沉为账号级（选账号后解析），此处恒等返回 null。
+                // L1 lookup: 下线——恒等返回 null（不映射）。
+                alias -> null,
+                // L2 lookup: A→B 已下沉为账号级（选账号后解析），此处恒等返回 null。
                 publicName -> null
         );
     }
@@ -191,8 +180,8 @@ public class RelayForwardUseCase {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
 
-        // ③' 模型组访问闸门（REQ-05）：私有模型组未授权 → 403，挡在选渠/计费之前（不放行、不扣费）。
-        enforceModelGroupAccess(authContext);
+        // ③' 模型组访问闸门（REQ-05）：模型不在分组勾选列表 / 私有组未授权 → 403，挡在选渠/计费之前（不放行、不扣费）。
+        enforceModelGroupAccess(authContext, resolution.resolvedPublic());
 
         // ④⑤ 选账号 + 协议转换 + 调上游，按 RL-3 状态码重试/禁用包进重试循环（REQ-09）。
         // 计费⑥⑦/结算⑦'/消费 Log⑨ 仅在最终成功的账号上执行（循环外成功路径），
@@ -212,16 +201,16 @@ public class RelayForwardUseCase {
         UpstreamResponse upstreamResponse;
 
         while (true) {
-            // ④ 选账号（group×A 加权随机 + 排除已尝试账号，REQ-03 重载）。
-            //   选账号键为对外/平台名 A（abilities.model 列存 A）；首次选无候选 → 上抛 NoAvailableChannelException（503，对齐 RL-1 §4）。
+            // ④ 选账号（方案乙：按模型 A 反查 abilities + 排除已尝试账号，REQ-03 重载）。
+            //   售价分组与调度解耦：按平台名 A 选可服务该模型的可调度账号；首次选无候选 → 上抛 NoAvailableChannelException（503）。
             //   重试中无更多候选（triedAccountIds 非空后耗尽）→ 终止重试，返回上游最后一次错误。
             SelectedAccount account = accountSelectionPort
-                    .selectAccount(authContext.group(), null, triedAccountIds)
+                    .selectAccount(publicModel, null, triedAccountIds)
                     .orElse(null);
             if (account == null) {
                 if (triedAccountIds.isEmpty()) {
                     // 首次即无可用账号：保持原 503 语义。
-                    throw new NoAvailableChannelException("no available account for group=" + authContext.group());
+                    throw new NoAvailableChannelException("no available account for model=" + publicModel);
                 }
                 // 已尝试过账号但候选耗尽：返回最后一次上游错误（重试耗尽态）。
                 return buildErrorResult(dispatch, lastFailureStatus, lastFailureMaskedMessage);
@@ -239,9 +228,11 @@ public class RelayForwardUseCase {
             targetProto = ChannelProtocolMapping.protocolOfPlatform(account.platform());
             passthrough = inFmt == targetProto;
             byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
+            // RL-6 缺口补全：出站 path 随目标协议走（OpenAI→Claude 上游须改用 /v1/messages，否则 404）。
+            String upstreamPath = RelayPathResolver.outboundPath(targetProto, path, passthrough);
 
             UpstreamRequest upstreamRequest = UpstreamRequest.of(
-                    "POST", upstreamBaseUrl, path, upstreamKey, upstreamBody,
+                    "POST", upstreamBaseUrl, upstreamPath, upstreamKey, upstreamBody,
                     java.util.Map.of("Content-Type", "application/json"));
             int failureStatus;
             String failureDetail;
@@ -286,13 +277,12 @@ public class RelayForwardUseCase {
         UsageIR usage = parseUsage(upstreamResponse, targetProto);
         // 第16步售价 / 第17-18步成本：调 DualPriceBilling 纯函数算三金额。
         //   售价 quota_sell = BasePriceRatio(A) × GroupRatio(group) × tokens（用公开名 A + 分组折扣，恒定，不随渠道变）。
-        //   成本 quota_cost = CostRatio(实际 ChannelId, B) × tokens（用真实渠道 id + 上游名 B，不乘 GroupRatio，ADR-BILL-02）。
-        //   成本行 (ChannelId,B) 缺失 → quota_cost=0、quota_profit=quota_sell、costMissing=true（不阻断，落 Log Other 写 cost_missing）。
+        //   成本 quota_cost = BasePriceRatio(A) × AccountRatio(账号) × tokens（账号级倍率，不乘 GroupRatio，ADR-BILL-02）。
         BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
         BigDecimal groupRatio = resolveGroupRatio(authContext.group());
-        BigDecimal costRatio = resolveAccountCostRatio(successAccount.accountId(), upstreamModel); // null = 成本行缺失
+        BigDecimal userDiscount = resolveUserDiscount(authContext.userId());
         BillingResult billing = DualPriceBilling.compute(
-                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, successAccount.rateMultiplier());
+                usage, basePriceRatio, groupRatio, userDiscount, successAccount.rateMultiplier(), BigDecimal.ONE);
 
 
         // ⑦' 结算扣减（响应后一次性扣售价，最小闭环）。
@@ -341,21 +331,21 @@ public class RelayForwardUseCase {
             keyLimitGuard.check(authContext.tokenId(), resolution.resolvedPublic(), dispatch.format());
         }
 
-        // ③' 模型组访问闸门（REQ-05）：私有模型组未授权 → 403（流式同样在写出任何 chunk 前拦截）。
-        enforceModelGroupAccess(authContext);
+        // ③' 模型组访问闸门（REQ-05）：模型不在分组勾选列表 / 私有组未授权 → 403（流式同样在写出任何 chunk 前拦截）。
+        enforceModelGroupAccess(authContext, resolution.resolvedPublic());
 
         ProtocolFormat inFmt = dispatch.format();
         java.util.Set<Long> triedAccountIds = new java.util.HashSet<>();
         int retryCount = 0;
 
         while (true) {
-            // 选账号
+            // 选账号（方案乙：按模型 A 反查）
             SelectedAccount account = accountSelectionPort
-                    .selectAccount(authContext.group(), null, triedAccountIds)
+                    .selectAccount(publicModel, null, triedAccountIds)
                     .orElse(null);
             if (account == null) {
                 if (triedAccountIds.isEmpty()) {
-                    throw new NoAvailableChannelException("no available account for group=" + authContext.group());
+                    throw new NoAvailableChannelException("no available account for model=" + publicModel);
                 }
                 return; // 重试耗尽：流已可能部分写出，静默结束（错误 Log 已逐次记录）。
             }
@@ -369,8 +359,10 @@ public class RelayForwardUseCase {
             byte[] upstreamBody = buildUpstreamBody(root, inFmt, targetProto, upstreamModel, passthrough);
 
             String upstreamKey = extractAccountKey(account.credentials());
+            // RL-6 缺口补全：出站 path 随目标协议走（流式同样适用）。
+            String upstreamPath = RelayPathResolver.outboundPath(targetProto, path, passthrough);
             UpstreamRequest upstreamRequest = UpstreamRequest.of(
-                    "POST", account.baseUrl(), path, upstreamKey, upstreamBody,
+                    "POST", account.baseUrl(), upstreamPath, upstreamKey, upstreamBody,
                     java.util.Map.of("Content-Type", "application/json"));
 
             StreamConversionHandler handler = new StreamConversionHandler(
@@ -389,7 +381,7 @@ public class RelayForwardUseCase {
                 // 已向客户写出 chunk 后上游中断：按已累计 usage 落计费 Log。
                 if (handler.hasWritten()) {
                     billAccountStreamConsume(dispatch, resolution, account.accountId(),
-                            targetProto, authContext, upstreamModel, handler.cumulativeUsage(),
+                            targetProto, authContext, handler.cumulativeUsage(),
                             account.rateMultiplier());
                 }
                 return;
@@ -414,7 +406,7 @@ public class RelayForwardUseCase {
 
             // 成功：流已逐 chunk 写出，按累计 usage 走双价记账落 Log（REQ-05）。
             billAccountStreamConsume(dispatch, resolution, account.accountId(),
-                    targetProto, authContext, upstreamModel, handler.cumulativeUsage(),
+                    targetProto, authContext, handler.cumulativeUsage(),
                     account.rateMultiplier());
             return;
         }
@@ -425,13 +417,13 @@ public class RelayForwardUseCase {
      */
     private void billAccountStreamConsume(RelayDispatch dispatch, ModelResolution resolution,
                                           long accountId, ProtocolFormat targetProto,
-                                          RelayAuthContext authContext, String upstreamModel,
+                                          RelayAuthContext authContext,
                                           UsageIR usage, BigDecimal rateMultiplier) {
         BigDecimal basePriceRatio = resolveBasePriceRatio(resolution.resolvedPublic());
         BigDecimal groupRatio = resolveGroupRatio(authContext.group());
-        BigDecimal costRatio = resolveAccountCostRatio(accountId, upstreamModel);
+        BigDecimal userDiscount = resolveUserDiscount(authContext.userId());
         BillingResult billing = DualPriceBilling.compute(
-                usage, basePriceRatio, groupRatio, costRatio, BigDecimal.ONE, rateMultiplier);
+                usage, basePriceRatio, groupRatio, userDiscount, rateMultiplier, BigDecimal.ONE);
         settle(authContext.userId(), billing);
         recordAccountConsumeLog(dispatch, resolution, accountId, targetProto, authContext, usage, billing, true);
     }
@@ -694,6 +686,18 @@ public class RelayForwardUseCase {
     }
 
     /**
+     * 取用户专属折扣（售价侧，在分组倍率之后再乘）。端口为 {@code null}（防御性）或用户未设折扣时回落
+     * {@code 1.0}（不打折，保持旧行为、不阻断计费）。
+     */
+    private BigDecimal resolveUserDiscount(long userId) {
+        if (userDiscountPort == null) {
+            return BigDecimal.ONE;
+        }
+        BigDecimal d = userDiscountPort.discountOf(userId);
+        return d == null ? BigDecimal.ONE : d;
+    }
+
+    /**
      * 模型组访问闸门（REQ-05）：私有模型组未授权 → 抛 403，挡在选渠/计费/转发之前。
      *
      * <p>调 {@link ModelGroupAccessPort} 判定调用方（user/token）是否有权使用其分组 code 对应的模型组。
@@ -703,33 +707,15 @@ public class RelayForwardUseCase {
      * @param authContext 调用方上下文（提供 group/userId/tokenId）
      * @throws ModelGroupAccessDeniedException 私有组且无授权（→403）
      */
-    private void enforceModelGroupAccess(RelayAuthContext authContext) {
+    private void enforceModelGroupAccess(RelayAuthContext authContext, String requestedModel) {
         if (modelGroupAccessPort == null) {
             return;
         }
         boolean allowed = modelGroupAccessPort.isAccessible(
-                authContext.group(), authContext.userId(), authContext.tokenId());
+                authContext.group(), authContext.userId(), authContext.tokenId(), requestedModel);
         if (!allowed) {
             throw new ModelGroupAccessDeniedException(authContext.group());
         }
-    }
-
-    /**
-     * 按账号查成本比率（Account-Cost Mapping，ADR-BILL-02）。
-     *
-     * <p>主键 {@code (实际 AccountId, 真实模型 B)} 查 {@link ChannelModelCostRepository}：命中且启用 →
-     * 返回 cost_ratio；缺行 / 禁用 → 返回 {@code null}（成本缺失态，由 {@link DualPriceBilling} 兜底
-     * quota_cost=0 + costMissing 标记，不阻断）。{@code accountId} 为空（不应发生）亦按缺失处理。
-     * 注：当前仍复用 channel_model_costs 表，键名为 channelId，语义为上游接入提供者键。</p>
-     */
-    private BigDecimal resolveAccountCostRatio(Long accountId, String upstreamModel) {
-        if (accountId == null) {
-            return null;
-        }
-        return channelModelCostRepo.findByChannelAndUpstream(accountId.intValue(), upstreamModel)
-                .filter(c -> Boolean.TRUE.equals(c.enabled()))
-                .map(ChannelModelCost::costRatio)
-                .orElse(null);
     }
 
     /**

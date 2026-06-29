@@ -50,7 +50,7 @@
 }
 .chartGrid2 {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--space-4);
   margin-bottom: var(--space-5);
 }

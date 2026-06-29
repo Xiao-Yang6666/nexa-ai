@@ -19,8 +19,6 @@ export interface PriceRowVM {
   basePrice: number | null;
   /** 营销"省 X%"（公开价格带推导，不涉成本）；null 无价 */
   savePercent: number | null;
-  /** 品质档（full/max/air），用于同族分行标记 */
-  tier?: string;
 }
 
 /** 价格带 → 省 X%（与 model 域 deriveSavePercent 一致口径）。 */
@@ -42,7 +40,6 @@ export function toPriceRowVM(entry: PricingModelEntry): PriceRowVM {
     displayName: entry.display_name || entry.model_name || '',
     basePrice,
     savePercent: deriveSavePercent(basePrice),
-    tier: entry.quality_tier,
   };
 }
 

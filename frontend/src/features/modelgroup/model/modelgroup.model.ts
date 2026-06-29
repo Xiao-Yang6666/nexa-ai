@@ -7,6 +7,7 @@
  * 管理端 CRUD + 启停 + 用户私有组覆盖式设置。
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getPublicModels } from '@/features/model/api/model-admin.api';
 import {
   getModelGroups,
   createModelGroup,
@@ -75,6 +76,26 @@ export function useModelGroups(accessPolicy?: AccessPolicy) {
     queryKey: ['model_groups', accessPolicy ?? 'all'],
     queryFn: () => getModelGroups(accessPolicy),
     select: (data) => (data ?? []).map(toModelGroupRowVM),
+  });
+}
+
+/**
+ * 候选模型名 hook（价格分组「包含模型」勾选列表的数据源）。
+ *
+ * 拉对外模型全集（public_models）的 public_name，供分组编辑抽屉勾选——替代手敲模型名 textarea，
+ * 避免敲错/失联。一次取较大页（200）覆盖全量；按 public_name 升序稳定排序。
+ */
+export function useCandidateModels() {
+  return useQuery({
+    queryKey: ['model_groups', 'candidate-models'],
+    queryFn: async () => {
+      const res = await getPublicModels(1, 200);
+      return (res.items ?? [])
+        .map((m) => m.public_name ?? '')
+        .filter((n): n is string => n.length > 0)
+        .sort((a, b) => a.localeCompare(b));
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

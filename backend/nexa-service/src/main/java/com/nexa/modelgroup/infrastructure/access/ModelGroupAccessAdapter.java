@@ -37,7 +37,7 @@ public class ModelGroupAccessAdapter implements ModelGroupAccessPort {
 
     /** {@inheritDoc} */
     @Override
-    public boolean isAccessible(String groupCode, long userId, Long tokenId) {
+    public boolean isAccessible(String groupCode, long userId, Long tokenId, String requestedModel) {
         if (groupCode == null || groupCode.isBlank()) {
             // 无分组 code：不受模型组管控，放行（回落旧行为）。
             return true;
@@ -47,8 +47,14 @@ public class ModelGroupAccessAdapter implements ModelGroupAccessPort {
             // 分组 code 无对应存活模型组：放行（该分组不被模型组体系管控）。
             return true;
         }
+        // 套餐制命脉：可用模型 = 分组勾选的 models。请求模型 A 不在该组列表 → 拒绝（不论公开/私有）。
+        // requestedModel 为空（未解析出模型，理论上不会到此）时不在此收窄，交由后续链路处理。
+        if (requestedModel != null && !requestedModel.isBlank()
+                && !group.models().contains(requestedModel)) {
+            return false;
+        }
         if (group.accessPolicy() != AccessPolicy.PRIVATE) {
-            // PUBLIC / AUTO_LEVEL：闸门放行。
+            // PUBLIC / AUTO_LEVEL 且模型在组内：闸门放行。
             return true;
         }
         // PRIVATE：需显式授权——优先查 token 级（更细），再查 user 级（覆盖名下所有 token）。

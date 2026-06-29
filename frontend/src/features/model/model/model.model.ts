@@ -7,9 +7,10 @@
  * /api/pricing 是 PublicView，契约本就不含 cost/profit/上游模型 B/供应商；
  * 这里再用「显式白名单」从 DTO 挑字段构造 VM——即便后端误返敏感字段，也绝不进 VM、不渲染。
  *
- * 价格故事（与 06_prototype 模型广场一致，但只用公开字段）：
- * base_price_ratio = 基准价（USD/1M，折扣=1 口径）。按价格档位推导"省 X%"营销标，
- * 此推导只依赖公开的 base_price_ratio，绝不引用成本 B（成本对客户不可见）。
+ * 定价模型（重设计后）：一个真实模型一条记录（不再按品质档拆条）；差异定价由「价格分组」承载——
+ * 同一模型加入多个可见分组、各组设不同倍率。groups[] 即该模型在各可见分组的价格对比，
+ * 详情抽屉据此渲染「分组价格对比表」。所有价格只依赖公开的 base_price_ratio × 分组倍率，
+ * 绝不引用成本 B（成本对客户不可见）。
  */
 import { useQuery } from '@tanstack/react-query';
 import type { PricingModelEntry, PricingPublicView } from '@/shared/api';
@@ -21,15 +22,19 @@ import {
   type ModelCapability,
 } from './catalog';
 
-/** 品质档位（对齐 openapi quality_tier enum: full/max/air）。 */
-export type QualityTier = 'full' | 'max' | 'air';
-
-/** 品质档位展示配置（中文名 + 视觉 class key）。 */
-export const TIER_DISPLAY: Record<QualityTier, { label: string; cls: 'flagship' | 'enhanced' | 'economy'; note: string }> = {
-  full: { label: '旗舰', cls: 'flagship', note: '官方满血，最高质量输出，适合对效果最敏感的核心任务。' },
-  max: { label: '增强', cls: 'enhanced', note: '高性价比均衡，质量与成本兼顾，适合大多数生产场景。' },
-  air: { label: '经济', cls: 'economy', note: '入门够用，低价档位，适合高并发、低敏感度或预算优先的场景。' },
-};
+/**
+ * 模型在某可用分组里的价格（分组价格对比条目，零泄露白名单）。
+ */
+export interface ModelGroupPriceVM {
+  /** 分组展示名（如「经济组」） */
+  name: string;
+  /** 分组编码 */
+  code: string;
+  /** 分组售价倍率（售价 = 基准价 × 本倍率） */
+  ratio: number;
+  /** 该分组下的实际售价（USD/1M）；基准价未知时 null */
+  price: number | null;
+}
 
 /**
  * 模型广场卡片视图模型（零泄露白名单）。
@@ -50,25 +55,16 @@ export interface ModelCardVM {
   capabilityText: string;
   /** 展示标签 */
   tags: string[];
-  /** 品质档位（可能为空，非三档枚举时） */
-  tier?: QualityTier;
-  /** 同族归组键 */
-  family?: string;
-  /** 同族展示名 */
-  familyLabel?: string;
   /** 基准价（USD/1M，base_price_ratio）；0 或缺失表示"以控制台为准" */
   basePrice: number | null;
+  /** 该模型所在的可用分组价格对比（无则空数组） */
+  groups: ModelGroupPriceVM[];
+  /** 各分组中的最低售价（USD/1M）；无价/无分组时回退基准价，再无则 null */
+  fromPrice: number | null;
   /** 缓存命中价倍率（cache_ratio），可选展示 */
   cacheRatio: number | null;
-  /** 营销"省 X%"（基于公开价格档位推导，不涉及成本 B）；无价时 null */
-  savePercent: number | null;
   /** 平台为该对外模型配置的描述（来自 public_models.description，经 /api/pricing 透传）；无则空串 */
   description: string;
-}
-
-/** 把契约 quality_tier 字符串收敛到枚举（非法值置 undefined）。 */
-function toTier(t: string | undefined): QualityTier | undefined {
-  return t === 'full' || t === 'max' || t === 'air' ? t : undefined;
 }
 
 /**
@@ -77,13 +73,29 @@ function toTier(t: string | undefined): QualityTier | undefined {
  */
 export function toModelCardVM(entry: PricingModelEntry): ModelCardVM {
   const modelName = entry.model_name ?? '';
-  // 按对外名解析展示元数据（精确→剥品质后缀→兜底），让品质分级商品继承底层模型元信息。
+  // 按对外名解析展示元数据（厂商/上下文/能力/官方价）。
   const meta = resolveCatalogMeta(modelName);
   // base_price_ratio 是「倍率」，非价格。实际展示价 = 官方基础价 × 倍率。
   const ratio = typeof entry.base_price_ratio === 'number' ? entry.base_price_ratio : null;
   const official = meta.officialPrice && meta.officialPrice > 0 ? meta.officialPrice : null;
-  const sellPrice = official != null && ratio != null && ratio > 0 ? official * ratio : null;
+  const basePrice = official != null && ratio != null && ratio > 0 ? official * ratio : null;
   const cats = meta.cats;
+
+  // 分组价格对比：每个可见分组的售价 = 基准价 × 分组倍率（零泄露，只用公开倍率）。
+  const groups: ModelGroupPriceVM[] = (entry.groups ?? []).map((g) => {
+    const gRatio = typeof g.ratio === 'number' ? g.ratio : 1;
+    return {
+      name: g.name ?? '',
+      code: g.code ?? '',
+      ratio: gRatio,
+      price: basePrice != null ? basePrice * gRatio : null,
+    };
+  });
+
+  // 最低价：分组售价取最小；无分组价则回退基准价。
+  const groupPrices = groups.map((g) => g.price).filter((p): p is number => p != null);
+  const fromPrice = groupPrices.length > 0 ? Math.min(...groupPrices) : basePrice;
+
   return {
     modelName,
     displayName: entry.display_name || modelName,
@@ -92,13 +104,10 @@ export function toModelCardVM(entry: PricingModelEntry): ModelCardVM {
     cats,
     capabilityText: cats.map((c) => CAPABILITY_LABEL[c] ?? c).join(' · '),
     tags: meta.tags,
-    tier: toTier(entry.quality_tier),
-    family: meta.family,
-    familyLabel: meta.familyLabel,
-    basePrice: sellPrice,
+    basePrice,
+    groups,
+    fromPrice,
     cacheRatio: typeof entry.cache_ratio === 'number' ? entry.cache_ratio : null,
-    // 省 X%：倍率 < 1 即相对官方价的折扣（1-倍率）。无倍率/≥1 则无标。
-    savePercent: ratio != null && ratio > 0 && ratio < 1 ? Math.round((1 - ratio) * 100) : null,
     // 描述：catalog 内置优先，回落后端 public_models.description（schema 未含该字段时安全可选读取）。
     description: (meta.desc || (entry as { description?: string }).description || '').trim(),
   };

@@ -95,7 +95,6 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
         PublicModelJpaEntity e = new PublicModelJpaEntity();
         e.setId(m.id());
         e.setPublicName(m.publicName());
-        e.setQualityTier(m.qualityTier());
         e.setBasePriceRatio(m.basePriceRatio());
         e.setUsePrice(m.usePrice());
         e.setBasePrice(m.basePrice());
@@ -112,7 +111,6 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
         return PublicModel.builder()
                 .id(e.getId())
                 .publicName(e.getPublicName())
-                .qualityTier(e.getQualityTier())
                 .basePriceRatio(e.getBasePriceRatio())
                 .usePrice(e.getUsePrice())
                 .basePrice(e.getBasePrice())

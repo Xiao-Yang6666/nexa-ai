@@ -2,7 +2,7 @@
  * features/model/model/catalog — 模型广场展示元数据（厂商/上下文/能力/标签）。
  *
  * 说明：openapi /api/pricing(PricingPublicView) 只下发价格相关字段
- * （model_name/base_price_ratio/quality_tier/display_name/supported_endpoint/cache_ratio），
+ * （model_name/base_price_ratio/display_name/groups/supported_endpoint/cache_ratio），
  * 不含厂商/上下文/能力标签这类「商品展示元数据」。这些在真实系统由模型元数据接口
  * （ModelMeta / 供应商目录）提供。开发期以此静态目录按 model_name 关联补全展示信息，
  * 与 /api/pricing 的价格数据合并成模型广场卡片视图。

@@ -751,6 +751,49 @@
   border-color: var(--hd-line);
   background: var(--hd-glass);
 }
+/* ── 分组价格对比表（详情抽屉） ── */
+.groupTable {
+  border: 1px solid color-mix(in oklch, var(--hd-mint) 24%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklch, var(--hd-mint) 7%, transparent);
+  padding: var(--space-3) var(--space-4);
+  overflow: hidden;
+}
+.gtRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid color-mix(in oklch, var(--hd-mint) 14%, transparent);
+}
+.gtRow:last-of-type {
+  border-bottom: none;
+}
+.gtHead {
+  color: var(--hd-muted);
+  font-size: var(--text-caption);
+  border-bottom: 1px solid color-mix(in oklch, var(--hd-mint) 22%, transparent);
+}
+.gtName {
+  color: var(--hd-text);
+  font-size: var(--text-body-sm);
+}
+.gtRatio {
+  font-family: var(--font-mono);
+  color: color-mix(in oklch, var(--hd-text) 76%, transparent);
+  font-size: var(--text-body-sm);
+  text-align: right;
+  min-width: 48px;
+}
+.gtPrice {
+  font-family: var(--font-mono);
+  color: var(--hd-mint);
+  font-weight: var(--fw-bold);
+  font-size: var(--text-body);
+  text-align: right;
+  min-width: 72px;
+}
 .pcRow {
   display: flex;
   align-items: center;

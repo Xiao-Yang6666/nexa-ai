@@ -165,3 +165,42 @@
     min-width: 140px;
   }
 }
+
+/* ── 抽屉内「包含模型」勾选选择器 ── */
+.modelSearch {
+  width: 100%;
+  margin-bottom: var(--space-2);
+}
+.modelPicker {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+}
+.modelOpt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-body-sm);
+}
+.modelOpt:hover {
+  background: var(--color-surface-hover, color-mix(in oklch, var(--color-text) 6%, transparent));
+}
+.modelOptOn {
+  background: color-mix(in oklch, var(--color-primary, var(--color-success)) 10%, transparent);
+}
+.modelOpt input {
+  flex: none;
+}
+.modelEmpty {
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-body-sm);
+}

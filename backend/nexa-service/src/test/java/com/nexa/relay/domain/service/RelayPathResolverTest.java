@@ -74,4 +74,36 @@ class RelayPathResolverTest {
         RelayDispatch d = RelayPathResolver.resolve(null);
         assertEquals(RelayMode.CHAT_COMPLETIONS, d.mode());
     }
+
+    // ---- outboundPath：RL-6 出站路径随目标协议（修复 OpenAI→Anthropic 上游 404）----
+
+    @Test
+    void outboundPathPassthroughKeepsOriginal() {
+        // 同源直转：原样透传客户 path
+        assertEquals("/v1/chat/completions",
+                RelayPathResolver.outboundPath(ProtocolFormat.OPENAI, "/v1/chat/completions", true));
+    }
+
+    @Test
+    void outboundPathOpenAiToClaudeUsesMessages() {
+        // OpenAI 入站 → Anthropic 上游：path 必须改为 /v1/messages（否则 404）
+        assertEquals("/v1/messages",
+                RelayPathResolver.outboundPath(ProtocolFormat.CLAUDE, "/v1/chat/completions", false));
+    }
+
+    @Test
+    void outboundPathClaudeToOpenAiUsesChatCompletions() {
+        // Anthropic 入站 → OpenAI 上游：path 改为 /v1/chat/completions
+        assertEquals("/v1/chat/completions",
+                RelayPathResolver.outboundPath(ProtocolFormat.OPENAI, "/v1/messages", false));
+    }
+
+    @Test
+    void outboundPathUnsupportedProtoFallsBackToOriginal() {
+        // 未实现转换的协议：原样透传，不阻断
+        assertEquals("/v1/embeddings",
+                RelayPathResolver.outboundPath(ProtocolFormat.GEMINI, "/v1/embeddings", false));
+        assertEquals("/v1/chat/completions",
+                RelayPathResolver.outboundPath(null, "/v1/chat/completions", false));
+    }
 }

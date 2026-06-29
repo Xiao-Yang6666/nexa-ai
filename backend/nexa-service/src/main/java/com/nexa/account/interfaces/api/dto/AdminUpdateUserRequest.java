@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotNull;
  * @param quota       新额度（null=不改；Long 包装区别于「显式设 0」）
  * @param remark      新备注（null=不改；空白=清空）
  * @param status      新状态编码（null=不改；1=启用，其它=禁用）
+ * @param discountRatio 新用户专属折扣（null=不改；售价侧，在分组倍率之后再乘，须 ≥0）
  */
 public record AdminUpdateUserRequest(
         @NotNull(message = "id must not be null")
@@ -27,5 +28,6 @@ public record AdminUpdateUserRequest(
         String group,
         Long quota,
         String remark,
-        Integer status) {
+        Integer status,
+        java.math.BigDecimal discountRatio) {
 }

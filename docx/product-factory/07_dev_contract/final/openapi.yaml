@@ -49,8 +49,6 @@ tags:
     description: 增长（签到 / 邀请分销 / Telegram，模块十二）
   - name: playground
     description: Playground 站内对话试用（模块十三）
-  - name: prefill
-    description: 预填分组（模块十五）
   - name: ranking
     description: 用量排行榜快照（模块十六）
 components:
@@ -251,6 +249,40 @@ components:
           type: object
           additionalProperties: true
           description: 单用户详情时含 setting
+    AdminBalanceAdjustRequest:
+      type: object
+      description: 管理员充值/扣费请求（amount 以 USD 计）
+      properties:
+        amount:
+          type: number
+          description: USD 金额（> 0）
+        remark:
+          type: string
+      required: [amount]
+    BalanceTransactionView:
+      type: object
+      description: 账变流水视图（amount/balance_after 以 USD 计）
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          enum: [ADMIN_CREDIT, ADMIN_DEBIT, REDEEM, TOPUP]
+        amount:
+          type: number
+          description: 变动额（USD，带正负）
+        balance_after:
+          type: number
+          description: 变动后余额（USD）
+        operator_id:
+          type: integer
+          format: int64
+        remark:
+          type: string
+        created_time:
+          type: integer
+          format: int64
     UserSetting:
       type: object
       description: 个人设置（dto.UserSetting）；含语言/边栏偏好与额度预警配置（F-4037）
@@ -668,10 +700,25 @@ components:
               base_price_ratio:
                 type: number
                 description: 基准价（折扣=1 口径）
-              quality_tier:
-                type: string
               display_name:
                 type: string
+              description:
+                type: string
+              groups:
+                type: array
+                description: 该模型所在的可见价格分组及倍率（分组价格对比，仅公开 PUBLIC 子集，零泄露）
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: 分组展示名
+                    code:
+                      type: string
+                      description: 分组编码
+                    ratio:
+                      type: number
+                      description: 分组售价倍率（售价 = base_price_ratio × ratio）
               supported_endpoint:
                 type: string
               cache_ratio:
@@ -831,9 +878,6 @@ components:
         public_name:
           type: string
           description: 对外名 A
-        quality_tier:
-          type: string
-          enum: [full, max, air]
         base_price_ratio:
           type: number
         use_price:
@@ -861,8 +905,6 @@ components:
         public_name:
           type: string
           description: 对外名 A
-        quality_tier:
-          type: string
         display_name:
           type: string
         base_price_ratio:
@@ -875,9 +917,6 @@ components:
       properties:
         public_name:
           type: string
-        quality_tier:
-          type: string
-          enum: [full, max, air]
         base_price_ratio:
           type: number
         use_price:
@@ -899,8 +938,6 @@ components:
       properties:
         id:
           type: integer
-        quality_tier:
-          type: string
         base_price_ratio:
           type: number
         use_price:
@@ -913,6 +950,8 @@ components:
           type: string
         sort_order:
           type: integer
+        description:
+          type: string
       required:
         - id
     PlatformModelMappingAdminView:
@@ -1559,51 +1598,6 @@ components:
           type: boolean
         default_use_auto_group:
           type: boolean
-    PrefillGroupAdminView:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        type:
-          type: string
-          enum: [model, tag, endpoint]
-        items:
-          type: array
-          items:
-            type: string
-        created_time:
-          type: integer
-          format: int64
-    PrefillGroupCreateRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        type:
-          type: string
-          enum: [model, tag, endpoint]
-        items:
-          type: array
-          items:
-            type: string
-      required:
-        - name
-        - type
-    PrefillGroupUpdateRequest:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        items:
-          type: array
-          items:
-            type: string
-      required:
-        - id
     RankingPublicView:
       type: object
       description: 用量排行榜快照（公开视图，绝不含成本/利润/B/供应商）
@@ -2365,6 +2359,103 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/user/{id}/credit:
+    post:
+      tags: [account]
+      summary: 管理员给用户充值
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBalanceAdjustRequest'
+      responses:
+        '200':
+          description: 充值成功，data=充值后余额(USD)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: number
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/user/{id}/debit:
+    post:
+      tags: [account]
+      summary: 管理员给用户扣费（扣到 0 为止）
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBalanceAdjustRequest'
+      responses:
+        '200':
+          description: 扣费成功，data=扣费后余额(USD)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: number
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /api/user/{id}/balance-logs:
+    get:
+      tags: [account]
+      summary: 用户账变流水（充值/扣费/兑换/自助）
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 账变流水列表（时间倒序）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BalanceTransactionView'
         '403':
           $ref: '#/components/responses/ForbiddenError'
   /api/oauth/state:
@@ -5177,149 +5268,6 @@ paths:
 
   # ==================== 模块二补：令牌取明文 key ====================
   # 注：/api/token/{id}/key 已在令牌模块定义；以下登记 relay 侧 /token/{id}/key 别名（如有独立路由）
-
-  # ==================== 模块十五：预填分组 ====================
-  /api/prefill_group:
-    get:
-      tags: [prefill]
-      summary: 预填分组列表（按 type 下拉填充）
-      x-function-id: F-2014
-      security:
-        - adminAuth: []
-      parameters:
-        - name: type
-          in: query
-          description: 可选，缺省返回全部
-          schema:
-            type: string
-            enum: [model, tag, endpoint]
-      responses:
-        '200':
-          description: 预填分组列表（AdminView）
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/ApiResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/PrefillGroupAdminView'
-        '400':
-          description: type 非法枚举 → 400 invalid type
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-    post:
-      tags: [prefill]
-      summary: 预填分组创建
-      x-function-id: F-2012
-      security:
-        - adminAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PrefillGroupCreateRequest'
-      responses:
-        '200':
-          description: 创建后预填分组（AdminView）
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/ApiResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PrefillGroupAdminView'
-        '400':
-          description: name/type required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: 同 type 下 name 冲突 → prefill group name conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-    put:
-      tags: [prefill]
-      summary: 预填分组更新（名称冲突校验）
-      x-function-id: F-2013
-      security:
-        - adminAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PrefillGroupUpdateRequest'
-      responses:
-        '200':
-          description: 更新后预填分组（AdminView）
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/ApiResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PrefillGroupAdminView'
-        '404':
-          description: id 不存在 → prefill group not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: 新 name 与同 type 他组冲突 → prefill group name conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
-  /api/prefill_group/{id}:
-    delete:
-      tags: [prefill]
-      summary: 预填分组软删除
-      x-function-id: F-2015
-      description: 按 id 软删除（gorm.DeletedAt），保留历史不物理移除。
-      security:
-        - adminAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: 软删成功
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '404':
-          description: id 不存在 → prefill group not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          $ref: '#/components/responses/ForbiddenError'
 
   # ==================== Gap-1 补：模块四 §4.1 模型元数据 CRUD（AdminAuth，F-3013~F-3017） ====================
   /api/models:

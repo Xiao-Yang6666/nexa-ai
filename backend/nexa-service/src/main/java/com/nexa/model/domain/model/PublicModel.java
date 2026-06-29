@@ -8,11 +8,10 @@ import java.time.Instant;
 /**
  * 对外模型商品目录聚合根（充血领域模型，F-6001）。
  *
- * <p>领域规则来源：COMPAT-BILLING-DECISIONS §3「模型分级」+ §4「成本/售价分离（售价端）」+
- * DB-SCHEMA §16 PublicModel。一个对外模型（公开名 A）一条记录；品质不同拆独立记录分别定价
- * （如 {@code opus-4.8}/{@code opus-4.8-max}/{@code opus-4.8-air} = 三条，quality_tier=full/max/air）。
- * 对外全集 = {@code enabled=true AND deleted_at IS NULL} 的 public_name 集（商品目录唯一权威）。
- * <b>售价对客户恒定</b>（与渠道无关，COMPAT §4）。</p>
+ * <p>领域规则来源：COMPAT-BILLING-DECISIONS §4「成本/售价分离（售价端）」+ DB-SCHEMA §16 PublicModel。
+ * 一个对外模型（公开名 A）一条记录（不再按品质档拆记录——差异定价改由「价格分组」承载，同一模型
+ * 加入多个分组、各组设不同倍率）。对外全集 = {@code enabled=true AND deleted_at IS NULL} 的
+ * public_name 集（商品目录唯一权威）。<b>售价对客户恒定</b>（与渠道无关，COMPAT §4）。</p>
  *
  * <p>本聚合守护的不变量：
  * <ul>
@@ -34,12 +33,8 @@ public class PublicModel {
     /** 对外模型名（A）最大长度（对齐 DB-SCHEMA §16 {@code public_name varchar(255)}）。 */
     public static final int PUBLIC_NAME_MAX_LENGTH = 255;
 
-    /** 品质档默认值（DB-SCHEMA §16 {@code quality_tier default 'full'}，纯展示，不限枚举）。 */
-    public static final String DEFAULT_QUALITY_TIER = "full";
-
     private Long id;
     private String publicName;
-    private String qualityTier;
     private BigDecimal basePriceRatio;
     private Boolean usePrice;
     private BigDecimal basePrice;
@@ -57,7 +52,6 @@ public class PublicModel {
      * 创建新对外模型（F-6001 POST，未持久化，id 为 null）。
      *
      * @param publicName     对外名 A（必填非空白，≤255）
-     * @param qualityTier    品质档（可空 → 缺省 {@code full}；纯展示不限枚举）
      * @param basePriceRatio 基准售价倍率（可空 → 0；非负）
      * @param usePrice       是否按次固定价（可空 → false）
      * @param basePrice      固定单价（usePrice=true 时生效；可空 → 0；非负）
@@ -68,12 +62,11 @@ public class PublicModel {
      * @return 新建对外模型聚合
      * @throws InvalidModelParameterException A 为空白/超长，或价格为负
      */
-    public static PublicModel create(String publicName, String qualityTier, BigDecimal basePriceRatio,
+    public static PublicModel create(String publicName, BigDecimal basePriceRatio,
                                      Boolean usePrice, BigDecimal basePrice, Boolean enabled,
                                      String displayName, Integer sortOrder, String description) {
         PublicModel m = new PublicModel();
         m.publicName = normalizePublicName(publicName);
-        m.qualityTier = normalizeTier(qualityTier);
         m.basePriceRatio = normalizePrice(basePriceRatio, "基准售价倍率");
         m.usePrice = usePrice != null && usePrice;
         m.basePrice = normalizePrice(basePrice, "固定单价");
@@ -92,7 +85,6 @@ public class PublicModel {
      *
      * @param id             主键
      * @param publicName     对外名 A
-     * @param qualityTier    品质档
      * @param basePriceRatio 基准售价倍率
      * @param usePrice       是否按次固定价
      * @param basePrice      固定单价
@@ -104,7 +96,7 @@ public class PublicModel {
      * @param updatedTime    更新时间 epoch 秒
      * @return 重建的聚合
      */
-    public static PublicModel rehydrate(Long id, String publicName, String qualityTier,
+    public static PublicModel rehydrate(Long id, String publicName,
                                         BigDecimal basePriceRatio, Boolean usePrice, BigDecimal basePrice,
                                         Boolean enabled, String displayName, Integer sortOrder,
                                         String description, Long createdTime, Long updatedTime) {
@@ -113,7 +105,6 @@ public class PublicModel {
         return builder()
                 .id(id)
                 .publicName(publicName)
-                .qualityTier(qualityTier)
                 .basePriceRatio(basePriceRatio)
                 .usePrice(usePrice)
                 .basePrice(basePrice)
@@ -149,7 +140,6 @@ public class PublicModel {
     public static final class Builder {
         private Long id;
         private String publicName;
-        private String qualityTier;
         private BigDecimal basePriceRatio = BigDecimal.ZERO;
         private boolean usePrice;
         private BigDecimal basePrice = BigDecimal.ZERO;
@@ -172,12 +162,6 @@ public class PublicModel {
         /** @param publicName 对外名 A */
         public Builder publicName(String publicName) {
             this.publicName = publicName;
-            return this;
-        }
-
-        /** @param qualityTier 品质档 */
-        public Builder qualityTier(String qualityTier) {
-            this.qualityTier = qualityTier;
             return this;
         }
 
@@ -244,7 +228,6 @@ public class PublicModel {
             PublicModel m = new PublicModel();
             m.id = id;
             m.publicName = publicName;
-            m.qualityTier = qualityTier;
             m.basePriceRatio = basePriceRatio;
             m.usePrice = usePrice;
             m.basePrice = basePrice;
@@ -264,20 +247,18 @@ public class PublicModel {
      * <p>A（public_name）是品质拆分后的稳定商品键，更新不可改名（改名等价新商品，应新建）；
      * 故本方法不接受 publicName 入参（对齐 openapi PublicModelUpdateRequest 无 public_name）。</p>
      *
-     * @param qualityTier    新品质档（可空 → 不改）
      * @param basePriceRatio 新基准售价倍率（可空 → 不改；非负）
      * @param usePrice       新是否按次固定价（可空 → 不改）
      * @param basePrice      新固定单价（可空 → 不改；非负）
      * @param enabled        新上下架（可空 → 不改）
      * @param displayName    新展示名（可空 → 不改）
      * @param sortOrder      新排序（可空 → 不改）
+     * @param description    新描述（可空 → 不改）
      * @throws InvalidModelParameterException 价格为负
      */
-    public void update(String qualityTier, BigDecimal basePriceRatio, Boolean usePrice,
-                       BigDecimal basePrice, Boolean enabled, String displayName, Integer sortOrder) {
-        if (qualityTier != null && !qualityTier.isBlank()) {
-            this.qualityTier = qualityTier.trim();
-        }
+    public void update(BigDecimal basePriceRatio, Boolean usePrice,
+                       BigDecimal basePrice, Boolean enabled, String displayName, Integer sortOrder,
+                       String description) {
         if (basePriceRatio != null) {
             this.basePriceRatio = normalizePrice(basePriceRatio, "基准售价倍率");
         }
@@ -295,6 +276,9 @@ public class PublicModel {
         }
         if (sortOrder != null) {
             this.sortOrder = sortOrder;
+        }
+        if (description != null) {
+            this.description = description.trim();
         }
         touch();
     }
@@ -325,11 +309,6 @@ public class PublicModel {
             throw new InvalidModelParameterException("对外模型名长度不能超过 " + PUBLIC_NAME_MAX_LENGTH);
         }
         return n;
-    }
-
-    private static String normalizeTier(String raw) {
-        String t = raw == null ? "" : raw.trim();
-        return t.isEmpty() ? DEFAULT_QUALITY_TIER : t;
     }
 
     /**
@@ -364,11 +343,6 @@ public class PublicModel {
     /** @return 对外名 A */
     public String publicName() {
         return publicName;
-    }
-
-    /** @return 品质档（full/max/air/自定义） */
-    public String qualityTier() {
-        return qualityTier;
     }
 
     /** @return 基准售价倍率 */

@@ -5,7 +5,6 @@
 export { PricingPage } from './components/PricingPage';
 export { BillingPage } from './components/BillingPage';
 export { RechargePage } from './components/RechargePage';
-export { BillingRulesPage } from './components/BillingRulesPage';
 export { usePricing, toPriceRowVM, toPriceRowVMs } from './model/pricing.model';
 export type { PriceRowVM } from './model/pricing.model';
 export { MODES, PLANS, FAQ } from './model/pricing-content';

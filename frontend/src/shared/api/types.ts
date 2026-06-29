@@ -136,13 +136,14 @@ export type VendorAdminView = Schemas['VendorAdminView'];
 /** 供应商写入请求（openapi VendorWriteRequest，创建/更新共用）。 */
 export type VendorWriteRequest = Schemas['VendorWriteRequest'];
 
-/** 渠道成本管理视图（openapi ChannelModelCostAdminView，F-6006 GET /api/channel_model_costs）。 */
-export type ChannelModelCostAdminView = Schemas['ChannelModelCostAdminView'];
-/** 渠道成本写入请求（openapi ChannelModelCostWriteRequest，upsert）。 */
-export type ChannelModelCostWriteRequest = Schemas['ChannelModelCostWriteRequest'];
-
 /** 渠道池成员（openapi ChannelPoolMember，F-6005 GET /api/channel/pool）。 */
 export type ChannelPoolMember = Schemas['ChannelPoolMember'];
 
 /** 利润看板聚合项（openapi ProfitDashboardItem，F-6009 GET /api/profit/dashboard）。含成本/利润，仅 admin。 */
 export type ProfitDashboardItem = Schemas['ProfitDashboardItem'];
+
+/** 账变流水视图（openapi BalanceTransactionView，amount/balance_after 以 USD 计）。 */
+export type BalanceTransactionView = Schemas['BalanceTransactionView'];
+
+/** 管理员充值/扣费请求（openapi AdminBalanceAdjustRequest，amount 以 USD 计）。 */
+export type AdminBalanceAdjustRequest = Schemas['AdminBalanceAdjustRequest'];

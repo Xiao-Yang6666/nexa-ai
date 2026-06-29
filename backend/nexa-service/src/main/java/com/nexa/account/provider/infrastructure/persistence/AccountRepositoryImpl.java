@@ -87,6 +87,14 @@ public class AccountRepositoryImpl implements AccountRepository {
 
     /** {@inheritDoc} */
     @Override
+    public List<Account> findAll() {
+        return jpa.findAll().stream()
+                .map(e -> toDomain(e, loadGroups(e.getId())))
+                .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public List<Account> findSchedulable(long now) {
         // 先按 ACTIVE 初筛（DB 索引命中），再用领域聚合 isSchedulable 终判过期/过载窗。
         return jpa.findActive().stream()
@@ -111,6 +119,30 @@ public class AccountRepositoryImpl implements AccountRepository {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(e -> toDomain(e, loadGroups(e.getId())))
+                .filter(a -> a.isSchedulable(now))
+                .sorted(java.util.Comparator.comparingInt(Account::priority))
+                .toList();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<Account> findSchedulableByModel(String model, long now) {
+        String m = normalizeFilter(model);
+        if (m == null) {
+            return List.of();
+        }
+        // 1) abilities 按模型 LIKE 粗筛 ACTIVE 行 → accountId 去重；2) 装配聚合；
+        // 3) 领域 supportsModel 精确包含（剔除 LIKE 子串误命中）+ isSchedulable 终判；
+        // 4) priority 升序（小=高优先）。售价分组与调度解耦：此处不看 group。
+        String like = "%" + m + "%";
+        return abilityJpa.findActiveByModelLike(like).stream()
+                .map(AccountAbilityJpaEntity::getAccountId)
+                .distinct()
+                .map(jpa::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(e -> toDomain(e, loadGroups(e.getId())))
+                .filter(a -> a.supportsModel(m))
                 .filter(a -> a.isSchedulable(now))
                 .sorted(java.util.Comparator.comparingInt(Account::priority))
                 .toList();

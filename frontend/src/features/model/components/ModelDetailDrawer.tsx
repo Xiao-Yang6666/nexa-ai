@@ -3,9 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import type { ModelCardVM } from '../model/model.model';
-import { TIER_DISPLAY } from '../model/model.model';
 import { VendorAvatar } from './VendorAvatar';
-import { TierBadge } from './TierBadge';
 import { fmtPrice } from './ModelCard';
 import styles from './ModelsPage.module.css';
 
@@ -17,7 +15,7 @@ export interface ModelDetailDrawerProps {
 
 /**
  * ModelDetailDrawer — 模型详情右侧抽屉。
- * 价格对比（基准价高亮 + 省X%）/ 品质档说明 / 规格 / 能力标签。
+ * 分组价格对比表（各可用分组的倍率与售价）/ 规格 / 能力标签。
  * Esc 关闭、遮罩点击关闭。零泄露：只渲染 VM 白名单字段。
  */
 export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
@@ -31,8 +29,6 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
-
-  const tierCfg = model?.tier ? TIER_DISPLAY[model.tier] : null;
 
   return (
     <div
@@ -77,23 +73,33 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
                 </section>
               ) : null}
               <section>
-                <h3 className={styles.dwSecT}>价格</h3>
-                {model.basePrice != null ? (
+                <h3 className={styles.dwSecT}>分组价格</h3>
+                {model.groups.length > 0 ? (
+                  <div className={styles.groupTable}>
+                    <div className={`${styles.gtRow} ${styles.gtHead}`}>
+                      <span className={styles.gtName}>分组</span>
+                      <span className={styles.gtRatio}>倍率</span>
+                      <span className={styles.gtPrice}>价格 /1M</span>
+                    </div>
+                    {model.groups.map((g) => (
+                      <div key={g.code || g.name} className={styles.gtRow}>
+                        <span className={styles.gtName}>{g.name}</span>
+                        <span className={styles.gtRatio}>×{g.ratio}</span>
+                        <span className={styles.gtPrice}>
+                          {g.price != null ? `$${fmtPrice(g.price)}` : '—'}
+                        </span>
+                      </div>
+                    ))}
+                    <div className={styles.pcUnit}>
+                      单位：USD / 1M tokens · 登录后按会员等级享折后价
+                    </div>
+                  </div>
+                ) : model.basePrice != null ? (
                   <div className={styles.priceCard}>
                     <div className={styles.pcRow}>
                       <span className={styles.lab}>基准价</span>
                       <span className={styles.nexa}>${fmtPrice(model.basePrice)}</span>
                     </div>
-                    {model.savePercent != null ? (
-                      <div className={styles.pcFoot}>
-                        <span className={styles.save}>
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m6 9 6 6 6-6" />
-                          </svg>
-                          省 {model.savePercent}%
-                        </span>
-                      </div>
-                    ) : null}
                     <div className={styles.pcUnit}>
                       单位：USD / 1M tokens · 登录后按会员等级享折后价
                     </div>
@@ -111,20 +117,6 @@ export function ModelDetailDrawer({ model, onClose }: ModelDetailDrawerProps) {
                   </div>
                 )}
               </section>
-
-              {model.tier && tierCfg ? (
-                <section>
-                  <h3 className={styles.dwSecT}>品质档位</h3>
-                  <div className={styles.tierNote}>
-                    <TierBadge tier={model.tier} inNote />
-                    <span className={styles.tnText}>
-                      <b>{tierCfg.label}</b>
-                      {model.familyLabel ? `（${model.familyLabel} 家族）` : ''} —{' '}
-                      {tierCfg.note}
-                    </span>
-                  </div>
-                </section>
-              ) : null}
 
               <section>
                 <h3 className={styles.dwSecT}>规格</h3>

@@ -100,6 +100,14 @@ public class User {
     /** 已用额度（DB-SCHEMA §1 used_quota，管理端视图只读回显）。 */
     private long usedQuota;
 
+    /**
+     * 用户专属折扣系数（售价侧，缺省 1.0=不打折）。
+     *
+     * <p>计费时在分组倍率之后再乘：{@code 售价 = A基准 × 分组倍率 × discountRatio × tokens}。
+     * 管理员给特定大客户在分组档位之上再让利。须 ≥0；0 合法（免费）。只作用于售价，不进成本。</p>
+     */
+    private java.math.BigDecimal discountRatio = java.math.BigDecimal.ONE;
+
     /** 请求计数（DB-SCHEMA §1 request_count，管理端视图只读回显）。 */
     private long requestCount;
 
@@ -532,6 +540,22 @@ public class User {
     }
 
     /**
+     * 绑定/变更用户专属折扣（管理端，售价侧）。
+     *
+     * <p>领域规则：先过角色护栏；折扣须非空且 ≥0（0 合法=免费），否则抛 {@link InvalidCredentialException}。
+     * 在分组倍率之后再乘，只作用于售价。</p>
+     *
+     * @param rawDiscount  折扣系数（null→不改，由调用方决定；本方法要求非空，null 视为非法）
+     * @param operatorRole 操作者角色
+     * @throws RoleHierarchyViolationException 越权
+     * @throws InvalidCredentialException      折扣为空或为负
+     */
+    public void assignDiscount(java.math.BigDecimal rawDiscount, Role operatorRole) {
+        ensureOperableBy(operatorRole);
+        this.discountRatio = normalizeDiscount(rawDiscount);
+    }
+
+    /**
      * 更新管理员备注（管理端，F-1014）。
      *
      * <p>领域规则：先过护栏；备注 trim 后空白归一为 {@code null}（无备注），
@@ -570,6 +594,7 @@ public class User {
                                      Long quota,
                                      String remark,
                                      UserStatus status,
+                                     java.math.BigDecimal discountRatio,
                                      Role operatorRole) {
         ensureOperableBy(operatorRole);
         if (displayName != null) {
@@ -592,6 +617,9 @@ public class User {
         }
         if (status != null) {
             this.status = status;
+        }
+        if (discountRatio != null) {
+            this.discountRatio = normalizeDiscount(discountRatio);
         }
     }
 
@@ -630,6 +658,24 @@ public class User {
                     "group length must be <= " + GROUP_MAX_LENGTH);
         }
         return normalized;
+    }
+
+    /**
+     * 折扣系数规范化校验：非空且 ≥0（0 合法=免费）。
+     *
+     * @param rawDiscount 原始折扣
+     * @return 校验后的折扣
+     * @throws InvalidCredentialException 折扣为空或为负
+     */
+    private static java.math.BigDecimal normalizeDiscount(java.math.BigDecimal rawDiscount) {
+        if (rawDiscount == null) {
+            throw new InvalidCredentialException("discount ratio must not be null");
+        }
+        if (rawDiscount.signum() < 0) {
+            throw new InvalidCredentialException(
+                    "discount ratio must be >= 0, got " + rawDiscount.toPlainString());
+        }
+        return rawDiscount;
     }
 
     /**
@@ -903,6 +949,7 @@ public class User {
         private long usedQuota;
         private long requestCount;
         private long createdAt;
+        private java.math.BigDecimal discountRatio = java.math.BigDecimal.ONE;
 
         private Builder() {
         }
@@ -1009,6 +1056,13 @@ public class User {
             return this;
         }
 
+        /** @param discountRatio 用户专属折扣（null/负 归一为 1.0=不打折） */
+        public Builder discountRatio(java.math.BigDecimal discountRatio) {
+            this.discountRatio = (discountRatio == null || discountRatio.signum() < 0)
+                    ? java.math.BigDecimal.ONE : discountRatio;
+            return this;
+        }
+
         /**
          * 装配并返回重建的用户聚合（不触发注册不变量与领域事件）。
          *
@@ -1033,6 +1087,7 @@ public class User {
             u.usedQuota = usedQuota;
             u.requestCount = requestCount;
             u.createdAt = createdAt;
+            u.discountRatio = discountRatio;
             return u;
         }
     }
@@ -1112,6 +1167,11 @@ public class User {
     /** @return 已用额度（管理端视图回显） */
     public long usedQuota() {
         return usedQuota;
+    }
+
+    /** @return 用户专属折扣系数（售价侧，缺省 1.0） */
+    public java.math.BigDecimal discountRatio() {
+        return discountRatio;
     }
 
     /** @return 请求计数（管理端视图回显） */

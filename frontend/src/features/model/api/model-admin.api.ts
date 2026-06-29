@@ -2,13 +2,10 @@
  * features/model/api/model-admin.api — 模型/供应商管理端接口调用（AdminAuth）。
  * 路径/方法/出参逐字对齐 openapi.yaml，不臆造字段。分页参数统一 p + page_size。
  *
- * 覆盖 ModelsAdminPage 四 Tab 所需端点：
- *  - 对外模型 public_models（渠道池 channel/pool 按对外名 A 匹配；A→B 映射已下沉渠道级）
- *  - 供应商成本 channel_model_costs
+ * 覆盖 ModelsAdminPage 三 Tab 所需端点：
+ *  - 对外模型 public_models（可用分组由模型组 model_group 反查，见 model 层）
  *  - 模型元数据 models（含 sync/preview、missing）
  *  - 模型厂牌 vendors
- *
- * A→B 底仓映射已下沉为渠道级（channel.model_mapping），不再有全局 platform_model_mappings 端点。
  */
 import { http } from '@/shared/api';
 import type {
@@ -19,10 +16,6 @@ import type {
   ModelMetaCreateRequest,
   ModelMetaUpdateRequest,
   VendorAdminView,
-  ChannelModelCostAdminView,
-  ChannelPoolMember,
-  ModelSyncDiff,
-  ModelSyncResult,
 } from '@/shared/api';
 
 /* ── 对外模型 ─────────────────────────────────────────────────────────── */
@@ -52,59 +45,6 @@ export function deletePublicModel(id: number): Promise<void> {
   return http.delete<void>(`/api/public_models/${id}`);
 }
 
-/* ── 渠道池 ───────────────────────────────────────────────────────────── */
-export interface ChannelPoolListResponse {
-  items: ChannelPoolMember[];
-}
-/** GET /api/channel/pool (F-6005)。无 total，不分页。 */
-export function getChannelPool(params: {
-  publicName?: string;
-  upstreamModel?: string;
-  group?: string;
-} = {}): Promise<ChannelPoolListResponse> {
-  return http.get<ChannelPoolListResponse>('/api/channel/pool', {
-    query: {
-      public_name: params.publicName,
-      upstream_model: params.upstreamModel,
-      group: params.group,
-    },
-  });
-}
-
-/* ── 渠道列表（供"供应渠道池"本地匹配用，避免渠道池端点 N+1 + 静默吞错） ── */
-export interface ChannelListForPool {
-  items: Array<{ id?: number; name?: string; models?: string; group?: string; priority?: number; status?: number }>;
-  total: number;
-}
-/** GET /api/channel/ —— 一次性拉全量渠道（page_size 取大值），前端按 models CSV 本地匹配每个对外模型 A。 */
-export function getChannelsForPool(pageSize = 500): Promise<ChannelListForPool> {
-  return http.get<ChannelListForPool>('/api/channel/', {
-    query: { p: 1, page_size: pageSize },
-  });
-}
-
-/* ── 供应商成本 ───────────────────────────────────────────────────────── */
-export interface CostListResponse {
-  items: ChannelModelCostAdminView[];
-  total: number;
-}
-/** GET /api/channel_model_costs (F-6006) */
-export function getChannelModelCosts(params: {
-  channelId?: number;
-  upstreamModel?: string;
-  page?: number;
-  pageSize?: number;
-} = {}): Promise<CostListResponse> {
-  return http.get<CostListResponse>('/api/channel_model_costs', {
-    query: {
-      channel_id: params.channelId,
-      upstream_model: params.upstreamModel,
-      p: params.page,
-      page_size: params.pageSize,
-    },
-  });
-}
-
 /* ── 模型元数据 ───────────────────────────────────────────────────────── */
 export interface ModelMetaListResponse {
   items: ModelMetaAdminView[];
@@ -116,11 +56,6 @@ export function getModelMetas(page = 1, pageSize = 50): Promise<ModelMetaListRes
   return http.get<ModelMetaListResponse>('/api/models', {
     query: { p: page, page_size: pageSize },
   });
-}
-
-/** GET /api/models/missing (F-3021)。返回上游存在但本地缺失的模型名数组。 */
-export function getMissingModels(): Promise<string[]> {
-  return http.get<string[]>('/api/models/missing');
 }
 
 /** POST /api/models (F-3015) 创建模型元数据。 */
@@ -136,18 +71,6 @@ export function updateModelMeta(req: ModelMetaUpdateRequest): Promise<ModelMetaA
 /** DELETE /api/models/{id} (F-3017) 删除模型元数据。 */
 export function deleteModelMeta(id: number): Promise<void> {
   return http.delete<void>(`/api/models/${id}`);
-}
-
-/** POST /api/models/sync/preview (F-3020)。返回同步差异。 */
-export function previewModelSync(locale?: string): Promise<ModelSyncDiff> {
-  return http.post<ModelSyncDiff>('/api/models/sync/preview', {
-    json: locale ? { locale } : {},
-  });
-}
-
-/** POST /api/models/sync (F-3019) 执行上游同步。models 为空=全量。 */
-export function executeModelSync(req: { overwrite?: boolean; models?: string[] } = {}): Promise<ModelSyncResult> {
-  return http.post<ModelSyncResult>('/api/models/sync', { json: req });
 }
 
 /* ── 供应商元数据 ─────────────────────────────────────────────────────── */

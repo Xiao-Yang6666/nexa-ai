@@ -20,7 +20,6 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "public_models", indexes = {
-        @Index(name = "idx_public_models_quality_tier", columnList = "quality_tier"),
         @Index(name = "idx_public_models_deleted_at", columnList = "deleted_at")
 }, uniqueConstraints = {
         @UniqueConstraint(name = "uk_public_models_public_name", columnNames = {"public_name"})
@@ -34,9 +33,6 @@ public class PublicModelJpaEntity {
 
     @Column(name = "public_name", nullable = false, length = 255)
     private String publicName;
-
-    @Column(name = "quality_tier", length = 32)
-    private String qualityTier;
 
     @Column(name = "base_price_ratio", columnDefinition = "numeric default 0")
     private BigDecimal basePriceRatio;
@@ -75,8 +71,6 @@ public class PublicModelJpaEntity {
     public void setId(Long id) { this.id = id; }
     public String getPublicName() { return publicName; }
     public void setPublicName(String publicName) { this.publicName = publicName; }
-    public String getQualityTier() { return qualityTier; }
-    public void setQualityTier(String qualityTier) { this.qualityTier = qualityTier; }
     public BigDecimal getBasePriceRatio() { return basePriceRatio; }
     public void setBasePriceRatio(BigDecimal basePriceRatio) { this.basePriceRatio = basePriceRatio; }
     public Boolean getUsePrice() { return usePrice; }

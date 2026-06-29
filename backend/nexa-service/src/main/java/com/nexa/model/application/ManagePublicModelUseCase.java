@@ -64,7 +64,6 @@ public class ManagePublicModelUseCase {
      * 创建对外模型（F-6001）。
      *
      * @param publicName     A
-     * @param qualityTier    品质档（可空 → full）
      * @param basePriceRatio 基准售价倍率（可空 → 0）
      * @param usePrice       是否按次定价
      * @param basePrice      固定单价
@@ -76,10 +75,10 @@ public class ManagePublicModelUseCase {
      * @throws InvalidModelParameterException A 为空（领域）或 A 已存在（本用例）
      */
     @Transactional
-    public PublicModel create(String publicName, String qualityTier, BigDecimal basePriceRatio,
+    public PublicModel create(String publicName, BigDecimal basePriceRatio,
                               Boolean usePrice, BigDecimal basePrice, Boolean enabled,
                               String displayName, Integer sortOrder, String description) {
-        PublicModel model = PublicModel.create(publicName, qualityTier, basePriceRatio,
+        PublicModel model = PublicModel.create(publicName, basePriceRatio,
                 usePrice, basePrice, enabled, displayName, sortOrder, description);
         // 跨聚合不变量：A 全局唯一（uk_public_name）。重名 → 「对外模型名已存在」（F-6001）。
         repository.findByPublicName(model.publicName()).ifPresent(existing -> {
@@ -94,27 +93,27 @@ public class ManagePublicModelUseCase {
      * 更新对外模型（F-6001 含上下架）。
      *
      * @param id             对外模型 id
-     * @param qualityTier    新品质档（可空 → 不改）
      * @param basePriceRatio 新基准售价倍率（可空 → 不改）
      * @param usePrice       新按次定价开关（可空 → 不改）
      * @param basePrice      新固定单价（可空 → 不改）
      * @param enabled        新上下架（可空 → 不改；F-6004 上架即全员可用）
      * @param displayName    新展示名（可空 → 不改）
      * @param sortOrder      新排序（可空 → 不改）
+     * @param description    新描述（可空 → 不改）
      * @return 更新后的对外模型
      * @throws InvalidModelParameterException 缺 id / 价格非法
      * @throws PublicModelNotFoundException   不存在
      */
     @Transactional
-    public PublicModel update(Long id, String qualityTier, BigDecimal basePriceRatio,
+    public PublicModel update(Long id, BigDecimal basePriceRatio,
                               Boolean usePrice, BigDecimal basePrice, Boolean enabled,
-                              String displayName, Integer sortOrder) {
+                              String displayName, Integer sortOrder, String description) {
         if (id == null || id <= 0) {
             throw new InvalidModelParameterException("缺少对外模型 ID");
         }
         Optional<PublicModel> existing = repository.findById(id);
         PublicModel model = existing.orElseThrow(() -> new PublicModelNotFoundException(id));
-        model.update(qualityTier, basePriceRatio, usePrice, basePrice, enabled, displayName, sortOrder);
+        model.update(basePriceRatio, usePrice, basePrice, enabled, displayName, sortOrder, description);
         PublicModel saved = repository.save(model);
         refreshPricing.refresh();
         return saved;

@@ -2,8 +2,6 @@ package com.nexa.relay.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexa.billing.application.port.UserQuotaAccount;
-import com.nexa.channel.domain.repository.ChannelModelCostRepository;
-import com.nexa.channel.domain.repository.ChannelRepository;
 import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.exception.NoAvailableChannelException;
 import com.nexa.relay.domain.model.RelayLog;
@@ -15,7 +13,6 @@ import com.nexa.relay.domain.port.UpstreamResponse;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.vo.LogType;
-import com.nexa.routing.application.SelectRelayChannelUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -62,24 +59,20 @@ class RelayForwardUseCaseRetryTest {
         UserModelAliasRepository l1Repo = mock(UserModelAliasRepository.class);
         logRepo = mock(RelayLogRepository.class);
         upstreamHttpPort = mock(UpstreamHttpPort.class);
-        ChannelRepository channelRepo = mock(ChannelRepository.class);
         KeyLimitGuard keyLimitGuard = mock(KeyLimitGuard.class);
-        SelectRelayChannelUseCase selectUseCase = mock(SelectRelayChannelUseCase.class);
         PublicModelRepository publicModelRepo = mock(PublicModelRepository.class);
-        ChannelModelCostRepository costRepo = mock(ChannelModelCostRepository.class);
         userQuotaAccount = mock(UserQuotaAccount.class);
         accountSelection = new StubAccountSelection();
 
         when(l1Repo.findTargetByAlias(any(), anyString())).thenReturn(Optional.empty());
         when(publicModelRepo.findByPublicName(anyString())).thenReturn(Optional.empty());
-        when(costRepo.findByChannelAndUpstream(org.mockito.ArgumentMatchers.anyInt(), anyString()))
-                .thenReturn(Optional.empty());
 
-        useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort, channelRepo,
-                new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
+        useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort,
+                new ObjectMapper(), keyLimitGuard, publicModelRepo, userQuotaAccount,
                 groupCode -> Optional.empty(),
-                (groupCode, userId, tokenId) -> true,
-                accountSelection);
+                (groupCode, userId, tokenId, model) -> true,
+                accountSelection,
+                userId -> BigDecimal.ONE);
         auth = new RelayAuthContext(7L, "alice", "default", null, null);
     }
 

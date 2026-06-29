@@ -18,6 +18,7 @@ package com.nexa.account.application;
  * @param quota            新额度（null=不改）
  * @param remark           新备注（null=不改；空白=清空）
  * @param status           新状态编码（null=不改；1=启用，其它=禁用）
+ * @param discountRatio    新用户专属折扣（null=不改；售价侧，分组倍率之后再乘，须 ≥0）
  * @param operatorRoleCode 操作者角色编码（1=common,10=admin,100=root）
  */
 public record UpdateUserProfileCommand(long targetUserId,
@@ -27,5 +28,6 @@ public record UpdateUserProfileCommand(long targetUserId,
                                        Long quota,
                                        String remark,
                                        Integer status,
+                                       java.math.BigDecimal discountRatio,
                                        int operatorRoleCode) {
 }

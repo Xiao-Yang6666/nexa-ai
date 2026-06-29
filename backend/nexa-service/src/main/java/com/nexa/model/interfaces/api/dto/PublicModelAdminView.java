@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 public record PublicModelAdminView(
         Long id,
         String publicName,
-        String qualityTier,
         BigDecimal basePriceRatio,
         Boolean usePrice,
         BigDecimal basePrice,
@@ -25,7 +24,7 @@ public record PublicModelAdminView(
 ) {
     /** 由领域聚合裁剪为管理视图。 */
     public static PublicModelAdminView from(PublicModel m) {
-        return new PublicModelAdminView(m.id(), m.publicName(), m.qualityTier(),
+        return new PublicModelAdminView(m.id(), m.publicName(),
                 m.basePriceRatio(), m.usePrice(), m.basePrice(), m.enabled(),
                 m.displayName(), m.sortOrder(), m.description(),
                 m.createdTime(), m.updatedTime());

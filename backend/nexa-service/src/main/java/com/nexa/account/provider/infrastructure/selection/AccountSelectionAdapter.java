@@ -41,13 +41,13 @@ public class AccountSelectionAdapter implements AccountSelectionPort {
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
-    public Optional<SelectedAccount> selectAccount(String group, String platform, Set<Long> excludeAccountIds) {
-        if (group == null || group.isBlank()) {
+    public Optional<SelectedAccount> selectAccount(String requestedModel, String platform, Set<Long> excludeAccountIds) {
+        if (requestedModel == null || requestedModel.isBlank()) {
             return Optional.empty();
         }
         Set<Long> excluded = excludeAccountIds == null ? Set.of() : excludeAccountIds;
-        // 仓储已按 priority 升序(小=高优先)返回可调度账号池。
-        List<Account> pool = accountRepository.findSchedulableByGroup(group.trim(), now());
+        // 方案乙：仓储按模型 A 反查 abilities 得到可服务该模型的可调度账号池（已 priority 升序）。
+        List<Account> pool = accountRepository.findSchedulableByModel(requestedModel.trim(), now());
 
         // platform 软对齐：先在平台匹配子集选；空则放宽到全池。
         String wantPlatform = (platform == null || platform.isBlank()) ? null : platform.trim();

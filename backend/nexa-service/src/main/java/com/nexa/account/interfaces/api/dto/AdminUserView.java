@@ -28,6 +28,7 @@ import com.nexa.account.domain.model.User;
  * @param inviterId    邀请人 id（无则 0）
  * @param lastLoginAt  最近登录时间（epoch 秒）
  * @param createdAt    创建时间（epoch 秒）
+ * @param discountRatio 用户专属折扣（售价侧，缺省 1.0=不打折）
  */
 public record AdminUserView(
         Long id,
@@ -44,7 +45,8 @@ public record AdminUserView(
         String affCode,
         long inviterId,
         long lastLoginAt,
-        long createdAt) {
+        long createdAt,
+        java.math.BigDecimal discountRatio) {
 
     /**
      * 从用户聚合投影为管理端视图 DTO。
@@ -71,6 +73,7 @@ public record AdminUserView(
                 user.affCode(),
                 user.inviterId(),
                 user.lastLoginAt(),
-                user.createdAt());
+                user.createdAt(),
+                user.discountRatio());
     }
 }

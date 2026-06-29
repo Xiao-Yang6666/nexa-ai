@@ -98,6 +98,10 @@ public class UserJpaEntity {
     @Column(name = "setting", columnDefinition = "text")
     private String setting;
 
+    /** 用户专属折扣系数（售价侧，缺省 1.0=不打折；numeric 承载小数）。 */
+    @Column(name = "discount_ratio", columnDefinition = "numeric(10,4) default 1.0")
+    private java.math.BigDecimal discountRatio;
+
     /** JPA 规范要求的无参构造器。 */
     public UserJpaEntity() {
     }
@@ -270,5 +274,13 @@ public class UserJpaEntity {
 
     public void setSetting(String setting) {
         this.setting = setting;
+    }
+
+    public java.math.BigDecimal getDiscountRatio() {
+        return discountRatio;
+    }
+
+    public void setDiscountRatio(java.math.BigDecimal discountRatio) {
+        this.discountRatio = discountRatio;
     }
 }

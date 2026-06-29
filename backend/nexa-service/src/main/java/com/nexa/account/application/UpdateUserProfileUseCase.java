@@ -60,6 +60,7 @@ public class UpdateUserProfileUseCase {
                 command.quota(),
                 command.remark(),
                 status,
+                command.discountRatio(),
                 operatorRole);
 
         userRepository.save(target);

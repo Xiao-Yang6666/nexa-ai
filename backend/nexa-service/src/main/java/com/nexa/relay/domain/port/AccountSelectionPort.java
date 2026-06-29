@@ -17,14 +17,14 @@ import java.util.Set;
 public interface AccountSelectionPort {
 
     /**
-     * 在给定分组下选一个可调度账号取凭证。
+     * 选一个可服务给定模型 A 的可调度账号取凭证（方案乙：按模型反查，售价分组与调度解耦）。
      *
-     * @param group             字符串分组(对齐 channel.group)
-     * @param platform          期望平台(channel 的目标平台；null/空=不约束平台)
-     * @param excludeAccountIds 本次已尝试、需排除的账号 id 集合(重试用，可空)
+     * @param requestedModel    客户请求并解析出的平台模型名 A（账号须声明支持该模型才入选）
+     * @param platform          期望平台（目标上游平台；null/空=不约束平台）
+     * @param excludeAccountIds 本次已尝试、需排除的账号 id 集合（重试用，可空）
      * @return 选中的账号凭证投影；无可用账号返回 {@link Optional#empty()}
      */
-    Optional<SelectedAccount> selectAccount(String group, String platform, Set<Long> excludeAccountIds);
+    Optional<SelectedAccount> selectAccount(String requestedModel, String platform, Set<Long> excludeAccountIds);
 
     /**
      * 标记账号进入限流(上游 429 触发，转发失败回写)。account BC 持久化状态迁移。

@@ -2,10 +2,6 @@ package com.nexa.relay.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexa.billing.application.port.UserQuotaAccount;
-import com.nexa.channel.domain.model.Channel;
-import com.nexa.channel.domain.repository.ChannelModelCostRepository;
-import com.nexa.channel.domain.repository.ChannelRepository;
-import com.nexa.channel.domain.vo.ChannelStatus;
 import com.nexa.model.domain.repository.PublicModelRepository;
 import com.nexa.relay.domain.model.RelayLog;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
@@ -13,7 +9,6 @@ import com.nexa.relay.domain.port.UpstreamRequest;
 import com.nexa.relay.domain.repository.RelayLogRepository;
 import com.nexa.relay.domain.repository.UserModelAliasRepository;
 import com.nexa.relay.domain.vo.LogType;
-import com.nexa.routing.application.SelectRelayChannelUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -48,7 +43,6 @@ class RelayForwardUseCaseStreamTest {
 
     private UpstreamHttpPort upstreamHttpPort;
     private RelayLogRepository logRepo;
-    private SelectRelayChannelUseCase selectUseCase;
     private UserQuotaAccount userQuotaAccount;
     private RelayForwardUseCase useCase;
     private RelayAuthContext auth;
@@ -58,26 +52,21 @@ class RelayForwardUseCaseStreamTest {
         UserModelAliasRepository l1Repo = mock(UserModelAliasRepository.class);
         logRepo = mock(RelayLogRepository.class);
         upstreamHttpPort = mock(UpstreamHttpPort.class);
-        ChannelRepository channelRepo = mock(ChannelRepository.class);
         KeyLimitGuard keyLimitGuard = mock(KeyLimitGuard.class);
-        selectUseCase = mock(SelectRelayChannelUseCase.class);
         PublicModelRepository publicModelRepo = mock(PublicModelRepository.class);
-        ChannelModelCostRepository costRepo = mock(ChannelModelCostRepository.class);
         userQuotaAccount = mock(UserQuotaAccount.class);
 
         when(l1Repo.findTargetByAlias(any(), anyString())).thenReturn(Optional.empty());
         when(publicModelRepo.findByPublicName(anyString())).thenReturn(Optional.empty());
-        when(costRepo.findByChannelAndUpstream(org.mockito.ArgumentMatchers.anyInt(), anyString()))
-                .thenReturn(Optional.empty());
 
-        useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort, channelRepo,
-                new ObjectMapper(), keyLimitGuard, selectUseCase, publicModelRepo, costRepo, userQuotaAccount,
+        useCase = new RelayForwardUseCase(l1Repo, logRepo, upstreamHttpPort,
+                new ObjectMapper(), keyLimitGuard, publicModelRepo, userQuotaAccount,
                 groupCode -> Optional.empty(),
-                (groupCode, userId, tokenId) -> true,
+                (groupCode, userId, tokenId, model) -> true,
                 // 账号选择端口：返回一个 openai 账号（passthrough OpenAI→OpenAI）。
                 new com.nexa.relay.domain.port.AccountSelectionPort() {
                     @Override public Optional<com.nexa.relay.domain.port.SelectedAccount> selectAccount(
-                            String group, String platform, java.util.Set<Long> excludeAccountIds) {
+                            String requestedModel, String platform, java.util.Set<Long> excludeAccountIds) {
                         java.util.Set<Long> excluded = excludeAccountIds == null ? java.util.Set.of() : excludeAccountIds;
                         if (excluded.contains(1L)) {
                             return Optional.empty();
@@ -88,7 +77,8 @@ class RelayForwardUseCaseStreamTest {
                     }
                     @Override public void markRateLimited(long accountId, Long resetAt) { }
                     @Override public void markOverloaded(long accountId, Long until) { }
-                });
+                },
+                userId -> java.math.BigDecimal.ONE);
         // passthrough 流式累计 usage 依赖 ProtocolRegistry 命中 OpenAI 适配器。
         // 注册在 @PostConstruct registerSelf()，单元测试不走 Spring 容器须手动触发。
         new com.nexa.relay.infrastructure.protocol.OpenAiProtocolAdapter(new ObjectMapper()).registerSelf();

@@ -68,7 +68,7 @@ public class PublicModelController {
      */
     @PostMapping
     public ApiResponse<PublicModelAdminView> create(@RequestBody PublicModelCreateRequest request) {
-        PublicModel created = useCase.create(request.publicName(), request.qualityTier(),
+        PublicModel created = useCase.create(request.publicName(),
                 request.basePriceRatio(), request.usePrice(), request.basePrice(), request.enabled(),
                 request.displayName(), request.sortOrder(), request.description());
         return ApiResponse.okData(PublicModelAdminView.from(created));
@@ -82,9 +82,9 @@ public class PublicModelController {
      */
     @PutMapping
     public ApiResponse<PublicModelAdminView> update(@RequestBody PublicModelUpdateRequest request) {
-        PublicModel updated = useCase.update(request.id(), request.qualityTier(),
+        PublicModel updated = useCase.update(request.id(),
                 request.basePriceRatio(), request.usePrice(), request.basePrice(), request.enabled(),
-                request.displayName(), request.sortOrder());
+                request.displayName(), request.sortOrder(), request.description());
         return ApiResponse.okData(PublicModelAdminView.from(updated));
     }
 

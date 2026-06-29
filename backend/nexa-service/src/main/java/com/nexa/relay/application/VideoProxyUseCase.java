@@ -2,8 +2,7 @@ package com.nexa.relay.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexa.channel.domain.model.Channel;
-import com.nexa.channel.domain.repository.ChannelRepository;
+import com.nexa.account.provider.domain.repository.AccountRepository;
 import com.nexa.relay.domain.exception.VideoTaskException;
 import com.nexa.relay.domain.port.UpstreamHttpPort;
 import com.nexa.relay.domain.port.UpstreamRequest;
@@ -39,16 +38,16 @@ public class VideoProxyUseCase {
     public static final String CACHE_CONTROL = "max-age=86400";
 
     private final QueryTaskUseCase queryTaskUseCase;
-    private final ChannelRepository channelRepo;
+    private final AccountRepository accountRepo;
     private final UpstreamHttpPort upstreamHttpPort;
     private final ObjectMapper objectMapper;
 
     public VideoProxyUseCase(QueryTaskUseCase queryTaskUseCase,
-                             ChannelRepository channelRepo,
+                             AccountRepository accountRepo,
                              UpstreamHttpPort upstreamHttpPort,
                              ObjectMapper objectMapper) {
         this.queryTaskUseCase = queryTaskUseCase;
-        this.channelRepo = channelRepo;
+        this.accountRepo = accountRepo;
         this.upstreamHttpPort = upstreamHttpPort;
         this.objectMapper = objectMapper;
     }
@@ -91,10 +90,11 @@ public class VideoProxyUseCase {
             throw VideoTaskException.ssrfBlocked();
         }
 
-        // 渠道凭证（Gemini/Vertex 等需注入 Key 拉取；OpenAI Sora 公网 URL 无需）。Key 不回显。
+        // 账号凭证（Gemini/Vertex 等需注入 Key 拉取；OpenAI Sora 公网 URL 无需）。Key 不回显。
+        // task.channelId 现承载 accountId（channel→account 合并后语义统一）；从账号 credentials JSON 取 key。
         String apiKey = task.channelId() == null ? null
-                : channelRepo.findById(task.channelId().longValue())
-                        .map(Channel::key).orElse(null);
+                : accountRepo.findById(task.channelId().longValue())
+                        .map(a -> extractKey(a.credentials())).orElse(null);
         return VideoContent.remote(contentUrl, apiKey);
     }
 
@@ -157,6 +157,19 @@ public class VideoProxyUseCase {
             if (trimmed.startsWith("http") || trimmed.startsWith("data:")) {
                 return trimmed;
             }
+            return null;
+        }
+    }
+
+    /** 从账号 credentials JSON（{@code {"key":"..."}}）提取上游 API Key；缺失/非法返回 null（不回显）。 */
+    private String extractKey(String credentials) {
+        if (credentials == null || credentials.isBlank()) {
+            return null;
+        }
+        try {
+            JsonNode node = objectMapper.readTree(credentials).path("key");
+            return node.isTextual() ? node.asText() : null;
+        } catch (Exception e) {
             return null;
         }
     }

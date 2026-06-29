@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * features/modelgroup/components/ModelGroupsPage — 灵活模型组管理页（管理端）。
+ * features/modelgroup/components/ModelGroupsPage — 价格分组管理页（管理端）。
  *
- * 模型组独立售卖单元：配置可用模型集 + 模型组级倍率 + 访问策略（公开/私有/按等级自动）+ 启停。
- * 替代「分组绑死账号等级」，管理员据此灵活配置售卖策略。
+ * 价格分组 = 独立售卖单元：配置「包含模型集 + 分组倍率 + 谁可以用（公开/指定用户/按等级）+ 启停」。
+ * 同一模型可加入多个分组、各组设不同倍率，形成价格档对比（经济/标准/旗舰）。售价 = 模型基准倍率 × 分组倍率。
  */
 import { useMemo, useState } from 'react';
 import { AppShell } from '@/features/shell';
 import { Button } from '@/shared/ui';
 import {
   useModelGroups,
+  useCandidateModels,
   useCreateModelGroup,
   useUpdateModelGroup,
   useToggleModelGroupStatus,
@@ -28,7 +29,7 @@ interface DraftState {
   name: string;
   code: string;
   ratio: string;
-  models: string; // 逗号/换行分隔的编辑态文本
+  models: string[]; // 已选模型名集合（勾选编辑）
   policy: AccessPolicy;
   description: string;
 }
@@ -37,17 +38,10 @@ const EMPTY_DRAFT: DraftState = {
   name: '',
   code: '',
   ratio: '1.0',
-  models: '',
+  models: [],
   policy: 'PUBLIC',
   description: '',
 };
-
-function parseModels(text: string): string[] {
-  return text
-    .split(/[\n,]/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
 
 export function ModelGroupsPage() {
   const [fPolicy, setFPolicy] = useState<'' | AccessPolicy>('');
@@ -61,10 +55,14 @@ export function ModelGroupsPage() {
   const { data: rows = [], isLoading, isError, error } = useModelGroups(
     fPolicy === '' ? undefined : fPolicy,
   );
+  const { data: candidateModels = [] } = useCandidateModels();
   const createMut = useCreateModelGroup();
   const updateMut = useUpdateModelGroup();
   const toggleMut = useToggleModelGroupStatus();
   const deleteMut = useDeleteModelGroup();
+
+  /* 抽屉内模型勾选搜索 */
+  const [modelQuery, setModelQuery] = useState('');
 
   const filtered = useMemo(() => {
     if (!search) return rows;
@@ -77,10 +75,30 @@ export function ModelGroupsPage() {
     );
   }, [rows, search]);
 
+  // 候选模型 ∪ 已选模型（保证编辑时即便候选未含某历史模型也能显示并保留勾选）。
+  const modelOptions = useMemo(() => {
+    const set = new Set<string>(candidateModels);
+    draft.models.forEach((m) => set.add(m));
+    const all = Array.from(set);
+    const q = modelQuery.trim().toLowerCase();
+    const list = q ? all.filter((m) => m.toLowerCase().includes(q)) : all;
+    return list.sort((a, b) => a.localeCompare(b));
+  }, [candidateModels, draft.models, modelQuery]);
+
+  const toggleModel = (name: string) => {
+    setDraft((d) => ({
+      ...d,
+      models: d.models.includes(name)
+        ? d.models.filter((m) => m !== name)
+        : [...d.models, name],
+    }));
+  };
+
   const openNew = () => {
     setMode('new');
     setEditId(null);
     setDraft(EMPTY_DRAFT);
+    setModelQuery('');
     setFormErr(null);
     setDrawerOpen(true);
   };
@@ -92,10 +110,11 @@ export function ModelGroupsPage() {
       name: g.name,
       code: g.code,
       ratio: String(g.ratio),
-      models: g.models.join('\n'),
+      models: [...g.models],
       policy: g.policy,
       description: g.description ?? '',
     });
+    setModelQuery('');
     setFormErr(null);
     setDrawerOpen(true);
   };
@@ -105,7 +124,7 @@ export function ModelGroupsPage() {
   const submit = async () => {
     setFormErr(null);
     const ratioNum = Number(draft.ratio);
-    if (!draft.name.trim()) return setFormErr('请填写模型组名称');
+    if (!draft.name.trim()) return setFormErr('请填写价格分组名称');
     if (mode === 'new' && !/^[a-z0-9_-]+$/.test(draft.code.trim().toLowerCase())) {
       return setFormErr('编码必须为 [a-z0-9_-]，且不可为空');
     }
@@ -117,7 +136,7 @@ export function ModelGroupsPage() {
           name: draft.name.trim(),
           code: draft.code.trim().toLowerCase(),
           base_price_ratio: ratioNum,
-          models: parseModels(draft.models),
+          models: draft.models,
           access_policy: draft.policy,
           description: draft.description.trim() || undefined,
         });
@@ -127,7 +146,7 @@ export function ModelGroupsPage() {
           req: {
             name: draft.name.trim(),
             base_price_ratio: ratioNum,
-            models: parseModels(draft.models),
+            models: draft.models,
             access_policy: draft.policy,
             description: draft.description.trim(),
           },
@@ -147,7 +166,7 @@ export function ModelGroupsPage() {
   };
 
   const onDelete = (g: ModelGroupRowVM) => {
-    if (window.confirm(`确认删除模型组「${g.name}」(${g.code})？`)) {
+    if (window.confirm(`确认删除价格分组「${g.name}」(${g.code})？`)) {
       deleteMut.mutate(g.id);
     }
   };
@@ -157,9 +176,9 @@ export function ModelGroupsPage() {
   return (
     <AppShell
       activeId="model-groups"
-      title="模型组管理"
-      crumb={['管理后台', '资源管理', '模型组管理']}
-      actions={<Button onClick={openNew}>新建模型组</Button>}
+      title="价格分组"
+      crumb={['管理后台', '资源管理', '价格分组']}
+      actions={<Button onClick={openNew}>新建价格分组</Button>}
     >
       <section className={`${styles.filterbar} nx-fade`}>
         <select
@@ -248,11 +267,11 @@ export function ModelGroupsPage() {
       </section>
 
       {drawerOpen && <div className={styles.drawerScrim} onClick={closeDrawer} />}
-      <aside className={`${styles.drawer} ${drawerOpen ? styles.drawerOn : ''}`} aria-label="模型组编辑">
+      <aside className={`${styles.drawer} ${drawerOpen ? styles.drawerOn : ''}`} aria-label="价格分组编辑">
         <div className={styles.drawerHead}>
           <div>
-            <h2 className={styles.drawerTitle}>{mode === 'new' ? '新建模型组' : '编辑模型组'}</h2>
-            <div className={styles.drawerSub}>配置模型集 · 倍率 · 访问策略</div>
+            <h2 className={styles.drawerTitle}>{mode === 'new' ? '新建价格分组' : '编辑价格分组'}</h2>
+            <div className={styles.drawerSub}>配置包含模型 · 倍率 · 谁可以用</div>
           </div>
           <button className={styles.drawerX} onClick={closeDrawer} aria-label="关闭">×</button>
         </div>
@@ -263,7 +282,7 @@ export function ModelGroupsPage() {
               className="input"
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder="如：高级模型组"
+              placeholder="如：旗舰组"
             />
           </div>
           <div>
@@ -273,40 +292,61 @@ export function ModelGroupsPage() {
               value={draft.code}
               disabled={mode === 'edit'}
               onChange={(e) => setDraft({ ...draft, code: e.target.value })}
-              placeholder="如：premium"
+              placeholder="如：flagship"
             />
           </div>
           <div>
-            <label className="field-label">模型组倍率</label>
+            <label className="field-label">分组倍率</label>
             <input
               className="input mono-num"
               value={draft.ratio}
               onChange={(e) => setDraft({ ...draft, ratio: e.target.value })}
               placeholder="1.0"
             />
-            <div className="field-hint">售价 = 对外模型基准倍率 × 模型组倍率 × tokens</div>
+            <div className="field-hint">售价 = 模型基准倍率 × 分组倍率 × tokens</div>
           </div>
           <div>
-            <label className="field-label">访问策略</label>
+            <label className="field-label">谁可以用</label>
             <select
               className="input"
               value={draft.policy}
               onChange={(e) => setDraft({ ...draft, policy: e.target.value as AccessPolicy })}
             >
-              <option value="PUBLIC">{POLICY_LABEL.PUBLIC}（所有用户可用）</option>
-              <option value="PRIVATE">{POLICY_LABEL.PRIVATE}（需在用户列表显式授权）</option>
-              <option value="AUTO_LEVEL">{POLICY_LABEL.AUTO_LEVEL}（按账号等级映射）</option>
+              <option value="PUBLIC">所有人（{POLICY_LABEL.PUBLIC}，全部用户可用）</option>
+              <option value="PRIVATE">指定用户（{POLICY_LABEL.PRIVATE}，需在用户列表显式授权）</option>
+              <option value="AUTO_LEVEL">按会员等级（{POLICY_LABEL.AUTO_LEVEL}）</option>
             </select>
           </div>
           <div>
-            <label className="field-label">可用模型（逗号或换行分隔）</label>
-            <textarea
-              className="input"
-              style={{ height: 110, padding: 'var(--space-2) var(--space-3)' }}
-              value={draft.models}
-              onChange={(e) => setDraft({ ...draft, models: e.target.value })}
-              placeholder={'gpt-4o\nclaude-3-opus\ngemini-pro'}
+            <label className="field-label">
+              包含模型 <span className="muted">（已选 {draft.models.length}）</span>
+            </label>
+            <input
+              className={`${styles.srch} ${styles.modelSearch}`}
+              type="search"
+              placeholder="搜索模型名筛选…"
+              value={modelQuery}
+              onChange={(e) => setModelQuery(e.target.value)}
             />
+            <div className={styles.modelPicker}>
+              {modelOptions.length === 0 ? (
+                <div className={styles.modelEmpty}>无匹配模型</div>
+              ) : (
+                modelOptions.map((name) => {
+                  const checked = draft.models.includes(name);
+                  return (
+                    <label key={name} className={`${styles.modelOpt} ${checked ? styles.modelOptOn : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleModel(name)}
+                      />
+                      <span className="mono-num">{name}</span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
           </div>
           <div>
             <label className="field-label">描述</label>
