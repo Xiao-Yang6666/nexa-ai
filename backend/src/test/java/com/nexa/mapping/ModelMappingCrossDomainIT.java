@@ -1,10 +1,10 @@
 package com.nexa.mapping;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexa.relay.domain.repository.UserModelAliasRepository;
-import com.nexa.relay.domain.service.TwoLayerModelResolver;
-import com.nexa.relay.domain.vo.AliasScope;
-import com.nexa.relay.domain.vo.ModelResolution;
+import com.nexa.domain.relay.repository.UserModelAliasRepository;
+import com.nexa.domain.relay.service.TwoLayerModelResolver;
+import com.nexa.domain.relay.vo.AliasScope;
+import com.nexa.domain.relay.vo.ModelResolution;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.AfterEach;

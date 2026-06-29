@@ -6,7 +6,7 @@ package com.nexa.shared.security.domain.rbac;
  * <p>对齐 ROLE-PERMISSION-MATRIX §1「repo 底座三级系统角色」与 DB-SCHEMA §1 Role 枚举：
  * {@code common=1 / admin=10 / root=100}，数值大小即权限高低（root&gt;admin&gt;common）。</p>
  *
- * <p>设计取舍：本枚举刻意<b>独立</b>于账号域 {@code com.nexa.account.domain.vo.Role}，使
+ * <p>设计取舍：本枚举刻意<b>独立</b>于账号域 {@code com.nexa.domain.account.vo.Role}，使
  * {@code com.nexa.shared.security} 鉴权基础设施<b>不</b>反向依赖账号 bounded context（DDD 上下文解耦）。
  * 两者编码一致，在基础设施边界（JWT 解析处）按 {@code code} 互转。</p>
  *

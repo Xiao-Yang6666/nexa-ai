@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * 令牌主体解析端口 {@link TokenPrincipalResolver} 的 JWT 实现（基础设施层）。
  *
- * <p>解析登录时由 {@code com.nexa.account.infrastructure.security.JwtTokenIssuer} 签发的无状态 JWT，
+ * <p>解析登录时由 {@code com.nexa.infrastructure.account.security.JwtTokenIssuer} 签发的无状态 JWT，
  * 还原操作者身份（{@code sub=用户id}、{@code role=角色编码}、{@code username}）为
  * {@link AuthenticatedActor}，供三级鉴权过滤器注入 SecurityContext。jjwt 细节只活在本类，
  * domain/application 仅依赖 {@link TokenPrincipalResolver} 端口（DDD §2.3）。</p>
