@@ -5,7 +5,7 @@ import com.nexa.application.growth.QueryAffiliateStatsUseCase;
 import com.nexa.application.growth.TransferAffQuotaUseCase;
 import com.nexa.domain.growth.model.AffiliateAccount;
 import com.nexa.interfaces.growth.api.dto.AffTransferRequest;
-import com.nexa.interfaces.growth.api.dto.AffiliateStatsView;
+import com.nexa.interfaces.growth.api.dto.AffiliateStatsVO;
 import com.nexa.shared.web.ApiResponse;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
@@ -78,9 +78,9 @@ public class AffiliateController {
      * @return 邀请统计客户视图（aff_count/aff_quota/aff_history_quota）
      */
     @GetMapping("/aff_stats")
-    public ApiResponse<AffiliateStatsView> affStats(@CurrentActor AuthenticatedActor actor) {
+    public ApiResponse<AffiliateStatsVO> affStats(@CurrentActor AuthenticatedActor actor) {
         AffiliateAccount account = queryAffiliateStatsUseCase.query(actor.userId());
-        return ApiResponse.okData(AffiliateStatsView.from(account));
+        return ApiResponse.okData(AffiliateStatsVO.from(account));
     }
 
     /**

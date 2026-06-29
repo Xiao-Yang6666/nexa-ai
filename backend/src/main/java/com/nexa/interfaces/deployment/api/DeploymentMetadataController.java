@@ -9,9 +9,9 @@ import com.nexa.domain.deployment.vo.ClusterName;
 import com.nexa.domain.deployment.vo.GpuCount;
 import com.nexa.domain.deployment.vo.HardwareId;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.deployment.api.dto.HardwareTypesView;
-import com.nexa.interfaces.deployment.api.dto.LocationsView;
-import com.nexa.interfaces.deployment.api.dto.NameAvailabilityView;
+import com.nexa.interfaces.deployment.api.dto.HardwareTypesVO;
+import com.nexa.interfaces.deployment.api.dto.LocationsVO;
+import com.nexa.interfaces.deployment.api.dto.NameAvailabilityVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -79,8 +79,8 @@ public class DeploymentMetadataController {
      * @return 成功信封，data = {@code { hardware_types[], total, total_available }}
      */
     @GetMapping("/hardware-types")
-    public ApiResponse<HardwareTypesView> hardwareTypes() {
-        return ApiResponse.okData(HardwareTypesView.from(listHardwareTypesUseCase.list()));
+    public ApiResponse<HardwareTypesVO> hardwareTypes() {
+        return ApiResponse.okData(HardwareTypesVO.from(listHardwareTypesUseCase.list()));
     }
 
     /**
@@ -89,8 +89,8 @@ public class DeploymentMetadataController {
      * @return 成功信封，data = {@code { locations[], total }}（total 上游 0 时回退列表长度）
      */
     @GetMapping("/locations")
-    public ApiResponse<LocationsView> locations() {
-        return ApiResponse.okData(LocationsView.from(listLocationsUseCase.list()));
+    public ApiResponse<LocationsVO> locations() {
+        return ApiResponse.okData(LocationsVO.from(listLocationsUseCase.list()));
     }
 
     /**
@@ -137,10 +137,10 @@ public class DeploymentMetadataController {
      * @return 成功信封，data = {@code { available, name }}
      */
     @GetMapping("/check-name")
-    public ApiResponse<NameAvailabilityView> checkName(
+    public ApiResponse<NameAvailabilityVO> checkName(
             @RequestParam(name = "name", required = false) String name) {
 
         ClusterName clusterName = new ClusterName(name);
-        return ApiResponse.okData(NameAvailabilityView.from(checkClusterNameUseCase.check(clusterName)));
+        return ApiResponse.okData(NameAvailabilityVO.from(checkClusterNameUseCase.check(clusterName)));
     }
 }

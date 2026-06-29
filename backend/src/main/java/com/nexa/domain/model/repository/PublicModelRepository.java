@@ -60,7 +60,7 @@ public interface PublicModelRepository {
     /**
      * 列出所有上架对外模型的公开名 A（F-6003 候选层 / F-6004 全员可用判定）。
      *
-     * <p>来源：{@code enabled=true AND deleted_at IS NULL} 全集。<b>UserView 来源</b>，绝不含任何 B
+     * <p>来源：{@code enabled=true AND deleted_at IS NULL} 全集。<b>UserVO 来源</b>，绝不含任何 B
      * （COMPAT §2 候选层 B 不可见闸）。按 sort_order 升序、id 升序。</p>
      *
      * @return 上架公开名 A 列表

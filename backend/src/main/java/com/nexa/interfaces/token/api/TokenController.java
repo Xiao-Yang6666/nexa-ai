@@ -12,9 +12,9 @@ import com.nexa.domain.token.vo.Pagination;
 import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.token.api.dto.BatchIdsRequest;
 import com.nexa.interfaces.token.api.dto.TokenCreateRequest;
-import com.nexa.interfaces.token.api.dto.TokenListView;
+import com.nexa.interfaces.token.api.dto.TokenListVO;
 import com.nexa.interfaces.token.api.dto.TokenUpdateRequest;
-import com.nexa.interfaces.token.api.dto.TokenUserView;
+import com.nexa.interfaces.token.api.dto.TokenUserVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -55,7 +55,7 @@ import java.util.Map;
  * {@link RequireRole}({@link AuthLevel#USER})，由 {@code RequireRoleInterceptor} 统一拦截判定，
  * 未认证→401。归属用户由 {@code @CurrentActor} 注入，杜绝从请求体读 user_id 伪造他人归属。</p>
  *
- * <p><b>客户视图铁律</b>：列表/搜索/创建/更新出参用 {@link TokenUserView}（key MaskTokenKey 脱敏，
+ * <p><b>客户视图铁律</b>：列表/搜索/创建/更新出参用 {@link TokenUserVO}（key MaskTokenKey 脱敏，
  * 绝不下发成本/上游字段）。明文 key 仅 F-3004/F-3005 受控端点下发，且仅本人令牌（用例级 self-scope）。</p>
  */
 @RestController
@@ -106,17 +106,17 @@ public class TokenController {
      * @param page     query 页号（可空→1）
      * @param pageSize query 每页条数（可空→10）
      * @param actor    认证主体（self-scope，决定 user_id 过滤）
-     * @return 成功信封，data = { items[], total, page, pageSize }（UserView，key 脱敏）
+     * @return 成功信封，data = { items[], total, page, pageSize }（UserVO，key 脱敏）
      */
     @GetMapping("/")
-    public ApiResponse<TokenListView> list(
+    public ApiResponse<TokenListVO> list(
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize,
             @CurrentActor AuthenticatedActor actor) {
 
         Pagination pagination = Pagination.of(page, pageSize);
         return ApiResponse.okData(
-                TokenListView.from(listTokensUseCase.list(actor.userId(), pagination)));
+                TokenListVO.from(listTokensUseCase.list(actor.userId(), pagination)));
     }
 
     /**
@@ -124,15 +124,15 @@ public class TokenController {
      *
      * @param request 创建请求（name 必填）
      * @param actor   认证主体（提供归属用户 id）
-     * @return 成功信封，data = 创建后令牌（UserView，key 脱敏）
+     * @return 成功信封，data = 创建后令牌（UserVO，key 脱敏）
      */
     @PostMapping("/")
-    public ApiResponse<TokenUserView> create(
+    public ApiResponse<TokenUserVO> create(
             @RequestBody TokenCreateRequest request,
             @CurrentActor AuthenticatedActor actor) {
 
         return ApiResponse.okData(
-                TokenUserView.from(createTokenUseCase.create(request.toCommand(actor.userId()))));
+                TokenUserVO.from(createTokenUseCase.create(request.toCommand(actor.userId()))));
     }
 
     /**
@@ -140,15 +140,15 @@ public class TokenController {
      *
      * @param request 更新请求（id 必填，可选 status_only）
      * @param actor   认证主体（self-scope 校验）
-     * @return 成功信封，data = 更新后令牌（UserView）
+     * @return 成功信封，data = 更新后令牌（UserVO）
      */
     @PutMapping("/")
-    public ApiResponse<TokenUserView> update(
+    public ApiResponse<TokenUserVO> update(
             @RequestBody TokenUpdateRequest request,
             @CurrentActor AuthenticatedActor actor) {
 
         return ApiResponse.okData(
-                TokenUserView.from(updateTokenUseCase.update(request.toCommand(actor.userId()))));
+                TokenUserVO.from(updateTokenUseCase.update(request.toCommand(actor.userId()))));
     }
 
     /**
@@ -158,10 +158,10 @@ public class TokenController {
      * @param page     query 页号（可空→1）
      * @param pageSize query 每页条数（可空→10）
      * @param actor    认证主体（self-scope，决定 user_id 过滤）
-     * @return 成功信封，data = { items[], total, page, pageSize }（UserView）
+     * @return 成功信封，data = { items[], total, page, pageSize }（UserVO）
      */
     @GetMapping("/search")
-    public ApiResponse<TokenListView> search(
+    public ApiResponse<TokenListVO> search(
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize,
@@ -169,7 +169,7 @@ public class TokenController {
 
         Pagination pagination = Pagination.of(page, pageSize);
         return ApiResponse.okData(
-                TokenListView.from(searchTokensUseCase.search(actor.userId(), keyword, pagination)));
+                TokenListVO.from(searchTokensUseCase.search(actor.userId(), keyword, pagination)));
     }
 
     /**

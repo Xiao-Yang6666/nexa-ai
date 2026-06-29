@@ -1,13 +1,13 @@
 package com.nexa.interfaces.passkey.api;
 
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.account.api.dto.UserView;
+import com.nexa.interfaces.account.api.dto.UserVO;
 import com.nexa.application.passkey.LoginWithPasskeyUseCase;
 import com.nexa.application.passkey.ManagePasskeyUseCase;
 import com.nexa.application.passkey.RegisterPasskeyUseCase;
 import com.nexa.application.passkey.VerifyPasskeyUseCase;
 import com.nexa.application.passkey.port.PasskeyUserDirectory;
-import com.nexa.interfaces.passkey.api.dto.PasskeyView;
+import com.nexa.interfaces.passkey.api.dto.PasskeyVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -111,16 +111,16 @@ public class PasskeyController {
     /**
      * 登录 finish（F-1029，公开，对齐 openapi {@code POST /api/user/passkey/login/finish}）。
      *
-     * <p>验签通过后返回登录用户 {@link UserView}（客户视图零敏感；access_token 不进 body，产品铁律
+     * <p>验签通过后返回登录用户 {@link UserVO}（客户视图零敏感；access_token 不进 body，产品铁律
      * 沿用账号域登录约定）。</p>
      *
      * @param assertionResponse authenticator assertion 响应（原始 JSON body）
-     * @return 成功信封，data 为 UserView
+     * @return 成功信封，data 为 UserVO
      */
     @PostMapping("/api/user/passkey/login/finish")
-    public ApiResponse<UserView> loginFinish(@RequestBody String assertionResponse) {
+    public ApiResponse<UserVO> loginFinish(@RequestBody String assertionResponse) {
         PasskeyUserDirectory.UserSnapshot snapshot = loginWithPasskeyUseCase.finish(assertionResponse);
-        return ApiResponse.okData(toUserView(snapshot));
+        return ApiResponse.okData(toUserVO(snapshot));
     }
 
     // ============ F-1030 二次验证 ============
@@ -155,16 +155,16 @@ public class PasskeyController {
     /**
      * 查询本人 passkey 状态（F-1031，对齐 openapi {@code GET /api/user/self/passkey}）。
      *
-     * <p>出参为 {@code {items: PasskeyView[]}}（0 或 1 条，单 passkey 语义），对齐 openapi data 结构。</p>
+     * <p>出参为 {@code {items: PasskeyVO[]}}（0 或 1 条，单 passkey 语义），对齐 openapi data 结构。</p>
      *
      * @param userId 会话用户 id
      * @return 成功信封，data 为 {@code {items: [...]}}
      */
     @GetMapping("/api/user/self/passkey")
-    public ApiResponse<Map<String, List<PasskeyView>>> listSelf(
+    public ApiResponse<Map<String, List<PasskeyVO>>> listSelf(
             @RequestHeader(name = USER_ID_HEADER) long userId) {
-        List<PasskeyView> items = managePasskeyUseCase.findByUser(userId)
-                .map(PasskeyView::from)
+        List<PasskeyVO> items = managePasskeyUseCase.findByUser(userId)
+                .map(PasskeyVO::from)
                 .map(List::of)
                 .orElseGet(List::of);
         // openapi data 为 { items: [...] } 对象包裹（非裸数组）。
@@ -190,15 +190,15 @@ public class PasskeyController {
     }
 
     /**
-     * 中性用户快照 → 账号域客户视图 {@link UserView}（复用全站统一登录视图 schema）。
+     * 中性用户快照 → 账号域客户视图 {@link UserVO}（复用全站统一登录视图 schema）。
      *
      * <p>显式逐字段映射，零敏感（快照本身已是客户视图投影）。</p>
      *
      * @param s 中性用户快照
      * @return 客户视图
      */
-    private static UserView toUserView(PasskeyUserDirectory.UserSnapshot s) {
-        return new UserView(
+    private static UserVO toUserVO(PasskeyUserDirectory.UserSnapshot s) {
+        return new UserVO(
                 s.id(),
                 s.username(),
                 s.role(),

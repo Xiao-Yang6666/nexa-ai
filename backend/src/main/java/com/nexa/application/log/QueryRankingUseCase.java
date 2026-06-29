@@ -13,7 +13,7 @@ import java.util.List;
  *
  * <p>用例编排：解析 period（{@link Period#parse}，缺省 week，非法→400 invalid period），按周期回看窗口
  * 实时聚合 logs 中消费记录，按对外公开名 A 分组降序产出排行。可见性铁律：排行只按 A、只暴露聚合用量，
- * 绝不含成本/利润/B/供应商（接口层用 RankingPublicView 序列化保证，仓储 SQL 也只 group by A）。</p>
+ * 绝不含成本/利润/B/供应商（接口层用 RankingPublicVO 序列化保证，仓储 SQL 也只 group by A）。</p>
  *
  * <p>领域规则来源：prd 日志与用量 F-4010「period 默认 week；非法 period 返回 400；成功返回排行快照」。</p>
  */

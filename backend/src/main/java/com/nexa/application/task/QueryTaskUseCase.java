@@ -14,8 +14,8 @@ import java.util.Optional;
  * （管理）或 task_id+user_id（用户 self-scope）。<b>self-scope</b>（PRD AT-2 C5）由仓储 SQL 强制
  * user_id 过滤兜底（用户侧 query.userId 必非空）。薄编排，无领域规则。</p>
  *
- * <p><b>视图裁剪在接口层</b>：本用例返回领域聚合，接口层据角色裁剪为 TaskUserView（Omit channel_id、
- * 无 privateData）或 TaskAdminView（含 channel_id）。</p>
+ * <p><b>视图裁剪在接口层</b>：本用例返回领域聚合，接口层据角色裁剪为 TaskUserVO（Omit channel_id、
+ * 无 privateData）或 TaskAdminVO（含 channel_id）。</p>
  */
 @Service
 public class QueryTaskUseCase {

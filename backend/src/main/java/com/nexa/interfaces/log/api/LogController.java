@@ -7,10 +7,10 @@ import com.nexa.application.log.QueryLogStatUseCase;
 import com.nexa.domain.log.vo.LogQuery;
 import com.nexa.domain.log.vo.LogStat;
 import com.nexa.domain.log.vo.Pagination;
-import com.nexa.interfaces.log.api.dto.AdminLogView;
+import com.nexa.interfaces.log.api.dto.AdminLogVO;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.log.api.dto.LogListView;
-import com.nexa.interfaces.log.api.dto.LogStatView;
+import com.nexa.interfaces.log.api.dto.LogListVO;
+import com.nexa.interfaces.log.api.dto.LogStatVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>承载管理端日志相关端点（对齐 openapi /api/log*）：
  * <ul>
- *   <li>{@code GET    /api/log/}      全量日志分页查询（F-4001，AdminLogView 全字段含 B/成本/利润）</li>
+ *   <li>{@code GET    /api/log/}      全量日志分页查询（F-4001，AdminLogVO 全字段含 B/成本/利润）</li>
  *   <li>{@code DELETE /api/log/}      清理历史日志（F-4006，分批删，每批 ≤100）</li>
  *   <li>{@code GET    /api/log/stat}  管理端日志统计（F-4004，quota/rpm/tpm，仅 Type=2）</li>
  * </ul>
@@ -37,8 +37,8 @@ import org.springframework.web.bind.annotation.RestController;
  * ({@link AuthLevel#ADMIN}) 由 {@code RequireRoleInterceptor} 统一拦截，未达 admin → 403、未认证 → 401。
  * 管理端无 self-scope（全站可见），故不注入 {@code @CurrentActor}（角色门槛已足够）。</p>
  *
- * <p><b>客户视图铁律</b>：本控制器属管理端，输出用 {@link AdminLogView}（含 B/成本/利润/渠道）；
- * 客户侧的裁剪视图在 {@link SelfLogController}（UserLogView）。</p>
+ * <p><b>客户视图铁律</b>：本控制器属管理端，输出用 {@link AdminLogVO}（含 B/成本/利润/渠道）；
+ * 客户侧的裁剪视图在 {@link SelfLogController}（UserLogVO）。</p>
  */
 @RestController
 @RequestMapping("/api/log")
@@ -77,10 +77,10 @@ public class LogController {
      * @param upstreamRequestId 上游请求 id 过滤（可空）
      * @param page              页号（可空→1）
      * @param pageSize          每页条数（可空→10）
-     * @return 成功信封，data = { items[](AdminLogView), total, page, page_size }
+     * @return 成功信封，data = { items[](AdminLogVO), total, page, page_size }
      */
     @GetMapping("/")
-    public ApiResponse<LogListView<AdminLogView>> list(
+    public ApiResponse<LogListVO<AdminLogVO>> list(
             @RequestParam(name = "type", required = false) Integer type,
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp,
@@ -98,7 +98,7 @@ public class LogController {
                 tokenName, modelName, channel, group, requestId, upstreamRequestId);
         Pagination pagination = Pagination.of(page, pageSize);
         LogPage result = queryAdminLogsUseCase.query(query, pagination);
-        return ApiResponse.okData(LogListView.admin(result));
+        return ApiResponse.okData(LogListVO.admin(result));
     }
 
     /**
@@ -124,7 +124,7 @@ public class LogController {
      * @return 成功信封，data = LogStat（quota/rpm/tpm）
      */
     @GetMapping("/stat")
-    public ApiResponse<LogStatView> stat(
+    public ApiResponse<LogStatVO> stat(
             @RequestParam(name = "type", required = false) Integer type,
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp,
@@ -133,6 +133,6 @@ public class LogController {
         LogQuery query = LogQuery.forAdmin(type, startTimestamp, endTimestamp, username,
                 null, null, null, null, null, null);
         LogStat stat = queryLogStatUseCase.stat(query);
-        return ApiResponse.okData(LogStatView.from(stat));
+        return ApiResponse.okData(LogStatVO.from(stat));
     }
 }

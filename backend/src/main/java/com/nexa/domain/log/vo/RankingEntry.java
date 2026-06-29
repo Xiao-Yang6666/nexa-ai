@@ -3,7 +3,7 @@ package com.nexa.domain.log.vo;
 /**
  * 用量排行榜条目值对象（F-4010 用量排行快照，公开口径）。
  *
- * <p>领域规则来源：prd 日志与用量 F-4010 + openapi RankingPublicView「绝不含成本/利润/上游模型 B/供应商」。
+ * <p>领域规则来源：prd 日志与用量 F-4010 + openapi RankingPublicVO「绝不含成本/利润/上游模型 B/供应商」。
  * 排行<b>只按对外公开名 A</b>（{@code resolved_public_model}）聚合消费量——这是可见性铁律在排行场景的落地：
  * 排行对匿名/普通用户公开，必须用 A 而非 B/渠道（杜绝从排行反推上游供应商）。{@code rank} 由聚合后
  * 按量降序生成（1 起）。</p>

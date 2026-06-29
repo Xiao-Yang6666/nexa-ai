@@ -6,8 +6,8 @@ import com.nexa.application.billing.ListRedemptionsUseCase;
 import com.nexa.domain.billing.model.Redemption;
 import com.nexa.domain.billing.repository.RedemptionRepository;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.shared.web.PageView;
-import com.nexa.interfaces.billing.api.dto.RedemptionAdminView;
+import com.nexa.shared.web.PageVO;
+import com.nexa.interfaces.billing.api.dto.RedemptionAdminVO;
 import com.nexa.interfaces.billing.api.dto.RedemptionCreateRequest;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
@@ -64,16 +64,16 @@ public class RedemptionController {
     // Spring Boot 3 默认关闭尾斜杠匹配，单映射 "/" 时无尾斜杠请求无 handler → 403（落 anyRequest）。两形态都登记，
     // 鉴权不削弱：类级 @RequireRole(ADMIN) + 方法级拦截器对两路径同样生效（普通用户仍 403）。
     @GetMapping({"", "/"})
-    public ApiResponse<PageView<RedemptionAdminView>> list(
+    public ApiResponse<PageVO<RedemptionAdminVO>> list(
             @RequestParam(name = "p", required = false, defaultValue = "1") int page,
             @RequestParam(name = "page_size", required = false, defaultValue = "20") int pageSize) {
 
         RedemptionRepository.Page<Redemption> result = listRedemptionsUseCase.list(page, pageSize);
-        List<RedemptionAdminView> items = result.items().stream()
-                .map(RedemptionAdminView::from)
+        List<RedemptionAdminVO> items = result.items().stream()
+                .map(RedemptionAdminVO::from)
                 .toList();
         return ApiResponse.okData(
-                new PageView<>(items, result.total(), result.page(), result.pageSize()));
+                new PageVO<>(items, result.total(), result.page(), result.pageSize()));
     }
 
     /**

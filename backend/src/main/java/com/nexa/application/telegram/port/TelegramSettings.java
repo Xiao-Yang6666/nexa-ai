@@ -8,7 +8,7 @@ package com.nexa.application.telegram.port;
  * （固定 token / 固定窗口）而无需起 Spring 上下文（backend-engineer §3.4 配置外置）。</p>
  *
  * <p><b>安全铁律</b>：Bot Token 是机密，仅在服务端用于派生 HMAC 密钥，<b>绝不</b>下发给前端、绝不入日志、
- * 绝不进客户视图（{@code StatusAggregateView.telegram_oauth} 只暴露「是否启用」布尔，不含 token）。</p>
+ * 绝不进客户视图（{@code StatusAggregateVO.telegram_oauth} 只暴露「是否启用」布尔，不含 token）。</p>
  */
 public interface TelegramSettings {
 

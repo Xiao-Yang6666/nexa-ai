@@ -3,7 +3,7 @@ package com.nexa.domain.account.vo;
 /**
  * 用户角色枚举（值对象）。
  *
- * <p>编码对齐 openapi.yaml UserView.role 描述与 DB-SCHEMA §1 Role 枚举：
+ * <p>编码对齐 openapi.yaml UserVO.role 描述与 DB-SCHEMA §1 Role 枚举：
  * {@code 1=common, 10=admin, 100=root}。数值大小即权限高低，护栏：不可操作
  * 角色 ≥ 自身角色（本切片不涉及管理操作，仅承载注册默认角色与登录回显）。</p>
  *

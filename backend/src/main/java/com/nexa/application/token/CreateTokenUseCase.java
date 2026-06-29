@@ -37,7 +37,7 @@ public class CreateTokenUseCase {
      * 杜绝绑定不存在/无权限的孤儿分组导致计价回落、闸门失效。</p>
      *
      * @param command 创建命令（归属用户 + 各字段）
-     * @return 持久化后的令牌聚合（含 id；接口层裁剪为 TokenUserView，key 脱敏）
+     * @return 持久化后的令牌聚合（含 id；接口层裁剪为 TokenUserVO，key 脱敏）
      * @throws InvalidTokenParameterException group 为空/无权限/不存在
      */
     public Token create(CreateTokenCommand command) {

@@ -9,9 +9,9 @@ import com.nexa.application.task.TaskPage;
 import com.nexa.domain.task.model.Task;
 import com.nexa.domain.task.vo.TaskQuery;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.task.api.dto.TaskAdminView;
+import com.nexa.interfaces.task.api.dto.TaskAdminVO;
 import com.nexa.interfaces.task.api.dto.TaskListData;
-import com.nexa.interfaces.task.api.dto.TaskUserView;
+import com.nexa.interfaces.task.api.dto.TaskUserVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,8 +37,8 @@ import java.util.List;
  * {@link RequireRole}({@link AuthLevel#ADMIN})（方法级覆盖类级）。归属用户由 {@code @CurrentActor}
  * 注入，杜绝从请求参数读 user_id 伪造他人归属（用户侧）。</p>
  *
- * <p><b>客户视图铁律</b>：用户列表出参用 {@link TaskUserView}（Omit channel_id、无 privateData）；
- * 管理列表用 {@link TaskAdminView}（含 channel_id/user_id，仍无 privateData）。</p>
+ * <p><b>客户视图铁律</b>：用户列表出参用 {@link TaskUserVO}（Omit channel_id、无 privateData）；
+ * 管理列表用 {@link TaskAdminVO}（含 channel_id/user_id，仍无 privateData）。</p>
  */
 @RestController
 @RequestMapping("/api/task")
@@ -56,7 +56,7 @@ public class TaskController {
      * 用户任务列表（F-2003，self-scope）。
      *
      * <p>强制 {@code user_id=本人}（PRD AT-2 C5）：query 的 userId 取自 {@code @CurrentActor}，
-     * 不信任请求参数。出参 {@link TaskUserView}（无 channel_id/privateData）。</p>
+     * 不信任请求参数。出参 {@link TaskUserVO}（无 channel_id/privateData）。</p>
      *
      * @param actor     认证主体（注入，提供本人 user_id）
      * @param taskId    任务 ID 过滤（可空）
@@ -70,7 +70,7 @@ public class TaskController {
      * @return 用户视图任务分页
      */
     @GetMapping("/self")
-    public ApiResponse<TaskListData<TaskUserView>> listSelf(
+    public ApiResponse<TaskListData<TaskUserVO>> listSelf(
             @CurrentActor AuthenticatedActor actor,
             @RequestParam(value = "task_id", required = false) String taskId,
             @RequestParam(value = "action", required = false) String action,
@@ -84,7 +84,7 @@ public class TaskController {
         TaskQuery query = TaskQuery.of(taskId, (int) actor.userId(), null,
                 platform, action, status, startTime, endTime, page, pageSize);
         TaskPage result = queryTaskUseCase.list(query);
-        List<TaskUserView> views = result.items().stream().map(TaskUserView::from).toList();
+        List<TaskUserVO> views = result.items().stream().map(TaskUserVO::from).toList();
         return ApiResponse.okData(new TaskListData<>(views, result.total(), result.page(), result.pageSize()));
     }
 
@@ -92,7 +92,7 @@ public class TaskController {
      * 管理端全量任务列表（F-2004，AdminAuth，跨用户）。
      *
      * <p>无 user_id 限制，支持 channel_id/user_id/platform/action/status/时间区间 过滤。出参
-     * {@link TaskAdminView}（含 channel_id 区别用户自助接口）。方法级 {@link RequireRole}(ADMIN)
+     * {@link TaskAdminVO}（含 channel_id 区别用户自助接口）。方法级 {@link RequireRole}(ADMIN)
      * 覆盖类级 USER。</p>
      *
      * @param channelId 渠道 id 过滤（可空）
@@ -108,7 +108,7 @@ public class TaskController {
      */
     @GetMapping
     @RequireRole(AuthLevel.ADMIN)
-    public ApiResponse<TaskListData<TaskAdminView>> listAll(
+    public ApiResponse<TaskListData<TaskAdminVO>> listAll(
             @RequestParam(value = "channel_id", required = false) Integer channelId,
             @RequestParam(value = "user_id", required = false) Integer userId,
             @RequestParam(value = "platform", required = false) String platform,
@@ -121,7 +121,7 @@ public class TaskController {
         TaskQuery query = TaskQuery.of(null, userId, channelId,
                 platform, action, status, startTime, endTime, page, pageSize);
         TaskPage result = queryTaskUseCase.list(query);
-        List<TaskAdminView> views = result.items().stream().map(TaskAdminView::from).toList();
+        List<TaskAdminVO> views = result.items().stream().map(TaskAdminVO::from).toList();
         return ApiResponse.okData(new TaskListData<>(views, result.total(), result.page(), result.pageSize()));
     }
 }

@@ -4,7 +4,7 @@ package com.nexa.domain.token.vo;
  * 令牌用量摘要值对象（不可变，OpenAI 兼容 credit_summary，F-3012）。
  *
  * <p>领域规则来源：openapi UsageCreditSummary。由令牌聚合根依 remain_quota/used_quota/expired_time/
- * model_limits 派生计算（充血），接口层 {@code UsageView} 直接映射本值对象字段。
+ * model_limits 派生计算（充血），接口层 {@code UsageVO} 直接映射本值对象字段。
  * 配额为整数额度单位（DB-SCHEMA §2），故用 long 承载。</p>
  *
  * <p>字段语义（对齐 openapi UsageCreditSummary）：

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
  * application 薄、不含领域规则）。状态聚合的「零敏感字段」不变量由领域值对象 {@link SiteStatus} 的字段集合
  * 与实现端口共同保证——本用例不接触任何敏感配置。</p>
  *
- * <p>对齐 openapi {@code GET /api/status}（security: []，公开），出参 {@code StatusAggregateView}。</p>
+ * <p>对齐 openapi {@code GET /api/status}（security: []，公开），出参 {@code StatusAggregateVO}。</p>
  */
 @Service
 public class QuerySiteStatusUseCase {

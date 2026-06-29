@@ -45,7 +45,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * （backend-engineer §2.1）。整个方法单事务：建号与建绑定原子，唯一索引兜底并发竞态。</p>
  *
  * <p>对齐 openapi {@code GET /api/oauth/telegram/login}（F-1051，security: []）；返回投影为
- * {@code UserView}，token 不进 body（产品铁律）。邀请归因留待后续 wave（以 0 处理）。</p>
+ * {@code UserVO}，token 不进 body（产品铁律）。邀请归因留待后续 wave（以 0 处理）。</p>
  */
 @Service
 public class TelegramLoginUseCase {

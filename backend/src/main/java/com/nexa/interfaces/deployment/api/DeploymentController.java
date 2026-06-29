@@ -12,7 +12,7 @@ import com.nexa.domain.deployment.vo.DeploymentId;
 import com.nexa.domain.deployment.vo.DeploymentName;
 import com.nexa.domain.deployment.vo.Pagination;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.deployment.api.dto.DeploymentListView;
+import com.nexa.interfaces.deployment.api.dto.DeploymentListVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -106,12 +106,12 @@ public class DeploymentController {
      * @return 成功信封，data = {@code { items[], status_counts, total, page, page_size }}
      */
     @GetMapping("/")
-    public ApiResponse<DeploymentListView> list(
+    public ApiResponse<DeploymentListVO> list(
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize) {
 
         Pagination pagination = Pagination.of(page, pageSize);
-        return ApiResponse.okData(DeploymentListView.from(listDeploymentsUseCase.list(pagination)));
+        return ApiResponse.okData(DeploymentListVO.from(listDeploymentsUseCase.list(pagination)));
     }
 
     /**
@@ -127,7 +127,7 @@ public class DeploymentController {
      * @return 成功信封，data = {@code { items[], status_counts, total, page, page_size }}
      */
     @GetMapping("/search")
-    public ApiResponse<DeploymentListView> search(
+    public ApiResponse<DeploymentListVO> search(
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "p", required = false) Integer page,
@@ -135,7 +135,7 @@ public class DeploymentController {
 
         Pagination pagination = Pagination.of(page, pageSize);
         return ApiResponse.okData(
-                DeploymentListView.from(searchDeploymentsUseCase.search(status, keyword, pagination)));
+                DeploymentListVO.from(searchDeploymentsUseCase.search(status, keyword, pagination)));
     }
 
     /**

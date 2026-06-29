@@ -3,7 +3,7 @@ package com.nexa.domain.token.vo;
 /**
  * 令牌明文 key 脱敏器值对象（无状态工具值对象，安全护栏，F-3002/F-3004）。
  *
- * <p>领域规则来源：openapi TokenUserView「key 字段经 MaskTokenKey 脱敏（列表/创建/更新场景）」+
+ * <p>领域规则来源：openapi TokenUserVO「key 字段经 MaskTokenKey 脱敏（列表/创建/更新场景）」+
  * 客户视图铁律。令牌明文 key 是凭证，列表/搜索/创建/更新等批量场景一律返回脱敏值（保留头尾、
  * 中段以 {@code ***} 替换），仅 F-3004/F-3005 受控取明文端点（限本人令牌）才下发完整 key。</p>
  *

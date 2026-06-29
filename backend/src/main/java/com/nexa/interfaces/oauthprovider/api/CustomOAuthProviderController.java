@@ -6,9 +6,9 @@ import com.nexa.application.oauthprovider.ManageCustomOAuthProviderUseCase;
 import com.nexa.application.oauthprovider.SaveCustomOAuthProviderCommand;
 import com.nexa.domain.oauthprovider.model.CustomOAuthProvider;
 import com.nexa.domain.oauthprovider.vo.OAuthEndpoints;
-import com.nexa.interfaces.oauthprovider.api.dto.CustomOAuthProviderView;
+import com.nexa.interfaces.oauthprovider.api.dto.CustomOAuthProviderVO;
 import com.nexa.interfaces.oauthprovider.api.dto.DiscoveryRequest;
-import com.nexa.interfaces.oauthprovider.api.dto.DiscoveryView;
+import com.nexa.interfaces.oauthprovider.api.dto.DiscoveryVO;
 import com.nexa.interfaces.oauthprovider.api.dto.SaveCustomOAuthProviderRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,7 +36,7 @@ import java.util.List;
  *
  * <p>DDD 铁律：接口层<b>只做协议翻译</b>（HTTP DTO ⇄ 用例命令/结果），不含业务逻辑——字段校验、
  * 端点合法、密钥保留语义全在 domain/application（backend-engineer §2.1）。出参一律用
- * {@link CustomOAuthProviderView}（<b>绝不含 client_secret</b>，产品铁律）。领域异常由
+ * {@link CustomOAuthProviderVO}（<b>绝不含 client_secret</b>，产品铁律）。领域异常由
  * {@link com.nexa.interfaces.oauthprovider.api.CustomOAuthProviderExceptionHandler} 翻译为 HTTP 状态码。</p>
  *
  * <p><b>鉴权（安全声明）</b>：openapi 标注本组端点为 {@code rootAuth}。本切片<b>尚未</b>落地 RootAuth
@@ -67,9 +67,9 @@ public class CustomOAuthProviderController {
      * @return 成功信封，data 为三端点
      */
     @PostMapping("/discovery")
-    public ApiResponse<DiscoveryView> discovery(@Valid @RequestBody DiscoveryRequest request) {
+    public ApiResponse<DiscoveryVO> discovery(@Valid @RequestBody DiscoveryRequest request) {
         OAuthEndpoints endpoints = fetchOidcDiscoveryUseCase.fetch(request.issuer());
-        return ApiResponse.okData(DiscoveryView.from(endpoints));
+        return ApiResponse.okData(DiscoveryVO.from(endpoints));
     }
 
     /**
@@ -78,9 +78,9 @@ public class CustomOAuthProviderController {
      * @return 成功信封，data 为 provider 视图列表（无 client_secret）
      */
     @GetMapping
-    public ApiResponse<List<CustomOAuthProviderView>> list() {
-        List<CustomOAuthProviderView> data = manageUseCase.list().stream()
-                .map(CustomOAuthProviderView::from)
+    public ApiResponse<List<CustomOAuthProviderVO>> list() {
+        List<CustomOAuthProviderVO> data = manageUseCase.list().stream()
+                .map(CustomOAuthProviderVO::from)
                 .toList();
         return ApiResponse.okData(data);
     }

@@ -10,7 +10,7 @@ import com.nexa.application.telegram.TelegramLoginCommand;
 import com.nexa.application.telegram.TelegramLoginResult;
 import com.nexa.application.telegram.TelegramLoginUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.telegram.api.dto.TelegramUserView;
+import com.nexa.interfaces.telegram.api.dto.TelegramUserVO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +27,7 @@ import java.util.Map;
  * <p>承载 Telegram Login Widget 的两端点（区别于标准 OAuth 重定向回调，走 HMAC 校验）：
  * <ul>
  *   <li>{@code GET /api/oauth/telegram/login}（F-1051，security: []）→ {@link TelegramLoginUseCase}：
- *       HMAC 校验后登录/建号，返回客户视图 {@link TelegramUserView}（token 不进 body，产品铁律）。</li>
+ *       HMAC 校验后登录/建号，返回客户视图 {@link TelegramUserVO}（token 不进 body，产品铁律）。</li>
  *   <li>{@code GET /api/oauth/telegram/bind}（F-1052，sessionAuth）→ {@link TelegramBindUseCase}：
  *       已登录用户把当前 Telegram 账号绑到本账号，成功后 302 跳转 {@code /console/personal}。</li>
  * </ul></p>
@@ -70,9 +70,9 @@ public class TelegramController {
      * @return 成功信封，data = 登录用户客户视图
      */
     @GetMapping("/login")
-    public ApiResponse<TelegramUserView> login(@RequestParam Map<String, String> params) {
+    public ApiResponse<TelegramUserVO> login(@RequestParam Map<String, String> params) {
         TelegramLoginResult result = telegramLoginUseCase.login(new TelegramLoginCommand(params));
-        return ApiResponse.okData(TelegramUserView.from(result.user()));
+        return ApiResponse.okData(TelegramUserVO.from(result.user()));
     }
 
     /**

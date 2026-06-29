@@ -5,8 +5,8 @@ import com.nexa.application.account.OAuthLoginResult;
 import com.nexa.application.account.WeChatLoginCommand;
 import com.nexa.application.account.WeChatLoginUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.account.api.dto.UserView;
-import com.nexa.interfaces.account.api.dto.WeChatAuthView;
+import com.nexa.interfaces.account.api.dto.UserVO;
+import com.nexa.interfaces.account.api.dto.WeChatAuthVO;
 import com.nexa.interfaces.account.api.dto.WeChatBindRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>承载微信特有的「二维码发起 + 轮询/绑定」两端点（区别于标准 OAuth 重定向回调）：
  * <ul>
  *   <li>{@code GET  /api/oauth/wechat}（F-1021）→ {@link InitWeChatAuthUseCase}：判可用 + 发 state +
- *       返回前端拼二维码所需参数（{@link WeChatAuthView}，零敏感字段，不含 app_secret）。</li>
+ *       返回前端拼二维码所需参数（{@link WeChatAuthVO}，零敏感字段，不含 app_secret）。</li>
  *   <li>{@code POST /api/oauth/wechat/bind}（F-1022）→ {@link WeChatLoginUseCase}：用扫码授权码完成
- *       登录/建号/绑定，返回客户视图 {@link UserView}（token 不进 body，产品铁律）。</li>
+ *       登录/建号/绑定，返回客户视图 {@link UserVO}（token 不进 body，产品铁律）。</li>
  * </ul></p>
  *
  * <p>DDD 铁律：接口层只做协议翻译（backend-engineer §2.1）。固定路径 {@code /wechat}、{@code /wechat/bind}
@@ -57,9 +57,9 @@ public class WeChatController {
      * @return 成功信封，data 为发起态（含可用标志 + 拼码参数 + state）
      */
     @GetMapping
-    public ApiResponse<WeChatAuthView> auth() {
+    public ApiResponse<WeChatAuthVO> auth() {
         InitWeChatAuthUseCase.WeChatAuthInitResult r = initWeChatAuthUseCase.init();
-        return ApiResponse.okData(new WeChatAuthView(
+        return ApiResponse.okData(new WeChatAuthVO(
                 r.enabled(), r.appId(), r.scope(), r.redirectUri(), r.state()));
     }
 
@@ -70,9 +70,9 @@ public class WeChatController {
      * @return 成功信封，data 为登录/建号后的客户视图
      */
     @PostMapping("/bind")
-    public ApiResponse<UserView> bind(@Valid @RequestBody WeChatBindRequest request) {
+    public ApiResponse<UserVO> bind(@Valid @RequestBody WeChatBindRequest request) {
         // bindUserId=null：本切片走登录/注册语义；已登录绑定分支留待会话层接入填入认证用户 id。
         OAuthLoginResult result = weChatLoginUseCase.login(new WeChatLoginCommand(request.code(), null));
-        return ApiResponse.okData(UserView.from(result.user()));
+        return ApiResponse.okData(UserVO.from(result.user()));
     }
 }

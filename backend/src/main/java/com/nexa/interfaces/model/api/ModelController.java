@@ -9,14 +9,14 @@ import com.nexa.application.model.SyncUpstreamModelsUseCase;
 import com.nexa.application.model.UpdateModelMetaUseCase;
 import com.nexa.domain.model.vo.Pagination;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.model.api.dto.ModelMetaAdminView;
+import com.nexa.interfaces.model.api.dto.ModelMetaAdminVO;
 import com.nexa.interfaces.model.api.dto.ModelMetaCreateRequest;
-import com.nexa.interfaces.model.api.dto.ModelMetaListView;
+import com.nexa.interfaces.model.api.dto.ModelMetaListVO;
 import com.nexa.interfaces.model.api.dto.ModelMetaUpdateRequest;
-import com.nexa.interfaces.model.api.dto.ModelSyncDiffView;
+import com.nexa.interfaces.model.api.dto.ModelSyncDiffVO;
 import com.nexa.interfaces.model.api.dto.ModelSyncExecuteRequest;
 import com.nexa.interfaces.model.api.dto.ModelSyncPreviewRequest;
-import com.nexa.interfaces.model.api.dto.ModelSyncResultView;
+import com.nexa.interfaces.model.api.dto.ModelSyncResultVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -56,7 +56,7 @@ import java.util.List;
  * 未认证→401、越权→403（不裸奔）。F-3025 用户可见模型为 sessionAuth，独立放
  * {@code UserModelController}（路径 /api/user/self/models）。</p>
  *
- * <p><b>客户视图铁律</b>：出参用 {@link ModelMetaAdminView}（仅对外模型名 A + 展示元数据，无上游
+ * <p><b>客户视图铁律</b>：出参用 {@link ModelMetaAdminVO}（仅对外模型名 A + 展示元数据，无上游
  * 模型 B / 成本 / 供应商凭证——产品三道闸）。</p>
  */
 @RestController
@@ -105,11 +105,11 @@ public class ModelController {
      * @return 成功信封，data = { items[], total, vendor_counts }（AdminView）
      */
     @GetMapping
-    public ApiResponse<ModelMetaListView> list(
+    public ApiResponse<ModelMetaListVO> list(
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize) {
         Pagination pagination = Pagination.of(page, pageSize);
-        return ApiResponse.okData(ModelMetaListView.from(listUseCase.list(pagination)));
+        return ApiResponse.okData(ModelMetaListVO.from(listUseCase.list(pagination)));
     }
 
     /**
@@ -119,8 +119,8 @@ public class ModelController {
      * @return 成功信封，data = 创建后模型（AdminView）
      */
     @PostMapping
-    public ApiResponse<ModelMetaAdminView> create(@RequestBody ModelMetaCreateRequest request) {
-        return ApiResponse.okData(ModelMetaAdminView.from(createUseCase.create(request.toCommand())));
+    public ApiResponse<ModelMetaAdminVO> create(@RequestBody ModelMetaCreateRequest request) {
+        return ApiResponse.okData(ModelMetaAdminVO.from(createUseCase.create(request.toCommand())));
     }
 
     /**
@@ -130,8 +130,8 @@ public class ModelController {
      * @return 成功信封，data = 更新后模型（AdminView）
      */
     @PutMapping
-    public ApiResponse<ModelMetaAdminView> update(@RequestBody ModelMetaUpdateRequest request) {
-        return ApiResponse.okData(ModelMetaAdminView.from(updateUseCase.update(request.toCommand())));
+    public ApiResponse<ModelMetaAdminVO> update(@RequestBody ModelMetaUpdateRequest request) {
+        return ApiResponse.okData(ModelMetaAdminVO.from(updateUseCase.update(request.toCommand())));
     }
 
     /**
@@ -144,13 +144,13 @@ public class ModelController {
      * @return 成功信封，data = { items[], total }（AdminView）
      */
     @GetMapping("/search")
-    public ApiResponse<ModelMetaListView> search(
+    public ApiResponse<ModelMetaListVO> search(
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "vendor", required = false) Long vendor,
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize) {
         Pagination pagination = Pagination.of(page, pageSize);
-        return ApiResponse.okData(ModelMetaListView.from(searchUseCase.search(keyword, vendor, pagination)));
+        return ApiResponse.okData(ModelMetaListVO.from(searchUseCase.search(keyword, vendor, pagination)));
     }
 
     /**
@@ -172,10 +172,10 @@ public class ModelController {
      * @return 成功信封，data = 同步差异（AdminView）
      */
     @PostMapping("/sync/preview")
-    public ApiResponse<ModelSyncDiffView> syncPreview(
+    public ApiResponse<ModelSyncDiffVO> syncPreview(
             @RequestBody(required = false) ModelSyncPreviewRequest request) {
         String locale = request == null ? null : request.locale();
-        return ApiResponse.okData(ModelSyncDiffView.from(syncUseCase.preview(locale)));
+        return ApiResponse.okData(ModelSyncDiffVO.from(syncUseCase.preview(locale)));
     }
 
     /**
@@ -185,12 +185,12 @@ public class ModelController {
      * @return 成功信封，data = 同步结果计数（AdminView）
      */
     @PostMapping("/sync")
-    public ApiResponse<ModelSyncResultView> syncExecute(
+    public ApiResponse<ModelSyncResultVO> syncExecute(
             @RequestBody(required = false) ModelSyncExecuteRequest request) {
         String locale = request == null ? null : request.locale();
         boolean overwrite = request != null && Boolean.TRUE.equals(request.overwrite());
         List<String> models = request == null ? null : request.models();
-        return ApiResponse.okData(ModelSyncResultView.from(syncUseCase.execute(locale, overwrite, models)));
+        return ApiResponse.okData(ModelSyncResultVO.from(syncUseCase.execute(locale, overwrite, models)));
     }
 
     /**

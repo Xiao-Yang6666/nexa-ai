@@ -45,7 +45,7 @@ public record AccountCreateRequest(
         @JsonProperty("tag") String tag,
         @JsonProperty("auto_ban") Boolean autoBan,
         @JsonProperty("models") String models,
-        @JsonProperty("groups") List<AccountGroupView> groups) {
+        @JsonProperty("groups") List<AccountGroupVO> groups) {
 
     /**
      * 转换为创建命令（分组视图转领域值对象）。
@@ -56,6 +56,6 @@ public record AccountCreateRequest(
         return new CreateAccountCommand(
                 name, platform, type, credentials, baseUrl, concurrency, priority, expiresAt,
                 autoPauseOnExpired, rateMultiplier, modelMapping, weight, tag, autoBan, models,
-                groups == null ? null : groups.stream().map(AccountGroupView::toDomain).toList());
+                groups == null ? null : groups.stream().map(AccountGroupVO::toDomain).toList());
     }
 }

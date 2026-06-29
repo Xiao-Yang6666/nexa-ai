@@ -7,9 +7,9 @@ import com.nexa.domain.ops.compliance.PaymentComplianceConfirmation;
 import com.nexa.domain.ops.option.Option;
 import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.ops.api.dto.OptionUpdateRequest;
-import com.nexa.interfaces.ops.api.dto.OptionView;
+import com.nexa.interfaces.ops.api.dto.OptionVO;
 import com.nexa.interfaces.ops.api.dto.PaymentComplianceRequest;
-import com.nexa.interfaces.ops.api.dto.PaymentComplianceView;
+import com.nexa.interfaces.ops.api.dto.PaymentComplianceVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -45,7 +45,7 @@ import java.util.List;
  * 领域异常由 {@code OpsExceptionHandler} 翻译为 400/403/409。</p>
  *
  * <p><b>客户视图铁律</b>：F-4017 列表已在用例层剔除敏感键（{@code Option.isSensitive()}），值不外泄；
- * F-4030 出参仅回显 terms_version + confirmed_by（{@link PaymentComplianceView} 剔除 confirmed_ip）。</p>
+ * F-4030 出参仅回显 terms_version + confirmed_by（{@link PaymentComplianceVO} 剔除 confirmed_ip）。</p>
  */
 @RestController
 @RequestMapping("/api/option")
@@ -88,12 +88,12 @@ public class OptionController {
      * @return {@code data = [{key, value}, ...]}（含 CompletionRatioMeta，已剔除敏感键）
      */
     @GetMapping("/")
-    public ApiResponse<List<OptionView>> list() {
+    public ApiResponse<List<OptionVO>> list() {
         List<Option> options = listOptionsUseCase.execute();
-        List<OptionView> views = new ArrayList<>(options.size() + 1);
+        List<OptionVO> views = new ArrayList<>(options.size() + 1);
         String completionRatioValue = "";
         for (Option option : options) {
-            views.add(OptionView.from(option));
+            views.add(OptionVO.from(option));
             // 收集补全倍率原值，用于派生 CompletionRatioMeta（CompletionRatio 自身仍如实出现在列表）。
             if (COMPLETION_RATIO_KEY.equals(option.keyName()) && option.value() != null) {
                 completionRatioValue = option.value();
@@ -101,7 +101,7 @@ public class OptionController {
         }
         // 追加派生元信息项（F-4017「额外含 CompletionRatioMeta」）：当前为补全倍率原值的回显占位，
         // 待计费 BC 提供完整倍率元数据后在此接入，不在 ops 层重造计费逻辑。
-        views.add(new OptionView(COMPLETION_RATIO_META_KEY, completionRatioValue));
+        views.add(new OptionVO(COMPLETION_RATIO_META_KEY, completionRatioValue));
         return ApiResponse.okData(views);
     }
 
@@ -134,7 +134,7 @@ public class OptionController {
      * @return {@code data = {terms_version, confirmed_by}}（不回显 confirmed_ip）
      */
     @PostMapping("/payment_compliance")
-    public ApiResponse<PaymentComplianceView> confirmPaymentCompliance(@RequestBody PaymentComplianceRequest body,
+    public ApiResponse<PaymentComplianceVO> confirmPaymentCompliance(@RequestBody PaymentComplianceRequest body,
                                                                        HttpServletRequest request,
                                                                        @CurrentActor AuthenticatedActor operator) {
         // 凭据来源识别：携带 Authorization Bearer 即 access token（非 dashboard 会话），据此让领域 403。
@@ -144,7 +144,7 @@ public class OptionController {
                 dashboardSession,
                 operator.username(),
                 clientIp(request));
-        return ApiResponse.okData(PaymentComplianceView.from(confirmation));
+        return ApiResponse.okData(PaymentComplianceVO.from(confirmation));
     }
 
     /**

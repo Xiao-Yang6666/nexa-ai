@@ -30,7 +30,7 @@ public class QueryAdminLogsUseCase {
      *
      * @param query      管理端过滤条件（{@link LogQuery#forAdmin}）
      * @param pagination 分页参数
-     * @return 当前页日志 + total + 分页（接口层裁剪为 AdminLogView 列表）
+     * @return 当前页日志 + total + 分页（接口层裁剪为 AdminLogVO 列表）
      */
     public LogPage query(LogQuery query, Pagination pagination) {
         long total = logRepository.countByFilter(query);

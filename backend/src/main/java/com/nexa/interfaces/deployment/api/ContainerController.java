@@ -7,7 +7,7 @@ import com.nexa.domain.deployment.vo.ContainerId;
 import com.nexa.domain.deployment.vo.DeploymentId;
 import com.nexa.domain.deployment.vo.LogQuery;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.deployment.api.dto.ContainerListView;
+import com.nexa.interfaces.deployment.api.dto.ContainerListVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -66,9 +66,9 @@ public class ContainerController {
      * @return 成功信封，data = {@code { containers[], total }}
      */
     @GetMapping("/{id}/containers")
-    public ApiResponse<ContainerListView> containers(@PathVariable("id") String id) {
+    public ApiResponse<ContainerListVO> containers(@PathVariable("id") String id) {
         DeploymentId deploymentId = new DeploymentId(id);
-        return ApiResponse.okData(ContainerListView.from(listContainersUseCase.list(deploymentId)));
+        return ApiResponse.okData(ContainerListVO.from(listContainersUseCase.list(deploymentId)));
     }
 
     /**

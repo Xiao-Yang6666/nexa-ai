@@ -9,7 +9,7 @@ import com.nexa.domain.log.vo.LogType;
  * <ol>
  *   <li><b>读侧</b>：从 logs 表（V11，DB-SCHEMA §5 + 10 新列）重建的全字段领域对象，承载一条调用明细
  *       （三段模型 C→A→B + 协议 + 双价 quota_sell/cost/profit）。可见性裁剪由接口层 DTO 完成
- *       （UserLogView 丢弃 B/成本/利润/渠道；AdminLogView 全量），本聚合持有全字段不做裁剪。</li>
+ *       （UserLogVO 丢弃 B/成本/利润/渠道；AdminLogVO 全量），本聚合持有全字段不做裁剪。</li>
  *   <li><b>审计写侧</b>：通过 {@link #manageAudit}/{@link #securityAudit}/{@link #loginAudit} 工厂
  *       构造审计日志（F-4011 type=3 Manage / F-4012 安全敏感操作 / F-4013 type=7 Login），由其他
  *       bounded context（ops/account）在高危/登录操作后调用本工厂 + 仓储 {@code recordAudit} 落库。</li>

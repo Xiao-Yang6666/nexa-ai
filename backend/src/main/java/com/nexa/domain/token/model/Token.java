@@ -20,7 +20,7 @@ import java.util.Objects;
  * §2.4 战术完整）。</p>
  *
  * <p>零框架依赖（不 import JPA/Spring/Jackson），与 JPA 实体 {@code TokenJpaEntity} 分离，可纯单测。
- * 字段对齐 DB-SCHEMA §2 tokens 表 + openapi TokenUserView/TokenCreateRequest。</p>
+ * 字段对齐 DB-SCHEMA §2 tokens 表 + openapi TokenUserVO/TokenCreateRequest。</p>
  *
  * <p>不变量：
  * <ul>

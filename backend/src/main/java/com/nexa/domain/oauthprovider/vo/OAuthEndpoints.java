@@ -13,7 +13,7 @@ import java.util.Objects;
  *
  * <p>领域规则来源：openapi {@code POST /api/custom-oauth-provider/discovery} 返回
  * {@code {authorization_endpoint, token_endpoint, userinfo_endpoint}}；
- * {@code CustomOAuthProviderView} 同名字段。值对象保证三端点均为非空且形如 http(s) URL
+ * {@code CustomOAuthProviderVO} 同名字段。值对象保证三端点均为非空且形如 http(s) URL
  * （挡住脏配置进入聚合，backend-engineer §2.4 强烈建议把强约束做成值对象）。</p>
  *
  * @param authorizationEndpoint 授权端点 URL（非空、http(s)）

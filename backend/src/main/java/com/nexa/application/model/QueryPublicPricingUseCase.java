@@ -3,7 +3,7 @@ package com.nexa.application.model;
 import com.nexa.application.model.port.ModelGroupCatalogPort;
 import com.nexa.domain.model.model.PublicModel;
 import com.nexa.domain.model.repository.PublicModelRepository;
-import com.nexa.interfaces.model.api.dto.PricingPublicView;
+import com.nexa.interfaces.model.api.dto.PricingPublicVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +21,7 @@ import java.util.Map;
  * {@code group_ratio} 只保留可用分组（绝不含不可用分组，prd-model ML-4 §6 验收）。</p>
  *
  * <p>DDD：薄应用层（{@link Transactional}(readOnly) 只读事务），业务读经 {@link PublicModelRepository}，
- * 不含领域规则；零泄露投影由 {@link PricingPublicView} 接口层 DTO 守护。</p>
+ * 不含领域规则；零泄露投影由 {@link PricingPublicVO} 接口层 DTO 守护。</p>
  */
 @Service
 public class QueryPublicPricingUseCase {
@@ -61,7 +61,7 @@ public class QueryPublicPricingUseCase {
      * 查询公开价格页（F-2048，匿名公开视图）。
      *
      * <p>定价主体 = 上架对外模型全集（{@code enabled=true}，ML-4「仅启用模型进入结果」）；
-     * 逐条裁剪为零泄露 {@link PricingPublicView} 条目，并附「该模型所在可见价格分组及倍率」
+     * 逐条裁剪为零泄露 {@link PricingPublicVO} 条目，并附「该模型所在可见价格分组及倍率」
      * （分组价格对比，仅公开 PUBLIC 启用分组）。可用分组为空时仍返回元信息（不报错，
      * ML-4 §6「可用分组为空 → 返回空定价列表，不报错」——此处公开分组恒含 free，故非空）。</p>
      *
@@ -69,13 +69,13 @@ public class QueryPublicPricingUseCase {
      * @return 公开价格页视图（PublicView 零泄露）
      */
     @Transactional(readOnly = true)
-    public PricingPublicView query(String locale) {
+    public PricingPublicVO query(String locale) {
         // 一次性取「模型名 → 可见价格分组」映射，逐模型附分组对比（公开 PUBLIC 子集，零泄露）。
         Map<String, List<ModelGroupCatalogPort.GroupPricing>> groupsByModel =
                 modelGroupCatalog.visibleGroupsByModel();
 
-        List<PricingPublicView.Item> items = repository.findAllEnabled().stream()
-                .map(m -> PricingPublicView.Item.from(m, toGroupPrices(groupsByModel.get(m.publicName()))))
+        List<PricingPublicVO.Item> items = repository.findAllEnabled().stream()
+                .map(m -> PricingPublicVO.Item.from(m, toGroupPrices(groupsByModel.get(m.publicName()))))
                 .toList();
 
         // 仅保留可用分组的倍率（匿名 → 公开分组 free）。LinkedHashMap 保稳定顺序，便于前端/快照对账。
@@ -85,7 +85,7 @@ public class QueryPublicPricingUseCase {
         // auto_groups：自动分组列表（ML-4 元信息）。匿名公开口径下仅公开分组可自动命中。
         List<String> autoGroups = List.of(PUBLIC_GROUP);
 
-        return new PricingPublicView(items, groupRatio, autoGroups, PRICING_VERSION);
+        return new PricingPublicVO(items, groupRatio, autoGroups, PRICING_VERSION);
     }
 
     /**
@@ -94,13 +94,13 @@ public class QueryPublicPricingUseCase {
      * @param src 端口返回的可见分组定价列表（可空）
      * @return 视图层分组对比条目列表（不为 null）
      */
-    private static List<PricingPublicView.GroupPrice> toGroupPrices(
+    private static List<PricingPublicVO.GroupPrice> toGroupPrices(
             List<ModelGroupCatalogPort.GroupPricing> src) {
         if (src == null || src.isEmpty()) {
             return List.of();
         }
         return src.stream()
-                .map(g -> new PricingPublicView.GroupPrice(g.name(), g.code(), g.ratio()))
+                .map(g -> new PricingPublicVO.GroupPrice(g.name(), g.code(), g.ratio()))
                 .toList();
     }
 }

@@ -4,8 +4,8 @@ import com.nexa.application.model.ManageVendorUseCase;
 import com.nexa.domain.model.model.Vendor;
 import com.nexa.domain.model.vo.Pagination;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.model.api.dto.VendorAdminView;
-import com.nexa.interfaces.model.api.dto.VendorListView;
+import com.nexa.interfaces.model.api.dto.VendorAdminVO;
+import com.nexa.interfaces.model.api.dto.VendorListVO;
 import com.nexa.interfaces.model.api.dto.VendorWriteRequest;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
@@ -57,13 +57,13 @@ public class VendorController {
      * @return 成功信封，data = { items[], total }（AdminView）
      */
     @GetMapping
-    public ApiResponse<VendorListView> list(
+    public ApiResponse<VendorListVO> list(
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize) {
         Pagination pagination = Pagination.of(page, pageSize);
-        List<VendorAdminView> items = vendorUseCase.list(pagination).stream()
-                .map(VendorAdminView::from).toList();
-        return ApiResponse.okData(new VendorListView(items, vendorUseCase.count()));
+        List<VendorAdminVO> items = vendorUseCase.list(pagination).stream()
+                .map(VendorAdminVO::from).toList();
+        return ApiResponse.okData(new VendorListVO(items, vendorUseCase.count()));
     }
 
     /**
@@ -73,9 +73,9 @@ public class VendorController {
      * @return 成功信封，data = 创建后供应商（AdminView）
      */
     @PostMapping
-    public ApiResponse<VendorAdminView> create(@RequestBody VendorWriteRequest request) {
+    public ApiResponse<VendorAdminVO> create(@RequestBody VendorWriteRequest request) {
         Vendor created = vendorUseCase.create(request.name(), request.icon(), request.status());
-        return ApiResponse.okData(VendorAdminView.from(created));
+        return ApiResponse.okData(VendorAdminVO.from(created));
     }
 
     /**
@@ -85,9 +85,9 @@ public class VendorController {
      * @return 成功信封，data = 更新后供应商（AdminView）
      */
     @PutMapping
-    public ApiResponse<VendorAdminView> update(@RequestBody VendorWriteRequest request) {
+    public ApiResponse<VendorAdminVO> update(@RequestBody VendorWriteRequest request) {
         Vendor updated = vendorUseCase.update(request.id(), request.name(), request.icon(), request.status());
-        return ApiResponse.okData(VendorAdminView.from(updated));
+        return ApiResponse.okData(VendorAdminVO.from(updated));
     }
 
     /**
@@ -97,11 +97,11 @@ public class VendorController {
      * @return 成功信封，data = { items[], total }（AdminView）
      */
     @GetMapping("/search")
-    public ApiResponse<VendorListView> search(
+    public ApiResponse<VendorListVO> search(
             @RequestParam(name = "keyword", required = false) String keyword) {
-        List<VendorAdminView> items = vendorUseCase.search(keyword).stream()
-                .map(VendorAdminView::from).toList();
-        return ApiResponse.okData(new VendorListView(items, items.size()));
+        List<VendorAdminVO> items = vendorUseCase.search(keyword).stream()
+                .map(VendorAdminVO::from).toList();
+        return ApiResponse.okData(new VendorListVO(items, items.size()));
     }
 
     /**

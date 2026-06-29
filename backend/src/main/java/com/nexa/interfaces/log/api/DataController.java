@@ -2,7 +2,7 @@ package com.nexa.interfaces.log.api;
 
 import com.nexa.application.log.QueryAdminQuotaDataUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.log.api.dto.QuotaDataItemView;
+import com.nexa.interfaces.log.api.dto.QuotaDataItemVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,13 +42,13 @@ public class DataController {
      * @return 成功信封，data = QuotaDataItem 数组（按日期升序）
      */
     @GetMapping("/")
-    public ApiResponse<List<QuotaDataItemView>> quotaByDay(
+    public ApiResponse<List<QuotaDataItemVO>> quotaByDay(
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp,
             @RequestParam(name = "username", required = false) String username) {
 
-        List<QuotaDataItemView> data = queryAdminQuotaDataUseCase.query(startTimestamp, endTimestamp, username)
-                .stream().map(QuotaDataItemView::from).toList();
+        List<QuotaDataItemVO> data = queryAdminQuotaDataUseCase.query(startTimestamp, endTimestamp, username)
+                .stream().map(QuotaDataItemVO::from).toList();
         return ApiResponse.okData(data);
     }
 }

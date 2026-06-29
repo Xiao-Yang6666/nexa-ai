@@ -46,7 +46,7 @@ public class OAuthBinding {
     private final String providerUserId;
 
     /**
-     * 自定义 provider 的整数主键（V5 {@code provider_ref_id}，对齐 openapi {@code OAuthBindingView.provider_id} /
+     * 自定义 provider 的整数主键（V5 {@code provider_ref_id}，对齐 openapi {@code OAuthBindingVO.provider_id} /
      * 解绑端点 {@code {provider_id}}）。内建 provider 绑定为 {@code null}；自定义 provider 绑定存
      * {@code custom_oauth_providers.id}（F-1025/1026/1027）。
      */
@@ -155,7 +155,7 @@ public class OAuthBinding {
      * 基础设施层持久化重建专用工厂（含自定义 provider 引用）：从已存数据装配实体。
      *
      * <p>自定义 provider 绑定（V5 {@code provider_ref_id} 非空）走本重载，把整数主键
-     * 一并装回，供解绑端点 {@code {provider_id}} 与客户视图 {@code OAuthBindingView.provider_id} 使用。</p>
+     * 一并装回，供解绑端点 {@code {provider_id}} 与客户视图 {@code OAuthBindingVO.provider_id} 使用。</p>
      *
      * @param id             主键
      * @param userId         归属用户 id
@@ -217,7 +217,7 @@ public class OAuthBinding {
 
     /**
      * @return 自定义 provider 整数主键（{@code custom_oauth_providers.id}），内建 provider 绑定为 null。
-     *         对齐 openapi {@code OAuthBindingView.provider_id} 与解绑端点 {@code {provider_id}}（F-1025/1026/1027）。
+     *         对齐 openapi {@code OAuthBindingVO.provider_id} 与解绑端点 {@code {provider_id}}（F-1025/1026/1027）。
      */
     public Long providerRefId() {
         return providerRefId;

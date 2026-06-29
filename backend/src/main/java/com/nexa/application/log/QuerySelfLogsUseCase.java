@@ -29,7 +29,7 @@ public class QuerySelfLogsUseCase {
      *
      * @param query      自助过滤条件（{@link LogQuery#forSelf}，已含 self-scope user_id）
      * @param pagination 分页参数
-     * @return 当前页日志 + total + 分页（接口层裁剪为 UserLogView 列表）
+     * @return 当前页日志 + total + 分页（接口层裁剪为 UserLogVO 列表）
      */
     public LogPage query(LogQuery query, Pagination pagination) {
         long total = logRepository.countByFilter(query);

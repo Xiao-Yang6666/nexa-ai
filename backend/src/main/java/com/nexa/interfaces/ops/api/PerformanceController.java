@@ -3,8 +3,8 @@ package com.nexa.interfaces.ops.api;
 import com.nexa.application.ops.performance.CleanDiskCacheUseCase;
 import com.nexa.application.ops.performance.GetPerformanceStatsUseCase;
 import com.nexa.application.ops.performance.ResetStatsUseCase;
-import com.nexa.interfaces.ops.api.dto.DiskCacheCleanupView;
-import com.nexa.interfaces.ops.api.dto.PerformanceStatsView;
+import com.nexa.interfaces.ops.api.dto.DiskCacheCleanupVO;
+import com.nexa.interfaces.ops.api.dto.PerformanceStatsVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import com.nexa.shared.web.ApiResponse;
@@ -58,8 +58,8 @@ public class PerformanceController {
      * @return {@code data} = 性能统计视图（含 disk_cache_info.total_bytes 真实缓存占用）
      */
     @GetMapping("/performance")
-    public ApiResponse<PerformanceStatsView> performance() {
-        return ApiResponse.okData(PerformanceStatsView.from(getPerformanceStatsUseCase.execute()));
+    public ApiResponse<PerformanceStatsVO> performance() {
+        return ApiResponse.okData(PerformanceStatsVO.from(getPerformanceStatsUseCase.execute()));
     }
 
     /**
@@ -68,8 +68,8 @@ public class PerformanceController {
      * @return {@code data} = 清理结果（删除数 + 释放字节）
      */
     @PostMapping("/cache/clear")
-    public ApiResponse<DiskCacheCleanupView> clearCache() {
-        return ApiResponse.okData(DiskCacheCleanupView.from(cleanDiskCacheUseCase.execute()));
+    public ApiResponse<DiskCacheCleanupVO> clearCache() {
+        return ApiResponse.okData(DiskCacheCleanupVO.from(cleanDiskCacheUseCase.execute()));
     }
 
     /**

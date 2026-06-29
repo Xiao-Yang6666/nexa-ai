@@ -18,7 +18,7 @@ import java.util.List;
  *
  * <p>事务：标 {@code readOnly}，纯读路径，绑定列表与用户存在性在同一只读事务内一致快照。</p>
  *
- * <p>视图裁剪在接口层：本用例返回领域实体列表，接口层投影为 {@code OAuthBindingView}
+ * <p>视图裁剪在接口层：本用例返回领域实体列表，接口层投影为 {@code OAuthBindingVO}
  * （仅 id/provider_id/provider_user_id/created_at，<b>不</b>泄露任何敏感字段）。</p>
  */
 @Service

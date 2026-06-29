@@ -53,7 +53,7 @@ public class UserOAuthBindingJpaEntity {
      * 自定义 OAuth provider 整数主键引用（V5 {@code provider_ref_id}，可空）。
      *
      * <p>自定义 provider 绑定时存 {@code custom_oauth_providers.id}；内建 provider 绑定为 {@code null}。
-     * 对齐 openapi {@code OAuthBindingView.provider_id} 与解绑端点 {@code {provider_id}}（F-1025/1026/1027）。</p>
+     * 对齐 openapi {@code OAuthBindingVO.provider_id} 与解绑端点 {@code {provider_id}}（F-1025/1026/1027）。</p>
      */
     @Column(name = "provider_ref_id")
     private Long providerRefId;

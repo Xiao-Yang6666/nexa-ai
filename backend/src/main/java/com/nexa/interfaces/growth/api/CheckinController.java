@@ -4,8 +4,8 @@ import com.nexa.application.growth.DailyCheckinUseCase;
 import com.nexa.application.growth.QueryCheckinStatusUseCase;
 import com.nexa.domain.growth.vo.CheckinStats;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.growth.api.dto.CheckinResultView;
-import com.nexa.interfaces.growth.api.dto.CheckinStatusView;
+import com.nexa.interfaces.growth.api.dto.CheckinResultVO;
+import com.nexa.interfaces.growth.api.dto.CheckinStatusVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -63,9 +63,9 @@ public class CheckinController {
      * @return 签到结果客户视图（本次发放额度）
      */
     @PostMapping
-    public ApiResponse<CheckinResultView> checkin(@CurrentActor AuthenticatedActor actor) {
+    public ApiResponse<CheckinResultVO> checkin(@CurrentActor AuthenticatedActor actor) {
         DailyCheckinUseCase.CheckinResult result = dailyCheckinUseCase.checkin(actor.userId());
-        return ApiResponse.okData(CheckinResultView.from(result));
+        return ApiResponse.okData(CheckinResultVO.from(result));
     }
 
     /**
@@ -78,10 +78,10 @@ public class CheckinController {
      * @return 签到状态与本月脱敏记录客户视图
      */
     @GetMapping
-    public ApiResponse<CheckinStatusView> status(
+    public ApiResponse<CheckinStatusVO> status(
             @CurrentActor AuthenticatedActor actor,
             @RequestParam(value = "month", required = false) String month) {
         CheckinStats stats = queryCheckinStatusUseCase.query(actor.userId(), month);
-        return ApiResponse.okData(CheckinStatusView.from(stats));
+        return ApiResponse.okData(CheckinStatusVO.from(stats));
     }
 }

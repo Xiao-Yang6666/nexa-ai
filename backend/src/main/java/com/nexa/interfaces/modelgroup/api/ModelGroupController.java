@@ -12,8 +12,8 @@ import com.nexa.domain.modelgroup.exception.InvalidModelGroupParameterException;
 import com.nexa.domain.modelgroup.model.ModelGroup;
 import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.modelgroup.api.dto.ModelGroupAccessRequest;
-import com.nexa.interfaces.modelgroup.api.dto.ModelGroupAccessView;
-import com.nexa.interfaces.modelgroup.api.dto.ModelGroupAdminView;
+import com.nexa.interfaces.modelgroup.api.dto.ModelGroupAccessVO;
+import com.nexa.interfaces.modelgroup.api.dto.ModelGroupAdminVO;
 import com.nexa.interfaces.modelgroup.api.dto.ModelGroupCreateRequest;
 import com.nexa.interfaces.modelgroup.api.dto.ModelGroupStatusRequest;
 import com.nexa.interfaces.modelgroup.api.dto.ModelGroupUpdateRequest;
@@ -100,10 +100,10 @@ public class ModelGroupController {
      * @return 成功信封，data 为管理视图列表
      */
     @GetMapping
-    public ApiResponse<List<ModelGroupAdminView>> list(
+    public ApiResponse<List<ModelGroupAdminVO>> list(
             @RequestParam(name = "access_policy", required = false) String accessPolicy) {
-        List<ModelGroupAdminView> views = listUseCase.list(accessPolicy).stream()
-                .map(ModelGroupAdminView::from)
+        List<ModelGroupAdminVO> views = listUseCase.list(accessPolicy).stream()
+                .map(ModelGroupAdminVO::from)
                 .toList();
         return ApiResponse.okData(views);
     }
@@ -115,9 +115,9 @@ public class ModelGroupController {
      * @return 成功信封，data 为创建后的管理视图
      */
     @PostMapping
-    public ApiResponse<ModelGroupAdminView> create(@RequestBody ModelGroupCreateRequest request) {
+    public ApiResponse<ModelGroupAdminVO> create(@RequestBody ModelGroupCreateRequest request) {
         ModelGroup created = createUseCase.create(request.toCommand());
-        return ApiResponse.okData(ModelGroupAdminView.from(created));
+        return ApiResponse.okData(ModelGroupAdminVO.from(created));
     }
 
     /**
@@ -128,10 +128,10 @@ public class ModelGroupController {
      * @return 成功信封，data 为更新后的管理视图
      */
     @PutMapping("/{id}")
-    public ApiResponse<ModelGroupAdminView> update(@PathVariable("id") long id,
+    public ApiResponse<ModelGroupAdminVO> update(@PathVariable("id") long id,
                                                    @RequestBody ModelGroupUpdateRequest request) {
         ModelGroup updated = updateUseCase.update(request.toCommand(id));
-        return ApiResponse.okData(ModelGroupAdminView.from(updated));
+        return ApiResponse.okData(ModelGroupAdminVO.from(updated));
     }
 
     /**
@@ -142,13 +142,13 @@ public class ModelGroupController {
      * @return 成功信封，data 为更新后的管理视图
      */
     @PatchMapping("/{id}/status")
-    public ApiResponse<ModelGroupAdminView> updateStatus(@PathVariable("id") long id,
+    public ApiResponse<ModelGroupAdminVO> updateStatus(@PathVariable("id") long id,
                                                          @RequestBody ModelGroupStatusRequest request) {
         if (request == null || request.status() == null) {
             throw new InvalidModelGroupParameterException("status is required");
         }
         ModelGroup updated = statusUseCase.updateStatus(id, request.status());
-        return ApiResponse.okData(ModelGroupAdminView.from(updated));
+        return ApiResponse.okData(ModelGroupAdminVO.from(updated));
     }
 
     /**
@@ -170,9 +170,9 @@ public class ModelGroupController {
      * @return 成功信封，data 为授权记录视图列表
      */
     @GetMapping("/{id}/access")
-    public ApiResponse<List<ModelGroupAccessView>> listAccess(@PathVariable("id") long id) {
-        List<ModelGroupAccessView> views = accessUseCase.listAccess(id).stream()
-                .map(ModelGroupAccessView::from)
+    public ApiResponse<List<ModelGroupAccessVO>> listAccess(@PathVariable("id") long id) {
+        List<ModelGroupAccessVO> views = accessUseCase.listAccess(id).stream()
+                .map(ModelGroupAccessVO::from)
                 .toList();
         return ApiResponse.okData(views);
     }
@@ -185,13 +185,13 @@ public class ModelGroupController {
      * @return 成功信封，data 为授权记录视图
      */
     @PostMapping("/{id}/access")
-    public ApiResponse<ModelGroupAccessView> grantAccess(@PathVariable("id") long id,
+    public ApiResponse<ModelGroupAccessVO> grantAccess(@PathVariable("id") long id,
                                                          @RequestBody ModelGroupAccessRequest request) {
         if (request == null || request.subjectId() == null) {
             throw new InvalidModelGroupParameterException("subjectType and subjectId are required");
         }
         var granted = accessUseCase.grant(id, request.subjectType(), request.subjectId());
-        return ApiResponse.okData(ModelGroupAccessView.from(granted));
+        return ApiResponse.okData(ModelGroupAccessVO.from(granted));
     }
 
     /**
@@ -213,9 +213,9 @@ public class ModelGroupController {
      * @return 成功信封，data 为该用户 USER 级授权命中的模型组视图列表
      */
     @GetMapping("/user/{userId}")
-    public ApiResponse<List<ModelGroupAdminView>> listUserGroups(@PathVariable("userId") long userId) {
-        List<ModelGroupAdminView> views = queryUserGroupsUseCase.listForUser(userId).stream()
-                .map(ModelGroupAdminView::from)
+    public ApiResponse<List<ModelGroupAdminVO>> listUserGroups(@PathVariable("userId") long userId) {
+        List<ModelGroupAdminVO> views = queryUserGroupsUseCase.listForUser(userId).stream()
+                .map(ModelGroupAdminVO::from)
                 .toList();
         return ApiResponse.okData(views);
     }
@@ -231,12 +231,12 @@ public class ModelGroupController {
      * @return 成功信封，data 为设置后该用户授权命中的模型组视图列表
      */
     @PutMapping("/user/{userId}")
-    public ApiResponse<List<ModelGroupAdminView>> setUserGroups(
+    public ApiResponse<List<ModelGroupAdminVO>> setUserGroups(
             @PathVariable("userId") long userId,
             @RequestBody SetUserModelGroupsRequest request) {
         List<String> codes = request == null ? null : request.codes();
-        List<ModelGroupAdminView> views = setUserGroupsUseCase.setForUser(userId, codes).stream()
-                .map(ModelGroupAdminView::from)
+        List<ModelGroupAdminVO> views = setUserGroupsUseCase.setForUser(userId, codes).stream()
+                .map(ModelGroupAdminVO::from)
                 .toList();
         return ApiResponse.okData(views);
     }

@@ -2,7 +2,7 @@ package com.nexa.interfaces.log.api;
 
 import com.nexa.application.log.QuerySelfQuotaDataUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.log.api.dto.QuotaDataItemView;
+import com.nexa.interfaces.log.api.dto.QuotaDataItemVO;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -44,13 +44,13 @@ public class SelfDataController {
      * @return 成功信封，data = 本人 QuotaDataItem 数组（按日期升序）
      */
     @GetMapping
-    public ApiResponse<List<QuotaDataItemView>> selfQuotaByDay(
+    public ApiResponse<List<QuotaDataItemVO>> selfQuotaByDay(
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp,
             @CurrentActor AuthenticatedActor actor) {
 
-        List<QuotaDataItemView> data = querySelfQuotaDataUseCase.query(actor.userId(), startTimestamp, endTimestamp)
-                .stream().map(QuotaDataItemView::from).toList();
+        List<QuotaDataItemVO> data = querySelfQuotaDataUseCase.query(actor.userId(), startTimestamp, endTimestamp)
+                .stream().map(QuotaDataItemVO::from).toList();
         return ApiResponse.okData(data);
     }
 }

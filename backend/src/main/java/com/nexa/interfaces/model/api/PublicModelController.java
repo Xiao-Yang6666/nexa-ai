@@ -49,15 +49,15 @@ public class PublicModelController {
      * @return 成功信封，data = { items[], total }（AdminView）
      */
     @GetMapping
-    public ApiResponse<PublicModelListView> list(
+    public ApiResponse<PublicModelListVO> list(
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize,
             @RequestParam(name = "enabled", required = false) Boolean enabled) {
         boolean filterEnabled = enabled != null && enabled;
         Pagination pagination = Pagination.of(page, pageSize);
-        List<PublicModelAdminView> items = useCase.list(pagination, filterEnabled).stream()
-                .map(PublicModelAdminView::from).toList();
-        return ApiResponse.okData(new PublicModelListView(items, useCase.count(filterEnabled)));
+        List<PublicModelAdminVO> items = useCase.list(pagination, filterEnabled).stream()
+                .map(PublicModelAdminVO::from).toList();
+        return ApiResponse.okData(new PublicModelListVO(items, useCase.count(filterEnabled)));
     }
 
     /**
@@ -67,11 +67,11 @@ public class PublicModelController {
      * @return 成功信封，data = 创建后对外模型（AdminView）
      */
     @PostMapping
-    public ApiResponse<PublicModelAdminView> create(@RequestBody PublicModelCreateRequest request) {
+    public ApiResponse<PublicModelAdminVO> create(@RequestBody PublicModelCreateRequest request) {
         PublicModel created = useCase.create(request.publicName(),
                 request.basePriceRatio(), request.usePrice(), request.basePrice(), request.enabled(),
                 request.displayName(), request.sortOrder(), request.description());
-        return ApiResponse.okData(PublicModelAdminView.from(created));
+        return ApiResponse.okData(PublicModelAdminVO.from(created));
     }
 
     /**
@@ -81,11 +81,11 @@ public class PublicModelController {
      * @return 成功信封，data = 更新后对外模型（AdminView）
      */
     @PutMapping
-    public ApiResponse<PublicModelAdminView> update(@RequestBody PublicModelUpdateRequest request) {
+    public ApiResponse<PublicModelAdminVO> update(@RequestBody PublicModelUpdateRequest request) {
         PublicModel updated = useCase.update(request.id(),
                 request.basePriceRatio(), request.usePrice(), request.basePrice(), request.enabled(),
                 request.displayName(), request.sortOrder(), request.description());
-        return ApiResponse.okData(PublicModelAdminView.from(updated));
+        return ApiResponse.okData(PublicModelAdminVO.from(updated));
     }
 
     /**

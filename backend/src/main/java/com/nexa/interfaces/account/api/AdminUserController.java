@@ -14,11 +14,11 @@ import com.nexa.interfaces.account.api.dto.AdminBalanceAdjustRequest;
 import com.nexa.interfaces.account.api.dto.AdminCreateUserRequest;
 import com.nexa.interfaces.account.api.dto.AdminManageUserRequest;
 import com.nexa.interfaces.account.api.dto.AdminUpdateUserRequest;
-import com.nexa.interfaces.account.api.dto.AdminUserView;
-import com.nexa.interfaces.account.api.dto.BalanceTransactionView;
+import com.nexa.interfaces.account.api.dto.AdminUserVO;
+import com.nexa.interfaces.account.api.dto.BalanceTransactionVO;
 import com.nexa.application.billing.AdminAdjustBalanceUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.shared.web.PageView;
+import com.nexa.shared.web.PageVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -51,7 +51,7 @@ import java.util.List;
  *
  * <p>DDD 铁律：接口层<b>只做协议翻译</b>（HTTP DTO ⇄ 用例命令/结果），不含业务逻辑——角色越权护栏、
  * 状态机、资料校验全在 domain/application 内（backend-engineer §2.1）。出参一律用管理端视图
- * {@link AdminUserView}（含 remark/inviter_id，但<b>绝不</b>含 password，产品铁律）。领域异常由
+ * {@link AdminUserVO}（含 remark/inviter_id，但<b>绝不</b>含 password，产品铁律）。领域异常由
  * {@code GlobalExceptionHandler} 翻译为 HTTP 状态码（越权→403，目标不存在→404，参数非法→400）。</p>
  *
  * <p><b>鉴权（AdminAuth 真鉴权，已落地）</b>：本 controller 全部端点要求 {@code Role≥admin}——
@@ -99,7 +99,7 @@ public class AdminUserController {
      *
      * <p>{@code keyword} 非空时按 username/email/group 模糊匹配（搜索），为空时返回全量分页（列表）。
      * 分页参数对齐 openapi {@code PageParam(p)} / {@code PageSizeParam(page_size)}；缺省页码 1、页大小 20。
-     * 出参为 {@link AdminUserView} 列表 + 分页元数据（{@link PageView}）。</p>
+     * 出参为 {@link AdminUserVO} 列表 + 分页元数据（{@link PageVO}）。</p>
      *
      * @param keyword  搜索关键词（可选，query {@code keyword}）
      * @param page     页码（可选，query {@code p}，缺省 1）
@@ -111,7 +111,7 @@ public class AdminUserController {
     // MvcRequestMatcher 匹配不上 → 落 anyRequest().authenticated() 仍被 AuthorizationFilter 拒成 403。
     // 故两种形态都登记，保证 root 两种写法都进得来（鉴权不削弱：见 SecurityConfig 两路径均门槛 ADMIN+）。
     @GetMapping({"", "/"})
-    public ApiResponse<PageView<AdminUserView>> list(
+    public ApiResponse<PageVO<AdminUserVO>> list(
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "p", required = false, defaultValue = "1") int page,
             @RequestParam(name = "page_size", required = false, defaultValue = "20") int pageSize) {
@@ -119,11 +119,11 @@ public class AdminUserController {
         SearchUsersResult result = searchUsersUseCase.search(
                 new SearchUsersCommand(keyword, page, pageSize));
 
-        // 投影为管理端视图（passwordHash 在 AdminUserView.from 中根本不读取，杜绝下发）。
-        List<AdminUserView> items = result.users().stream()
-                .map(AdminUserView::from)
+        // 投影为管理端视图（passwordHash 在 AdminUserVO.from 中根本不读取，杜绝下发）。
+        List<AdminUserVO> items = result.users().stream()
+                .map(AdminUserVO::from)
                 .toList();
-        PageView<AdminUserView> data = new PageView<>(
+        PageVO<AdminUserVO> data = new PageVO<>(
                 items, result.total(), result.page(), result.pageSize());
         return ApiResponse.okData(data);
     }
@@ -255,11 +255,11 @@ public class AdminUserController {
      * @return 成功信封，data = 账变流水列表（时间倒序）
      */
     @GetMapping("/{id}/balance-logs")
-    public ApiResponse<List<BalanceTransactionView>> balanceLogs(
+    public ApiResponse<List<BalanceTransactionVO>> balanceLogs(
             @PathVariable("id") long id,
             @RequestParam(name = "limit", required = false, defaultValue = "50") int limit) {
-        List<BalanceTransactionView> items = adminAdjustBalanceUseCase.logs(id, limit).stream()
-                .map(BalanceTransactionView::from)
+        List<BalanceTransactionVO> items = adminAdjustBalanceUseCase.logs(id, limit).stream()
+                .map(BalanceTransactionVO::from)
                 .toList();
         return ApiResponse.okData(items);
     }

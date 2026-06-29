@@ -2,7 +2,7 @@ package com.nexa.interfaces.token.api;
 
 import com.nexa.application.token.QueryTokenUsageUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.token.api.dto.UsageView;
+import com.nexa.interfaces.token.api.dto.UsageVO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,9 +38,9 @@ public class TokenUsageController {
      * @return 成功信封，data = 用量摘要（对齐 openapi UsageCreditSummary）
      */
     @GetMapping("/token")
-    public ApiResponse<UsageView> queryUsage(HttpServletRequest request) {
+    public ApiResponse<UsageVO> queryUsage(HttpServletRequest request) {
         String key = extractBearerToken(request);
-        return ApiResponse.okData(UsageView.from(queryTokenUsageUseCase.queryByKey(key)));
+        return ApiResponse.okData(UsageVO.from(queryTokenUsageUseCase.queryByKey(key)));
     }
 
     /**

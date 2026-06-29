@@ -31,7 +31,7 @@ public class GetSelfUserUseCase {
     /**
      * 按会话用户 id 查询本人账户聚合。
      *
-     * <p>返回完整 {@link User} 聚合，由接口层投影为客户视图 {@code UserView}（零敏感泄露：
+     * <p>返回完整 {@link User} 聚合，由接口层投影为客户视图 {@code UserVO}（零敏感泄露：
      * 投影时<b>根本不读取</b> passwordHash/成本/上游模型/供应商等字段，从源头杜绝下发）。</p>
      *
      * @param userId 当前会话用户 id（self-scope，由接口层从认证主体注入）

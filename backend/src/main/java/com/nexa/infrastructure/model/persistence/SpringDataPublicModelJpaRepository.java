@@ -37,7 +37,7 @@ interface SpringDataPublicModelJpaRepository extends JpaRepository<PublicModelJp
     long countEnabled();
 
     /**
-     * 上架公开名 A 列表（F-6003 候选层来源，F-6004 全员可用判定；不含任何 B，UserView 安全）。
+     * 上架公开名 A 列表（F-6003 候选层来源，F-6004 全员可用判定；不含任何 B，UserVO 安全）。
      */
     @Query("SELECT m.publicName FROM PublicModelJpaEntity m WHERE m.enabled = true ORDER BY m.sortOrder ASC, m.id ASC")
     List<String> findEnabledPublicNames();

@@ -78,7 +78,7 @@ public class LoginWithPasskeyUseCase {
      * 凭据不存在 → {@link PasskeyNotFoundException}；验签失败 → {@link InvalidPasskeyCeremonyException}。</p>
      *
      * @param assertionResponseJson 前端回传的 assertion 响应（原始 JSON）
-     * @return 登录用户的中性快照（接口层投影为 UserView）
+     * @return 登录用户的中性快照（接口层投影为 UserVO）
      * @throws InvalidPasskeyCeremonyException 验签失败 / challenge 失效
      * @throws PasskeyNotFoundException        凭据或用户不存在
      */

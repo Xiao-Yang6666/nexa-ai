@@ -47,7 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * 整个方法在单事务内：建号与建绑定原子，复合唯一索引兜底并发竞态。</p>
  *
  * <p>对齐 openapi {@code GET /api/oauth/{provider}}（F-1016）、{@code /api/oauth/discord}（F-1018）、
- * {@code /api/oauth/linuxdo}（F-1020）；返回投影为 {@code UserView}，token 不进 body（产品铁律，沿用
+ * {@code /api/oauth/linuxdo}（F-1020）；返回投影为 {@code UserVO}，token 不进 body（产品铁律，沿用
  * {@link LoginResult} 约定）。邀请归因 {@code state.aff()} 解析留待后续 wave，本切片以 0 处理。</p>
  */
 @Service

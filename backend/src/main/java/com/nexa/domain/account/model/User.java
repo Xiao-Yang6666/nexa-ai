@@ -92,7 +92,7 @@ public class User {
      * 管理员备注（DB-SCHEMA §1 {@code remark}，max=255，仅管理端可见）。
      *
      * <p>F-1014 用户备注：管理员对用户的内部备注。<b>对普通用户置空、绝不下发</b>
-     * （API-ENDPOINTS §1.3「remark 对普通用户置空」），只在 AdminUserView 回显。
+     * （API-ENDPOINTS §1.3「remark 对普通用户置空」），只在 AdminUserVO 回显。
      * {@code null} 表示无备注。</p>
      */
     private String remark;
@@ -863,7 +863,7 @@ public class User {
      * 基础设施层持久化重建专用工厂（含管理端字段全集）：从已存数据装配聚合（不触发不变量与事件）。
      *
      * <p>在 12 参重载基础上补齐管理端视图需要的字段：分组（F-1013）、备注（F-1014）、
-     * 已用额度 / 请求计数 / 创建时间（管理端 AdminUserView 只读回显）。</p>
+     * 已用额度 / 请求计数 / 创建时间（管理端 AdminUserVO 只读回显）。</p>
      *
      * @param id           主键
      * @param username     用户名

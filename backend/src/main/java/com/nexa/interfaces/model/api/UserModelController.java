@@ -45,7 +45,7 @@ public class UserModelController {
      * <p>按当前登录用户所属分组聚合该分组下启用渠道的模型，去重合并返回对外名 A。</p>
      *
      * @param actor 当前登录用户（注入，不信任入参 user_id）
-     * @return 成功信封，data = 去重模型名数组（UserView，仅 A）
+     * @return 成功信封，data = 去重模型名数组（UserVO，仅 A）
      */
     @GetMapping("/api/user/self/models")
     public ApiResponse<List<String>> visibleModels(@CurrentActor AuthenticatedActor actor) {
@@ -55,7 +55,7 @@ public class UserModelController {
     /**
      * 模型广场（F-3024，{@code GET /api/models/dashboard}，渠道→模型映射）。
      *
-     * @return 成功信封，data = channelId → models[] 映射（UserView）
+     * @return 成功信封，data = channelId → models[] 映射（UserVO）
      */
     @GetMapping("/api/models/dashboard")
     public ApiResponse<Map<Long, List<String>>> dashboard() {

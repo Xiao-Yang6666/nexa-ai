@@ -3,7 +3,7 @@ package com.nexa.application.oauthprovider;
 /**
  * 创建/更新自定义 OAuth provider 命令（接口层翻译后的入参，F-1024）。
  *
- * <p>对齐 openapi {@code CustomOAuthProviderView}（POST/PUT requestBody）。{@code id} 非空表示更新、
+ * <p>对齐 openapi {@code CustomOAuthProviderVO}（POST/PUT requestBody）。{@code id} 非空表示更新、
  * 为空表示创建。{@code clientSecret} 为可选——更新时传 null/空白表示保留原密钥（视图不回显密钥，
  * 避免脱敏回显回写清空），创建时必填（聚合校验非空）。{@code scopes} 为客户端传入的 scope 列表，
  * 接口层已拼为空格分隔串。</p>

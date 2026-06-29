@@ -44,7 +44,7 @@ public record AccountUpdateRequest(
         @JsonProperty("tag") String tag,
         @JsonProperty("auto_ban") Boolean autoBan,
         @JsonProperty("models") String models,
-        @JsonProperty("groups") List<AccountGroupView> groups) {
+        @JsonProperty("groups") List<AccountGroupVO> groups) {
 
     /**
      * 转换为编辑命令（路径 id 注入）。
@@ -56,6 +56,6 @@ public record AccountUpdateRequest(
         return new UpdateAccountCommand(
                 id, name, platform, type, credentials, baseUrl, concurrency, priority, expiresAt,
                 autoPauseOnExpired, rateMultiplier, modelMapping, weight, tag, autoBan, models,
-                groups == null ? null : groups.stream().map(AccountGroupView::toDomain).toList());
+                groups == null ? null : groups.stream().map(AccountGroupVO::toDomain).toList());
     }
 }

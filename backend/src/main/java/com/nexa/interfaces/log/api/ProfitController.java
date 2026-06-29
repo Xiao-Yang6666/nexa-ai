@@ -2,8 +2,8 @@ package com.nexa.interfaces.log.api;
 
 import com.nexa.application.log.QueryProfitDashboardUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.log.api.dto.ProfitDashboardItemView;
-import com.nexa.interfaces.log.api.dto.ProfitDashboardView;
+import com.nexa.interfaces.log.api.dto.ProfitDashboardItemVO;
+import com.nexa.interfaces.log.api.dto.ProfitDashboardVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.RequireRole;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,16 +52,16 @@ public class ProfitController {
      * @return 成功信封，data = { items: ProfitDashboardItem[] }（按利润降序）
      */
     @GetMapping("/dashboard")
-    public ApiResponse<ProfitDashboardView> dashboard(
+    public ApiResponse<ProfitDashboardVO> dashboard(
             @RequestParam(name = "dimension", required = false) String dimension,
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp) {
 
-        List<ProfitDashboardItemView> items = queryProfitDashboardUseCase
+        List<ProfitDashboardItemVO> items = queryProfitDashboardUseCase
                 .query(dimension, startTimestamp, endTimestamp)
                 .stream()
-                .map(ProfitDashboardItemView::from)
+                .map(ProfitDashboardItemVO::from)
                 .toList();
-        return ApiResponse.okData(new ProfitDashboardView(items));
+        return ApiResponse.okData(new ProfitDashboardVO(items));
     }
 }

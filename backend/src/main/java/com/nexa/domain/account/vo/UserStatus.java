@@ -3,7 +3,7 @@ package com.nexa.domain.account.vo;
 /**
  * 用户账号状态（值对象）。
  *
- * <p>编码对齐 DB-SCHEMA §1「Status 1=启用，≠1=禁用」与 openapi UserView.status。
+ * <p>编码对齐 DB-SCHEMA §1「Status 1=启用，≠1=禁用」与 openapi UserVO.status。
  * 登录闸门用 {@link #isEnabled()} 判断（PRD AC-2 L3「校验 Status=UserStatusEnabled」）。</p>
  */
 public enum UserStatus {

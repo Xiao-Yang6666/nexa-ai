@@ -3,7 +3,7 @@ package com.nexa.domain.publicsite.vo;
 /**
  * 营销首页公开站点状态聚合（不可变值对象，F-4039）。
  *
- * <p>对齐 openapi {@code StatusAggregateView}：系统名/Logo/页脚 + 各登录方式开关 + 主题 + 签到/协议开关等。
+ * <p>对齐 openapi {@code StatusAggregateVO}：系统名/Logo/页脚 + 各登录方式开关 + 主题 + 签到/协议开关等。
  * 这是<b>面向匿名公众</b>的状态聚合，前端据此渲染首页与登录入口（哪些登录方式可见、是否开放注册等）。</p>
  *
  * <p><b>零敏感泄露铁律（产品铁律 + openapi「敏感配置不暴露」）</b>：本 VO 只承载「是否启用某能力」的<b>布尔开关</b>

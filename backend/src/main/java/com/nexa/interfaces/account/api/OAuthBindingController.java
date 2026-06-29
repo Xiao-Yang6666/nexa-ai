@@ -3,7 +3,7 @@ package com.nexa.interfaces.account.api;
 import com.nexa.application.account.ListUserOAuthBindingsUseCase;
 import com.nexa.application.account.UnbindOAuthUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.account.api.dto.OAuthBindingView;
+import com.nexa.interfaces.account.api.dto.OAuthBindingVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +29,7 @@ import java.util.Map;
  *
  * <p>DDD 铁律：接口层<b>只做协议翻译</b>（HTTP ⇄ 用例命令/结果），不含业务逻辑（backend-engineer §2.1）。
  * 归属护栏、目标存在性、绑定存在性等规则全在 domain/application 内。领域异常由 {@link GlobalExceptionHandler}
- * 翻译（绑定不存在/目标用户不存在 → 404）。出参用 {@link OAuthBindingView}（敏感字段零泄露）。</p>
+ * 翻译（绑定不存在/目标用户不存在 → 404）。出参用 {@link OAuthBindingVO}（敏感字段零泄露）。</p>
  *
  * <p>路由说明：{@code /self/...} 为固定段，比 {@code /{id}/...} 的变量段更精确，Spring 按精确匹配优先，
  * 本人端点不会被管理端变量路径吞掉。</p>
@@ -80,15 +80,15 @@ public class OAuthBindingController {
     /**
      * 管理端查询用户 OAuth 绑定（F-1027，对齐 openapi {@code GET /api/user/{id}/oauth/bindings}）。
      *
-     * <p>出参为 {@code {items: OAuthBindingView[]}}（对齐 openapi 200 data 结构）。目标用户不存在 → 404。</p>
+     * <p>出参为 {@code {items: OAuthBindingVO[]}}（对齐 openapi 200 data 结构）。目标用户不存在 → 404。</p>
      *
      * @param id 目标用户 id（路径段 {@code {id}}）
      * @return 成功信封，data 为 {@code {items: [...]}}
      */
     @GetMapping("/{id}/oauth/bindings")
-    public ApiResponse<Map<String, List<OAuthBindingView>>> listBindings(@PathVariable("id") long id) {
-        List<OAuthBindingView> items = listUserOAuthBindingsUseCase.list(id).stream()
-                .map(OAuthBindingView::from)
+    public ApiResponse<Map<String, List<OAuthBindingVO>>> listBindings(@PathVariable("id") long id) {
+        List<OAuthBindingVO> items = listUserOAuthBindingsUseCase.list(id).stream()
+                .map(OAuthBindingVO::from)
                 .toList();
         // openapi data 为 { items: [...] } 对象包裹（非裸数组），用 Map 表达该单字段对象。
         return ApiResponse.okData(Map.of("items", items));

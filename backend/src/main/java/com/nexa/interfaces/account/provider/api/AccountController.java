@@ -11,12 +11,12 @@ import com.nexa.application.account.provider.UpdateAccountUseCase;
 import com.nexa.application.account.provider.port.ProviderModelTestPort;
 import com.nexa.domain.account.provider.vo.Pagination;
 import com.nexa.interfaces.account.provider.api.dto.AccountCreateRequest;
-import com.nexa.interfaces.account.provider.api.dto.AccountListView;
+import com.nexa.interfaces.account.provider.api.dto.AccountListVO;
 import com.nexa.interfaces.account.provider.api.dto.AccountUpdateRequest;
-import com.nexa.interfaces.account.provider.api.dto.AccountView;
+import com.nexa.interfaces.account.provider.api.dto.AccountVO;
 import com.nexa.interfaces.account.provider.api.dto.ProbeModelsRequest;
 import com.nexa.interfaces.account.provider.api.dto.TestModelRequest;
-import com.nexa.interfaces.account.provider.api.dto.TestModelView;
+import com.nexa.interfaces.account.provider.api.dto.TestModelVO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
@@ -65,7 +65,7 @@ import java.util.List;
  * <p><b>鉴权</b>：全 {@code /api/admin/accounts*} = AdminAuth。类级 {@link RequireRole}
  * ({@link AuthLevel#ADMIN})，由 {@code RequireRoleInterceptor} 拦截判定，未认证→401、越权→403。</p>
  *
- * <p><b>凭证安全铁律</b>：出参用 {@link AccountView}（绝不下发 credentials 原始凭证）。</p>
+ * <p><b>凭证安全铁律</b>：出参用 {@link AccountVO}（绝不下发 credentials 原始凭证）。</p>
  */
 @RestController
 @RequestMapping("/api/admin/accounts")
@@ -121,37 +121,37 @@ public class AccountController {
      * @return 成功信封，data = { items[], total }（credentials 脱敏）
      */
     @GetMapping
-    public ApiResponse<AccountListView> list(
+    public ApiResponse<AccountListVO> list(
             @RequestParam(name = "p", required = false) Integer page,
             @RequestParam(name = "page_size", required = false) Integer pageSize,
             @RequestParam(name = "platform", required = false) String platform) {
 
         Pagination pagination = Pagination.of(page, pageSize);
         return ApiResponse.okData(
-                AccountListView.from(listAccountsUseCase.list(platform, pagination)));
+                AccountListVO.from(listAccountsUseCase.list(platform, pagination)));
     }
 
     /**
      * 创建账号（{@code POST /api/admin/accounts}）。
      *
      * @param request 创建请求（name/platform/type 必填）
-     * @return 成功信封，data = 创建后账号（AccountView）
+     * @return 成功信封，data = 创建后账号（AccountVO）
      */
     @PostMapping
-    public ApiResponse<AccountView> create(@RequestBody AccountCreateRequest request) {
+    public ApiResponse<AccountVO> create(@RequestBody AccountCreateRequest request) {
         return ApiResponse.okData(
-                AccountView.from(createAccountUseCase.create(request.toCommand())));
+                AccountVO.from(createAccountUseCase.create(request.toCommand())));
     }
 
     /**
      * 账号详情（{@code GET /api/admin/accounts/{id}}）。
      *
      * @param id path 账号 id
-     * @return 成功信封，data = 账号（AccountView）
+     * @return 成功信封，data = 账号（AccountVO）
      */
     @GetMapping("/{id}")
-    public ApiResponse<AccountView> get(@PathVariable("id") long id) {
-        return ApiResponse.okData(AccountView.from(getAccountUseCase.get(id)));
+    public ApiResponse<AccountVO> get(@PathVariable("id") long id) {
+        return ApiResponse.okData(AccountVO.from(getAccountUseCase.get(id)));
     }
 
     /**
@@ -159,13 +159,13 @@ public class AccountController {
      *
      * @param id      path 账号 id
      * @param request 编辑请求（name/platform/type 必填）
-     * @return 成功信封，data = 更新后账号（AccountView）
+     * @return 成功信封，data = 更新后账号（AccountVO）
      */
     @PutMapping("/{id}")
-    public ApiResponse<AccountView> update(@PathVariable("id") long id,
+    public ApiResponse<AccountVO> update(@PathVariable("id") long id,
                                            @RequestBody AccountUpdateRequest request) {
         return ApiResponse.okData(
-                AccountView.from(updateAccountUseCase.update(request.toCommand(id))));
+                AccountVO.from(updateAccountUseCase.update(request.toCommand(id))));
     }
 
     /**
@@ -185,13 +185,13 @@ public class AccountController {
      *
      * @param id     path 账号 id
      * @param enable query 目标态（true=启用，false=禁用；缺省 true）
-     * @return 成功信封，data = 更新后账号（AccountView）
+     * @return 成功信封，data = 更新后账号（AccountVO）
      */
     @PatchMapping("/{id}/toggle")
-    public ApiResponse<AccountView> toggle(
+    public ApiResponse<AccountVO> toggle(
             @PathVariable("id") long id,
             @RequestParam(name = "enable", required = false, defaultValue = "true") boolean enable) {
-        return ApiResponse.okData(AccountView.from(toggleAccountUseCase.toggle(id, enable)));
+        return ApiResponse.okData(AccountVO.from(toggleAccountUseCase.toggle(id, enable)));
     }
 
     /**
@@ -222,9 +222,9 @@ public class AccountController {
      * @return 成功信封，data = { ok, latency_ms, reply }
      */
     @PostMapping("/{id}/test-model")
-    public ApiResponse<TestModelView> testModel(@PathVariable("id") long id,
+    public ApiResponse<TestModelVO> testModel(@PathVariable("id") long id,
                                                 @RequestBody TestModelRequest request) {
-        return ApiResponse.okData(TestModelView.from(
+        return ApiResponse.okData(TestModelVO.from(
                 testProviderModelUseCase.test(id, request.model(), request.prompt())));
     }
 

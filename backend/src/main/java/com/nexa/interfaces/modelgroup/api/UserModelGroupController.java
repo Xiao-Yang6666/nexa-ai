@@ -1,7 +1,7 @@
 package com.nexa.interfaces.modelgroup.api;
 
 import com.nexa.application.modelgroup.ResolveAccessibleModelGroupsUseCase;
-import com.nexa.interfaces.modelgroup.api.dto.UserModelGroupView;
+import com.nexa.interfaces.modelgroup.api.dto.UserModelGroupVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -46,9 +46,9 @@ public class UserModelGroupController {
      * @return 成功信封，data = 可选套餐分组列表（含 code/name/倍率/模型）
      */
     @GetMapping
-    public ApiResponse<List<UserModelGroupView>> listSelectable(@CurrentActor AuthenticatedActor actor) {
-        List<UserModelGroupView> views = resolveUseCase.resolve(actor.userId(), 0L, null).stream()
-                .map(UserModelGroupView::from)
+    public ApiResponse<List<UserModelGroupVO>> listSelectable(@CurrentActor AuthenticatedActor actor) {
+        List<UserModelGroupVO> views = resolveUseCase.resolve(actor.userId(), 0L, null).stream()
+                .map(UserModelGroupVO::from)
                 .toList();
         return ApiResponse.okData(views);
     }

@@ -4,7 +4,7 @@ import com.nexa.application.billing.CreateTopUpCommand;
 import com.nexa.application.billing.CreateTopUpOrderUseCase;
 import com.nexa.application.billing.CreateTopUpResult;
 import com.nexa.interfaces.billing.api.dto.TopUpRequest;
-import com.nexa.interfaces.billing.api.dto.TopUpUserView;
+import com.nexa.interfaces.billing.api.dto.TopUpUserVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -48,7 +48,7 @@ public class TopUpController {
      * @return 成功信封，data 为收银台跳转信息（status=pending）
      */
     @PostMapping({"", "/"})
-    public ApiResponse<TopUpUserView> create(
+    public ApiResponse<TopUpUserVO> create(
             @RequestBody TopUpRequest request,
             @CurrentActor AuthenticatedActor actor) {
 
@@ -57,7 +57,7 @@ public class TopUpController {
                 new CreateTopUpCommand(request.amount(), request.money(),
                         request.paymentMethod(), request.paymentProvider()));
 
-        return ApiResponse.okData(new TopUpUserView(
+        return ApiResponse.okData(new TopUpUserVO(
                 result.tradeNo(), result.payUrl(), result.payParams(), result.status()));
     }
 }

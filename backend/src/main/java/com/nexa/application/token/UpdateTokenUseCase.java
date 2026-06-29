@@ -29,7 +29,7 @@ public class UpdateTokenUseCase {
      * 更新令牌（F-3006）。
      *
      * @param command 更新命令（含 statusOnly 分支与各覆盖式字段）
-     * @return 更新后的令牌聚合（接口层裁剪为 TokenUserView）
+     * @return 更新后的令牌聚合（接口层裁剪为 TokenUserVO）
      * @throws TokenNotFoundException     令牌不存在
      * @throws TokenAccessDeniedException 越权操作他人令牌
      */

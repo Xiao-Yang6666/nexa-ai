@@ -12,7 +12,7 @@ import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.account.api.dto.LoginRequest;
 import com.nexa.interfaces.account.api.dto.RegisterRequest;
 import com.nexa.interfaces.account.api.dto.ResetPasswordRequest;
-import com.nexa.interfaces.account.api.dto.UserView;
+import com.nexa.interfaces.account.api.dto.UserVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -102,7 +102,7 @@ public class UserController {
     /**
      * 邮箱密码登录（F-1002）。
      *
-     * <p>成功返回 {@code ApiResponse} 且 {@code data=UserView}（客户视图，零敏感字段，
+     * <p>成功返回 {@code ApiResponse} 且 {@code data=UserVO}（客户视图，零敏感字段，
      * body 结构不变，不破坏 openapi 契约）。<b>额外</b>通过 {@code Set-Cookie} 把已签发的
      * 会话凭据（JWT 紧凑串）下发到 {@code session} cookie——这是补齐 S10 联调缺口的关键：
      * 此前 {@code result.token()} 被整段丢弃，浏览器拿不到任何凭证，后续 self-scope 端点全 403。</p>
@@ -119,14 +119,14 @@ public class UserController {
      *       否则浏览器拒收；故用 Lax。同主机不同端口（如 localhost:3100 → localhost:8080）属同站，Lax 可带。</li>
      *   <li><b>不</b>设 {@code Secure}：本地为明文 http，设了反而不下发。生产 https 部署应改为 Secure + SameSite=None（如需跨站）。</li>
      * </ul>
-     * UserView 内仍<b>绝不含</b> access_token（产品铁律）——令牌只走 HttpOnly cookie，body 不回显。</p>
+     * UserVO 内仍<b>绝不含</b> access_token（产品铁律）——令牌只走 HttpOnly cookie，body 不回显。</p>
      *
      * @param request  登录请求（已校验）
      * @param response HTTP 响应（用于下发 Set-Cookie 会话凭据）
      * @return 成功信封，data 为用户客户视图
      */
     @PostMapping("/login")
-    public ApiResponse<UserView> login(@Valid @RequestBody LoginRequest request,
+    public ApiResponse<UserVO> login(@Valid @RequestBody LoginRequest request,
                                        HttpServletResponse response) {
         LoginCommand command = new LoginCommand(request.username(), request.password());
         LoginResult result = loginUseCase.login(command);
@@ -134,7 +134,7 @@ public class UserController {
         // 用手写 Set-Cookie 头而非 jakarta Cookie，因后者不支持 SameSite 属性。
         response.addHeader(HttpHeaders.SET_COOKIE, buildSessionCookie(result.token()));
         // body 仅投影客户视图；result.token() 不放进 body（不下发 access_token，产品铁律）。
-        return ApiResponse.okData(UserView.from(result.user()));
+        return ApiResponse.okData(UserVO.from(result.user()));
     }
 
     /**
@@ -150,19 +150,19 @@ public class UserController {
      * 读他人账户（ROLE-PERMISSION-MATRIX §3 self-scope）。未认证由 {@code @CurrentActor} 抛
      * 鉴权异常（→401，shared SecurityExceptionHandler 翻译）。</p>
      *
-     * <p><b>客户视图零敏感泄露（产品铁律）</b>：复用登录已验证干净的 {@link UserView#from(...)} 投影，
+     * <p><b>客户视图零敏感泄露（产品铁律）</b>：复用登录已验证干净的 {@link UserVO#from(...)} 投影，
      * 仅下发本人可见账户字段（id/username/role/status/quota/aff_code/email/last_login_at），
      * 投影时<b>根本不读取</b> passwordHash / 成本 / 利润 / 上游真实模型 / 供应商等字段，
      * 从源头杜绝下发。账号不存在（已注销）由 {@code GlobalExceptionHandler} 翻译为 404。</p>
      *
      * @param actor 当前认证操作者（查询目标恒为本人，self-scope）
-     * @return 成功信封，data 为本人客户视图 UserView
+     * @return 成功信封，data 为本人客户视图 UserVO
      */
     @RequireRole(AuthLevel.USER)
     @GetMapping("/self")
-    public ApiResponse<UserView> self(@CurrentActor AuthenticatedActor actor) {
+    public ApiResponse<UserVO> self(@CurrentActor AuthenticatedActor actor) {
         // 协议翻译：会话本人 id → 查询用例 → 投影客户视图。不接受外部 userId，self-scope 由此从根保证。
-        return ApiResponse.okData(UserView.from(getSelfUserUseCase.getSelf(actor.userId())));
+        return ApiResponse.okData(UserVO.from(getSelfUserUseCase.getSelf(actor.userId())));
     }
 
     /**

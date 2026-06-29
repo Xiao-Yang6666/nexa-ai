@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 账号注册+登录端到端集成测试（{@code @SpringBootTest} 起全栈，连真 PostgreSQL）。
  *
  * <p>验证：Flyway 在真 PG 建表后，注册→登录走通整条链路（接口层↔用例↔仓储↔真库），
- * 且登录响应 {@code data}（UserView）<b>零敏感字段泄露</b>（无 password/access_token）。
+ * 且登录响应 {@code data}（UserVO）<b>零敏感字段泄露</b>（无 password/access_token）。
  * 用 MockMvc 发真实 HTTP 语义请求；测试数据用随机用户名隔离，{@code @AfterEach} 物理清理。</p>
  *
  * <p>稳定性：若 CI 环境无法连 PG，本类会在上下文启动阶段失败——可单独排除只跑单测
@@ -57,7 +57,7 @@ class UserControllerIT {
     }
 
     @Test
-    @DisplayName("注册成功后用同凭证登录成功，且登录返回的 UserView 不含任何敏感字段")
+    @DisplayName("注册成功后用同凭证登录成功，且登录返回的 UserVO 不含任何敏感字段")
     void register_then_login_succeeds_and_userview_has_no_secrets() throws Exception {
         username = "it_" + UUID.randomUUID().toString().substring(0, 8);
         String password = "password123";
@@ -89,11 +89,11 @@ class UserControllerIT {
         // --- 零敏感字段断言：data 节点绝不含 password/password_hash/access_token/token ---
         JsonNode root = objectMapper.readTree(responseJson);
         JsonNode data = root.get("data");
-        org.junit.jupiter.api.Assertions.assertNotNull(data, "登录应返回 data(UserView)");
+        org.junit.jupiter.api.Assertions.assertNotNull(data, "登录应返回 data(UserVO)");
         for (String forbidden : new String[]{
                 "password", "password_hash", "passwordHash", "access_token", "accessToken", "token"}) {
             org.junit.jupiter.api.Assertions.assertFalse(data.has(forbidden),
-                    "UserView 不得泄露敏感字段: " + forbidden);
+                    "UserVO 不得泄露敏感字段: " + forbidden);
         }
     }
 

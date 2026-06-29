@@ -3,7 +3,7 @@ package com.nexa.interfaces.relay.api;
 import com.nexa.application.relay.ManageMappingUseCase;
 import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.relay.api.dto.UserAliasRequest;
-import com.nexa.interfaces.relay.api.dto.UserAliasView;
+import com.nexa.interfaces.relay.api.dto.UserAliasVO;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -44,12 +44,12 @@ public class RelayMappingController {
     /** L1 别名列表（UserAuth，self-scope）。 */
     @RequireRole(AuthLevel.USER)
     @GetMapping("/aliases")
-    public ResponseEntity<ApiResponse<List<UserAliasView>>> listAliases(@CurrentActor AuthenticatedActor actor) {
+    public ResponseEntity<ApiResponse<List<UserAliasVO>>> listAliases(@CurrentActor AuthenticatedActor actor) {
         // self-scope: user 级作用域（自己的别名）
         com.nexa.domain.relay.vo.AliasScope scope =
                 com.nexa.domain.relay.vo.AliasScope.user(actor.userId());
-        List<UserAliasView> views = useCase.listL1Aliases(scope).stream()
-                .map(UserAliasView::from).toList();
+        List<UserAliasVO> views = useCase.listL1Aliases(scope).stream()
+                .map(UserAliasVO::from).toList();
         return ResponseEntity.ok(ApiResponse.okData(views));
     }
 

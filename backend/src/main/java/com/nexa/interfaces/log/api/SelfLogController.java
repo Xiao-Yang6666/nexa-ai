@@ -7,9 +7,9 @@ import com.nexa.domain.log.vo.LogQuery;
 import com.nexa.domain.log.vo.LogStat;
 import com.nexa.domain.log.vo.Pagination;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.log.api.dto.LogListView;
-import com.nexa.interfaces.log.api.dto.LogStatView;
-import com.nexa.interfaces.log.api.dto.UserLogView;
+import com.nexa.interfaces.log.api.dto.LogListVO;
+import com.nexa.interfaces.log.api.dto.LogStatVO;
+import com.nexa.interfaces.log.api.dto.UserLogVO;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.domain.rbac.AuthLevel;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>承载用户自助日志端点（对齐 openapi）：
  * <ul>
- *   <li>{@code GET /api/log/self}      自助日志分页查询（F-4002，UserLogView，仅本人）</li>
+ *   <li>{@code GET /api/log/self}      自助日志分页查询（F-4002，UserLogVO，仅本人）</li>
  *   <li>{@code GET /api/log/self/stat} 自助日志统计（F-4005，quota/rpm/tpm，username 来自上下文）</li>
  * </ul>
  * </p>
@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 杜绝按他人维度越权（ROLE-PERMISSION-MATRIX §3）。{@link LogQuery#forSelf} 结构上也不接受
  * username/channel/request_id 维度，双重保险。</p>
  *
- * <p><b>客户视图铁律</b>：输出一律 {@link UserLogView}（B/成本/利润/渠道/上游请求 ID 结构级剔除）。</p>
+ * <p><b>客户视图铁律</b>：输出一律 {@link UserLogVO}（B/成本/利润/渠道/上游请求 ID 结构级剔除）。</p>
  */
 @RestController
 @RequestMapping("/api/log/self")
@@ -66,10 +66,10 @@ public class SelfLogController {
      * @param page      页号（可空→1）
      * @param pageSize  每页条数（可空→10）
      * @param actor     认证主体（提供 self-scope user_id）
-     * @return 成功信封，data = { items[](UserLogView), total, page, page_size }
+     * @return 成功信封，data = { items[](UserLogVO), total, page, page_size }
      */
     @GetMapping
-    public ApiResponse<LogListView<UserLogView>> list(
+    public ApiResponse<LogListVO<UserLogVO>> list(
             @RequestParam(name = "type", required = false) Integer type,
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp,
@@ -84,7 +84,7 @@ public class SelfLogController {
                 tokenName, modelName, group);
         Pagination pagination = Pagination.of(page, pageSize);
         LogPage result = querySelfLogsUseCase.query(query, pagination);
-        return ApiResponse.okData(LogListView.user(result));
+        return ApiResponse.okData(LogListVO.user(result));
     }
 
     /**
@@ -96,7 +96,7 @@ public class SelfLogController {
      * @return 成功信封，data = LogStat（quota/rpm/tpm，仅本人 Type=2）
      */
     @GetMapping("/stat")
-    public ApiResponse<LogStatView> stat(
+    public ApiResponse<LogStatVO> stat(
             @RequestParam(name = "start_timestamp", required = false) Long startTimestamp,
             @RequestParam(name = "end_timestamp", required = false) Long endTimestamp,
             @CurrentActor AuthenticatedActor actor) {
@@ -105,6 +105,6 @@ public class SelfLogController {
         LogQuery query = LogQuery.forSelf(actor.userId(), 2, startTimestamp, endTimestamp,
                 null, null, null);
         LogStat stat = queryLogStatUseCase.stat(query);
-        return ApiResponse.okData(LogStatView.from(stat));
+        return ApiResponse.okData(LogStatVO.from(stat));
     }
 }

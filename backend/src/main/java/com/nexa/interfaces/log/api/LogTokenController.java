@@ -3,8 +3,8 @@ package com.nexa.interfaces.log.api;
 import com.nexa.application.log.QueryLogsByTokenUseCase;
 import com.nexa.application.log.port.TokenIdResolver;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.log.api.dto.LogListView;
-import com.nexa.interfaces.log.api.dto.UserLogView;
+import com.nexa.interfaces.log.api.dto.LogListVO;
+import com.nexa.interfaces.log.api.dto.UserLogVO;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +23,7 @@ import java.util.List;
  * <p><b>限流/禁缓存</b>：契约要求 CriticalRateLimit + DisableCache，由网关/横切层处理（非本控制器职责，
  * 与现网一致：在路由注册处挂中间件）。</p>
  *
- * <p><b>客户视图铁律</b>：输出 {@link UserLogView}（用令牌查自己的日志，裁剪掉 B/成本/利润）。</p>
+ * <p><b>客户视图铁律</b>：输出 {@link UserLogVO}（用令牌查自己的日志，裁剪掉 B/成本/利润）。</p>
  */
 @RestController
 @RequestMapping("/api/log")
@@ -49,13 +49,13 @@ public class LogTokenController {
      * 用例抛 {@code InvalidLogQueryException}「无效的令牌」，{@code LogExceptionHandler} 翻 400。</p>
      *
      * @param request HTTP 请求（提取 Authorization 头）
-     * @return 成功信封，data = UserLogView 数组
+     * @return 成功信封，data = UserLogVO 数组
      */
     @GetMapping("/token")
-    public ApiResponse<List<UserLogView>> queryByToken(HttpServletRequest request) {
+    public ApiResponse<List<UserLogVO>> queryByToken(HttpServletRequest request) {
         String key = extractBearerToken(request);
         long tokenId = tokenIdResolver.resolveTokenId(key);
-        return ApiResponse.okData(LogListView.userArray(queryLogsByTokenUseCase.query(tokenId)));
+        return ApiResponse.okData(LogListVO.userArray(queryLogsByTokenUseCase.query(tokenId)));
     }
 
     /**

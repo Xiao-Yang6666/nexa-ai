@@ -3,8 +3,8 @@ package com.nexa.interfaces.deployment.api;
 import com.nexa.application.deployment.GetIntegrationStatusUseCase;
 import com.nexa.application.deployment.TestConnectionUseCase;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.deployment.api.dto.ConnectionTestView;
-import com.nexa.interfaces.deployment.api.dto.IntegrationStatusView;
+import com.nexa.interfaces.deployment.api.dto.ConnectionTestVO;
+import com.nexa.interfaces.deployment.api.dto.IntegrationStatusVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,8 +56,8 @@ public class DeploymentIntegrationController {
      * @return 成功信封，data = {@code { provider, enabled, configured, can_connect }}
      */
     @GetMapping("/settings")
-    public ApiResponse<IntegrationStatusView> settings() {
-        return ApiResponse.okData(IntegrationStatusView.from(getIntegrationStatusUseCase.get()));
+    public ApiResponse<IntegrationStatusVO> settings() {
+        return ApiResponse.okData(IntegrationStatusVO.from(getIntegrationStatusUseCase.get()));
     }
 
     /**
@@ -70,10 +70,10 @@ public class DeploymentIntegrationController {
      * @return 成功信封，data = {@code { hardware_count, total_available }}
      */
     @PostMapping("/test")
-    public ApiResponse<ConnectionTestView> test(@RequestBody(required = false) Map<String, Object> request) {
+    public ApiResponse<ConnectionTestVO> test(@RequestBody(required = false) Map<String, Object> request) {
         // 从请求体取可选 api_key（透传 infra 用于本次连接鉴权，不回显）。
         String apiKey = request == null ? null : asString(request.get("api_key"));
-        return ApiResponse.okData(ConnectionTestView.from(testConnectionUseCase.test(apiKey)));
+        return ApiResponse.okData(ConnectionTestVO.from(testConnectionUseCase.test(apiKey)));
     }
 
     /**

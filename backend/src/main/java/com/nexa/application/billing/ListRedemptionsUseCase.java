@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 兑换码列表查询用例（管理端，prd-billing BL-4，F-2045，openapi {@code GET /api/redemption/}）。
  *
- * <p>只读用例：分页返回兑换码聚合，接口层投影为管理视图 {@code RedemptionAdminView}。</p>
+ * <p>只读用例：分页返回兑换码聚合，接口层投影为管理视图 {@code RedemptionAdminVO}。</p>
  */
 @Service
 public class ListRedemptionsUseCase {

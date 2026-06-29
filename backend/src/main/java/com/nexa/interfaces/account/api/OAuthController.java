@@ -7,7 +7,7 @@ import com.nexa.application.account.OAuthLoginResult;
 import com.nexa.application.account.OAuthLoginUseCase;
 import com.nexa.domain.account.vo.OAuthProvider;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.account.api.dto.UserView;
+import com.nexa.interfaces.account.api.dto.UserVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>从 query / path 取 provider/code/state/aff（协议级）；</li>
  *   <li>翻译为应用层命令（{@link GenerateOAuthStateCommand}/{@link OAuthLoginCommand}）；</li>
  *   <li>调用用例（{@link GenerateOAuthStateUseCase}/{@link OAuthLoginUseCase}）；</li>
- *   <li>把结果投影为出参 DTO（state 串 / 客户视图 {@link UserView} 零敏感字段）。</li>
+ *   <li>把结果投影为出参 DTO（state 串 / 客户视图 {@link UserVO} 零敏感字段）。</li>
  * </ol>
  * 领域/业务异常（state 无效、provider 未配置、绑定冲突等）由 {@link GlobalExceptionHandler}
  * 统一翻译为 HTTP 状态码 + 错误信封，本类不 try/catch 业务异常。</p>
@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>{@code GET /api/oauth/state}（F-1015）：生成 CSRF state，{@code data} 为 state 串。</li>
  *   <li>{@code GET /api/oauth/{provider}}（F-1016）：通用回调（github/oidc 等），provider 为路径段，
- *       {@code data} 为 {@link UserView}。</li>
+ *       {@code data} 为 {@link UserVO}。</li>
  *   <li>{@code GET /api/oauth/discord}（F-1018）：Discord 回调。</li>
  *   <li>{@code GET /api/oauth/linuxdo}（F-1020）：LinuxDO 回调。</li>
  * </ul>
@@ -85,7 +85,7 @@ public class OAuthController {
      * @return 成功信封，data 为登录/建号后的用户客户视图
      */
     @GetMapping("/discord")
-    public ApiResponse<UserView> discord(@RequestParam(value = "code", required = false) String code,
+    public ApiResponse<UserVO> discord(@RequestParam(value = "code", required = false) String code,
                                          @RequestParam(value = "state", required = false) String state) {
         return handleCallback(OAuthProvider.DISCORD.code(), code, state);
     }
@@ -101,7 +101,7 @@ public class OAuthController {
      * @return 成功信封，data 为登录/建号后的用户客户视图
      */
     @GetMapping("/linuxdo")
-    public ApiResponse<UserView> linuxdo(@RequestParam(value = "code", required = false) String code,
+    public ApiResponse<UserVO> linuxdo(@RequestParam(value = "code", required = false) String code,
                                          @RequestParam(value = "state", required = false) String state) {
         return handleCallback(OAuthProvider.LINUXDO.code(), code, state);
     }
@@ -119,7 +119,7 @@ public class OAuthController {
      * @return 成功信封，data 为登录/建号后的用户客户视图
      */
     @GetMapping("/{provider}")
-    public ApiResponse<UserView> callback(@PathVariable("provider") String provider,
+    public ApiResponse<UserVO> callback(@PathVariable("provider") String provider,
                                           @RequestParam(value = "code", required = false) String code,
                                           @RequestParam(value = "state", required = false) String state) {
         return handleCallback(provider, code, state);
@@ -136,11 +136,11 @@ public class OAuthController {
      * @param state    state token
      * @return 成功信封，data 为用户客户视图（token 不进 body）
      */
-    private ApiResponse<UserView> handleCallback(String provider, String code, String state) {
+    private ApiResponse<UserVO> handleCallback(String provider, String code, String state) {
         // 协议翻译：HTTP query/path → 应用层命令。bindUserId=null 表示登录/注册语义（非绑定）。
         OAuthLoginCommand command = new OAuthLoginCommand(provider, code, state, null);
         OAuthLoginResult result = oauthLoginUseCase.login(command);
         // 仅投影客户视图；result.token() 不放进 body（不下发 access_token，产品铁律）。
-        return ApiResponse.okData(UserView.from(result.user()));
+        return ApiResponse.okData(UserVO.from(result.user()));
     }
 }

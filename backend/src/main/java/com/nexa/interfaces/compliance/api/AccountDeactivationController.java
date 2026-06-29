@@ -4,7 +4,7 @@ import com.nexa.shared.web.ApiResponse;
 import com.nexa.application.compliance.DeactivateAccountCommand;
 import com.nexa.application.compliance.DeactivateAccountUseCase;
 import com.nexa.application.compliance.port.AccountDeactivationCascade;
-import com.nexa.interfaces.compliance.api.dto.AccountDeactivationView;
+import com.nexa.interfaces.compliance.api.dto.AccountDeactivationVO;
 import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
 import com.nexa.shared.security.interfaces.annotation.CurrentActor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,10 +48,10 @@ public class AccountDeactivationController {
      * @return 成功信封，data 为注销回执（各类数据处置条数）
      */
     @DeleteMapping("/self")
-    public ApiResponse<AccountDeactivationView> deactivateSelf(@CurrentActor AuthenticatedActor actor) {
+    public ApiResponse<AccountDeactivationVO> deactivateSelf(@CurrentActor AuthenticatedActor actor) {
         // 协议翻译：会话本人 id → 注销命令。不接受外部 userId，self-scope 由此从根保证。
         DeactivateAccountCommand command = new DeactivateAccountCommand(actor.userId());
         AccountDeactivationCascade.CascadeResult result = deactivateAccountUseCase.deactivate(command);
-        return ApiResponse.okData(AccountDeactivationView.from(result));
+        return ApiResponse.okData(AccountDeactivationVO.from(result));
     }
 }

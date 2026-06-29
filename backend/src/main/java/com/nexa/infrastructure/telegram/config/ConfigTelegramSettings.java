@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
  * 收敛到 infra 层（DDD §2.3）。后续接 §15 动态系统设置时改为 DB 读取，仅换实现不动应用层签名。</p>
  *
  * <p><b>安全</b>：{@code botToken} 是机密，仅服务端用于派生 HMAC 密钥；本类不提供任何把 token 暴露到
- * 客户视图/日志的路径（{@code StatusAggregateView} 只读 {@link #isTelegramLoginEnabled()} 布尔）。
+ * 客户视图/日志的路径（{@code StatusAggregateVO} 只读 {@link #isTelegramLoginEnabled()} 布尔）。
  * 默认值刻意为「关闭 + 空 token + 86400 秒窗口」——未显式配置时 Telegram 登录默认不可用，避免空 token 误放行。</p>
  */
 @Component

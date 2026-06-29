@@ -60,7 +60,7 @@ public class InitWeChatAuthUseCase {
     }
 
     /**
-     * WeChat 发起态结果（应用层返回，接口层投影为 {@code WeChatAuthView}）。
+     * WeChat 发起态结果（应用层返回，接口层投影为 {@code WeChatAuthVO}）。
      *
      * @param enabled     是否已配置可用
      * @param appId       微信 appid（非敏感）

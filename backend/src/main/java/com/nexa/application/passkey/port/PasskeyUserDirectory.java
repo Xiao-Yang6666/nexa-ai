@@ -26,7 +26,7 @@ public interface PasskeyUserDirectory {
     Long findUserIdByUsername(String username);
 
     /**
-     * 按用户 id 取中性用户快照（登录断言成功后构造客户视图 {@code UserView}）。
+     * 按用户 id 取中性用户快照（登录断言成功后构造客户视图 {@code UserVO}）。
      *
      * @param userId 用户 id
      * @return 命中返回快照，否则 {@code null}

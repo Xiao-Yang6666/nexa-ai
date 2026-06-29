@@ -26,7 +26,7 @@ import java.util.Objects;
  *   <li>{@code credentialId} 合法（值对象自校验，≤512、非空、唯一由 DB 兜底）。</li>
  *   <li>{@code publicKey} 非空（base64，登录断言验签必需）。</li>
  *   <li>{@code signCount} 单调不回退——回退时置 {@code cloneWarning}（克隆告警，不静默吞）。</li>
- *   <li>{@code publicKey} 为敏感凭据数据——落库但<b>绝不</b>进客户视图（PasskeyView 不读取本字段）。</li>
+ *   <li>{@code publicKey} 为敏感凭据数据——落库但<b>绝不</b>进客户视图（PasskeyVO 不读取本字段）。</li>
  * </ul></p>
  */
 public class PasskeyCredential {

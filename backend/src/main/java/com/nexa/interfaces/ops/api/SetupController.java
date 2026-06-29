@@ -4,7 +4,7 @@ import com.nexa.application.ops.setup.GetSetupStatusUseCase;
 import com.nexa.application.ops.setup.SubmitSetupUseCase;
 import com.nexa.domain.ops.setup.SetupSubmission;
 import com.nexa.shared.web.ApiResponse;
-import com.nexa.interfaces.ops.api.dto.SetupStatusView;
+import com.nexa.interfaces.ops.api.dto.SetupStatusVO;
 import com.nexa.interfaces.ops.api.dto.SetupSubmitRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,8 +52,8 @@ public class SetupController {
      * @return {@code data = {status:true}}（已初始化）或 {@code {status:false, root_init, database_type}}
      */
     @GetMapping
-    public ApiResponse<SetupStatusView> status() {
-        return ApiResponse.okData(SetupStatusView.from(getSetupStatusUseCase.execute()));
+    public ApiResponse<SetupStatusVO> status() {
+        return ApiResponse.okData(SetupStatusVO.from(getSetupStatusUseCase.execute()));
     }
 
     /**
