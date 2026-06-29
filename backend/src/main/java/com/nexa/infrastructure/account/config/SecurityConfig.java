@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.account.config;
 
 import com.nexa.infrastructure.relay.auth.RelayApiKeyAuthenticationFilter;
-import com.nexa.shared.security.infrastructure.auth.JwtAuthenticationFilter;
+import com.nexa.common.security.infrastructure.auth.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -45,7 +45,7 @@ public class SecurityConfig {
     private final CorsProperties corsProperties;
 
     /**
-     * @param jwtAuthenticationFilter         JWT 身份解析过滤器（com.nexa.shared.security 提供，作用 /api/**）
+     * @param jwtAuthenticationFilter         JWT 身份解析过滤器（com.nexa.common.security 提供，作用 /api/**）
      * @param relayApiKeyAuthenticationFilter Relay API-Key 鉴权过滤器（com.nexa.relay 提供，仅作用 /v1/**）
      * @param corsProperties                  CORS 跨域白名单配置（app.cors.*）
      */

@@ -1,6 +1,6 @@
 package com.nexa.domain.growth.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 签到功能未启用异常（PRD GR-1/GR-2 前置条件「{@code CheckinSetting.Enabled=false} 时接口直接返回未启用」）。

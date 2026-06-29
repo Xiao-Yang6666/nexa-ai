@@ -1,6 +1,6 @@
 package com.nexa.domain.growth.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 增长子域用户不存在异常（划转/返利入账等动作的目标用户在 {@code users} 表缺失/已软删除）。

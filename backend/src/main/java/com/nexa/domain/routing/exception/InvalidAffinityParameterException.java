@@ -1,6 +1,6 @@
 package com.nexa.domain.routing.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 亲和缓存运维入参非法异常（F-2032 清空 / F-2033 用量统计入参校验）。

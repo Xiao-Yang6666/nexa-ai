@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * Relay 入参非法异常（400）。

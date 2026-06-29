@@ -3,7 +3,7 @@ package com.nexa.interfaces.ops.api;
 import com.nexa.application.ops.setup.GetSetupStatusUseCase;
 import com.nexa.application.ops.setup.SubmitSetupUseCase;
 import com.nexa.domain.ops.setup.SetupSubmission;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import com.nexa.interfaces.ops.api.dto.SetupStatusVO;
 import com.nexa.interfaces.ops.api.dto.SetupSubmitRequest;
 import org.springframework.web.bind.annotation.GetMapping;

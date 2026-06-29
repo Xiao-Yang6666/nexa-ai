@@ -1,6 +1,6 @@
 package com.nexa.domain.model.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 对外模型不存在异常（接口层映射 404，F-6001）。

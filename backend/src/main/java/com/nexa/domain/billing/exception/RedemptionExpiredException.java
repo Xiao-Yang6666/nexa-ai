@@ -1,6 +1,6 @@
 package com.nexa.domain.billing.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 兑换码已过期异常。

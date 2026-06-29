@@ -1,6 +1,6 @@
 package com.nexa.domain.account.provider.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 供应商账号入参非法异常（缺失必填/越界/格式错误，→400）。

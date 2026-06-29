@@ -1,11 +1,11 @@
 package com.nexa.interfaces.model.api;
 
 import com.nexa.application.model.ModelSquareUseCase;
-import com.nexa.shared.web.ApiResponse;
-import com.nexa.shared.security.domain.rbac.AuthLevel;
-import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
-import com.nexa.shared.security.interfaces.annotation.CurrentActor;
-import com.nexa.shared.security.interfaces.annotation.RequireRole;
+import com.nexa.common.web.ApiResponse;
+import com.nexa.common.security.domain.rbac.AuthLevel;
+import com.nexa.common.security.domain.rbac.AuthenticatedActor;
+import com.nexa.common.security.interfaces.annotation.CurrentActor;
+import com.nexa.common.security.interfaces.annotation.RequireRole;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 

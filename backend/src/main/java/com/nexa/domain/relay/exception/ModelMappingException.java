@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 模型映射异常（404 / 拒绝）。

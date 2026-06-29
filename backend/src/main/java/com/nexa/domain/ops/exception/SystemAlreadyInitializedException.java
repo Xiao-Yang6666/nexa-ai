@@ -1,6 +1,6 @@
 package com.nexa.domain.ops.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 系统已初始化，拒绝重复初始化（F-4016，幂等护栏）。

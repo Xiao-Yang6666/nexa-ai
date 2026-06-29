@@ -1,6 +1,6 @@
 package com.nexa.domain.task.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 任务并发冲突异常（F-2002 CAS 失败，RowsAffected=0 → 重试或放弃）。

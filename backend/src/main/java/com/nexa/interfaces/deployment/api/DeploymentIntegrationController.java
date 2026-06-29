@@ -2,7 +2,7 @@ package com.nexa.interfaces.deployment.api;
 
 import com.nexa.application.deployment.GetIntegrationStatusUseCase;
 import com.nexa.application.deployment.TestConnectionUseCase;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import com.nexa.interfaces.deployment.api.dto.ConnectionTestVO;
 import com.nexa.interfaces.deployment.api.dto.IntegrationStatusVO;
 import org.springframework.web.bind.annotation.GetMapping;

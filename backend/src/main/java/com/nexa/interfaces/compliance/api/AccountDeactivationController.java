@@ -1,12 +1,12 @@
 package com.nexa.interfaces.compliance.api;
 
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import com.nexa.application.compliance.DeactivateAccountCommand;
 import com.nexa.application.compliance.DeactivateAccountUseCase;
 import com.nexa.application.compliance.port.AccountDeactivationCascade;
 import com.nexa.interfaces.compliance.api.dto.AccountDeactivationVO;
-import com.nexa.shared.security.domain.rbac.AuthenticatedActor;
-import com.nexa.shared.security.interfaces.annotation.CurrentActor;
+import com.nexa.common.security.domain.rbac.AuthenticatedActor;
+import com.nexa.common.security.interfaces.annotation.CurrentActor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

@@ -1,6 +1,6 @@
 package com.nexa.domain.account.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 用户不存在异常（管理端按 id 操作目标用户时定位失败）。

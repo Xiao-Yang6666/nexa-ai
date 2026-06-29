@@ -1,6 +1,6 @@
 package com.nexa.domain.modelgroup.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 模型组持久化异常（→ HTTP 500，内部错误不泄露细节）。

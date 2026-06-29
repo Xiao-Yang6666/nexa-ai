@@ -1,6 +1,6 @@
 package com.nexa.domain.model.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 模型元数据不存在异常（接口层映射 404）。

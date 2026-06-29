@@ -1,6 +1,6 @@
 package com.nexa.domain.modelgroup.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 模型组编码冲突异常（→ HTTP 409）。

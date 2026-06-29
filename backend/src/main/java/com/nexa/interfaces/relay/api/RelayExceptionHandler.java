@@ -1,13 +1,13 @@
 package com.nexa.interfaces.relay.api;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 import com.nexa.domain.relay.exception.InvalidRelayParameterException;
 import com.nexa.domain.relay.exception.ModelMappingException;
 import com.nexa.domain.relay.exception.ProtocolConversionException;
 import com.nexa.domain.relay.exception.RelayNotImplementedException;
 import com.nexa.domain.relay.exception.UpstreamException;
 import com.nexa.domain.relay.exception.VideoTaskException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

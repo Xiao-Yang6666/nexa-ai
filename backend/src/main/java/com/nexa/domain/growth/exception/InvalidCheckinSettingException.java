@@ -1,6 +1,6 @@
 package com.nexa.domain.growth.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 签到配置非法异常（PRD GR-3 校验：{@code Min <= Max} 且 {@code Min/Max >= 0}）。

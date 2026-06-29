@@ -1,7 +1,7 @@
 package com.nexa.interfaces.log.api;
 
 import com.nexa.application.log.QueryRankingUseCase;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import com.nexa.interfaces.log.api.dto.RankingPublicVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

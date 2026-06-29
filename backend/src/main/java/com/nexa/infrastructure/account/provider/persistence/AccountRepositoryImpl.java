@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.account.provider.persistence;
 
-import com.nexa.shared.persistence.PageQueries;
+import com.nexa.common.persistence.PageQueries;
 
 import com.nexa.domain.account.provider.model.Account;
 import com.nexa.domain.account.provider.repository.AccountRepository;

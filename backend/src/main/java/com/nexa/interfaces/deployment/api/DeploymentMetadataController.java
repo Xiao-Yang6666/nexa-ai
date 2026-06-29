@@ -8,7 +8,7 @@ import com.nexa.application.deployment.QueryAvailableReplicasUseCase;
 import com.nexa.domain.deployment.vo.ClusterName;
 import com.nexa.domain.deployment.vo.GpuCount;
 import com.nexa.domain.deployment.vo.HardwareId;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import com.nexa.interfaces.deployment.api.dto.HardwareTypesVO;
 import com.nexa.interfaces.deployment.api.dto.LocationsVO;
 import com.nexa.interfaces.deployment.api.dto.NameAvailabilityVO;

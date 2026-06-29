@@ -1,6 +1,6 @@
 package com.nexa.domain.ops.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 支付合规声明未确认或确认上下文非法（F-4030 + Compliance F-5021）。

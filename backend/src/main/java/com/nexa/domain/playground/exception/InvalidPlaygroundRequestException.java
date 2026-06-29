@@ -1,6 +1,6 @@
 package com.nexa.domain.playground.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * Playground 请求体非法异常（F-4038，→400）。

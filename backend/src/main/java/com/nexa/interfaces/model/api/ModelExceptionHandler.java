@@ -1,6 +1,6 @@
 package com.nexa.interfaces.model.api;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 import com.nexa.domain.model.exception.AliasCrossScopeException;
 import com.nexa.domain.model.exception.InvalidModelParameterException;
@@ -9,7 +9,7 @@ import com.nexa.domain.model.exception.PublicModelNotFoundException;
 import com.nexa.domain.model.exception.UpstreamSyncException;
 import com.nexa.domain.model.exception.UserModelAliasNotFoundException;
 import com.nexa.domain.model.exception.VendorNotFoundException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

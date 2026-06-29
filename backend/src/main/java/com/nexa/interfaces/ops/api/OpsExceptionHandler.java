@@ -1,7 +1,7 @@
 package com.nexa.interfaces.ops.api;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.common.web.ApiResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;

@@ -1,6 +1,6 @@
 package com.nexa.domain.task.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 任务参数非法异常（F-2001/F-2005/F-2007/F-2008 参数校验失败 → 400）。

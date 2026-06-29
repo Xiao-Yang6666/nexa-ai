@@ -1,6 +1,6 @@
 package com.nexa.domain.compliance.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * prompt 留存策略非法异常（F-5017，DC-005）。

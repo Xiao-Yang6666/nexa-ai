@@ -1,6 +1,6 @@
 package com.nexa.domain.account.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 角色越权护栏违反异常（管理端用户管理核心领域规则）。

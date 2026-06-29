@@ -1,6 +1,6 @@
 package com.nexa.domain.task.exception;
 
-import com.nexa.shared.kernel.HttpAwareDomainException;
+import com.nexa.common.kernel.HttpAwareDomainException;
 
 /**
  * 任务持久化异常（基础设施层 JSON 序列化/反序列化失败 → 500）。

@@ -1,6 +1,6 @@
 package com.nexa.domain.token.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 令牌 key 无效异常（→ 401）。

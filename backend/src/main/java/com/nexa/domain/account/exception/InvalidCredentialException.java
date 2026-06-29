@@ -1,6 +1,6 @@
 package com.nexa.domain.account.exception;
 
-import com.nexa.shared.kernel.DomainException;
+import com.nexa.common.kernel.DomainException;
 
 /**
  * 凭证/输入非法异常。
