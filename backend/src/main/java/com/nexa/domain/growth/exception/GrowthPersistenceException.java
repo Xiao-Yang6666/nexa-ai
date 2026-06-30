@@ -1,6 +1,6 @@
 package com.nexa.domain.growth.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 增长子域持久化异常（DB 操作失败 / 唯一索引以外的数据访问错误）。

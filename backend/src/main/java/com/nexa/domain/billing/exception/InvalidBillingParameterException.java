@@ -1,6 +1,6 @@
 package com.nexa.domain.billing.exception;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 /**
  * 计费参数非法异常（缺失必填 / 越界 / 格式错误 / 金额为负等）。

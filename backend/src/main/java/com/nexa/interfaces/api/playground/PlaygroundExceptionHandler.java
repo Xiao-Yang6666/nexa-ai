@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.playground;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 import com.nexa.domain.playground.exception.InvalidPlaygroundRequestException;
 import com.nexa.domain.playground.exception.PlaygroundAccessDeniedException;
 import org.springframework.http.ResponseEntity;

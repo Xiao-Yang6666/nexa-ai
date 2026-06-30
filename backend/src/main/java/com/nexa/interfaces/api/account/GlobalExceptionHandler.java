@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.account;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 import com.nexa.domain.account.exception.InvalidCredentialException;
 import com.nexa.domain.account.exception.InvalidOAuthStateException;
@@ -13,7 +13,7 @@ import com.nexa.domain.account.exception.UserAlreadyExistsException;
 import com.nexa.domain.account.exception.UserDisabledException;
 import com.nexa.domain.account.exception.UserNotFoundException;
 import com.nexa.domain.account.exception.VerificationCodeException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * 用例/控制器因此不写 try/catch 模板代码（backend-engineer §3.2 错误用明确类型而非散落处理）。</p>
  *
  * <p>仅保留账号域<b>领域异常</b>映射；协议级异常（Bean Validation / 约束校验 / 非法 JSON / 兜底 500）
- * 已上提到全局 {@code com.nexa.shared.web.GlobalApiExceptionHandler} 统一处理，不再在各模块重复。</p>
+ * 已上提到全局 {@code com.nexa.interfaces.web.GlobalApiExceptionHandler} 统一处理，不再在各模块重复。</p>
  *
  * <p>状态码映射（对齐 openapi：账号注册/登录失败均归 400 BadRequestError，封禁归 403）：
  * <ul>

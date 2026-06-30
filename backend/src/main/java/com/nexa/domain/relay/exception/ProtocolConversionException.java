@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 协议转换异常（500，IR/序列化失败）。

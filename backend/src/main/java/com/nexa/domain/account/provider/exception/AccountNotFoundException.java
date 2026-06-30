@@ -1,6 +1,6 @@
 package com.nexa.domain.account.provider.exception;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 /**
  * 供应商账号不存在异常（按 id 操作但账号缺失，→404）。

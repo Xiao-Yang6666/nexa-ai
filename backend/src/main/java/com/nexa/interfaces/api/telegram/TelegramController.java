@@ -1,15 +1,15 @@
 package com.nexa.interfaces.api.telegram;
 
-import com.nexa.shared.security.rbac.AuthLevel;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.annotation.CurrentActor;
-import com.nexa.shared.security.annotation.RequireRole;
+import com.nexa.domain.security.rbac.AuthLevel;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.interfaces.security.annotation.CurrentActor;
+import com.nexa.interfaces.security.annotation.RequireRole;
 import com.nexa.application.telegram.TelegramBindCommand;
 import com.nexa.application.telegram.TelegramBindUseCase;
 import com.nexa.application.telegram.TelegramLoginCommand;
 import com.nexa.application.telegram.TelegramLoginResult;
 import com.nexa.application.telegram.TelegramLoginUseCase;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.telegram.dto.TelegramUserVO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

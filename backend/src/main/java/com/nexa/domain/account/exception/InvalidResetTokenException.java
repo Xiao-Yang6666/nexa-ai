@@ -1,6 +1,6 @@
 package com.nexa.domain.account.exception;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 /**
  * 密码重置令牌无效或已过期异常。

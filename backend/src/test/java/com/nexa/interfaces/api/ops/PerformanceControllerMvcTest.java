@@ -6,11 +6,12 @@ import com.nexa.application.ops.performance.ResetStatsUseCase;
 import com.nexa.application.ops.port.CacheStatsProvider;
 import com.nexa.application.ops.port.DiskCacheManager;
 import com.nexa.application.ops.port.SystemRuntimeProbe;
-import com.nexa.shared.security.rbac.ActorRole;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.auth.ActorAuthenticationToken;
-import com.nexa.shared.security.api.SecurityExceptionHandler;
-import com.nexa.shared.security.web.RequireRoleInterceptor;
+import com.nexa.domain.security.rbac.ActorRole;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.infrastructure.security.auth.ActorAuthenticationToken;
+import com.nexa.infrastructure.security.auth.SecurityContextCurrentActorProvider;
+import com.nexa.interfaces.security.api.SecurityExceptionHandler;
+import com.nexa.interfaces.security.web.RequireRoleInterceptor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -93,7 +94,7 @@ class PerformanceControllerMvcTest {
                 new ResetStatsUseCase(cacheStatsProvider));
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .addInterceptors(new RequireRoleInterceptor())
+                .addInterceptors(new RequireRoleInterceptor(new SecurityContextCurrentActorProvider()))
                 .setControllerAdvice(new SecurityExceptionHandler())
                 .build();
     }

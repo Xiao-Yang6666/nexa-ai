@@ -2,7 +2,7 @@ package com.nexa.interfaces.api.log;
 
 import com.nexa.application.log.QueryLogsByTokenUseCase;
 import com.nexa.application.log.port.TokenIdResolver;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.log.dto.LogListVO;
 import com.nexa.interfaces.api.log.dto.UserLogVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +16,7 @@ import java.util.List;
  * 按令牌 key 查消费日志控制器（tokenReadAuth 端点，接口层，F-4003 GET /api/log/token）。
  *
  * <p>openapi 声明 {@code security: tokenReadAuth[]}——请求以 {@code Authorization: Bearer ***} 鉴权，
- * 返回该令牌的消费日志数组。不走 session/登录，故<b>不</b>标 {@link com.nexa.shared.security.annotation.RequireRole}；
+ * 返回该令牌的消费日志数组。不走 session/登录，故<b>不</b>标 {@link com.nexa.interfaces.security.annotation.RequireRole}；
  * 控制器自行从 Authorization 头取明文 key，经 {@link TokenIdResolver} 解析为 token_id（key 无效→0），
  * 交用例判定（token_id==0 → 400「无效的令牌」）。</p>
  *

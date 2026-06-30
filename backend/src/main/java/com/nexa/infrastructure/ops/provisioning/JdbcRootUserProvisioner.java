@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.ops.provisioning;
 
 import com.nexa.application.ops.port.RootUserProvisioner;
-import com.nexa.shared.security.rbac.ActorRole;
+import com.nexa.domain.security.rbac.ActorRole;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

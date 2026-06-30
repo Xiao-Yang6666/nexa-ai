@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.passkey;
 
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.application.passkey.ManagePasskeyUseCase;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;

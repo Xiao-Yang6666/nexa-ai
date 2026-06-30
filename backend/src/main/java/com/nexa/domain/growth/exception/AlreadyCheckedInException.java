@@ -1,6 +1,6 @@
 package com.nexa.domain.growth.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 今日已签到异常（PRD GR-1 分支「同日重复签到被 {@code idx_user_checkin_date} 唯一索引+事务拦截」）。

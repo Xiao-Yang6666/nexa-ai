@@ -1,12 +1,12 @@
 package com.nexa.interfaces.api.log;
 
 import com.nexa.application.log.QuerySelfQuotaDataUseCase;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.log.dto.QuotaDataItemVO;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.rbac.AuthLevel;
-import com.nexa.shared.security.annotation.CurrentActor;
-import com.nexa.shared.security.annotation.RequireRole;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.domain.security.rbac.AuthLevel;
+import com.nexa.interfaces.security.annotation.CurrentActor;
+import com.nexa.interfaces.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;

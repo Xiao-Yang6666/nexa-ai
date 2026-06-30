@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 上游错误异常（502，复用 RL-3 错误处置链路）。

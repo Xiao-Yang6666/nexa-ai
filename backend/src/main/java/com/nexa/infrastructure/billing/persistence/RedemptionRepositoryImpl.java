@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.billing.persistence;
 
-import com.nexa.shared.persistence.PageQueries;
+import com.nexa.infrastructure.persistence.PageQueries;
 
 import com.nexa.domain.billing.model.Redemption;
 import com.nexa.domain.billing.repository.RedemptionRepository;

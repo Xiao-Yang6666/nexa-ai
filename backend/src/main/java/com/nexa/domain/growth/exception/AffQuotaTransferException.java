@@ -1,6 +1,6 @@
 package com.nexa.domain.growth.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 邀请额度划转非法异常（PRD GR-5：低于最小单位 / 邀请额度不足 / 合规校验未过）。

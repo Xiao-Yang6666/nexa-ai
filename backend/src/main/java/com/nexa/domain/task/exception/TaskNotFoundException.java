@@ -1,6 +1,6 @@
 package com.nexa.domain.task.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 任务不存在异常（F-2003/F-2004/F-2006/F-2007 查询未命中 → 404）。

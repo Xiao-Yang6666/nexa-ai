@@ -3,7 +3,7 @@ package com.nexa.interfaces.api.account.provider;
 import com.nexa.application.account.provider.port.ProviderModelProbePort.ProviderProbeException;
 import com.nexa.domain.account.provider.exception.AccountNotFoundException;
 import com.nexa.domain.account.provider.exception.InvalidAccountParameterException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

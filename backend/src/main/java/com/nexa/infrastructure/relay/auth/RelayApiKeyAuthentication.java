@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.relay.auth;
 
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.auth.ActorAuthenticationToken;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.infrastructure.security.auth.ActorAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 

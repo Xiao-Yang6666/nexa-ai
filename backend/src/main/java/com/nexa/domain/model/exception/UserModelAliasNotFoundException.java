@@ -1,6 +1,6 @@
 package com.nexa.domain.model.exception;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 /**
  * 自助映射不存在异常（接口层映射 404，F-6003）。

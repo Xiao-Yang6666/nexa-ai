@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.model.persistence;
 
-import com.nexa.shared.persistence.PageQueries;
+import com.nexa.infrastructure.persistence.PageQueries;
 
 import com.nexa.domain.model.model.Vendor;
 import com.nexa.domain.model.repository.VendorRepository;

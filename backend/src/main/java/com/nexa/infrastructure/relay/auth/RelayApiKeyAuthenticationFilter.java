@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.relay.auth;
 
-import com.nexa.shared.security.rbac.ActorRole;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
+import com.nexa.domain.security.rbac.ActorRole;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
 import com.nexa.domain.token.model.Token;
 import com.nexa.domain.token.vo.TokenStatus;
 import com.nexa.domain.token.repository.TokenRepository;

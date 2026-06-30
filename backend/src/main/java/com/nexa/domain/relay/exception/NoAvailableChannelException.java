@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 无可用渠道异常（RL-1 §4 / RL-7 第④步「无可用渠道→上抛错误」，503）。

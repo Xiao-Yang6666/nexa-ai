@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.oauthprovider;
 
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.application.oauthprovider.FetchOidcDiscoveryUseCase;
 import com.nexa.application.oauthprovider.ManageCustomOAuthProviderUseCase;
 import com.nexa.application.oauthprovider.SaveCustomOAuthProviderCommand;

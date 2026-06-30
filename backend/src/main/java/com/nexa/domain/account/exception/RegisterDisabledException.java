@@ -1,6 +1,6 @@
 package com.nexa.domain.account.exception;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 /**
  * 注册功能被系统开关关闭异常。

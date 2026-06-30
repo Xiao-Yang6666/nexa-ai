@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.account.persistence;
 
-import com.nexa.shared.persistence.PageQueries;
+import com.nexa.infrastructure.persistence.PageQueries;
 
 import com.nexa.domain.account.exception.UserAlreadyExistsException;
 import com.nexa.domain.account.model.User;

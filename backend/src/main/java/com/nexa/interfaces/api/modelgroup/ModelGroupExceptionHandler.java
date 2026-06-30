@@ -1,12 +1,12 @@
 package com.nexa.interfaces.api.modelgroup;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 import com.nexa.domain.modelgroup.exception.InvalidModelGroupParameterException;
 import com.nexa.domain.modelgroup.exception.ModelGroupCodeConflictException;
 import com.nexa.domain.modelgroup.exception.ModelGroupCodeNotFoundException;
 import com.nexa.domain.modelgroup.exception.ModelGroupNotFoundException;
 import com.nexa.domain.modelgroup.exception.ModelGroupPersistenceException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

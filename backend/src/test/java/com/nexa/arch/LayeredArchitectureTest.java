@@ -14,14 +14,13 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * 四层架构依赖守护（Phase 4，ArchUnit）。
  *
  * <p>翻转为「四层优先」结构后，编译器不再阻止 {@code infrastructure} 直接 import 别域
- * {@code domain}，依赖方向只能靠测试固化。本测试固化两类铁律：
+ * {@code domain}，依赖方向只能靠测试固化。原顶层 {@code common}/{@code shared} 已按 DDD
+ * 语义打散进四层（领域基类入 {@code domain.kernel}，security/web/persistence 各归其层），
+ * 不再有独立的共享根。本测试固化一条铁律：
  * <ol>
  *   <li><b>层依赖单向</b>：domain 不依赖任何上层；application 不依赖 interfaces/infrastructure；
- *       interfaces 不依赖 infrastructure。</li>
- *   <li><b>sharedkernel 是领域共享内核</b>：被各域 domain 当基类继承（如 {@code DomainException}），
- *       自身零依赖——不依赖任何业务层，也不依赖技术横切 {@code shared}。</li>
- *   <li><b>shared 是技术横切底座</b>：security/web/persistence 等横切关注点，可依赖 sharedkernel，
- *       但不依赖任何业务层。</li>
+ *       interfaces 不依赖 infrastructure。{@code domain.kernel}（领域共享内核，被各域当基类继承）
+ *       天然受 domain 规则约束，零上层依赖。</li>
  * </ol>
  *
  * <p>已知历史违规（结构翻转暴露的既有债，待单独整改，不在本次结构重构中盲改）：
@@ -84,35 +83,6 @@ class LayeredArchitectureTest {
                 .and().areNotAssignableTo(com.nexa.interfaces.api.relay.RelayController.class)
                 .should().dependOnClassesThat()
                 .resideInAPackage("com.nexa.infrastructure..");
-        rule.check(classes);
-    }
-
-    @Test
-    @DisplayName("sharedkernel 领域共享内核不得依赖业务层或技术横切 shared")
-    void sharedKernelDependsOnNothing() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("com.nexa.sharedkernel..")
-                .should().dependOnClassesThat()
-                .resideInAnyPackage(
-                        "com.nexa.interfaces..",
-                        "com.nexa.application..",
-                        "com.nexa.domain..",
-                        "com.nexa.infrastructure..",
-                        "com.nexa.shared..");
-        rule.check(classes);
-    }
-
-    @Test
-    @DisplayName("shared 技术横切底座不得依赖任何业务层（可依赖 sharedkernel）")
-    void sharedDependsOnNoBusinessLayer() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("com.nexa.shared..")
-                .should().dependOnClassesThat()
-                .resideInAnyPackage(
-                        "com.nexa.interfaces..",
-                        "com.nexa.application..",
-                        "com.nexa.domain..",
-                        "com.nexa.infrastructure..");
         rule.check(classes);
     }
 }

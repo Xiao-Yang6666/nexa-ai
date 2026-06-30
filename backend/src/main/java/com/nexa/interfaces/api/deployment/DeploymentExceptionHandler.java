@@ -1,11 +1,11 @@
 package com.nexa.interfaces.api.deployment;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 import com.nexa.domain.deployment.exception.DeploymentNameUnavailableException;
 import com.nexa.domain.deployment.exception.InvalidDeploymentParameterException;
 import com.nexa.domain.deployment.exception.IonetIntegrationException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

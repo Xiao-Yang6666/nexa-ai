@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.oauthprovider;
 
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.domain.oauthprovider.exception.CustomOAuthProviderNotFoundException;
 import com.nexa.domain.oauthprovider.exception.InvalidCustomOAuthProviderException;
 import org.springframework.http.HttpStatus;

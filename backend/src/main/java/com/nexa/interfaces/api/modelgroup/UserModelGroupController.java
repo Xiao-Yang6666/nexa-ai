@@ -2,11 +2,11 @@ package com.nexa.interfaces.api.modelgroup;
 
 import com.nexa.application.modelgroup.ResolveAccessibleModelGroupsUseCase;
 import com.nexa.interfaces.api.modelgroup.dto.UserModelGroupVO;
-import com.nexa.shared.security.rbac.AuthLevel;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.annotation.CurrentActor;
-import com.nexa.shared.security.annotation.RequireRole;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.domain.security.rbac.AuthLevel;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.interfaces.security.annotation.CurrentActor;
+import com.nexa.interfaces.security.annotation.RequireRole;
+import com.nexa.interfaces.web.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

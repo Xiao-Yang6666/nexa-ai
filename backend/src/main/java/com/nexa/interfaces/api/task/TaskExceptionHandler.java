@@ -1,10 +1,10 @@
 package com.nexa.interfaces.api.task;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 import com.nexa.domain.task.exception.InvalidTaskParameterException;
 import com.nexa.domain.task.exception.TaskNotFoundException;
 import com.nexa.domain.task.exception.TaskPersistenceException;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

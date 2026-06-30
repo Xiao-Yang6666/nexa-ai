@@ -1,6 +1,6 @@
 package com.nexa.domain.routing.exception;
 
-import com.nexa.sharedkernel.DomainException;
+import com.nexa.domain.kernel.DomainException;
 
 /**
  * 亲和缓存/规则持久化异常（基础设施层数据损坏或序列化失败时抛出，F-2029~F-2033）。

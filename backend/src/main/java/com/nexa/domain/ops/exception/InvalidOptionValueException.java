@@ -1,6 +1,6 @@
 package com.nexa.domain.ops.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 全站选项更新值非法（F-4018 及其附着的横切配置校验 F-4032/F-4033/F-4034/F-4035）。

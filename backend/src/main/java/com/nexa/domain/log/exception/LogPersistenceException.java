@@ -1,6 +1,6 @@
 package com.nexa.domain.log.exception;
 
-import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.domain.kernel.HttpAwareDomainException;
 
 /**
  * 日志读侧持久化失败（→500，包装底层数据访问异常，不吞错保留错误链）。

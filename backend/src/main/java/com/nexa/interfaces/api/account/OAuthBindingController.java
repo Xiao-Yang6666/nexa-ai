@@ -2,7 +2,7 @@ package com.nexa.interfaces.api.account;
 
 import com.nexa.application.account.ListUserOAuthBindingsUseCase;
 import com.nexa.application.account.UnbindOAuthUseCase;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.account.dto.OAuthBindingVO;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -2,12 +2,12 @@ package com.nexa.interfaces.api.billing;
 
 import com.nexa.application.billing.RedeemCodeUseCase;
 import com.nexa.domain.billing.vo.Quota;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.billing.dto.RedeemRequest;
-import com.nexa.shared.security.rbac.AuthLevel;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.annotation.CurrentActor;
-import com.nexa.shared.security.annotation.RequireRole;
+import com.nexa.domain.security.rbac.AuthLevel;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.interfaces.security.annotation.CurrentActor;
+import com.nexa.interfaces.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

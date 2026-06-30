@@ -1,13 +1,13 @@
 package com.nexa.interfaces.api.relay;
 
 import com.nexa.application.relay.ManageMappingUseCase;
-import com.nexa.shared.web.ApiResponse;
+import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.relay.dto.UserAliasRequest;
 import com.nexa.interfaces.api.relay.dto.UserAliasVO;
-import com.nexa.shared.security.rbac.AuthLevel;
-import com.nexa.shared.security.rbac.AuthenticatedActor;
-import com.nexa.shared.security.annotation.CurrentActor;
-import com.nexa.shared.security.annotation.RequireRole;
+import com.nexa.domain.security.rbac.AuthLevel;
+import com.nexa.domain.security.rbac.AuthenticatedActor;
+import com.nexa.interfaces.security.annotation.CurrentActor;
+import com.nexa.interfaces.security.annotation.RequireRole;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
