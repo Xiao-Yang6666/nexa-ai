@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.account.config;
 
 import com.nexa.infrastructure.relay.auth.RelayApiKeyAuthenticationFilter;
-import com.nexa.common.security.infrastructure.auth.JwtAuthenticationFilter;
+import com.nexa.common.security.auth.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

@@ -1,9 +1,9 @@
 package com.nexa.interfaces.api.telegram;
 
-import com.nexa.common.security.domain.rbac.AuthLevel;
-import com.nexa.common.security.domain.rbac.AuthenticatedActor;
-import com.nexa.common.security.interfaces.annotation.CurrentActor;
-import com.nexa.common.security.interfaces.annotation.RequireRole;
+import com.nexa.common.security.rbac.AuthLevel;
+import com.nexa.common.security.rbac.AuthenticatedActor;
+import com.nexa.common.security.annotation.CurrentActor;
+import com.nexa.common.security.annotation.RequireRole;
 import com.nexa.application.telegram.TelegramBindCommand;
 import com.nexa.application.telegram.TelegramBindUseCase;
 import com.nexa.application.telegram.TelegramLoginCommand;

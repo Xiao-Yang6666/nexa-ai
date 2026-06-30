@@ -5,10 +5,10 @@ import com.nexa.domain.model.model.UserModelAlias;
 import com.nexa.domain.model.vo.AliasScopeType;
 import com.nexa.common.web.ApiResponse;
 import com.nexa.interfaces.api.model.dto.*;
-import com.nexa.common.security.domain.rbac.AuthLevel;
-import com.nexa.common.security.domain.rbac.AuthenticatedActor;
-import com.nexa.common.security.interfaces.annotation.CurrentActor;
-import com.nexa.common.security.interfaces.annotation.RequireRole;
+import com.nexa.common.security.rbac.AuthLevel;
+import com.nexa.common.security.rbac.AuthenticatedActor;
+import com.nexa.common.security.annotation.CurrentActor;
+import com.nexa.common.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

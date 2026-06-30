@@ -5,8 +5,8 @@ import com.nexa.domain.model.model.PublicModel;
 import com.nexa.domain.model.vo.Pagination;
 import com.nexa.common.web.ApiResponse;
 import com.nexa.interfaces.api.model.dto.*;
-import com.nexa.common.security.domain.rbac.AuthLevel;
-import com.nexa.common.security.interfaces.annotation.RequireRole;
+import com.nexa.common.security.rbac.AuthLevel;
+import com.nexa.common.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

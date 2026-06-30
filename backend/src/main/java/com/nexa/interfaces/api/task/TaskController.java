@@ -1,9 +1,9 @@
 package com.nexa.interfaces.api.task;
 
-import com.nexa.common.security.domain.rbac.AuthLevel;
-import com.nexa.common.security.domain.rbac.AuthenticatedActor;
-import com.nexa.common.security.interfaces.annotation.CurrentActor;
-import com.nexa.common.security.interfaces.annotation.RequireRole;
+import com.nexa.common.security.rbac.AuthLevel;
+import com.nexa.common.security.rbac.AuthenticatedActor;
+import com.nexa.common.security.annotation.CurrentActor;
+import com.nexa.common.security.annotation.RequireRole;
 import com.nexa.application.task.QueryTaskUseCase;
 import com.nexa.application.task.TaskPage;
 import com.nexa.domain.task.model.Task;
