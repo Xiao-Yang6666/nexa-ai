@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 /**
  * MyBatis-Plus 全局配置（基础设施层共享构件）。
@@ -24,9 +25,18 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p>连接池：MyBatis-Plus 复用 Spring Boot 自动装配的同一 {@code DataSource}（HikariCP），
  * 不新建第二个连接池（Req11.3）。</p>
+ *
+ * <p>Bean 命名：默认 generator 取「decapitalize 后的简单类名」当 bean name，跨 bounded context
+ * 的同名 Mapper（如 {@code relay} 与 {@code model} 各自的 {@code UserModelAliasMapper}）会撞名导致
+ * {@code ConflictingBeanDefinitionException}。改用 {@link FullyQualifiedAnnotationBeanNameGenerator}
+ * 以全限定类名作 bean name，彻底消除跨包重名冲突；各 {@code RepositoryImpl} 均按类型注入 Mapper，
+ * 不依赖其 bean name，故无副作用。</p>
  */
 @Configuration
-@MapperScan(basePackages = "com.nexa.infrastructure.**.persistence.mapper", markerInterface = BaseMapper.class)
+@MapperScan(
+        basePackages = "com.nexa.infrastructure.**.persistence.mapper",
+        markerInterface = BaseMapper.class,
+        nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class MybatisPlusConfig {
 
     /**
