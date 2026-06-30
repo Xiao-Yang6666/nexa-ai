@@ -1,5 +1,6 @@
 package com.nexa.infrastructure.modelgroup.persistence;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.modelgroup.model.ModelGroupAccess;
 import com.nexa.domain.modelgroup.repository.ModelGroupAccessRepository;
 import com.nexa.domain.modelgroup.vo.AccessSubjectType;
@@ -10,91 +11,80 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 领域仓储 {@link ModelGroupAccessRepository} 的 JPA 实现（基础设施层适配器）。
+ * 领域仓储 {@link ModelGroupAccessRepository} 的 MyBatis-Plus 实现（基础设施层适配器）。
  *
- * <p>授权关系无软删除：撤销授权即物理删除（{@link #deleteById}）。聚合 ⇄ 实体映射集中于此。</p>
+ * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link ModelGroupAccessMapper} + PO 就近工厂映射实现。
+ * 授权关系无软删除：撤销授权即物理删除（{@code deleteById} / {@code delete(wrapper)}）。</p>
  */
 @Repository
 public class ModelGroupAccessRepositoryImpl implements ModelGroupAccessRepository {
 
-    private final SpringDataModelGroupAccessJpaRepository jpa;
+    private final ModelGroupAccessMapper mapper;
 
     /**
-     * @param jpa Spring Data JPA 仓库（infra 内部依赖）
+     * @param mapper 模型组访问授权 MyBatis-Plus Mapper（infra 内部依赖）
      */
-    public ModelGroupAccessRepositoryImpl(SpringDataModelGroupAccessJpaRepository jpa) {
-        this.jpa = jpa;
+    public ModelGroupAccessRepositoryImpl(ModelGroupAccessMapper mapper) {
+        this.mapper = mapper;
     }
 
     /** {@inheritDoc} */
     @Override
     public ModelGroupAccess save(ModelGroupAccess access) {
-        ModelGroupAccessPO saved = jpa.save(toEntity(access));
-        access.assignId(saved.getId());
-        return toDomain(saved);
+        ModelGroupAccessPO po = ModelGroupAccessPO.of(access);
+        if (po.getId() == null) {
+            mapper.insert(po);
+        } else {
+            mapper.updateById(po);
+        }
+        access.assignId(po.getId());
+        return po.toDomain();
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean deleteById(long id) {
-        if (!jpa.existsById(id)) {
-            return false;
-        }
-        jpa.deleteById(id);
-        return true;
+        // 物理删除，受影响行数 0 表示不存在（等价原 existsById 判空 + deleteById）。
+        return mapper.deleteById(id) > 0;
     }
 
     /** {@inheritDoc} */
     @Override
     public List<ModelGroupAccess> findByModelGroupId(long modelGroupId) {
-        return jpa.findByModelGroupId(modelGroupId).stream().map(this::toDomain).toList();
+        return mapper.selectList(Wrappers.<ModelGroupAccessPO>lambdaQuery()
+                        .eq(ModelGroupAccessPO::getModelGroupId, modelGroupId)).stream()
+                .map(ModelGroupAccessPO::toDomain).toList();
     }
 
     /** {@inheritDoc} */
     @Override
     public List<Long> findGroupIdsBySubject(AccessSubjectType subjectType, long subjectId) {
-        return jpa.findGroupIdsBySubject(subjectType.wireValue(), subjectId);
+        return mapper.findGroupIdsBySubject(subjectType.wireValue(), subjectId);
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean exists(long modelGroupId, AccessSubjectType subjectType, long subjectId) {
-        return jpa.existsByModelGroupIdAndSubjectTypeAndSubjectId(
-                modelGroupId, subjectType.wireValue(), subjectId);
+        return mapper.selectCount(Wrappers.<ModelGroupAccessPO>lambdaQuery()
+                .eq(ModelGroupAccessPO::getModelGroupId, modelGroupId)
+                .eq(ModelGroupAccessPO::getSubjectType, subjectType.wireValue())
+                .eq(ModelGroupAccessPO::getSubjectId, subjectId)) > 0;
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<ModelGroupAccess> findById(long id) {
-        return jpa.findById(id).map(this::toDomain);
+        return Optional.ofNullable(mapper.selectById(id)).map(ModelGroupAccessPO::toDomain);
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean delete(long modelGroupId, AccessSubjectType subjectType, long subjectId) {
-        long affected = jpa.deleteByModelGroupIdAndSubjectTypeAndSubjectId(
-                modelGroupId, subjectType.wireValue(), subjectId);
+        // 物理删除指定主体对指定模型组的授权，受影响行数 > 0 表示确有删除（等价原派生 deleteBy…）。
+        int affected = mapper.delete(Wrappers.<ModelGroupAccessPO>lambdaQuery()
+                .eq(ModelGroupAccessPO::getModelGroupId, modelGroupId)
+                .eq(ModelGroupAccessPO::getSubjectType, subjectType.wireValue())
+                .eq(ModelGroupAccessPO::getSubjectId, subjectId));
         return affected > 0;
-    }
-
-    // ---- 聚合 <-> 实体映射 ----
-
-    private ModelGroupAccessPO toEntity(ModelGroupAccess a) {
-        ModelGroupAccessPO e = new ModelGroupAccessPO();
-        e.setId(a.id());
-        e.setModelGroupId(a.modelGroupId());
-        e.setSubjectType(a.subjectType().wireValue());
-        e.setSubjectId(a.subjectId());
-        e.setCreatedTime(a.createdTime());
-        return e;
-    }
-
-    private ModelGroupAccess toDomain(ModelGroupAccessPO e) {
-        return ModelGroupAccess.rehydrate(
-                e.getId(),
-                e.getModelGroupId(),
-                AccessSubjectType.fromWire(e.getSubjectType()),
-                e.getSubjectId(),
-                e.getCreatedTime());
     }
 }

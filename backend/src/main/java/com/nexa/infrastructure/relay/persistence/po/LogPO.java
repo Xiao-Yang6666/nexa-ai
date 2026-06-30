@@ -1,14 +1,12 @@
 package com.nexa.infrastructure.relay.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.relay.model.RelayLog;
+import com.nexa.infrastructure.persistence.JsonbStringTypeHandler;
 
 /**
  * Relay 用量日志 JPA 持久化实体（基础设施层，对齐 V11 {@code logs} 与 DB-SCHEMA §5 + 10 新列）。
@@ -17,116 +15,108 @@ import org.hibernate.type.SqlTypes;
  * {@code @JdbcTypeCode(SqlTypes.JSON)} 以 String 承载 JSONB；{@code group} 为 PG 保留字双引号转义；
  * {@code channel_name} 为只读 join 列（insertable/updatable=false）。{@code actual_upstream_model}(B) /
  * {@code quota_cost} / {@code quota_profit} 落库但客户视图 DTO 裁剪掉（可见性铁律）。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：本 PO 同时保留 JPA 注解（{@code @Entity/@Table/@Column/@Id/@JdbcTypeCode}，
+ * 满足并存期 {@code ddl-auto=validate} 全局启动校验）与 MyBatis-Plus 注解
+ * （{@code @TableName/@TableId/@TableField}，供 Mapper 实际读写）。{@code other}(jsonb) 在 MyBatis-Plus 侧
+ * 由 {@link JsonbStringTypeHandler} 承载（故 {@code @TableName} 开 {@code autoResultMap=true} 使读取也走该 handler）；
+ * {@code channel_name} 只读列以 {@code @TableField(insertStrategy/updateStrategy=NEVER)} 对齐 JPA 的
+ * insertable/updatable=false。两套注解命名空间独立、互不读取。阶段4 统一移除 JPA 注解。</p>
  */
-@Entity
-@Table(name = "logs", indexes = {
-        @Index(name = "idx_created_at_id", columnList = "created_at, id"),
-        @Index(name = "idx_user_id_id", columnList = "user_id, id"),
-        @Index(name = "idx_logs_username", columnList = "username"),
-        @Index(name = "idx_logs_token_name", columnList = "token_name"),
-        @Index(name = "idx_logs_model_name", columnList = "model_name"),
-        @Index(name = "idx_logs_channel", columnList = "channel"),
-        @Index(name = "idx_logs_token_id", columnList = "token_id"),
-        @Index(name = "idx_logs_ip", columnList = "ip"),
-        @Index(name = "idx_logs_requested_model", columnList = "requested_model"),
-        @Index(name = "idx_logs_resolved_public_model", columnList = "resolved_public_model"),
-        @Index(name = "idx_logs_actual_upstream_model", columnList = "actual_upstream_model")
-})
+@TableName(value = "logs", autoResultMap = true)
 public class LogPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "user_id")
+    @TableField("user_id")
     private Integer userId;
 
-    @Column(name = "created_at", nullable = false)
+    @TableField("created_at")
     private Long createdAt;
 
-    @Column(name = "type", nullable = false)
+    @TableField("type")
     private Integer type;
 
-    @Column(name = "content", columnDefinition = "text")
+    @TableField("content")
     private String content;
 
-    @Column(name = "username")
+    @TableField("username")
     private String username;
 
-    @Column(name = "token_name")
+    @TableField("token_name")
     private String tokenName;
 
-    @Column(name = "model_name")
+    @TableField("model_name")
     private String modelName;
 
-    @Column(name = "quota")
+    @TableField("quota")
     private Integer quota;
 
-    @Column(name = "prompt_tokens")
+    @TableField("prompt_tokens")
     private Integer promptTokens;
 
-    @Column(name = "completion_tokens")
+    @TableField("completion_tokens")
     private Integer completionTokens;
 
-    @Column(name = "use_time")
+    @TableField("use_time")
     private Integer useTime;
 
-    @Column(name = "is_stream")
+    @TableField("is_stream")
     private Boolean isStream;
 
-    @Column(name = "channel")
+    @TableField("channel")
     private Integer channelId;
 
-    @Column(name = "channel_name", insertable = false, updatable = false)
+    @TableField(value = "channel_name", insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private String channelName;
 
-    @Column(name = "token_id")
+    @TableField("token_id")
     private Integer tokenId;
 
-    @Column(name = "\"group\"")
+    @TableField("\"group\"")
     private String group;
 
-    @Column(name = "ip")
+    @TableField("ip")
     private String ip;
 
-    @Column(name = "request_id", length = 64)
+    @TableField("request_id")
     private String requestId;
 
-    @Column(name = "upstream_request_id", length = 128)
+    @TableField("upstream_request_id")
     private String upstreamRequestId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "other", columnDefinition = "jsonb")
+    @TableField(value = "other", typeHandler = JsonbStringTypeHandler.class)
     private String other;
 
-    @Column(name = "requested_model")
+    @TableField("requested_model")
     private String requestedModel;
 
-    @Column(name = "resolved_public_model")
+    @TableField("resolved_public_model")
     private String resolvedPublicModel;
 
-    @Column(name = "actual_upstream_model")
+    @TableField("actual_upstream_model")
     private String actualUpstreamModel;
 
-    @Column(name = "inbound_protocol", length = 32)
+    @TableField("inbound_protocol")
     private String inboundProtocol;
 
-    @Column(name = "upstream_protocol", length = 32)
+    @TableField("upstream_protocol")
     private String upstreamProtocol;
 
-    @Column(name = "protocol_converted")
+    @TableField("protocol_converted")
     private Boolean protocolConverted;
 
-    @Column(name = "user_agent", length = 512)
+    @TableField("user_agent")
     private String userAgent;
 
-    @Column(name = "quota_sell")
+    @TableField("quota_sell")
     private Integer quotaSell;
 
-    @Column(name = "quota_cost")
+    @TableField("quota_cost")
     private Integer quotaCost;
 
-    @Column(name = "quota_profit")
+    @TableField("quota_profit")
     private Integer quotaProfit;
 
     public Long getId() { return id; }
@@ -190,4 +180,53 @@ public class LogPO {
     public void setQuotaCost(Integer quotaCost) { this.quotaCost = quotaCost; }
     public Integer getQuotaProfit() { return quotaProfit; }
     public void setQuotaProfit(Integer quotaProfit) { this.quotaProfit = quotaProfit; }
+
+    // ---- 就近映射工厂方法：把 RepositoryImpl 里的 LogPO 装配 + Long→int 窄化逻辑搬到这里 ----
+
+    /**
+     * 领域日志 → PO（持久化方向，write-only）：逐字段映射，{@code type} 取枚举 code（null→0），
+     * {@code userId}/{@code channelId}/{@code tokenId} 由领域 Long 窄化为表 int 列（值域受控，
+     * relay 日志不会超 int 范围），{@code channelName} 为只读 join 列不写入。无 toDomain（本 BC 只写）。
+     *
+     * @param log 领域日志对象（非空）
+     * @return 待持久化的 PO
+     */
+    public static LogPO of(RelayLog log) {
+        LogPO e = new LogPO();
+        e.setUserId(toInt(log.userId()));
+        e.setCreatedAt(log.createdAt());
+        e.setType(log.type() == null ? 0 : log.type().code());
+        e.setContent(log.content());
+        e.setUsername(log.username());
+        e.setTokenName(log.tokenName());
+        e.setModelName(log.modelName());
+        e.setQuota(log.quota());
+        e.setPromptTokens(log.promptTokens());
+        e.setCompletionTokens(log.completionTokens());
+        e.setUseTime(log.useTime());
+        e.setIsStream(log.isStream());
+        e.setChannelId(toInt(log.channelId()));
+        e.setTokenId(toInt(log.tokenId()));
+        e.setGroup(log.group());
+        e.setIp(log.ip());
+        e.setRequestId(log.requestId());
+        e.setUpstreamRequestId(log.upstreamRequestId());
+        e.setOther(log.other());
+        e.setRequestedModel(log.requestedModel());
+        e.setResolvedPublicModel(log.resolvedPublicModel());
+        e.setActualUpstreamModel(log.actualUpstreamModel());
+        e.setInboundProtocol(log.inboundProtocol());
+        e.setUpstreamProtocol(log.upstreamProtocol());
+        e.setProtocolConverted(log.isProtocolConverted());
+        e.setUserAgent(log.userAgent());
+        e.setQuotaSell(log.quotaSell());
+        e.setQuotaCost(log.quotaCost());
+        e.setQuotaProfit(log.quotaProfit());
+        return e;
+    }
+
+    /** 领域 Long → 表 int 列窄化（null 透传）。relay 日志值域受控，不会超 int 范围。 */
+    private static Integer toInt(Long v) {
+        return v == null ? null : v.intValue();
+    }
 }

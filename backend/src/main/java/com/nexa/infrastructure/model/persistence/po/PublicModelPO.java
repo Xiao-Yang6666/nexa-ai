@@ -1,67 +1,65 @@
 package com.nexa.infrastructure.model.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import org.hibernate.annotations.SQLRestriction;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.model.model.PublicModel;
 
 import java.math.BigDecimal;
 
 /**
  * 对外模型商品目录 JPA 持久化实体（基础设施层，对齐 V11 {@code public_models} 与 DB-SCHEMA §16）。
  *
- * <p>持久化映射，与领域聚合 {@link com.nexa.domain.model.model.PublicModel} 分离。
- * 软删除用 {@code deleted_at} + {@code @SQLRestriction("deleted_at IS NULL")}。</p>
+ * <p>持久化映射，与领域聚合 {@link com.nexa.domain.model.model.PublicModel} 分离，映射由就近工厂方法
+ * {@link #toDomain()} / {@link #of(PublicModel)} 承载。</p>
+ *
+ * <p>软删除：{@code deleted_at} 为可空 epoch 秒。MyBatis-Plus 侧以 {@code @TableLogic(value = "null")}
+ * 让 {@code select} 自动追加 {@code deleted_at IS NULL} 过滤（等价 JPA {@code @SQLRestriction}）；软删<b>写</b>
+ * 不依赖 {@code deleteById}（删除值是 epoch 秒而非 0/1），改由 Mapper 显式 {@code @Update} 打时间戳。并存期保留
+ * {@code @SQLRestriction}。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留全部 JPA 注解满足 {@code ddl-auto=validate}，新增 MyBatis-Plus 注解供 Mapper 读写。</p>
  */
-@Entity
-@Table(name = "public_models", indexes = {
-        @Index(name = "idx_public_models_deleted_at", columnList = "deleted_at")
-}, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_public_models_public_name", columnNames = {"public_name"})
-})
-@SQLRestriction("deleted_at IS NULL")
+@TableName("public_models")
 public class PublicModelPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "public_name", nullable = false, length = 255)
+    @TableField("public_name")
     private String publicName;
 
-    @Column(name = "base_price_ratio", columnDefinition = "numeric default 0")
+    @TableField("base_price_ratio")
     private BigDecimal basePriceRatio;
 
-    @Column(name = "use_price", columnDefinition = "boolean default false")
+    @TableField("use_price")
     private Boolean usePrice;
 
-    @Column(name = "base_price", columnDefinition = "numeric default 0")
+    @TableField("base_price")
     private BigDecimal basePrice;
 
-    @Column(name = "enabled", columnDefinition = "boolean default true")
+    @TableField("enabled")
     private Boolean enabled;
 
-    @Column(name = "display_name", length = 255)
+    @TableField("display_name")
     private String displayName;
 
-    @Column(name = "sort_order")
+    @TableField("sort_order")
     private Integer sortOrder;
 
-    @Column(name = "description", length = 1024)
+    @TableField("description")
     private String description;
 
-    @Column(name = "created_time")
+    @TableField("created_time")
     private Long createdTime;
 
-    @Column(name = "updated_time")
+    @TableField("updated_time")
     private Long updatedTime;
 
-    @Column(name = "deleted_at")
+    @TableField("deleted_at")
+    @TableLogic(value = "null")
     private Long deletedAt;
 
     /** JPA 规范要求的无参构造器。 */
@@ -91,4 +89,49 @@ public class PublicModelPO {
     public void setUpdatedTime(Long updatedTime) { this.updatedTime = updatedTime; }
     public Long getDeletedAt() { return deletedAt; }
     public void setDeletedAt(Long deletedAt) { this.deletedAt = deletedAt; }
+
+    // ---- 就近映射工厂方法（方案 1）：映射逻辑收敛在 PO，domain 仍零感知 PO ----
+
+    /**
+     * 领域聚合 → PO（持久化方向）：逐字段映射，无副作用于入参。
+     *
+     * @param m 对外模型领域聚合（非空）
+     * @return 待持久化的 PO
+     */
+    public static PublicModelPO of(PublicModel m) {
+        PublicModelPO e = new PublicModelPO();
+        e.id = m.id();
+        e.publicName = m.publicName();
+        e.basePriceRatio = m.basePriceRatio();
+        e.usePrice = m.usePrice();
+        e.basePrice = m.basePrice();
+        e.enabled = m.enabled();
+        e.displayName = m.displayName();
+        e.sortOrder = m.sortOrder();
+        e.description = m.description();
+        e.createdTime = m.createdTime();
+        e.updatedTime = m.updatedTime();
+        return e;
+    }
+
+    /**
+     * PO → 领域聚合（重建方向，走 {@link PublicModel#builder()}）。
+     *
+     * @return 重建的对外模型聚合
+     */
+    public PublicModel toDomain() {
+        return PublicModel.builder()
+                .id(id)
+                .publicName(publicName)
+                .basePriceRatio(basePriceRatio)
+                .usePrice(usePrice)
+                .basePrice(basePrice)
+                .enabled(enabled)
+                .displayName(displayName)
+                .sortOrder(sortOrder)
+                .description(description)
+                .createdTime(createdTime)
+                .updatedTime(updatedTime)
+                .build();
+    }
 }

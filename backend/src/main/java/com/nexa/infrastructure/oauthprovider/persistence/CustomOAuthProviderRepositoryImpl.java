@@ -1,45 +1,49 @@
 package com.nexa.infrastructure.oauthprovider.persistence;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexa.domain.oauthprovider.exception.InvalidCustomOAuthProviderException;
 import com.nexa.domain.oauthprovider.model.CustomOAuthProvider;
 import com.nexa.domain.oauthprovider.repository.CustomOAuthProviderRepository;
-import com.nexa.domain.oauthprovider.vo.OAuthEndpoints;
 import com.nexa.infrastructure.oauthprovider.persistence.po.CustomOAuthProviderPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 领域仓储 {@link CustomOAuthProviderRepository} 的 JPA 实现（基础设施层适配器，F-1024/1025）。
+ * 领域仓储 {@link CustomOAuthProviderRepository} 的 MyBatis-Plus 实现（基础设施层适配器，F-1024/1025）。
  *
- * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link SpringDataCustomOAuthProviderJpaRepository}
- * + 实体↔领域映射实现它。领域聚合 {@link CustomOAuthProvider} 与 JPA 实体
- * {@link CustomOAuthProviderPO} 分离，映射集中在此处，domain 因此不感知 Hibernate
- * （backend-engineer §2.3）。name 唯一索引冲突翻译为领域异常（不吞错）。</p>
+ * <p>DDD 依赖倒置落地：domain 定义接口，本类用 {@link CustomOAuthProviderMapper}
+ * + PO 就近工厂方法（{@code PO.of} / {@code po.toDomain}）实现它。领域聚合 {@link CustomOAuthProvider}
+ * 与 PO {@link CustomOAuthProviderPO} 分离，domain 因此不感知持久化框架（backend-engineer §2.3）。
+ * name 唯一索引冲突翻译为领域异常（不吞错）。MyBatis-Plus 同样抛 Spring {@code DataIntegrityViolationException}。</p>
  */
 @Repository
 public class CustomOAuthProviderRepositoryImpl implements CustomOAuthProviderRepository {
 
-    private final SpringDataCustomOAuthProviderJpaRepository jpa;
+    private final CustomOAuthProviderMapper mapper;
 
     /**
-     * @param jpa Spring Data JPA 仓库（infra 内部依赖）
+     * @param mapper MyBatis-Plus Mapper（infra 内部依赖）
      */
-    public CustomOAuthProviderRepositoryImpl(SpringDataCustomOAuthProviderJpaRepository jpa) {
-        this.jpa = jpa;
+    public CustomOAuthProviderRepositoryImpl(CustomOAuthProviderMapper mapper) {
+        this.mapper = mapper;
     }
 
     /** {@inheritDoc} */
     @Override
     public CustomOAuthProvider save(CustomOAuthProvider provider) {
-        CustomOAuthProviderPO entity = toEntity(provider);
+        CustomOAuthProviderPO po = CustomOAuthProviderPO.of(provider);
         try {
-            CustomOAuthProviderPO saved = jpa.saveAndFlush(entity);
-            provider.assignId(saved.getId());
-            return toDomain(saved);
+            if (po.getId() == null) {
+                mapper.insert(po);          // 回填自增 id 到 po
+            } else {
+                mapper.updateById(po);
+            }
+            provider.assignId(po.getId());
+            return po.toDomain();
         } catch (DataIntegrityViolationException e) {
             // name 唯一索引冲突：provider 重名，翻译为领域语义（不回显内部约束细节）。
             throw new InvalidCustomOAuthProviderException(
@@ -50,74 +54,28 @@ public class CustomOAuthProviderRepositoryImpl implements CustomOAuthProviderRep
     /** {@inheritDoc} */
     @Override
     public Optional<CustomOAuthProvider> findById(long id) {
-        return jpa.findById(id).map(CustomOAuthProviderRepositoryImpl::toDomain);
+        return Optional.ofNullable(mapper.selectById(id)).map(CustomOAuthProviderPO::toDomain);
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<CustomOAuthProvider> findByName(String name) {
-        return jpa.findByName(name).map(CustomOAuthProviderRepositoryImpl::toDomain);
+        LambdaQueryWrapper<CustomOAuthProviderPO> w = Wrappers.<CustomOAuthProviderPO>lambdaQuery()
+                .eq(CustomOAuthProviderPO::getName, name);
+        return Optional.ofNullable(mapper.selectOne(w)).map(CustomOAuthProviderPO::toDomain);
     }
 
     /** {@inheritDoc} */
     @Override
     public List<CustomOAuthProvider> findAll() {
-        return jpa.findAll().stream()
-                .map(CustomOAuthProviderRepositoryImpl::toDomain)
+        return mapper.selectList(Wrappers.<CustomOAuthProviderPO>lambdaQuery()).stream()
+                .map(CustomOAuthProviderPO::toDomain)
                 .toList();
     }
 
     /** {@inheritDoc} */
     @Override
     public void deleteById(long id) {
-        jpa.deleteById(id);
-    }
-
-    // ---- 领域聚合 <-> JPA 实体映射（基础设施层内部，领域不可见） ----
-
-    /**
-     * 领域聚合 → JPA 实体（持久化方向）。
-     *
-     * @param p 领域聚合
-     * @return 待持久化的 JPA 实体
-     */
-    private static CustomOAuthProviderPO toEntity(CustomOAuthProvider p) {
-        CustomOAuthProviderPO e = new CustomOAuthProviderPO();
-        e.setId(p.id());
-        e.setName(p.name());
-        e.setClientId(p.clientId());
-        e.setClientSecret(p.clientSecret());
-        e.setAuthorizationEndpoint(p.endpoints().authorizationEndpoint());
-        e.setTokenEndpoint(p.endpoints().tokenEndpoint());
-        e.setUserinfoEndpoint(p.endpoints().userinfoEndpoint());
-        e.setScopes(p.scopes());
-        e.setEnabled(p.enabled());
-        e.setCreatedAt(p.createdAt() == null ? Instant.now().getEpochSecond() : p.createdAt().getEpochSecond());
-        e.setUpdatedAt(p.updatedAt() == null ? Instant.now().getEpochSecond() : p.updatedAt().getEpochSecond());
-        return e;
-    }
-
-    /**
-     * JPA 实体 → 领域聚合（重建方向，走 {@link CustomOAuthProvider#rehydrate}）。
-     *
-     * @param e JPA 实体
-     * @return 重建的领域聚合
-     */
-    private static CustomOAuthProvider toDomain(CustomOAuthProviderPO e) {
-        OAuthEndpoints endpoints = OAuthEndpoints.of(
-                e.getAuthorizationEndpoint(), e.getTokenEndpoint(), e.getUserinfoEndpoint());
-        Instant createdAt = e.getCreatedAt() == null ? Instant.now() : Instant.ofEpochSecond(e.getCreatedAt());
-        Instant updatedAt = e.getUpdatedAt() == null ? createdAt : Instant.ofEpochSecond(e.getUpdatedAt());
-        return CustomOAuthProvider.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .clientId(e.getClientId())
-                .clientSecret(e.getClientSecret())
-                .endpoints(endpoints)
-                .scopes(e.getScopes())
-                .enabled(e.isEnabled())
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
-                .build();
+        mapper.deleteById(id);
     }
 }

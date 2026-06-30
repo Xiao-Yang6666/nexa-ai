@@ -1,108 +1,107 @@
 package com.nexa.infrastructure.account.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.SQLRestriction;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.account.model.User;
+import com.nexa.domain.account.vo.Email;
+import com.nexa.domain.account.vo.Role;
+import com.nexa.domain.account.vo.UserStatus;
+import com.nexa.domain.account.vo.Username;
 
 /**
- * 用户 JPA 持久化实体（基础设施层）。
+ * 用户持久化实体（基础设施层）。
  *
  * <p>对齐 DB-SCHEMA §1 User / 表 {@code users}。本实体是<b>持久化映射</b>，与领域聚合
- * {@link com.nexa.domain.account.model.User} 分离（DDD：domain 不感知 JPA）。映射转换在
- * {@code UserRepositoryImpl}。本切片只声明注册/登录涉及的列子集 + 关键索引；其余 DB-SCHEMA
- * 列（github_id 等 OAuth 绑定、setting JSONB 等）在后续账号 wave 补齐，迁移脚本已建全表。</p>
+ * {@link com.nexa.domain.account.model.User} 分离（DDD：domain 不感知持久化框架）。映射转换在
+ * {@code UserRepositoryImpl}。</p>
  *
- * <p>软删除：沿用 DB-SCHEMA §1 的 deleted_at 时间戳 + {@code @SQLRestriction} 过滤未删行。</p>
+ * <p>软删除：{@code deleted_at} 为可空 epoch 秒时间戳。MyBatis-Plus 侧以 {@code @TableLogic(value = "null")}
+ * 让 {@code select} 自动追加 {@code deleted_at IS NULL} 过滤（等价 JPA {@code @SQLRestriction}）；
+ * 软删除<b>写</b>操作不依赖 {@code deleteById}（本项目删除值是 epoch 秒而非 0/1），改由 Mapper 显式
+ * {@code @Update} 打时间戳。并存期保留 {@code @SQLRestriction}。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留全部 JPA 注解满足 {@code ddl-auto=validate}，新增 MyBatis-Plus 注解供 Mapper 读写。
+ * {@code group} 为 PG 保留字，{@code @TableField} 以双引号显式转义。</p>
  */
-@Entity
-@Table(name = "users", indexes = {
-        @Index(name = "idx_users_username", columnList = "username", unique = true),
-        @Index(name = "idx_users_aff_code", columnList = "aff_code", unique = true),
-        @Index(name = "idx_users_email", columnList = "email"),
-        @Index(name = "idx_users_inviter_id", columnList = "inviter_id"),
-        @Index(name = "idx_users_deleted_at", columnList = "deleted_at")
-})
-@SQLRestriction("deleted_at IS NULL")
+@TableName("users")
 public class UserPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "username", unique = true, length = 20)
+    @TableField("username")
     private String username;
 
     /** 密码哈希落库（BCrypt 串 60 字符，长度放宽至 100 以容纳算法前缀）。 */
-    @Column(name = "password", nullable = false, length = 100)
+    @TableField("password")
     private String password;
 
-    @Column(name = "display_name", length = 20)
+    @TableField("display_name")
     private String displayName;
 
-    @Column(name = "role", columnDefinition = "integer default 1")
+    @TableField("role")
     private Integer role;
 
-    @Column(name = "status", columnDefinition = "integer default 1")
+    @TableField("status")
     private Integer status;
 
-    @Column(name = "email", length = 50)
+    @TableField("email")
     private String email;
 
-    @Column(name = "quota", columnDefinition = "bigint default 0")
+    @TableField("quota")
     private Long quota;
 
-    @Column(name = "used_quota", columnDefinition = "bigint default 0")
+    @TableField("used_quota")
     private Long usedQuota;
 
-    @Column(name = "request_count", columnDefinition = "integer default 0")
+    @TableField("request_count")
     private Integer requestCount;
 
-    @Column(name = "aff_code", length = 32, unique = true)
+    @TableField("aff_code")
     private String affCode;
 
-    @Column(name = "aff_count", columnDefinition = "integer default 0")
+    @TableField("aff_count")
     private Integer affCount;
 
-    @Column(name = "aff_quota", columnDefinition = "bigint default 0")
+    @TableField("aff_quota")
     private Long affQuota;
 
-    @Column(name = "aff_history", columnDefinition = "bigint default 0")
+    @TableField("aff_history")
     private Long affHistoryQuota;
 
-    @Column(name = "inviter_id")
+    @TableField("inviter_id")
     private Long inviterId;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private Long createdAt;
 
-    @Column(name = "last_login_at", columnDefinition = "bigint default 0")
+    @TableField("last_login_at")
     private Long lastLoginAt;
 
-    @Column(name = "deleted_at")
+    @TableField("deleted_at")
+    @TableLogic(value = "null")
     private Long deletedAt;
 
     /** 用户分组（F-1013，PG 保留字 group 需双引号转义；DB-SCHEMA §1 default 'default'）。 */
-    @Column(name = "\"group\"", length = 64)
+    @TableField("\"group\"")
     private String group;
 
     /** 管理员备注（F-1014，仅管理端可见；DB-SCHEMA §1 remark max=255）。 */
-    @Column(name = "remark", length = 255)
+    @TableField("remark")
     private String remark;
 
     /** 个人设置 JSON（F-1014；DB-SCHEMA §1 setting，本切片以 text 承载，列类型 text）。 */
-    @Column(name = "setting", columnDefinition = "text")
+    @TableField("setting")
     private String setting;
 
     /** 用户专属折扣系数（售价侧，缺省 1.0=不打折；numeric 承载小数）。 */
-    @Column(name = "discount_ratio", columnDefinition = "numeric(10,4) default 1.0")
+    @TableField("discount_ratio")
     private java.math.BigDecimal discountRatio;
 
-    /** JPA 规范要求的无参构造器。 */
+    /** 框架（JPA / MyBatis-Plus）实例化所需的无参构造器。 */
     public UserPO() {
     }
 
@@ -282,5 +281,72 @@ public class UserPO {
 
     public void setDiscountRatio(java.math.BigDecimal discountRatio) {
         this.discountRatio = discountRatio;
+    }
+
+    // ---- 就近映射工厂方法（方案 1）：映射逻辑收敛在 PO，domain 仍零感知 PO ----
+
+    /**
+     * 领域聚合 → PO（持久化方向）。新用户（id 为 null）首次落库时打 {@code created_at} 当前 epoch 秒，
+     * 并把非空数值列初始化为 0，避免 NOT NULL/约束在首存时报错；已有 id 的更新沿用既有时间（合并保留）。
+     *
+     * @param user 用户聚合
+     * @return 待持久化的 PO
+     */
+    public static UserPO of(User user) {
+        UserPO e = new UserPO();
+        e.id = user.id();
+        e.username = user.username().value();
+        e.password = user.passwordHash();
+        e.email = user.email() == null ? null : user.email().value();
+        e.role = user.role().code();
+        e.status = user.status().code();
+        e.quota = user.quota();
+        e.affCode = user.affCode();
+        e.inviterId = user.inviterId();
+        e.lastLoginAt = user.lastLoginAt();
+        e.group = user.group();           // F-1013 分组随聚合落库
+        e.remark = user.remark();         // F-1014 备注随聚合落库
+        e.setting = user.setting();       // F-1014 个人设置随聚合落库
+        e.discountRatio = user.discountRatio();   // 用户专属折扣随聚合落库
+        if (user.id() == null) {
+            // 仅新建时落 created_at；非空数值列给默认 0，避免 NOT NULL/约束在首存时报错。
+            e.createdAt = java.time.Instant.now().getEpochSecond();
+            e.usedQuota = 0L;
+            e.requestCount = 0;
+            e.affCount = 0;
+            e.affQuota = 0L;
+            e.affHistoryQuota = 0L;
+        }
+        return e;
+    }
+
+    /**
+     * PO → 领域聚合（重建方向，走 {@link User#builder()}）。数值列 null 兜底与 group 空白归一统一收敛在
+     * {@code User.Builder} 内，这里只做枚举解析与 email 归一。
+     *
+     * @return 重建的用户聚合
+     */
+    public User toDomain() {
+        Email parsedEmail = (email == null || email.isBlank()) ? null : Email.of(email);
+        return User.builder()
+                .id(id)
+                .username(Username.of(username))
+                .passwordHash(password)
+                .email(parsedEmail)
+                .role(Role.fromCode(role == null ? Role.COMMON.code() : role))
+                .status(UserStatus.fromCode(status == null ? UserStatus.ENABLED.code() : status))
+                .quota(quota)
+                .affCode(affCode)
+                .inviterId(inviterId)
+                .lastLoginAt(lastLoginAt)
+                .displayName(displayName)
+                .setting(setting)
+                .group(group)
+                .remark(remark)
+                .usedQuota(usedQuota)
+                .requestCount(requestCount == null ? null : requestCount.longValue())
+                .createdAt(createdAt)
+                .discountRatio(discountRatio)
+                .build();
     }
 }

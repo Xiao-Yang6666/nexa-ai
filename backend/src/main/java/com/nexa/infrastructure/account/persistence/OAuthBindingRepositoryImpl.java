@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.account.persistence;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.account.exception.OAuthBindingConflictException;
 import com.nexa.domain.account.model.OAuthBinding;
 import com.nexa.domain.account.repository.OAuthBindingRepository;
@@ -8,17 +10,15 @@ import com.nexa.infrastructure.account.persistence.po.UserOAuthBindingPO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 领域仓储 {@link OAuthBindingRepository} 的 JPA 实现（基础设施层适配器，F-1016~1027）。
+ * 领域仓储 {@link OAuthBindingRepository} 的 MyBatis-Plus 实现（基础设施层适配器，F-1016~1027）。
  *
- * <p>DDD 依赖倒置落地：domain 定义 {@code OAuthBindingRepository} 接口，本类用
- * {@link SpringDataOAuthBindingJpaRepository} + 实体↔领域映射实现它（backend-engineer §2.3）。
- * 领域实体 {@link OAuthBinding} 与 JPA 实体 {@link UserOAuthBindingPO} 分离，映射集中在此处，
- * domain 因此不感知 Hibernate。</p>
+ * <p>DDD 依赖倒置落地：domain 定义 {@code OAuthBindingRepository} 接口，本类用 {@link OAuthBindingMapper} +
+ * PO 就近工厂方法（{@code PO.of} / {@code po.toDomain}）实现它。领域实体 {@link OAuthBinding} 与 PO
+ * {@link UserOAuthBindingPO} 分离，映射收敛在 PO，domain 因此不感知 MyBatis-Plus。</p>
  *
  * <p>内建 vs 自定义 provider 落库策略（V5 迁移）：
  * <ul>
@@ -29,7 +29,7 @@ import java.util.Optional;
  *       {@code custom:<id>}（{@link OAuthBinding#CUSTOM_PROVIDER_CODE_PREFIX}），
  *       以保证复合唯一索引在不同自定义 provider 间天然区分。</li>
  * </ul>
- * 重建（toDomain）时据 {@code provider_ref_id} 是否非空判定走哪条 {@code rehydrate}。</p>
+ * 落库 provider 列计算与重建判定均收敛在 {@link UserOAuthBindingPO} 的就近工厂方法。</p>
  *
  * <p>并发冲突兜底：建绑定并发竞态下，复合唯一索引（ux_provider_userid / ux_user_provider）在 {@code save}
  * 时抛 {@link DataIntegrityViolationException}，本类翻译为领域语义的 {@link OAuthBindingConflictException}
@@ -38,27 +38,33 @@ import java.util.Optional;
 @Repository
 public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
 
-    private final SpringDataOAuthBindingJpaRepository jpa;
+    private final OAuthBindingMapper mapper;
 
     /**
-     * @param jpa Spring Data JPA 仓库（infra 内部依赖）
+     * @param mapper MyBatis-Plus Mapper（infra 内部依赖）
      */
-    public OAuthBindingRepositoryImpl(SpringDataOAuthBindingJpaRepository jpa) {
-        this.jpa = jpa;
+    public OAuthBindingRepositoryImpl(OAuthBindingMapper mapper) {
+        this.mapper = mapper;
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<OAuthBinding> findByProviderAndProviderUserId(OAuthProvider provider, String providerUserId) {
-        return jpa.findByProviderAndProviderUserId(provider.code(), providerUserId)
-                .map(OAuthBindingRepositoryImpl::toDomain);
+        // (provider, provider_user_id) 复合唯一，至多一条。
+        LambdaQueryWrapper<UserOAuthBindingPO> w = Wrappers.<UserOAuthBindingPO>lambdaQuery()
+                .eq(UserOAuthBindingPO::getProvider, provider.code())
+                .eq(UserOAuthBindingPO::getProviderUserId, providerUserId);
+        return Optional.ofNullable(mapper.selectOne(w)).map(UserOAuthBindingPO::toDomain);
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<OAuthBinding> findByUserIdAndProvider(long userId, OAuthProvider provider) {
-        return jpa.findByUserIdAndProvider(userId, provider.code())
-                .map(OAuthBindingRepositoryImpl::toDomain);
+        // (user_id, provider) 复合唯一，至多一条。
+        LambdaQueryWrapper<UserOAuthBindingPO> w = Wrappers.<UserOAuthBindingPO>lambdaQuery()
+                .eq(UserOAuthBindingPO::getUserId, userId)
+                .eq(UserOAuthBindingPO::getProvider, provider.code());
+        return Optional.ofNullable(mapper.selectOne(w)).map(UserOAuthBindingPO::toDomain);
     }
 
     /**
@@ -68,12 +74,12 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
      */
     @Override
     public OAuthBinding save(OAuthBinding binding) {
-        UserOAuthBindingPO entity = toEntity(binding);
+        UserOAuthBindingPO po = UserOAuthBindingPO.of(binding);
         try {
-            UserOAuthBindingPO saved = jpa.saveAndFlush(entity);
+            mapper.insert(po);              // 回填自增 id 到 po
             // 保存后把数据库生成的 id 回填回领域实体。
-            binding.assignId(saved.getId());
-            return toDomain(saved);
+            binding.assignId(po.getId());
+            return po.toDomain();
         } catch (DataIntegrityViolationException e) {
             // 唯一索引兜底：并发建绑定竞态或第三方账号已绑到他人，翻译为领域异常（不回显对端敏感细节）。
             throw new OAuthBindingConflictException(providerLabel(binding));
@@ -83,16 +89,21 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
     /** {@inheritDoc} */
     @Override
     public List<OAuthBinding> findByUserId(long userId) {
-        return jpa.findByUserId(userId).stream()
-                .map(OAuthBindingRepositoryImpl::toDomain)
+        LambdaQueryWrapper<UserOAuthBindingPO> w = Wrappers.<UserOAuthBindingPO>lambdaQuery()
+                .eq(UserOAuthBindingPO::getUserId, userId);
+        return mapper.selectList(w).stream()
+                .map(UserOAuthBindingPO::toDomain)
                 .toList();
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<OAuthBinding> findByUserIdAndProviderRefId(long userId, long providerRefId) {
-        return jpa.findByUserIdAndProviderRefId(userId, providerRefId)
-                .map(OAuthBindingRepositoryImpl::toDomain);
+        // (user_id, provider_ref_id) 定位自定义 provider 绑定，至多一条。
+        LambdaQueryWrapper<UserOAuthBindingPO> w = Wrappers.<UserOAuthBindingPO>lambdaQuery()
+                .eq(UserOAuthBindingPO::getUserId, userId)
+                .eq(UserOAuthBindingPO::getProviderRefId, providerRefId);
+        return Optional.ofNullable(mapper.selectOne(w)).map(UserOAuthBindingPO::toDomain);
     }
 
     /**
@@ -100,7 +111,7 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
      *
      * <p>按绑定主键 {@code id} 删除（解绑，F-1026/F-1027）。未持久化（id 为 null）的绑定不应进入解绑流程，
      * 调用方在应用层已先查出再删，故此处直接按 id 删；id 缺失视为非法调用，抛 {@link IllegalArgumentException}
-     * 而非静默忽略（不吞错）。</p>
+     * 而非静默忽略（不吞错）。本表无软删除，物理删除。</p>
      */
     @Override
     public void delete(OAuthBinding binding) {
@@ -109,25 +120,10 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
             // 解绑流程必须先查后删，拿到的绑定一定带 id；id 为 null 是调用方编程错误，显式失败便于定位。
             throw new IllegalArgumentException("cannot delete an unpersisted oauth binding (id is null)");
         }
-        jpa.deleteById(id);
+        mapper.deleteById(id);
     }
 
-    // ---- 领域实体 <-> JPA 实体映射（基础设施层内部，领域不可见） ----
-
-    /**
-     * 计算落库 {@code provider} 列的标识串：内建用枚举 code，自定义用 {@code custom:<id>}（V5 约定）。
-     *
-     * @param binding 领域绑定实体
-     * @return 落库 provider 标识串
-     */
-    private static String providerColumn(OAuthBinding binding) {
-        Long refId = binding.providerRefId();
-        if (refId != null) {
-            // 自定义 provider：provider 列存 custom:<id>，不同自定义 provider 天然区分，满足复合唯一索引语义。
-            return OAuthBinding.CUSTOM_PROVIDER_CODE_PREFIX + refId;
-        }
-        return binding.provider().code();
-    }
+    // ---- 冲突异常 provider 标签计算（落库列计算与映射收敛在 PO 工厂方法） ----
 
     /**
      * 冲突异常携带的 provider 标签（内建用枚举 code，自定义用 {@code custom:<id>}，不泄露上游敏感细节）。
@@ -136,60 +132,10 @@ public class OAuthBindingRepositoryImpl implements OAuthBindingRepository {
      * @return provider 标签
      */
     private static String providerLabel(OAuthBinding binding) {
-        return providerColumn(binding);
-    }
-
-    /**
-     * 领域实体 → JPA 实体（持久化方向）。
-     *
-     * @param binding 领域绑定实体
-     * @return 待持久化的 JPA 实体
-     */
-    private static UserOAuthBindingPO toEntity(OAuthBinding binding) {
-        UserOAuthBindingPO e = new UserOAuthBindingPO();
-        e.setId(binding.id());
-        e.setUserId(binding.userId());
-        e.setProvider(providerColumn(binding));
-        e.setProviderUserId(binding.providerUserId());
-        // 自定义 provider 的整数主键引用；内建 provider 为 null（对齐 V5 provider_ref_id 列）。
-        e.setProviderRefId(binding.providerRefId());
-        // 创建时间：领域实体已在 create() 打点 Instant，落库为 epoch 秒（DB-SCHEMA §13 created_at）。
-        e.setCreatedAt(binding.createdAt() == null
-                ? Instant.now().getEpochSecond()
-                : binding.createdAt().getEpochSecond());
-        return e;
-    }
-
-    /**
-     * JPA 实体 → 领域实体（重建方向，走 {@link OAuthBinding#rehydrate}）。
-     *
-     * <p>据 {@code provider_ref_id} 是否非空区分两类绑定：非空走自定义 provider 重建（保留整数引用，
-     * provider 枚举用 {@code provider} 列前缀对应的占位）；为空走内建 provider 重建（枚举由 provider 列解析）。</p>
-     *
-     * @param e JPA 实体
-     * @return 重建的领域绑定实体
-     */
-    private static OAuthBinding toDomain(UserOAuthBindingPO e) {
-        Instant createdAt = e.getCreatedAt() == null
-                ? Instant.now()
-                : Instant.ofEpochSecond(e.getCreatedAt());
-        Long refId = e.getProviderRefId();
+        Long refId = binding.providerRefId();
         if (refId != null) {
-            // 自定义 provider 绑定：provider 列为 custom:<id>，不在内建枚举中。用占位枚举（OIDC）承载，
-            // 领域侧以 providerRefId 区分自定义；客户/管理视图据 providerRefId 暴露整数 provider_id。
-            return OAuthBinding.rehydrate(
-                    e.getId(),
-                    e.getUserId(),
-                    OAuthProvider.OIDC,
-                    e.getProviderUserId(),
-                    refId,
-                    createdAt);
+            return OAuthBinding.CUSTOM_PROVIDER_CODE_PREFIX + refId;
         }
-        return OAuthBinding.rehydrate(
-                e.getId(),
-                e.getUserId(),
-                OAuthProvider.fromCode(e.getProvider()),
-                e.getProviderUserId(),
-                createdAt);
+        return binding.provider().code();
     }
 }

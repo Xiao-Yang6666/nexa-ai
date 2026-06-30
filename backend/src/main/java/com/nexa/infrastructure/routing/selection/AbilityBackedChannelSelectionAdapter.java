@@ -1,6 +1,7 @@
 package com.nexa.infrastructure.routing.selection;
 
-import com.nexa.infrastructure.account.provider.persistence.SpringDataAccountAbilityJpaRepository;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nexa.infrastructure.account.provider.persistence.AccountAbilityMapper;
 import com.nexa.infrastructure.account.provider.persistence.po.AccountAbilityPO;
 import com.nexa.application.routing.port.ChannelSelectionPort;
 import com.nexa.domain.routing.vo.ChannelCandidate;
@@ -21,13 +22,13 @@ import java.util.Set;
 @Component
 public class AbilityBackedChannelSelectionAdapter implements ChannelSelectionPort {
 
-    private final SpringDataAccountAbilityJpaRepository abilityRepository;
+    private final AccountAbilityMapper abilityMapper;
 
     /**
-     * @param abilityRepository 账号 Ability 路由索引仓储
+     * @param abilityMapper 账号 Ability 路由索引 Mapper
      */
-    public AbilityBackedChannelSelectionAdapter(SpringDataAccountAbilityJpaRepository abilityRepository) {
-        this.abilityRepository = abilityRepository;
+    public AbilityBackedChannelSelectionAdapter(AccountAbilityMapper abilityMapper) {
+        this.abilityMapper = abilityMapper;
     }
 
     /** {@inheritDoc} */
@@ -41,7 +42,10 @@ public class AbilityBackedChannelSelectionAdapter implements ChannelSelectionPor
     public ChannelCandidate selectChannel(String group, String model, int priorityRetry,
                                           Set<Long> excludeChannelIds) {
         if (group == null || model == null) return null;
-        List<AccountAbilityPO> satisfied = abilityRepository.findActiveByGroup(group).stream()
+        // 等价原 findActiveByGroup：status='active' AND "group"=:group（status 持久化为小写）。
+        List<AccountAbilityPO> satisfied = abilityMapper.selectList(Wrappers.<AccountAbilityPO>lambdaQuery()
+                        .eq(AccountAbilityPO::getGroup, group)
+                        .eq(AccountAbilityPO::getStatus, "active")).stream()
                 .filter(a -> declaresModel(a.getModels(), model))
                 .toList();
         if (satisfied.isEmpty()) return null;

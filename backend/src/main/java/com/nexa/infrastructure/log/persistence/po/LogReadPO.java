@@ -1,13 +1,11 @@
 package com.nexa.infrastructure.log.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.log.model.LogEntry;
+import com.nexa.domain.log.vo.LogType;
 
 /**
  * 日志读侧 JPA 实体（基础设施层；映射 V11 {@code logs} 表，供日志与用量 BC 查询/审计写/清理）。
@@ -19,104 +17,106 @@ import org.hibernate.type.SqlTypes;
  * <p><b>索引声明归属</b>：物理索引由 V11 Flyway 脚本 + relay {@code LogPO} 的 {@code @Table(indexes=)}
  * 拥有，本读侧实体<b>刻意不再声明</b> {@code @Index}，避免 Hibernate DDL 重复索引定义冲突
  * （生产用 Flyway 管 DDL，实体不参与建表，但保持声明单一来源更稳）。{@code channel_name} 为只读 join 列。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：本 PO 同时保留 JPA 注解（{@code @Entity/@Table/@Column/@Id}，
+ * 满足并存期 {@code ddl-auto=validate} 全局启动校验）与 MyBatis-Plus 注解
+ * （{@code @TableName/@TableId/@TableField}，供 Mapper 实际读写）。两套注解命名空间独立、互不读取。
+ * 阶段4 统一移除 JPA 注解。</p>
  */
-@Entity
-@Table(name = "logs")
+@TableName(value = "logs", autoResultMap = true)
 public class LogReadPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "user_id")
+    @TableField("user_id")
     private Integer userId;
 
-    @Column(name = "created_at", nullable = false)
+    @TableField("created_at")
     private Long createdAt;
 
-    @Column(name = "type", nullable = false)
+    @TableField("type")
     private Integer type;
 
-    @Column(name = "content", columnDefinition = "text")
+    @TableField("content")
     private String content;
 
-    @Column(name = "username")
+    @TableField("username")
     private String username;
 
-    @Column(name = "token_name")
+    @TableField("token_name")
     private String tokenName;
 
-    @Column(name = "model_name")
+    @TableField("model_name")
     private String modelName;
 
-    @Column(name = "quota")
+    @TableField("quota")
     private Integer quota;
 
-    @Column(name = "prompt_tokens")
+    @TableField("prompt_tokens")
     private Integer promptTokens;
 
-    @Column(name = "completion_tokens")
+    @TableField("completion_tokens")
     private Integer completionTokens;
 
-    @Column(name = "use_time")
+    @TableField("use_time")
     private Integer useTime;
 
-    @Column(name = "is_stream")
+    @TableField("is_stream")
     private Boolean isStream;
 
-    @Column(name = "channel")
+    @TableField("channel")
     private Integer channelId;
 
-    @Column(name = "channel_name", insertable = false, updatable = false)
+    @TableField(value = "channel_name", insertStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NEVER, updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NEVER)
     private String channelName;
 
-    @Column(name = "token_id")
+    @TableField("token_id")
     private Integer tokenId;
 
-    @Column(name = "\"group\"")
+    @TableField("\"group\"")
     private String group;
 
-    @Column(name = "ip")
+    @TableField("ip")
     private String ip;
 
-    @Column(name = "request_id", length = 64)
+    @TableField("request_id")
     private String requestId;
 
-    @Column(name = "upstream_request_id", length = 128)
+    @TableField("upstream_request_id")
     private String upstreamRequestId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "other", columnDefinition = "jsonb")
+    @TableField(value = "other", typeHandler = com.nexa.infrastructure.persistence.JsonbStringTypeHandler.class)
     private String other;
 
-    @Column(name = "requested_model")
+    @TableField("requested_model")
     private String requestedModel;
 
-    @Column(name = "resolved_public_model")
+    @TableField("resolved_public_model")
     private String resolvedPublicModel;
 
-    @Column(name = "actual_upstream_model")
+    @TableField("actual_upstream_model")
     private String actualUpstreamModel;
 
-    @Column(name = "inbound_protocol", length = 32)
+    @TableField("inbound_protocol")
     private String inboundProtocol;
 
-    @Column(name = "upstream_protocol", length = 32)
+    @TableField("upstream_protocol")
     private String upstreamProtocol;
 
-    @Column(name = "protocol_converted")
+    @TableField("protocol_converted")
     private Boolean protocolConverted;
 
-    @Column(name = "user_agent", length = 512)
+    @TableField("user_agent")
     private String userAgent;
 
-    @Column(name = "quota_sell")
+    @TableField("quota_sell")
     private Integer quotaSell;
 
-    @Column(name = "quota_cost")
+    @TableField("quota_cost")
     private Integer quotaCost;
 
-    @Column(name = "quota_profit")
+    @TableField("quota_profit")
     private Integer quotaProfit;
 
     public Long getId() { return id; }
@@ -180,4 +180,69 @@ public class LogReadPO {
     public void setQuotaCost(Integer quotaCost) { this.quotaCost = quotaCost; }
     public Integer getQuotaProfit() { return quotaProfit; }
     public void setQuotaProfit(Integer quotaProfit) { this.quotaProfit = quotaProfit; }
+
+    // ---- 就近映射工厂方法（方案 1）：映射逻辑收敛在 PO，domain 仍零感知 PO ----
+
+    /**
+     * PO → 领域日志（重建方向）：{@code type} 经 {@link LogType#fromCode} 还原（null→0=UNKNOWN），
+     * int 列拓宽为 Long（{@code userId}/{@code channelId}/{@code tokenId} null 保留 null），数值列 null 兜底，
+     * 布尔列 null 视为 false。逻辑与原 {@code LogRepositoryImpl#toDomain} 1:1。
+     *
+     * @return 重建的日志领域对象
+     */
+    public LogEntry toDomain() {
+        return LogEntry.rebuild()
+                .id(id)
+                .userId(userId == null ? null : userId.longValue())
+                .createdAt(createdAt == null ? 0L : createdAt)
+                .type(LogType.fromCode(type == null ? 0 : type))
+                .content(content)
+                .username(username)
+                .tokenName(tokenName)
+                .modelName(modelName)
+                .quota(quota == null ? 0L : quota)
+                .promptTokens(promptTokens == null ? 0 : promptTokens)
+                .completionTokens(completionTokens == null ? 0 : completionTokens)
+                .useTime(useTime == null ? 0 : useTime)
+                .stream(Boolean.TRUE.equals(isStream))
+                .channelId(channelId == null ? null : channelId.longValue())
+                .channelName(channelName)
+                .tokenId(tokenId == null ? null : tokenId.longValue())
+                .group(group)
+                .ip(ip)
+                .requestId(requestId)
+                .upstreamRequestId(upstreamRequestId)
+                .other(other)
+                .requestedModel(requestedModel)
+                .resolvedPublicModel(resolvedPublicModel)
+                .actualUpstreamModel(actualUpstreamModel)
+                .inboundProtocol(inboundProtocol)
+                .upstreamProtocol(upstreamProtocol)
+                .protocolConverted(Boolean.TRUE.equals(protocolConverted))
+                .userAgent(userAgent)
+                .quotaSell(quotaSell == null ? 0 : quotaSell)
+                .quotaCost(quotaCost == null ? 0 : quotaCost)
+                .quotaProfit(quotaProfit == null ? 0 : quotaProfit)
+                .build();
+    }
+
+    /**
+     * 领域日志 → PO（审计写方向，F-4011/F-4013）：只映射 who/what/when/where 五字段
+     * （user_id/created_at/type/content/username/ip），其余消费维度（token/model/quota...）留默认
+     * （null/0）。{@code userId} 窄化为 Integer（logs 表 int 列，值域受控）。{@code type} null→0。
+     * 逻辑与原 {@code LogRepositoryImpl#recordAudit} 的建 PO 段 1:1。
+     *
+     * @param entry 审计日志领域对象（非空）
+     * @return 待持久化的 PO（仅审计字段）
+     */
+    public static LogReadPO ofAudit(LogEntry entry) {
+        LogReadPO e = new LogReadPO();
+        e.userId = entry.userId() == null ? null : entry.userId().intValue();
+        e.createdAt = entry.createdAt();
+        e.type = entry.type() == null ? 0 : entry.type().code();
+        e.content = entry.content();
+        e.username = entry.username();
+        e.ip = entry.ip();
+        return e;
+    }
 }

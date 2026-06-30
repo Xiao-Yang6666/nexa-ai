@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.when;
  *
  * <p>用轻量 Spring 上下文（{@link EnableCaching} + {@link ConcurrentMapCacheManager} 内存缓存，<b>不依赖真实
  * Redis</b>，CI 必跑）装配真实 {@link TokenRepositoryImpl}（注解切面只对 Spring 管理的代理生效），底层
- * {@link SpringDataTokenJpaRepository} 用 mock 桩。以 mock 的调用次数证明缓存命中（第二次不再查库）与
+ * {@link TokenMapper} 用 mock 桩。以 mock 的调用次数证明缓存命中（第二次不再查库）与
  * evict 后回源（再查库一次）。线上由 RedisCacheManager 承载同一套注解语义。</p>
  */
 @SpringJUnitConfig
@@ -50,7 +51,7 @@ class TokenAuthCacheTest {
     }
 
     @MockBean
-    private SpringDataTokenJpaRepository jpa;
+    private TokenMapper mapper;
 
     @Autowired
     private TokenRepository repository;
@@ -65,7 +66,7 @@ class TokenAuthCacheTest {
 
     @Test
     void findByKey_secondCall_hitsCacheAndSkipsDb() {
-        when(jpa.findByKey(KEY)).thenReturn(Optional.of(entity()));
+        when(mapper.selectOne(any())).thenReturn(entity());
 
         Optional<Token> first = repository.findByKey(KEY);
         Optional<Token> second = repository.findByKey(KEY);
@@ -74,20 +75,20 @@ class TokenAuthCacheTest {
         assertTrue(second.isPresent());
         assertEquals(KEY, second.get().key());
         // 命中缓存：两次调用只查库一次。
-        verify(jpa, times(1)).findByKey(KEY);
+        verify(mapper, times(1)).selectOne(any());
         assertNotNull(cacheManager.getCache(AuthCacheConfig.API_KEY_AUTH_CACHE).get(KEY));
     }
 
     @Test
     void evictAuthCache_invalidatesEntry_nextCallReloadsFromDb() {
-        when(jpa.findByKey(KEY)).thenReturn(Optional.of(entity()));
+        when(mapper.selectOne(any())).thenReturn(entity());
 
         repository.findByKey(KEY);                 // 查库 + 写缓存
         repository.evictAuthCache(KEY);            // 写穿失效（禁用/删除路径调用）
         repository.findByKey(KEY);                 // 缓存已清 → 再次回源查库
 
         // evict 后回源：共查库两次（命中场景应只一次）。
-        verify(jpa, times(2)).findByKey(KEY);
+        verify(mapper, times(2)).selectOne(any());
     }
 
     private static TokenPO entity() {

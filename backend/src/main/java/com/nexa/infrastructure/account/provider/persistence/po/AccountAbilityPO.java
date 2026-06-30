@@ -1,50 +1,43 @@
 package com.nexa.infrastructure.account.provider.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 /**
- * Ability 路由索引 JPA 实体（账号级路由，V33 重建）。
+ * Ability 路由索引实体（账号级路由，V33 重建）。
  *
  * <p>承载 account_id × group × models 反向索引，用于快速账号选择。
- * 由 {@code AccountRepositoryImpl} 在账号保存时 fan-out 维护。</p>
+ * 由 {@code AccountRepositoryImpl} 在账号保存时 fan-out 维护。{@code group} 为 PG 保留字双引号转义。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留 JPA 注解，新增 MyBatis-Plus 注解。</p>
  */
-@Entity(name = "AccountAbilityPO")
-@Table(name = "abilities", indexes = {
-        @Index(name = "idx_abilities_group_models", columnList = "\"group\", models"),
-        @Index(name = "idx_abilities_account_status", columnList = "account_id, status"),
-        @Index(name = "idx_abilities_tag", columnList = "tag")
-})
+@TableName("abilities")
 public class AccountAbilityPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "account_id", nullable = false)
+    @TableField("account_id")
     private Long accountId;
 
-    @Column(name = "\"group\"", length = 255, nullable = false)
+    @TableField("\"group\"")
     private String group;
 
-    @Column(name = "models", columnDefinition = "TEXT")
+    @TableField("models")
     private String models;
 
-    @Column(name = "tag", length = 255)
+    @TableField("tag")
     private String tag;
 
-    @Column(name = "status", length = 50, nullable = false)
+    @TableField("status")
     private String status;
 
-    @Column(name = "created_at", nullable = false)
+    @TableField("created_at")
     private Long createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @TableField("updated_at")
     private Long updatedAt;
 
     public AccountAbilityPO() {

@@ -85,4 +85,21 @@ class LayeredArchitectureTest {
                 .resideInAPackage("com.nexa.infrastructure..");
         rule.check(classes);
     }
+
+    @Test
+    @DisplayName("domain 层不得依赖任何持久化框架（MyBatis-Plus / JPA / Spring Data / Hibernate）")
+    void domainHasNoPersistenceImports() {
+        // P5：迁移后 domain 仍零持久化感知。禁止持久化框架包出现在 com.nexa.domain.**（充血聚合/值对象纯 Java）。
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("com.nexa.domain..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage(
+                        "com.baomidou..",            // MyBatis-Plus
+                        "org.apache.ibatis..",       // MyBatis
+                        "jakarta.persistence..",     // JPA
+                        "org.hibernate..",           // Hibernate
+                        "org.springframework.data..")// Spring Data
+                .because("领域层须零持久化感知，持久化注解/类型只允许出现在 infrastructure 层的 PO/Mapper 上");
+        rule.check(classes);
+    }
 }

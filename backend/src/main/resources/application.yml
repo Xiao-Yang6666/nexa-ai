@@ -30,16 +30,9 @@ spring:
       keepalive-time: 30000                     # 30s 探活，及时剔除已断连接
       connection-timeout: 30000                 # 取连接超时 30s
 
-  # --- JPA / Hibernate ---
-  jpa:
-    hibernate:
-      # 表结构由 Flyway 管理；JPA 仅校验实体映射与库表一致，绝不自动改表（生产安全）。
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: false
-    open-in-view: false
+  # --- JPA / Hibernate 已移除 ---
+  # 持久化层已从 Spring Data JPA / Hibernate 全量迁移到 MyBatis-Plus（见下方 mybatis-plus 配置块）。
+  # 表结构一致性原由 ddl-auto=validate 启动校验，移除后改由 Flyway（schema 唯一权威）+ 集成测试/往返测试保障。
 
   # --- Flyway：启动时连 PG 执行 db/migration 下的版本脚本建表 ---
   flyway:
@@ -67,6 +60,19 @@ spring:
   # --- 缓存：Redis 承载，注解式 @Cacheable/@CacheEvict（TTL/容错见 AuthCacheConfig） ---
   cache:
     type: ${CACHE_TYPE:redis}
+
+# --- MyBatis-Plus（持久化层从 JPA 滚动迁移至 MyBatis-Plus，迁移期与 JPA 共存） ---
+# 复用 Spring Boot 自动装配的同一 DataSource（HikariCP，max-pool-size=5），不新建第二连接池（Req11.3）。
+mybatis-plus:
+  configuration:
+    # 驼峰映射仅作兜底；PO 仍逐列 @TableField 显式声明列名（尤其 PG 保留字列如 "group" 须显式转义）。
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      # 主键策略 auto，对齐各表自增主键（@TableId(type = IdType.AUTO)）。
+      id-type: auto
+      # 逻辑删除：本项目 deleted_at 为 epoch 秒时间戳（非 0/1），不用全局 logic-delete-value，
+      # 改在每个软删除 PO 字段上用 @TableLogic(value="null", delval="extract(epoch from now())")。
 
 # --- 账号系统设置（ConfigAccountSettings 绑定，PRD §15 / AC-1 R13） ---
 account:

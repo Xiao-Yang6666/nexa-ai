@@ -1,73 +1,69 @@
 package com.nexa.infrastructure.modelgroup.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.type.SqlTypes;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.infrastructure.persistence.JsonbStringTypeHandler;
 
 import java.math.BigDecimal;
 
 /**
- * 模型组 JPA 持久化实体（基础设施层，对齐 V26 {@code model_groups}）。
+ * 模型组持久化实体（基础设施层，对齐 V26 {@code model_groups}）。
  *
  * <p>持久化映射，与领域聚合 {@link com.nexa.domain.modelgroup.model.ModelGroup} 分离（DDD：domain
- * 不感知 JPA）。映射转换在 {@code ModelGroupRepositoryImpl}。{@code models} 用 Hibernate 6
- * {@code @JdbcTypeCode(SqlTypes.JSON)} 以 String 承载 JSONB（模型名 JSON 字符串数组）；软删除用
- * {@code deleted_at} + {@code @SQLRestriction}。{@code code} 唯一索引 {@code uk_model_group_code}。</p>
+ * 不感知持久化框架）。映射转换在 {@code ModelGroupRepositoryImpl}（{@code models} JSON ⇄ {@code ModelNames}
+ * 用 {@code ObjectMapper}，异常翻译为 {@code ModelGroupPersistenceException}，保留在 Impl）。</p>
+ *
+ * <p>{@code models} 是 PG {@code jsonb} 列，以 String 承载——MyBatis-Plus 侧由 {@link JsonbStringTypeHandler}
+ * 完成 String↔jsonb 互转（{@code autoResultMap = true} 使读取亦走该 Handler），并存期保留 JPA 的
+ * {@code @JdbcTypeCode(SqlTypes.JSON)}。软删除：{@code deleted_at} 可空 epoch 秒，MyBatis-Plus 侧以
+ * {@code @TableLogic(value = "null")} 让 select 自动追加 {@code deleted_at IS NULL}（等价 JPA
+ * {@code @SQLRestriction}），软删除<b>写</b>由 Mapper 显式 {@code @Update} 打时间戳（不用 {@code deleteById}）。
+ * {@code code} 唯一索引 {@code uk_model_group_code}。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留全部 JPA 注解满足 {@code ddl-auto=validate}，新增 MyBatis-Plus 注解供 Mapper 读写。</p>
  */
-@Entity
-@Table(name = "model_groups", indexes = {
-        @Index(name = "uk_model_group_code", columnList = "code", unique = true),
-        @Index(name = "idx_model_groups_status", columnList = "status"),
-        @Index(name = "idx_model_groups_access_policy", columnList = "access_policy"),
-        @Index(name = "idx_model_groups_deleted_at", columnList = "deleted_at")
-})
-@SQLRestriction("deleted_at IS NULL")
+@TableName(value = "model_groups", autoResultMap = true)
 public class ModelGroupPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "name", length = 64, nullable = false)
+    @TableField("name")
     private String name;
 
-    @Column(name = "code", length = 64, nullable = false, unique = true)
+    @TableField("code")
     private String code;
 
-    @Column(name = "base_price_ratio", nullable = false, precision = 18, scale = 6)
+    @TableField("base_price_ratio")
     private BigDecimal basePriceRatio;
 
     /** 可用模型 JSON 字符串数组（如 {@code ["gpt-4o","claude-3-opus"]}），JSONB 承载。 */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "models", columnDefinition = "jsonb")
+    @TableField(value = "models", typeHandler = JsonbStringTypeHandler.class)
     private String models;
 
-    @Column(name = "access_policy", length = 20, nullable = false)
+    @TableField("access_policy")
     private String accessPolicy;
 
-    @Column(name = "status", nullable = false)
+    @TableField("status")
     private int status;
 
-    @Column(name = "description", length = 255)
+    @TableField("description")
     private String description;
 
-    @Column(name = "created_time")
+    @TableField("created_time")
     private Long createdTime;
 
-    @Column(name = "updated_time")
+    @TableField("updated_time")
     private Long updatedTime;
 
-    @Column(name = "deleted_at")
+    @TableField("deleted_at")
+    @TableLogic(value = "null")
     private Long deletedAt;
 
-    /** JPA 规范要求的无参构造器。 */
+    /** 框架（MyBatis-Plus）实例化所需的无参构造器。 */
     public ModelGroupPO() {
     }
 

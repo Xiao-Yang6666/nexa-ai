@@ -1,70 +1,65 @@
 package com.nexa.infrastructure.routing.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 /**
- * 亲和规则 JPA 持久化实体（基础设施层，对齐 V9 {@code affinity_rules} 与 prd-channel CH-4）。
+ * 亲和规则持久化实体（基础设施层，对齐 V9 {@code affinity_rules} 与 prd-channel CH-4）。
  *
- * <p>持久化映射，与领域聚合 {@link com.nexa.domain.routing.model.AffinityRule} 分离（DDD：domain 不感知 JPA）。
- * 映射转换在 {@code AffinityRuleRepositoryImpl}。</p>
+ * <p>持久化映射，与领域聚合 {@link com.nexa.domain.routing.model.AffinityRule} 分离（DDD：domain 不感知持久化）。
+ * 聚合↔PO 的字段/JSON 互转较复杂（key_sources/pass_headers 的 VO 列表与 Map 编解码依赖 ObjectMapper），
+ * 仍由 {@code AffinityRuleRepositoryImpl} 承载，本 PO 不内置就近工厂方法（与无外部依赖的纯映射 PO 不同）。</p>
  *
  * <p>{@code key_sources}/{@code pass_headers} 用 Hibernate 6 {@code @JdbcTypeCode(SqlTypes.JSON)} 以 String
  * 承载 JSONB；仓储层与领域 VO/Map 互转（Jackson）。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：本 PO 同时保留 JPA 注解（{@code @Entity/@Table/@Column/@Id}，
+ * 满足并存期 {@code ddl-auto=validate} 全局启动校验）与 MyBatis-Plus 注解
+ * （{@code @TableName/@TableId/@TableField}，供 Mapper 实际读写）。两套注解命名空间独立、互不读取。
+ * 阶段4 统一移除 JPA 注解。</p>
  */
-@Entity
-@Table(name = "affinity_rules", indexes = {
-        @Index(name = "idx_affinity_rules_enabled", columnList = "enabled")
-})
+@TableName(value = "affinity_rules", autoResultMap = true)
 public class AffinityRulePO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 64, unique = true)
+    @TableField("name")
     private String name;
 
-    @Column(name = "enabled", nullable = false)
+    @TableField("enabled")
     private boolean enabled;
 
-    @Column(name = "model_regex", nullable = false, columnDefinition = "text")
+    @TableField("model_regex")
     private String modelRegex;
 
-    @Column(name = "path_regex", nullable = false, columnDefinition = "text")
+    @TableField("path_regex")
     private String pathRegex;
 
-    @Column(name = "key_sources", nullable = false, columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @TableField(value = "key_sources", typeHandler = com.nexa.infrastructure.persistence.JsonbStringTypeHandler.class)
     private String keySources;
 
-    @Column(name = "pass_headers", nullable = false, columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
+    @TableField(value = "pass_headers", typeHandler = com.nexa.infrastructure.persistence.JsonbStringTypeHandler.class)
     private String passHeaders;
 
-    @Column(name = "skip_retry_on_failure", nullable = false)
+    @TableField("skip_retry_on_failure")
     private boolean skipRetryOnFailure;
 
-    @Column(name = "ttl_seconds", nullable = false)
+    @TableField("ttl_seconds")
     private long ttlSeconds;
 
-    @Column(name = "built_in", nullable = false)
+    @TableField("built_in")
     private boolean builtIn;
 
-    @Column(name = "created_time")
+    @TableField("created_time")
     private Long createdTime;
 
-    @Column(name = "updated_time")
+    @TableField("updated_time")
     private Long updatedTime;
 
-    /** JPA 缺省构造器（必备）。 */
+    /** 框架（JPA / MyBatis-Plus）实例化所需的无参构造器。 */
     public AffinityRulePO() {
     }
 

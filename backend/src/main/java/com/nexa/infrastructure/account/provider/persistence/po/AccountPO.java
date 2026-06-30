@@ -1,113 +1,108 @@
 package com.nexa.infrastructure.account.provider.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.account.provider.model.Account;
+import com.nexa.domain.account.provider.vo.AccountGroupRef;
+import com.nexa.infrastructure.persistence.JsonbStringTypeHandler;
+
+import java.util.List;
 
 /**
- * 供应商账号 JPA 持久化实体（基础设施层，对齐 V29 {@code accounts}）。
+ * 供应商账号持久化实体（基础设施层，对齐 V29 {@code accounts}）。
  *
- * <p>持久化映射，与领域聚合 {@link com.nexa.domain.account.provider.model.Account} 分离
- * （DDD：domain 不感知 JPA）。映射转换在 {@code AccountRepositoryImpl}。
- * {@code credentials} 用 {@code @JdbcTypeCode(SqlTypes.JSON)} 以 String 承载 jsonb，落库但绝不进视图 DTO。
+ * <p>持久化映射，与领域聚合 {@link Account} 分离（DDD：domain 不感知持久化框架）。映射由本类就近工厂
+ * {@link #toDomain(List)} / {@link #of(Account)} 承载。{@code credentials} / {@code model_mapping} 是
+ * PG {@code jsonb} 列，以 String 承载——MyBatis-Plus 侧由 {@link JsonbStringTypeHandler} 完成 String↔jsonb
+ * 互转（{@code autoResultMap = true} 使读取亦走该 Handler），并存期保留 JPA 的 {@code @JdbcTypeCode(SqlTypes.JSON)}。
  * 时间字段统一 epoch 秒 Long；status 以字符串码持久化。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留全部 JPA 注解满足 {@code ddl-auto=validate}，新增 MyBatis-Plus 注解供 Mapper 读写。</p>
  */
-@Entity
-@Table(name = "accounts", indexes = {
-        @Index(name = "idx_accounts_platform", columnList = "platform"),
-        @Index(name = "idx_accounts_status", columnList = "status"),
-        @Index(name = "idx_accounts_priority", columnList = "priority")
-})
+@TableName(value = "accounts", autoResultMap = true)
 public class AccountPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @TableField("name")
     private String name;
 
-    @Column(name = "platform", nullable = false, length = 50)
+    @TableField("platform")
     private String platform;
 
-    @Column(name = "type", nullable = false, length = 20)
+    @TableField("type")
     private String type;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "credentials", nullable = false, columnDefinition = "jsonb")
+    @TableField(value = "credentials", typeHandler = JsonbStringTypeHandler.class)
     private String credentials;
 
-    @Column(name = "base_url", length = 512)
+    @TableField("base_url")
     private String baseUrl;
 
-    @Column(name = "concurrency", nullable = false)
+    @TableField("concurrency")
     private int concurrency;
 
-    @Column(name = "priority", nullable = false)
+    @TableField("priority")
     private int priority;
 
-    @Column(name = "status", nullable = false, length = 20)
+    @TableField("status")
     private String status;
 
-    @Column(name = "rate_limited_at")
+    @TableField("rate_limited_at")
     private Long rateLimitedAt;
 
-    @Column(name = "rate_limit_reset_at")
+    @TableField("rate_limit_reset_at")
     private Long rateLimitResetAt;
 
-    @Column(name = "overload_until")
+    @TableField("overload_until")
     private Long overloadUntil;
 
-    @Column(name = "expires_at")
+    @TableField("expires_at")
     private Long expiresAt;
 
-    @Column(name = "auto_pause_on_expired", nullable = false)
+    @TableField("auto_pause_on_expired")
     private boolean autoPauseOnExpired;
 
-    @Column(name = "rate_multiplier", nullable = false, precision = 10, scale = 4)
+    @TableField("rate_multiplier")
     private java.math.BigDecimal rateMultiplier;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "model_mapping", columnDefinition = "jsonb")
+    @TableField(value = "model_mapping", typeHandler = JsonbStringTypeHandler.class)
     private String modelMapping;
 
-    @Column(name = "weight")
+    @TableField("weight")
     private int weight;
 
-    @Column(name = "tag", length = 255)
+    @TableField("tag")
     private String tag;
 
-    @Column(name = "auto_ban")
+    @TableField("auto_ban")
     private boolean autoBan;
 
-    @Column(name = "response_time")
+    @TableField("response_time")
     private Integer responseTime;
 
-    @Column(name = "test_time")
+    @TableField("test_time")
     private Long testTime;
 
-    @Column(name = "balance", precision = 30, scale = 6)
+    @TableField("balance")
     private java.math.BigDecimal balance;
 
-    @Column(name = "used_quota", precision = 30, scale = 6)
+    @TableField("used_quota")
     private java.math.BigDecimal usedQuota;
 
-    @Column(name = "models", columnDefinition = "TEXT")
+    @TableField("models")
     private String models;
 
-    @Column(name = "created_at")
+    @TableField("created_at")
     private Long createdAt;
 
-    @Column(name = "updated_at")
+    @TableField("updated_at")
     private Long updatedAt;
 
-    /** JPA 规范要求的无参构造器。 */
+    /** 框架（JPA / MyBatis-Plus）实例化所需的无参构造器。 */
     public AccountPO() {
     }
 
@@ -319,5 +314,83 @@ public class AccountPO {
 
     public void setUpdatedAt(Long updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // ---- 就近映射工厂方法（方案 1）：映射逻辑收敛在 PO，domain 仍零感知 PO ----
+
+    /**
+     * PO → 领域聚合（重建方向）。{@code credentials} 为 {@code "{}"} 占位时归一为 null（领域语义：无凭据）。
+     * 分组关联由调用方从 {@code account_groups} 单独加载后传入（PO 不持有关联子表）。
+     *
+     * @param groups 该账号的分组关联（调用方加载）
+     * @return 重建的账号聚合
+     */
+    public Account toDomain(List<AccountGroupRef> groups) {
+        return Account.rehydrate(
+                id,
+                name,
+                platform,
+                type,
+                "{}".equals(credentials) ? null : credentials,
+                baseUrl,
+                concurrency,
+                priority,
+                status,
+                rateLimitedAt,
+                rateLimitResetAt,
+                overloadUntil,
+                expiresAt,
+                autoPauseOnExpired,
+                rateMultiplier,
+                modelMapping,
+                weight,
+                tag,
+                autoBan,
+                responseTime,
+                testTime,
+                balance,
+                usedQuota,
+                models,
+                groups,
+                createdAt,
+                updatedAt);
+    }
+
+    /**
+     * 领域聚合 → PO（持久化方向）。{@code credentials} 为 null 时落 {@code "{}"} 空 jsonb 占位。
+     * 分组关联不在此映射（由调用方 fan-out 到 {@code account_groups}）。
+     *
+     * @param a 账号聚合（非空）
+     * @return 待持久化的 PO
+     */
+    public static AccountPO of(Account a) {
+        AccountPO e = new AccountPO();
+        e.id = a.id();
+        e.name = a.name();
+        e.platform = a.platform();
+        e.type = a.type();
+        e.credentials = a.credentials() == null ? "{}" : a.credentials();
+        e.baseUrl = a.baseUrl();
+        e.concurrency = a.concurrency();
+        e.priority = a.priority();
+        e.status = a.status().code();
+        e.rateLimitedAt = a.rateLimitedAt();
+        e.rateLimitResetAt = a.rateLimitResetAt();
+        e.overloadUntil = a.overloadUntil();
+        e.expiresAt = a.expiresAt();
+        e.autoPauseOnExpired = a.autoPauseOnExpired();
+        e.rateMultiplier = a.rateMultiplier();
+        e.modelMapping = a.modelMapping();
+        e.weight = a.weight();
+        e.tag = a.tag();
+        e.autoBan = a.autoBan();
+        e.responseTime = a.responseTime();
+        e.testTime = a.testTime();
+        e.balance = a.balance();
+        e.usedQuota = a.usedQuota();
+        e.models = a.models();
+        e.createdAt = a.createdTime();
+        e.updatedAt = a.updatedTime();
+        return e;
     }
 }

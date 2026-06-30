@@ -1,101 +1,94 @@
 package com.nexa.infrastructure.token.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.type.SqlTypes;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.token.model.Token;
+import com.nexa.domain.token.vo.TokenStatus;
+import com.nexa.infrastructure.persistence.JsonbStringTypeHandler;
 
 /**
- * 令牌 JPA 持久化实体（基础设施层，对齐 V9 {@code tokens} 与 DB-SCHEMA §2）。
+ * 令牌持久化实体（基础设施层，对齐 V9 {@code tokens} 与 DB-SCHEMA §2）。
  *
- * <p>持久化映射，与领域聚合 {@link com.nexa.domain.token.model.Token} 分离（DDD：domain 不感知 JPA）。
- * 映射转换在 {@code TokenRepositoryImpl}。{@code key} 落库但绝不进默认客户视图 DTO（仅受控取明文端点用）。</p>
+ * <p>持久化映射，与领域聚合 {@link Token} 分离（DDD：domain 不感知持久化框架）。映射由本类就近工厂
+ * {@link #toDomain()} / {@link #of(Token)} 承载。{@code key} 落库但绝不进默认客户视图 DTO（仅受控取明文端点用）。</p>
  *
- * <p>{@code model_limits}/{@code endpoint_limits} 用 Hibernate 6 {@code @JdbcTypeCode(SqlTypes.JSON)}
- * 以 String 承载 JSONB。{@code key}/{@code group} 为 PG 保留字，列名加双引号转义（与 V9 一致）。
- * 软删除用 {@code deleted_at} 时间戳 + {@code @SQLRestriction("deleted_at IS NULL")}（对齐 DB-SCHEMA
- * 全文惯例），查询自动过滤已删行。</p>
+ * <p>{@code model_limits}/{@code endpoint_limits} 是 PG {@code jsonb} 列，以 String 承载——MyBatis-Plus 侧由
+ * {@link JsonbStringTypeHandler} 完成 String↔jsonb 互转（{@code @TableName(autoResultMap = true)} 使读取亦走该 Handler），
+ * 并存期保留 JPA 的 {@code @JdbcTypeCode(SqlTypes.JSON)}。{@code key}/{@code group} 为 PG 保留字，列名双引号转义。
+ * 软删除用 {@code deleted_at} 时间戳：MyBatis-Plus 以 {@code @TableLogic(value = "null")} 自动过滤未删行
+ * （等价 {@code @SQLRestriction}），软删除写由 Mapper 显式 {@code @Update} 打 epoch 秒（不用 deleteById）。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留全部 JPA 注解满足 {@code ddl-auto=validate}，新增 MyBatis-Plus 注解供 Mapper 读写。</p>
  */
-@Entity
-@Table(name = "tokens", indexes = {
-        @Index(name = "idx_tokens_user_id", columnList = "user_id"),
-        @Index(name = "idx_tokens_name", columnList = "name"),
-        @Index(name = "idx_tokens_deleted_at", columnList = "deleted_at")
-})
-@SQLRestriction("deleted_at IS NULL")
+@TableName(value = "tokens", autoResultMap = true)
 public class TokenPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "user_id")
+    @TableField("user_id")
     private Integer userId;
 
-    @Column(name = "\"key\"", columnDefinition = "varchar(128)", unique = true)
+    @TableField("\"key\"")
     private String key;
 
-    @Column(name = "status", nullable = false)
+    @TableField("status")
     private int status;
 
-    @Column(name = "name")
+    @TableField("name")
     private String name;
 
-    @Column(name = "created_time")
+    @TableField("created_time")
     private Long createdTime;
 
-    @Column(name = "accessed_time")
+    @TableField("accessed_time")
     private Long accessedTime;
 
-    @Column(name = "expired_time", nullable = false)
+    @TableField("expired_time")
     private long expiredTime;
 
-    @Column(name = "remain_quota", nullable = false)
+    @TableField("remain_quota")
     private long remainQuota;
 
-    @Column(name = "unlimited_quota", nullable = false)
+    @TableField("unlimited_quota")
     private boolean unlimitedQuota;
 
-    @Column(name = "model_limits_enabled", nullable = false)
+    @TableField("model_limits_enabled")
     private boolean modelLimitsEnabled;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "model_limits", columnDefinition = "jsonb")
+    @TableField(value = "model_limits", typeHandler = JsonbStringTypeHandler.class)
     private String modelLimits;
 
-    @Column(name = "allow_ips", nullable = false, columnDefinition = "text")
+    @TableField("allow_ips")
     private String allowIps;
 
-    @Column(name = "used_quota", nullable = false)
+    @TableField("used_quota")
     private long usedQuota;
 
-    @Column(name = "\"group\"", nullable = false, length = 255)
+    @TableField("\"group\"")
     private String group;
 
-    @Column(name = "cross_group_retry", nullable = false)
+    @TableField("cross_group_retry")
     private boolean crossGroupRetry;
 
-    @Column(name = "endpoint_limits_enabled", nullable = false)
+    @TableField("endpoint_limits_enabled")
     private boolean endpointLimitsEnabled;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "endpoint_limits", columnDefinition = "jsonb")
+    @TableField(value = "endpoint_limits", typeHandler = JsonbStringTypeHandler.class)
     private String endpointLimits;
 
-    @Column(name = "deleted_at")
+    @TableField("deleted_at")
+    @TableLogic(value = "null")
     private Long deletedAt;
 
-    /** JPA 规范要求的无参构造器。 */
+    /** 框架（MyBatis-Plus）实例化所需的无参构造器。 */
     public TokenPO() {
     }
 
-    // ---- 访问器（JPA 需要 getter/setter；领域逻辑不在此） ----
+    // ---- 访问器（getter/setter；领域逻辑不在此） ----
 
     public Long getId() {
         return id;
@@ -247,5 +240,83 @@ public class TokenPO {
 
     public void setDeletedAt(Long deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    // ---- 就近映射工厂方法（方案 1）：映射逻辑收敛在 PO，domain 仍零感知 PO ----
+
+    /**
+     * 领域聚合 → PO（持久化方向）。userId 由 long 安全窄化为 DB INTEGER；jsonb 列空串归 null
+     * （避免 PG 解析空串 JSON 报错）；allowIps/group 的 null 归一空串。
+     *
+     * @param token 令牌聚合
+     * @return 待持久化的 PO
+     */
+    public static TokenPO of(Token token) {
+        TokenPO e = new TokenPO();
+        e.id = token.id();
+        e.userId = toIntUserId(token.userId());
+        e.key = token.key();
+        e.status = token.status().code();
+        e.name = token.name();
+        e.createdTime = token.createdTime();
+        e.accessedTime = token.accessedTime();
+        e.expiredTime = token.expiredTime();
+        e.remainQuota = token.remainQuota();
+        e.unlimitedQuota = token.unlimitedQuota();
+        e.modelLimitsEnabled = token.modelLimitsEnabled();
+        e.modelLimits = emptyToNull(token.modelLimits());
+        e.allowIps = token.allowIps() == null ? "" : token.allowIps();
+        e.usedQuota = token.usedQuota();
+        e.group = token.group() == null ? "" : token.group();
+        e.crossGroupRetry = token.crossGroupRetry();
+        e.endpointLimitsEnabled = token.endpointLimitsEnabled();
+        e.endpointLimits = emptyToNull(token.endpointLimits());
+        return e;
+    }
+
+    /**
+     * PO → 领域聚合（重建方向，走 {@link Token#builder()}）。数值列 null 兜底与 name/allowIps/group/
+     * endpointLimits 的 null 归一空串统一收敛在 {@code Token.Builder} 内，这里只做状态码解析与
+     * modelLimits 空串归一（其余直传）。
+     *
+     * @return 重建的令牌聚合
+     */
+    public Token toDomain() {
+        return Token.builder()
+                .id(id)
+                .userId(userId == null ? null : userId.longValue())
+                .key(key)
+                .status(TokenStatus.fromCode(status))
+                .name(name)
+                .expiredTime(expiredTime)
+                .remainQuota(remainQuota)
+                .unlimitedQuota(unlimitedQuota)
+                .modelLimitsEnabled(modelLimitsEnabled)
+                .modelLimits(modelLimits == null ? "" : modelLimits)
+                .allowIps(allowIps)
+                .usedQuota(usedQuota)
+                .group(group)
+                .crossGroupRetry(crossGroupRetry)
+                .endpointLimitsEnabled(endpointLimitsEnabled)
+                .endpointLimits(endpointLimits)
+                .accessedTime(accessedTime)
+                .createdTime(createdTime)
+                .build();
+    }
+
+    /**
+     * 将领域 long 用户 id 安全转为 DB INTEGER（越界即抛，不静默截断）。DB-SCHEMA §2 user_id 列为 INTEGER，
+     * 领域/接口层用 long 接收（AuthenticatedActor.userId 为 long）；BIGSERIAL 在 INTEGER 范围内长期不溢出。
+     */
+    private static int toIntUserId(long userId) {
+        if (userId > Integer.MAX_VALUE || userId < Integer.MIN_VALUE) {
+            throw new IllegalArgumentException("userId out of INTEGER range: " + userId);
+        }
+        return (int) userId;
+    }
+
+    /** JSONB 列空串归 null（避免 PG 解析空串 JSON 报错；查询出来再归空串）。 */
+    private static String emptyToNull(String s) {
+        return (s == null || s.isEmpty()) ? null : s;
     }
 }

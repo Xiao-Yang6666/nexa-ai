@@ -1,67 +1,67 @@
 package com.nexa.infrastructure.billing.persistence.po;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.SQLRestriction;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexa.domain.billing.model.Redemption;
+import com.nexa.domain.billing.vo.Quota;
+import com.nexa.domain.billing.vo.RedemptionStatus;
 
 /**
- * 兑换码 JPA 持久化实体（基础设施层）。
+ * 兑换码持久化实体（基础设施层）。
  *
  * <p>对齐 DB-SCHEMA §6 Redemption / 表 {@code redemptions}。与领域聚合
- * {@link com.nexa.domain.billing.model.Redemption} 分离（DDD：domain 不感知 JPA），映射转换在
- * {@code RedemptionRepositoryImpl}。{@code key} 为 PG 保留字，列名双引号转义；软删除沿用
- * {@code deleted_at} + {@code @SQLRestriction}。</p>
+ * {@link Redemption} 分离（DDD：domain 不感知持久化框架），映射由本类就近工厂方法
+ * {@link #toDomain()} / {@link #of(Redemption)} 承载。{@code key} 为 PG 保留字，列名双引号转义。</p>
+ *
+ * <p>软删除：{@code deleted_at} 为可空 epoch 秒时间戳。MyBatis-Plus 侧以 {@code @TableLogic(value = "null")}
+ * 让 {@code select} 自动追加 {@code deleted_at IS NULL} 过滤（等价 JPA {@code @SQLRestriction}）。
+ * 本聚合仓储无软删除写路径（仅 findByKey/save/saveAll/findPage），故不需 Mapper 显式打时间戳 {@code @Update}。
+ * 并存期保留 {@code @SQLRestriction}。</p>
+ *
+ * <p><b>迁移中间态（双注解）</b>：保留全部 JPA 注解满足 {@code ddl-auto=validate}，新增 MyBatis-Plus 注解供 Mapper 读写。</p>
  */
-@Entity
-@Table(name = "redemptions", indexes = {
-        @Index(name = "idx_redemptions_key", columnList = "\"key\"", unique = true),
-        @Index(name = "idx_redemptions_name", columnList = "name"),
-        @Index(name = "idx_redemptions_deleted_at", columnList = "deleted_at")
-})
-@SQLRestriction("deleted_at IS NULL")
+@TableName("redemptions")
 public class RedemptionPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
-    @Column(name = "user_id")
+    @TableField("user_id")
     private Integer userId;
 
     /** 兑换码明文（char(32)，PG 保留字 key 需双引号转义；唯一索引）。 */
-    @Column(name = "\"key\"", columnDefinition = "varchar(32)", unique = true)
+    @TableField("\"key\"")
     private String key;
 
-    @Column(name = "status", columnDefinition = "integer default 1")
+    @TableField("status")
     private Integer status;
 
-    @Column(name = "name")
+    @TableField("name")
     private String name;
 
-    @Column(name = "quota", columnDefinition = "integer default 100")
+    @TableField("quota")
     private Integer quota;
 
-    @Column(name = "created_time", columnDefinition = "bigint")
+    @TableField("created_time")
     private Long createdTime;
 
-    @Column(name = "redeemed_time", columnDefinition = "bigint")
+    @TableField("redeemed_time")
     private Long redeemedTime;
 
-    @Column(name = "used_user_id")
+    @TableField("used_user_id")
     private Integer usedUserId;
 
-    @Column(name = "expired_time", columnDefinition = "bigint")
+    @TableField("expired_time")
     private Long expiredTime;
 
-    @Column(name = "deleted_at")
+    @TableField("deleted_at")
+    @TableLogic(value = "null")
     private Long deletedAt;
 
-    /** JPA 规范要求的无参构造器。 */
+    /** 框架（JPA / MyBatis-Plus）实例化所需的无参构造器。 */
     public RedemptionPO() {
     }
 
@@ -151,5 +151,50 @@ public class RedemptionPO {
 
     public void setDeletedAt(Long deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    // ---- 就近映射工厂方法（方案 1）：映射逻辑收敛在 PO，domain 仍零感知 PO ----
+
+    /**
+     * 领域聚合 → PO（持久化方向）。
+     *
+     * @param r 兑换码聚合
+     * @return 待持久化的 PO
+     */
+    public static RedemptionPO of(Redemption r) {
+        RedemptionPO e = new RedemptionPO();
+        e.id = r.id();
+        e.userId = r.creatorUserId();
+        e.key = r.key();
+        e.status = r.status().code();
+        e.name = r.name();
+        // quota 列为 integer（DB-SCHEMA §6），面额按现网整数语义；面额超 int 范围属配置错误，此处转 int。
+        e.quota = (int) r.quota().value();
+        e.createdTime = r.createdTime();
+        e.redeemedTime = r.redeemedTime();
+        e.usedUserId = r.usedUserId();
+        e.expiredTime = r.expiredTime();
+        return e;
+    }
+
+    /**
+     * PO → 领域聚合（重建方向，走 {@link Redemption#builder()}）。
+     *
+     * @return 重建的兑换码聚合
+     */
+    public Redemption toDomain() {
+        // 过期时间 null→0（永不过期）的兜底已收敛进 Redemption.Builder.expiredTime，此处不再三元。
+        return Redemption.builder()
+                .id(id)
+                .creatorUserId(userId)
+                .key(key == null ? null : key.trim())  // char(32) 定长右补空格，去尾
+                .status(RedemptionStatus.fromCode(status == null ? RedemptionStatus.UNUSED.code() : status))
+                .name(name)
+                .quota(Quota.of(quota == null ? 0L : quota))
+                .createdTime(createdTime)
+                .redeemedTime(redeemedTime)
+                .usedUserId(usedUserId)
+                .expiredTime(expiredTime)
+                .build();
     }
 }

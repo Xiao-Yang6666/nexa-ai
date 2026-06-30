@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.model.persistence;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.model.model.UserModelAlias;
 import com.nexa.domain.model.repository.UserModelAliasRepository;
 import com.nexa.domain.model.vo.AliasScopeType;
@@ -12,33 +14,40 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 领域仓储 {@link UserModelAliasRepository} 的 JPA 实现（基础设施层适配器，F-6003）。
+ * 领域仓储 {@link UserModelAliasRepository} 的 MyBatis-Plus 实现（基础设施层适配器，F-6003）。
  *
- * <p>DDD 依赖倒置落地。越权 self-scope 护栏在应用层落地，本类仅按 (scope_type, scope_id) 过滤。
- * 软删除用 deleted_at。</p>
+ * <p>DDD 依赖倒置：domain 定接口，本类用 {@link UserModelAliasMapper} + PO 就近工厂方法
+ * （{@code PO.of} / {@code po.toDomain}）实现。越权 self-scope 护栏在应用层落地，本类仅按
+ * (scope_type, scope_id) 过滤。{@code select} 经 {@code @TableLogic} 自动过滤已软删行；软删写走
+ * {@link UserModelAliasMapper#softDeleteById}。</p>
  */
 @Repository("modelUserModelAliasRepositoryImpl")
 public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
 
-    private final SpringDataUserModelAliasJpaRepository jpa;
+    private final UserModelAliasMapper mapper;
 
-    /** @param jpa Spring Data JPA 仓库（infra 内部依赖） */
-    public UserModelAliasRepositoryImpl(SpringDataUserModelAliasJpaRepository jpa) {
-        this.jpa = jpa;
+    /** @param mapper MyBatis-Plus Mapper（infra 内部依赖） */
+    public UserModelAliasRepositoryImpl(UserModelAliasMapper mapper) {
+        this.mapper = mapper;
     }
 
     /** {@inheritDoc} */
     @Override
     public UserModelAlias save(UserModelAlias alias) {
-        UserModelAliasPO saved = jpa.save(toEntity(alias));
-        alias.assignId(saved.getId());
-        return toDomain(saved);
+        UserModelAliasPO po = UserModelAliasPO.of(alias);
+        if (po.getId() == null) {
+            mapper.insert(po);              // 回填自增 id
+        } else {
+            mapper.updateById(po);
+        }
+        alias.assignId(po.getId());
+        return po.toDomain();
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<UserModelAlias> findById(long id) {
-        return jpa.findById(id).map(this::toDomain);
+        return Optional.ofNullable(mapper.selectById(id)).map(UserModelAliasPO::toDomain);
     }
 
     /** {@inheritDoc} */
@@ -47,58 +56,49 @@ public class UserModelAliasRepositoryImpl implements UserModelAliasRepository {
         if (scopeType == null || scopeId == null || aliasName == null) {
             return Optional.empty();
         }
-        return jpa.findByScopeTypeAndScopeIdAndAlias(scopeType.code(), scopeId.trim(), aliasName.trim())
-                .map(this::toDomain);
+        LambdaQueryWrapper<UserModelAliasPO> w = Wrappers.<UserModelAliasPO>lambdaQuery()
+                .eq(UserModelAliasPO::getScopeType, scopeType.code())
+                .eq(UserModelAliasPO::getScopeId, scopeId.trim())
+                .eq(UserModelAliasPO::getAlias, aliasName.trim());
+        return Optional.ofNullable(mapper.selectOne(w)).map(UserModelAliasPO::toDomain);
     }
 
     /** {@inheritDoc} */
     @Override
     public List<UserModelAlias> findByScope(AliasScopeType scopeType, String scopeId) {
-        return jpa.findByScopeTypeAndScopeId(scopeType.code(), scopeId).stream().map(this::toDomain).toList();
+        LambdaQueryWrapper<UserModelAliasPO> w = Wrappers.<UserModelAliasPO>lambdaQuery()
+                .eq(UserModelAliasPO::getScopeType, scopeType.code())
+                .eq(UserModelAliasPO::getScopeId, scopeId)
+                .orderByAsc(UserModelAliasPO::getAlias);
+        return mapper.selectList(w).stream().map(UserModelAliasPO::toDomain).toList();
     }
 
     /** {@inheritDoc} */
     @Override
     public List<UserModelAlias> findByUserAndGroups(long userId, List<String> userGroups) {
-        // group IN () 在部分 DB/JPQL 实现上行为不确定，空集时塞入不可能命中的哨兵值，保证语义为「仅 user-scope」。
+        // group IN () 在部分 DB 上行为不确定，空集时塞入不可能命中的哨兵值，保证语义为「仅 user-scope」。
         List<String> groups = (userGroups == null || userGroups.isEmpty())
                 ? List.of("__no_group__")
                 : userGroups;
-        return jpa.findByUserAndGroups(String.valueOf(userId), groups).stream().map(this::toDomain).toList();
+        String userScopeId = String.valueOf(userId);
+        // (scope_type='user' AND scope_id=userId) OR (scope_type='group' AND scope_id IN groups)。
+        // 整个 OR 组合用一层 .and(outer->...) 包裹，确保 @TableLogic 自动追加的 `deleted_at IS NULL`
+        // 以 `... AND ( (A) OR (B) )` 形式整体 AND，避免 AND>OR 优先级把软删过滤泄漏（仅 A 受约束、B 漏删）。
+        LambdaQueryWrapper<UserModelAliasPO> w = Wrappers.<UserModelAliasPO>lambdaQuery()
+                .and(outer -> outer
+                        .and(q -> q.eq(UserModelAliasPO::getScopeType, "user")
+                                .eq(UserModelAliasPO::getScopeId, userScopeId))
+                        .or(q -> q.eq(UserModelAliasPO::getScopeType, "group")
+                                .in(UserModelAliasPO::getScopeId, groups)))
+                .orderByAsc(UserModelAliasPO::getScopeType)
+                .orderByAsc(UserModelAliasPO::getAlias);
+        return mapper.selectList(w).stream().map(UserModelAliasPO::toDomain).toList();
     }
 
     /** {@inheritDoc} */
     @Override
     @Transactional
     public void deleteById(long id) {
-        jpa.softDeleteById(id, Instant.now().getEpochSecond());
-    }
-
-    // ---- 领域聚合 <-> JPA 实体映射 ----
-
-    private UserModelAliasPO toEntity(UserModelAlias a) {
-        UserModelAliasPO e = new UserModelAliasPO();
-        e.setId(a.id());
-        e.setScopeType(a.scopeType().code());
-        e.setScopeId(a.scopeId());
-        e.setAlias(a.alias());
-        e.setTarget(a.target());
-        e.setEnabled(a.enabled());
-        e.setCreatedTime(a.createdTime());
-        e.setUpdatedTime(a.updatedTime());
-        return e;
-    }
-
-    private UserModelAlias toDomain(UserModelAliasPO e) {
-        return UserModelAlias.builder()
-                .id(e.getId())
-                .scopeType(AliasScopeType.fromCode(e.getScopeType()))
-                .scopeId(e.getScopeId())
-                .alias(e.getAlias())
-                .target(e.getTarget())
-                .enabled(e.getEnabled())
-                .createdTime(e.getCreatedTime())
-                .updatedTime(e.getUpdatedTime())
-                .build();
+        mapper.softDeleteById(id, Instant.now().getEpochSecond());
     }
 }

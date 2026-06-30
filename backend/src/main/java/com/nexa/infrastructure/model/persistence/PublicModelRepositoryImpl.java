@@ -1,12 +1,13 @@
 package com.nexa.infrastructure.model.persistence;
 
-import com.nexa.infrastructure.persistence.PageQueries;
-
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nexa.domain.model.model.PublicModel;
 import com.nexa.domain.model.repository.PublicModelRepository;
 import com.nexa.domain.model.vo.Pagination;
 import com.nexa.infrastructure.model.persistence.po.PublicModelPO;
-import org.springframework.data.domain.Pageable;
+import com.nexa.infrastructure.persistence.PageQueries;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,34 +16,39 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 领域仓储 {@link PublicModelRepository} 的 JPA 实现（基础设施层适配器，F-6001/F-6004）。
+ * 领域仓储 {@link PublicModelRepository} 的 MyBatis-Plus 实现（基础设施层适配器，F-6001/F-6004）。
  *
- * <p>DDD 依赖倒置落地：domain 定接口，本类用 {@link SpringDataPublicModelJpaRepository} + 实体↔领域映射实现。
- * 领域聚合 {@link PublicModel} 与 {@link PublicModelPO} 分离（domain 不感知 Hibernate）。
- * 软删除用 deleted_at。</p>
+ * <p>DDD 依赖倒置：domain 定接口，本类用 {@link PublicModelMapper} + PO 就近工厂方法
+ * （{@code PO.of} / {@code po.toDomain}）实现。{@code select} 经 {@code @TableLogic} 自动过滤已软删行；
+ * 软删除写走 {@link PublicModelMapper#softDeleteById}。</p>
  */
 @Repository
 public class PublicModelRepositoryImpl implements PublicModelRepository {
 
-    private final SpringDataPublicModelJpaRepository jpa;
+    private final PublicModelMapper mapper;
 
-    /** @param jpa Spring Data JPA 仓库（infra 内部依赖） */
-    public PublicModelRepositoryImpl(SpringDataPublicModelJpaRepository jpa) {
-        this.jpa = jpa;
+    /** @param mapper MyBatis-Plus Mapper（infra 内部依赖） */
+    public PublicModelRepositoryImpl(PublicModelMapper mapper) {
+        this.mapper = mapper;
     }
 
     /** {@inheritDoc} */
     @Override
     public PublicModel save(PublicModel model) {
-        PublicModelPO saved = jpa.save(toEntity(model));
-        model.assignId(saved.getId());
-        return toDomain(saved);
+        PublicModelPO po = PublicModelPO.of(model);
+        if (po.getId() == null) {
+            mapper.insert(po);              // 回填自增 id
+        } else {
+            mapper.updateById(po);
+        }
+        model.assignId(po.getId());
+        return po.toDomain();
     }
 
     /** {@inheritDoc} */
     @Override
     public Optional<PublicModel> findById(long id) {
-        return jpa.findById(id).map(this::toDomain);
+        return Optional.ofNullable(mapper.selectById(id)).map(PublicModelPO::toDomain);
     }
 
     /** {@inheritDoc} */
@@ -51,75 +57,52 @@ public class PublicModelRepositoryImpl implements PublicModelRepository {
         if (publicName == null || publicName.isBlank()) {
             return Optional.empty();
         }
-        return jpa.findByPublicName(publicName.trim()).map(this::toDomain);
+        LambdaQueryWrapper<PublicModelPO> w = Wrappers.<PublicModelPO>lambdaQuery()
+                .eq(PublicModelPO::getPublicName, publicName.trim());
+        return Optional.ofNullable(mapper.selectOne(w)).map(PublicModelPO::toDomain);
     }
 
     /** {@inheritDoc} */
     @Override
     public List<PublicModel> findPage(Pagination pagination, boolean enabledOnly) {
-        Pageable pageable = PageQueries.of(pagination.page(), pagination.pageSize());
-        List<PublicModelPO> rows = enabledOnly
-                ? jpa.findEnabledPageOrdered(pageable)
-                : jpa.findPageOrdered(pageable);
-        return rows.stream().map(this::toDomain).toList();
+        Page<PublicModelPO> page = PageQueries.mpOf(pagination.page(), pagination.pageSize());
+        LambdaQueryWrapper<PublicModelPO> w = Wrappers.<PublicModelPO>lambdaQuery()
+                .eq(enabledOnly, PublicModelPO::getEnabled, true)
+                .orderByAsc(PublicModelPO::getSortOrder)
+                .orderByAsc(PublicModelPO::getId);
+        return mapper.selectPage(page, w).getRecords().stream()
+                .map(PublicModelPO::toDomain)
+                .toList();
     }
 
     /** {@inheritDoc} */
     @Override
     public long count(boolean enabledOnly) {
-        return enabledOnly ? jpa.countEnabled() : jpa.count();
+        LambdaQueryWrapper<PublicModelPO> w = Wrappers.<PublicModelPO>lambdaQuery()
+                .eq(enabledOnly, PublicModelPO::getEnabled, true);
+        return mapper.selectCount(w);
     }
 
     /** {@inheritDoc} */
     @Override
     public List<String> findEnabledNames() {
-        return jpa.findEnabledPublicNames();
+        return mapper.findEnabledPublicNames();
     }
 
     /** {@inheritDoc} */
     @Override
     public List<PublicModel> findAllEnabled() {
-        return jpa.findAllEnabledOrdered().stream().map(this::toDomain).toList();
+        LambdaQueryWrapper<PublicModelPO> w = Wrappers.<PublicModelPO>lambdaQuery()
+                .eq(PublicModelPO::getEnabled, true)
+                .orderByAsc(PublicModelPO::getSortOrder)
+                .orderByAsc(PublicModelPO::getId);
+        return mapper.selectList(w).stream().map(PublicModelPO::toDomain).toList();
     }
 
     /** {@inheritDoc} */
     @Override
     @Transactional
     public void deleteById(long id) {
-        jpa.softDeleteById(id, Instant.now().getEpochSecond());
-    }
-
-    // ---- 领域聚合 <-> JPA 实体映射 ----
-
-    private PublicModelPO toEntity(PublicModel m) {
-        PublicModelPO e = new PublicModelPO();
-        e.setId(m.id());
-        e.setPublicName(m.publicName());
-        e.setBasePriceRatio(m.basePriceRatio());
-        e.setUsePrice(m.usePrice());
-        e.setBasePrice(m.basePrice());
-        e.setEnabled(m.enabled());
-        e.setDisplayName(m.displayName());
-        e.setSortOrder(m.sortOrder());
-        e.setDescription(m.description());
-        e.setCreatedTime(m.createdTime());
-        e.setUpdatedTime(m.updatedTime());
-        return e;
-    }
-
-    private PublicModel toDomain(PublicModelPO e) {
-        return PublicModel.builder()
-                .id(e.getId())
-                .publicName(e.getPublicName())
-                .basePriceRatio(e.getBasePriceRatio())
-                .usePrice(e.getUsePrice())
-                .basePrice(e.getBasePrice())
-                .enabled(e.getEnabled())
-                .displayName(e.getDisplayName())
-                .sortOrder(e.getSortOrder())
-                .description(e.getDescription())
-                .createdTime(e.getCreatedTime())
-                .updatedTime(e.getUpdatedTime())
-                .build();
+        mapper.softDeleteById(id, Instant.now().getEpochSecond());
     }
 }

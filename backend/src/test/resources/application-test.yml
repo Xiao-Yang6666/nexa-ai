@@ -10,13 +10,6 @@ spring:
     username: ${TEST_DB_USERNAME:postgres}
     password: ${TEST_DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false
   flyway:
     enabled: true
     baseline-on-migrate: true
