@@ -6,7 +6,7 @@ import java.util.Optional;
  * 用户 TOTP 密钥来源端口（应用层定义，基础设施层实现，F-1038）。
  *
  * <p>把「按 userId 取本人已启用的 TOTP 密钥」这一职责与「TOTP 算法校验」解耦：算法在
- * {@code com.nexa.domain.twofa.vo.TotpVerifier}（已就绪、纯算法），而密钥的存取依赖 twofa 限界上下文的
+ * {@code com.nexa.domain.account.twofa.vo.TotpVerifier}（已就绪、纯算法），而密钥的存取依赖 twofa 限界上下文的
  * 持久化（聚合/仓储，属<b>后续 wave</b>落地）。本端口即该依赖的抽象。</p>
  *
  * <p>DDD 依赖倒置：TOTP 校验适配器只依赖本端口，twofa 持久化 wave 落地后提供真实实现即可，

@@ -1,7 +1,7 @@
 package com.nexa.domain.token.vo;
 
 /**
- * 分页参数值对象（令牌列表/搜索，与 com.nexa.domain.channel.vo.Pagination 同构）。
+ * 分页参数值对象（令牌列表/搜索）。
  *
  * <p>领域规则来源：openapi PageParam/PageSizeParam（F-3002 令牌列表、F-3003 搜索）。
  * 非正/越界由工厂 {@link #of(Integer, Integer)} 归一（缺省页 1、每页 10、上限 100），不报错——

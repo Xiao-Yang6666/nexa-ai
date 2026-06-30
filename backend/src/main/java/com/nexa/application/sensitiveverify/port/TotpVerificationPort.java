@@ -4,7 +4,7 @@ package com.nexa.application.sensitiveverify.port;
  * TOTP 二次验证端口（应用层定义，基础设施层实现，F-1038）。
  *
  * <p>F-1038 因子之一：用双因子 TOTP 一次性口令做二次验证。端口只声明「给定用户与提交口令，是否在容忍窗口内有效」
- * 这一能力，不暴露密钥存储细节——TOTP 算法见 {@code com.nexa.domain.twofa.vo.TotpVerifier}（纯算法已就绪），
+ * 这一能力，不暴露密钥存储细节——TOTP 算法见 {@code com.nexa.domain.account.twofa.vo.TotpVerifier}（纯算法已就绪），
  * 但「按 userId 取本人 TOTP 密钥」依赖 twofa 限界上下文的持久化（聚合/仓储，属<b>后续 wave</b>落地）。</p>
  *
  * <p>DDD 依赖倒置：用例只依赖本端口，可桩替换单测（backend-engineer §2.3）。当前 wave 提供桩实现

@@ -2,9 +2,9 @@ package com.nexa.infrastructure.sensitiveverify.adapter;
 
 import com.nexa.application.sensitiveverify.port.TotpSecretProvider;
 import com.nexa.application.sensitiveverify.port.TotpVerificationPort;
-import com.nexa.domain.twofa.exception.TwoFAException;
-import com.nexa.domain.twofa.vo.TotpSecret;
-import com.nexa.domain.twofa.vo.TotpVerifier;
+import com.nexa.domain.account.twofa.exception.TwoFAException;
+import com.nexa.domain.account.twofa.vo.TotpSecret;
+import com.nexa.domain.account.twofa.vo.TotpVerifier;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
