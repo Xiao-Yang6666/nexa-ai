@@ -1,7 +1,7 @@
 package com.nexa.infrastructure.routing.selection;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nexa.infrastructure.account.provider.persistence.AccountAbilityMapper;
+import com.nexa.infrastructure.account.provider.persistence.mapper.AccountAbilityMapper;
 import com.nexa.infrastructure.account.provider.persistence.po.AccountAbilityPO;
 import com.nexa.application.routing.port.ChannelSelectionPort;
 import com.nexa.domain.routing.vo.ChannelCandidate;

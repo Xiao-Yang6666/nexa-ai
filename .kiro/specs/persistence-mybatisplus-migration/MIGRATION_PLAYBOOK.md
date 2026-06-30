@@ -35,12 +35,14 @@ public class BalanceTransactionPO {
 }
 ```
 
-### Mapper（public 接口，放 persistence/ 包，取代 SpringData*JpaRepository）
+### Mapper（public 接口，放 persistence/mapper/ 子包，取代 SpringData*JpaRepository）
 ```java
+// infrastructure/<域>/persistence/mapper/BalanceTransactionMapper.java
 public interface BalanceTransactionMapper extends BaseMapper<BalanceTransactionPO> {
     // 基础 CRUD 由 BaseMapper 提供。复杂 SQL（CAS/聚合/软删写）用 @Update/@Select 注解方法声明在这里。
 }
 ```
+> 包结构约定：每个域 `persistence/` 三分——`RepositoryImpl`（直下，@Repository 适配器）、`mapper/`（MyBatis-Plus 数据访问）、`po/`（持久化对象）。Mapper 仅供同域 RepositoryImpl 内部注入，不向上层暴露；`@MapperScan` 扫 `com.nexa.infrastructure.**.persistence.mapper`。
 
 ### RepositoryImpl（注入 Mapper，不再注入 SpringData 接口；删私有 toEntity/toDomain）
 ```java

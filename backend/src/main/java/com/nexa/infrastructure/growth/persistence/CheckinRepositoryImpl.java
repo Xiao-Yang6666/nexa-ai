@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.growth.persistence;
 
+import com.nexa.infrastructure.growth.persistence.mapper.CheckinMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.growth.exception.AlreadyCheckedInException;

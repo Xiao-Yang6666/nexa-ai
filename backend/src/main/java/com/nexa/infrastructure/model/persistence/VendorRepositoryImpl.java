@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.model.persistence;
 
+import com.nexa.infrastructure.model.persistence.mapper.VendorMetaMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

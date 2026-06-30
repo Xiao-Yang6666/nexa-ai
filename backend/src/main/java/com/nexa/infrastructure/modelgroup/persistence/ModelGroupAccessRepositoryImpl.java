@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.modelgroup.persistence;
 
+import com.nexa.infrastructure.modelgroup.persistence.mapper.ModelGroupAccessMapper;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.modelgroup.model.ModelGroupAccess;
 import com.nexa.domain.modelgroup.repository.ModelGroupAccessRepository;

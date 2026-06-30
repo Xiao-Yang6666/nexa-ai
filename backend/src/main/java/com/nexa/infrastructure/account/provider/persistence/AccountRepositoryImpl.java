@@ -1,5 +1,11 @@
 package com.nexa.infrastructure.account.provider.persistence;
 
+import com.nexa.infrastructure.account.provider.persistence.mapper.AccountMapper;
+
+import com.nexa.infrastructure.account.provider.persistence.mapper.AccountGroupMapper;
+
+import com.nexa.infrastructure.account.provider.persistence.mapper.AccountAbilityMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.account.provider.model.Account;

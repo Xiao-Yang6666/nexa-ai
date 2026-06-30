@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.oauthprovider.persistence;
 
+import com.nexa.infrastructure.oauthprovider.persistence.mapper.CustomOAuthProviderMapper;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexa.domain.oauthprovider.exception.InvalidCustomOAuthProviderException;

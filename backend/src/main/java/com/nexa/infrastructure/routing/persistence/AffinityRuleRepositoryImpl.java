@@ -1,5 +1,9 @@
 package com.nexa.infrastructure.routing.persistence;
 
+import com.nexa.infrastructure.routing.persistence.mapper.AffinitySettingsMapper;
+
+import com.nexa.infrastructure.routing.persistence.mapper.AffinityRuleMapper;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

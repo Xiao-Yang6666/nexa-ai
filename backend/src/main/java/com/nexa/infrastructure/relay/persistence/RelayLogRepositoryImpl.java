@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.relay.persistence;
 
+import com.nexa.infrastructure.relay.persistence.mapper.RelayLogMapper;
+
 import com.nexa.domain.relay.model.RelayLog;
 import com.nexa.domain.relay.repository.RelayLogRepository;
 import com.nexa.infrastructure.relay.persistence.po.LogPO;

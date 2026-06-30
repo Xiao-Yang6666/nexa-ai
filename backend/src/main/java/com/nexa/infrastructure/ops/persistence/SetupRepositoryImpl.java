@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.ops.persistence;
 
+import com.nexa.infrastructure.ops.persistence.mapper.SetupMapper;
+
 import com.nexa.domain.ops.setup.SetupMarker;
 import com.nexa.domain.ops.setup.SetupRepository;
 import com.nexa.infrastructure.ops.persistence.po.SetupPO;

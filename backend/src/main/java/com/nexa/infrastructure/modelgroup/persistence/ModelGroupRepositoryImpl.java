@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.modelgroup.persistence;
 
+import com.nexa.infrastructure.modelgroup.persistence.mapper.ModelGroupMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.core.type.TypeReference;

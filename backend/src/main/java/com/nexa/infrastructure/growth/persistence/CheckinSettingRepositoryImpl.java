@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.growth.persistence;
 
+import com.nexa.infrastructure.growth.persistence.mapper.CheckinSettingMapper;
+
 import com.nexa.domain.growth.exception.GrowthPersistenceException;
 import com.nexa.domain.growth.repository.CheckinSettingRepository;
 import com.nexa.domain.growth.vo.CheckinSetting;

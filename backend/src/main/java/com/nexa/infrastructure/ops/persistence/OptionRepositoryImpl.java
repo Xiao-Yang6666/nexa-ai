@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.ops.persistence;
 
+import com.nexa.infrastructure.ops.persistence.mapper.OptionMapper;
+
 import com.nexa.domain.ops.option.Option;
 import com.nexa.domain.ops.option.OptionRepository;
 import com.nexa.infrastructure.ops.persistence.po.OptionPO;

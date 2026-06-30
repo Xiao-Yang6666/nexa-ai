@@ -14,12 +14,10 @@ import org.springframework.context.annotation.Configuration;
  * <p>持久化层从 Spring Data JPA / Hibernate 滚动迁移到 MyBatis-Plus 的阶段1产物：引入但不切换。
  * 该配置注册分页插件并集中扫描各域 Mapper，迁移期与 JPA starter 共存、不改变现有行为。</p>
  *
- * <p>Mapper 扫描：各 bounded context 的 Mapper 统一落在 {@code com.nexa.infrastructure.<域>.persistence}
- * 包下，故以 {@code com.nexa.infrastructure.**.persistence} 通配集中扫描。<b>关键</b>：该包下并存期同时
- * 住着 26 个 {@code SpringData*JpaRepository}（Spring Data JPA 接口），若不加限定，MyBatis 会把它们也
- * 注册成 {@code MapperFactoryBean}，与 Spring Data 同名 bean 冲突致启动失败。故以
- * {@code markerInterface = BaseMapper.class} 限定只扫描继承 {@code BaseMapper} 的 MyBatis-Plus Mapper，
- * JPA 接口不受影响。阶段1尚无任何 Mapper，空匹配不影响启动。</p>
+ * <p>Mapper 扫描：各 bounded context 的 Mapper 统一落在 {@code com.nexa.infrastructure.<域>.persistence.mapper}
+ * 子包下（与 {@code RepositoryImpl} 分离，仅供其内部依赖注入），故以
+ * {@code com.nexa.infrastructure.**.persistence.mapper} 通配集中扫描。{@code markerInterface = BaseMapper.class}
+ * 再限定只注册继承 {@code BaseMapper} 的 MyBatis-Plus Mapper（双保险）。</p>
  *
  * <p>分页：{@link PaginationInnerInterceptor} 以 {@link DbType#POSTGRE_SQL} 生成 PostgreSQL 方言
  * {@code LIMIT/OFFSET} 分页 SQL，与迁移前 Spring Data 分页语义对齐（Req8.3）。</p>
@@ -28,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
  * 不新建第二个连接池（Req11.3）。</p>
  */
 @Configuration
-@MapperScan(basePackages = "com.nexa.infrastructure.**.persistence", markerInterface = BaseMapper.class)
+@MapperScan(basePackages = "com.nexa.infrastructure.**.persistence.mapper", markerInterface = BaseMapper.class)
 public class MybatisPlusConfig {
 
     /**

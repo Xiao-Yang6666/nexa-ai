@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.billing.persistence;
 
+import com.nexa.infrastructure.billing.persistence.mapper.BalanceTransactionMapper;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexa.domain.billing.model.BalanceTransaction;

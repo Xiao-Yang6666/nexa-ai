@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.telegram.persistence;
 
+import com.nexa.infrastructure.telegram.persistence.mapper.TelegramBindingMapper;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexa.domain.telegram.exception.TelegramBindingConflictException;

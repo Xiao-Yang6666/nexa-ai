@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.token.persistence;
 
+import com.nexa.infrastructure.token.persistence.mapper.TokenMapper;
+
 import com.nexa.domain.token.model.Token;
 import com.nexa.domain.token.repository.TokenRepository;
 import com.nexa.domain.token.vo.TokenStatus;

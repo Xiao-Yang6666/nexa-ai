@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.model.persistence;
 
+import com.nexa.infrastructure.model.persistence.mapper.UserModelAliasMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.model.model.UserModelAlias;

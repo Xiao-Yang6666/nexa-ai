@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.task.persistence;
 
+import com.nexa.infrastructure.task.persistence.mapper.TaskMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

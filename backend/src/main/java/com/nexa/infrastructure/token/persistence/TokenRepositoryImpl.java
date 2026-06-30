@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.token.persistence;
 
+import com.nexa.infrastructure.token.persistence.mapper.TokenMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.token.model.Token;

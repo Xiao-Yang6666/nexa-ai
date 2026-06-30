@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.routing.persistence;
 
+import com.nexa.infrastructure.routing.persistence.mapper.AffinityCacheMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.routing.repository.AffinityCacheRepository;

@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.billing.persistence;
 
+import com.nexa.infrastructure.billing.persistence.mapper.RedemptionMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.billing.model.Redemption;

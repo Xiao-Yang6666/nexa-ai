@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.account.persistence;
 
+import com.nexa.infrastructure.account.persistence.mapper.OAuthBindingMapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nexa.domain.account.exception.OAuthBindingConflictException;

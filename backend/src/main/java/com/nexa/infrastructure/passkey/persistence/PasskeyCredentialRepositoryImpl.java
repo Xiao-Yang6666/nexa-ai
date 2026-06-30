@@ -1,5 +1,7 @@
 package com.nexa.infrastructure.passkey.persistence;
 
+import com.nexa.infrastructure.passkey.persistence.mapper.PasskeyCredentialMapper;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexa.domain.passkey.exception.InvalidPasskeyCeremonyException;
