@@ -1,6 +1,6 @@
 package com.nexa.domain.modelgroup.exception;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 
 /**
  * 模型组参数非法异常（→ HTTP 400）。

@@ -1,6 +1,6 @@
 package com.nexa.domain.ops.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 系统初始化提交入参非法（F-4016）。

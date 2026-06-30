@@ -2,7 +2,7 @@ package com.nexa.interfaces.api.log;
 
 import com.nexa.domain.log.exception.InvalidLogQueryException;
 import com.nexa.domain.log.exception.LogPersistenceException;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

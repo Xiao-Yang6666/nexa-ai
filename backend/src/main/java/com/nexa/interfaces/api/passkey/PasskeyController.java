@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.passkey;
 
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.api.account.dto.UserVO;
 import com.nexa.application.passkey.LoginWithPasskeyUseCase;
 import com.nexa.application.passkey.ManagePasskeyUseCase;

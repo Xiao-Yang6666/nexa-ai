@@ -2,9 +2,9 @@ package com.nexa.interfaces.api.routing;
 
 import com.nexa.application.routing.ClearAffinityCacheUseCase;
 import com.nexa.application.routing.QueryAffinityUsageUseCase;
-import com.nexa.common.web.ApiResponse;
-import com.nexa.common.security.rbac.AuthLevel;
-import com.nexa.common.security.annotation.RequireRole;
+import com.nexa.shared.web.ApiResponse;
+import com.nexa.shared.security.rbac.AuthLevel;
+import com.nexa.shared.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

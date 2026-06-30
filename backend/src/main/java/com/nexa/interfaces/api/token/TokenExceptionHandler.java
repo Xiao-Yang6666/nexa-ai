@@ -1,12 +1,12 @@
 package com.nexa.interfaces.api.token;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 
 import com.nexa.domain.token.exception.InvalidTokenKeyException;
 import com.nexa.domain.token.exception.InvalidTokenParameterException;
 import com.nexa.domain.token.exception.TokenAccessDeniedException;
 import com.nexa.domain.token.exception.TokenNotFoundException;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

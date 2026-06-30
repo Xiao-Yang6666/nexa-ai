@@ -1,6 +1,6 @@
 package com.nexa.domain.account.exception;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 
 /**
  * 邮箱验证码错误或已过期异常。

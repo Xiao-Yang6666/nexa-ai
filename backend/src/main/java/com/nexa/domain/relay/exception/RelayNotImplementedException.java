@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 协议适配器缺失 / 能力不支持异常（RL-4 ad_find-否、RL-6 注册表未命中、RL-2 RelayNotImplemented）。

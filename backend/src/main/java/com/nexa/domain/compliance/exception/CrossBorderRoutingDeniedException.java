@@ -1,6 +1,6 @@
 package com.nexa.domain.compliance.exception;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 
 /**
  * 合规分组命中境外渠道被拒异常（F-5018，DC-008）。

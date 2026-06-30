@@ -1,6 +1,6 @@
 package com.nexa.domain.compliance.exception;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 
 /**
  * 同意闸门未通过异常（F-5021，DC-010）。

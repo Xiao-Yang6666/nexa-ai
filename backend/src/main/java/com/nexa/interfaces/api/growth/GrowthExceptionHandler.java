@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.growth;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.sharedkernel.HttpAwareDomainException;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

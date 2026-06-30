@@ -1,11 +1,11 @@
 package com.nexa.interfaces.api.routing;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 
 import com.nexa.domain.routing.exception.AffinityPersistenceException;
 import com.nexa.domain.routing.exception.AutoGroupsNotEnabledException;
 import com.nexa.domain.routing.exception.InvalidAffinityParameterException;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

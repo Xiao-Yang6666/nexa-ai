@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.passkey;
 
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.domain.passkey.exception.InvalidPasskeyCeremonyException;
 import com.nexa.domain.passkey.exception.PasskeyNotFoundException;
 import org.springframework.http.HttpStatus;

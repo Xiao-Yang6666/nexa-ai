@@ -18,7 +18,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * <ol>
  *   <li><b>层依赖单向</b>：domain 不依赖任何上层；application 不依赖 interfaces/infrastructure；
  *       interfaces 不依赖 infrastructure。</li>
- *   <li><b>common 是底座</b>：common 不依赖任何业务层。</li>
+ *   <li><b>sharedkernel 是领域共享内核</b>：被各域 domain 当基类继承（如 {@code DomainException}），
+ *       自身零依赖——不依赖任何业务层，也不依赖技术横切 {@code shared}。</li>
+ *   <li><b>shared 是技术横切底座</b>：security/web/persistence 等横切关注点，可依赖 sharedkernel，
+ *       但不依赖任何业务层。</li>
  * </ol>
  *
  * <p>已知历史违规（结构翻转暴露的既有债，待单独整改，不在本次结构重构中盲改）：
@@ -85,10 +88,25 @@ class LayeredArchitectureTest {
     }
 
     @Test
-    @DisplayName("common 底座不得依赖任何业务层")
-    void commonDependsOnNoBusinessLayer() {
+    @DisplayName("sharedkernel 领域共享内核不得依赖业务层或技术横切 shared")
+    void sharedKernelDependsOnNothing() {
         ArchRule rule = noClasses()
-                .that().resideInAPackage("..common..")
+                .that().resideInAPackage("com.nexa.sharedkernel..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage(
+                        "com.nexa.interfaces..",
+                        "com.nexa.application..",
+                        "com.nexa.domain..",
+                        "com.nexa.infrastructure..",
+                        "com.nexa.shared..");
+        rule.check(classes);
+    }
+
+    @Test
+    @DisplayName("shared 技术横切底座不得依赖任何业务层（可依赖 sharedkernel）")
+    void sharedDependsOnNoBusinessLayer() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("com.nexa.shared..")
                 .should().dependOnClassesThat()
                 .resideInAnyPackage(
                         "com.nexa.interfaces..",

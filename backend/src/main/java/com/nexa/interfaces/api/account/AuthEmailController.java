@@ -2,7 +2,7 @@ package com.nexa.interfaces.api.account;
 
 import com.nexa.application.account.SendPasswordResetEmailUseCase;
 import com.nexa.application.account.SendVerificationCodeUseCase;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;

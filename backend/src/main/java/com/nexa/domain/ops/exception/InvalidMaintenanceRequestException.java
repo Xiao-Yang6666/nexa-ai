@@ -1,6 +1,6 @@
 package com.nexa.domain.ops.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 性能监控 / 日志清理运维入参非法（F-4022/F-4023）。

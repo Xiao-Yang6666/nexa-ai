@@ -1,6 +1,6 @@
 package com.nexa.domain.playground.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * Playground 禁用 access token 异常（F-4038 关键安全闸 → 403 ErrorCodeAccessDenied）。

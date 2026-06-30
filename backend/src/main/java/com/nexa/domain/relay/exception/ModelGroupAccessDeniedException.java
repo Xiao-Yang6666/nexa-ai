@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 模型组访问拒绝异常（私有模型组未授权访问，403，REQ-05 灵活模型组访问闸门）。

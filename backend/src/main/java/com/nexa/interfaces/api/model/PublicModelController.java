@@ -3,10 +3,10 @@ package com.nexa.interfaces.api.model;
 import com.nexa.application.model.ManagePublicModelUseCase;
 import com.nexa.domain.model.model.PublicModel;
 import com.nexa.domain.model.vo.Pagination;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.api.model.dto.*;
-import com.nexa.common.security.rbac.AuthLevel;
-import com.nexa.common.security.annotation.RequireRole;
+import com.nexa.shared.security.rbac.AuthLevel;
+import com.nexa.shared.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

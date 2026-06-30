@@ -1,11 +1,11 @@
 package com.nexa.interfaces.api.log;
 
 import com.nexa.application.log.QueryProfitDashboardUseCase;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.api.log.dto.ProfitDashboardItemVO;
 import com.nexa.interfaces.api.log.dto.ProfitDashboardVO;
-import com.nexa.common.security.rbac.AuthLevel;
-import com.nexa.common.security.annotation.RequireRole;
+import com.nexa.shared.security.rbac.AuthLevel;
+import com.nexa.shared.security.annotation.RequireRole;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;

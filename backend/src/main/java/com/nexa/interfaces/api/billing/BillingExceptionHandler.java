@@ -1,10 +1,10 @@
 package com.nexa.interfaces.api.billing;
 
-import com.nexa.common.kernel.DomainException;
+import com.nexa.sharedkernel.DomainException;
 import com.nexa.domain.billing.exception.RedemptionAlreadyUsedException;
 import com.nexa.domain.billing.exception.RedemptionExpiredException;
 import com.nexa.domain.billing.exception.RedemptionInvalidException;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

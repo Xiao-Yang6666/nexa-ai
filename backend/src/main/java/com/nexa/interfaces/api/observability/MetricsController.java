@@ -2,8 +2,8 @@ package com.nexa.interfaces.api.observability;
 
 import com.nexa.application.observability.ExportMetricsUseCase;
 import com.nexa.infrastructure.observability.metrics.PrometheusTextRenderer;
-import com.nexa.common.security.rbac.AuthLevel;
-import com.nexa.common.security.annotation.RequireRole;
+import com.nexa.shared.security.rbac.AuthLevel;
+import com.nexa.shared.security.annotation.RequireRole;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

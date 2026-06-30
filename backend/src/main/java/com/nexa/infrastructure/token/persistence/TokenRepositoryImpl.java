@@ -1,6 +1,6 @@
 package com.nexa.infrastructure.token.persistence;
 
-import com.nexa.common.persistence.PageQueries;
+import com.nexa.shared.persistence.PageQueries;
 
 import com.nexa.domain.token.model.Token;
 import com.nexa.domain.token.repository.TokenRepository;

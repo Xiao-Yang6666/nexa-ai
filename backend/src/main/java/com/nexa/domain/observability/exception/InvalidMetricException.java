@@ -1,6 +1,6 @@
 package com.nexa.domain.observability.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 指标维度/命名非法异常（F-5010，→500 内部，指标导出契约违反）。

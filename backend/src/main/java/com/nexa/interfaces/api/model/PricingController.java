@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.model;
 
 import com.nexa.application.model.QueryPublicPricingUseCase;
-import com.nexa.common.web.ApiResponse;
+import com.nexa.shared.web.ApiResponse;
 import com.nexa.interfaces.api.model.dto.PricingPublicVO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

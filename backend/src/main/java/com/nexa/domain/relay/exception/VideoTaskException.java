@@ -1,6 +1,6 @@
 package com.nexa.domain.relay.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 视频任务相关异常（RL-5 视频代理）。

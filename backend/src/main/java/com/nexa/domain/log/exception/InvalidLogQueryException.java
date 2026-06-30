@@ -1,6 +1,6 @@
 package com.nexa.domain.log.exception;
 
-import com.nexa.common.kernel.HttpAwareDomainException;
+import com.nexa.sharedkernel.HttpAwareDomainException;
 
 /**
  * 日志查询入参非法（→400）。
