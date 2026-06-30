@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.nexa.application.routing.result.ChannelRouteDecision;
 
 /**
  * {@link ResolveChannelRouteUseCase} 单测（纯 JUnit，零 Spring/DB）。

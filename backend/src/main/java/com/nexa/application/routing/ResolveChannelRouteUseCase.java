@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import com.nexa.application.routing.result.ChannelRouteDecision;
 
 /**
  * 选渠路由编排用例（W2 选渠中间件应用层入口，整合 F-2029~F-2037，PRD CH-4 + CH-5）。

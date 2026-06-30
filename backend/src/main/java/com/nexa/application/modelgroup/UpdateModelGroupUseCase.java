@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import com.nexa.application.modelgroup.command.UpdateModelGroupCommand;
 
 /**
  * 更新模型组用例（管理端）。

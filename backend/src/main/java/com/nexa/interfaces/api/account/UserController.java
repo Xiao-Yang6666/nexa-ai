@@ -1,12 +1,12 @@
 package com.nexa.interfaces.api.account;
 
 import com.nexa.application.account.GetSelfUserUseCase;
-import com.nexa.application.account.LoginCommand;
-import com.nexa.application.account.LoginResult;
+import com.nexa.application.account.command.LoginCommand;
+import com.nexa.application.account.result.LoginResult;
 import com.nexa.application.account.LoginUseCase;
-import com.nexa.application.account.RegisterUserCommand;
+import com.nexa.application.account.command.RegisterUserCommand;
 import com.nexa.application.account.RegisterUserUseCase;
-import com.nexa.application.account.ResetPasswordCommand;
+import com.nexa.application.account.command.ResetPasswordCommand;
 import com.nexa.application.account.ResetPasswordUseCase;
 import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.interfaces.api.account.dto.LoginRequest;

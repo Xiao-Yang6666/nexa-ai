@@ -5,7 +5,7 @@ import com.nexa.domain.security.rbac.AuthenticatedActor;
 import com.nexa.interfaces.security.annotation.CurrentActor;
 import com.nexa.interfaces.security.annotation.RequireRole;
 import com.nexa.application.task.QueryTaskUseCase;
-import com.nexa.application.task.TaskPage;
+import com.nexa.application.task.result.TaskPage;
 import com.nexa.domain.task.model.Task;
 import com.nexa.domain.task.vo.TaskQuery;
 import com.nexa.interfaces.web.ApiResponse;

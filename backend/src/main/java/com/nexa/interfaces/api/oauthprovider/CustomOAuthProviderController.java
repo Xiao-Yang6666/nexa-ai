@@ -3,7 +3,7 @@ package com.nexa.interfaces.api.oauthprovider;
 import com.nexa.interfaces.web.ApiResponse;
 import com.nexa.application.oauthprovider.FetchOidcDiscoveryUseCase;
 import com.nexa.application.oauthprovider.ManageCustomOAuthProviderUseCase;
-import com.nexa.application.oauthprovider.SaveCustomOAuthProviderCommand;
+import com.nexa.application.oauthprovider.command.SaveCustomOAuthProviderCommand;
 import com.nexa.domain.oauthprovider.model.CustomOAuthProvider;
 import com.nexa.domain.oauthprovider.vo.OAuthEndpoints;
 import com.nexa.interfaces.api.oauthprovider.dto.CustomOAuthProviderVO;

@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.billing;
 
-import com.nexa.application.billing.GenerateRedemptionsCommand;
+import com.nexa.application.billing.command.GenerateRedemptionsCommand;
 import com.nexa.application.billing.GenerateRedemptionsUseCase;
 import com.nexa.application.billing.ListRedemptionsUseCase;
 import com.nexa.domain.billing.model.Redemption;

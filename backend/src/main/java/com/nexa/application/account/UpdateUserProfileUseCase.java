@@ -8,6 +8,7 @@ import com.nexa.domain.account.vo.Role;
 import com.nexa.domain.account.vo.UserStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.account.command.UpdateUserProfileCommand;
 
 /**
  * 管理端更新用户资料用例（应用服务，F-1011/1013/1014）。

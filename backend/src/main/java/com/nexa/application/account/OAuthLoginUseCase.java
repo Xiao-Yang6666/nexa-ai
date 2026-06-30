@@ -24,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import com.nexa.application.account.command.OAuthLoginCommand;
+import com.nexa.application.account.result.LoginResult;
+import com.nexa.application.account.result.OAuthLoginResult;
 
 /**
  * OAuth 登录/建号用例（应用服务，F-1016~1020）。

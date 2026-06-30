@@ -31,6 +31,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.nexa.application.relay.result.RelayAuthContext;
+import com.nexa.application.relay.result.RelayForwardResult;
 
 /**
  * RelayForwardUseCase RL-3 重试/错误处置单元测试（REQ-09，账号路由版）。

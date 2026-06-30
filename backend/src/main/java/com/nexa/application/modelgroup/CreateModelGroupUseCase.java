@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import com.nexa.application.modelgroup.command.CreateModelGroupCommand;
 
 /**
  * 创建模型组用例（管理端）。

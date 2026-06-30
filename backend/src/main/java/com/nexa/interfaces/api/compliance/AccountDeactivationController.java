@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.compliance;
 
 import com.nexa.interfaces.web.ApiResponse;
-import com.nexa.application.compliance.DeactivateAccountCommand;
+import com.nexa.application.compliance.command.DeactivateAccountCommand;
 import com.nexa.application.compliance.DeactivateAccountUseCase;
 import com.nexa.application.compliance.port.AccountDeactivationCascade;
 import com.nexa.interfaces.api.compliance.dto.AccountDeactivationVO;

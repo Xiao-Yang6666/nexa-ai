@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.log;
 
-import com.nexa.application.log.LogPage;
+import com.nexa.application.log.result.LogPage;
 import com.nexa.application.log.QueryLogStatUseCase;
 import com.nexa.application.log.QuerySelfLogsUseCase;
 import com.nexa.domain.log.vo.LogQuery;

@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.nexa.application.account.command.RegisterUserCommand;
 
 /**
  * {@link RegisterUserUseCase} 应用层单测（Mockito mock 仓储/端口，不起 Spring/DB）。

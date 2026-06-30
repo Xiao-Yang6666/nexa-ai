@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.nexa.application.sensitiveverify.command.VerifySensitiveActionCommand;
 
 /**
  * 通用敏感动作二次验证用例（应用服务，F-1038，sessionAuth）。

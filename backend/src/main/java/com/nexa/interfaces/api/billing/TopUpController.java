@@ -1,8 +1,8 @@
 package com.nexa.interfaces.api.billing;
 
-import com.nexa.application.billing.CreateTopUpCommand;
+import com.nexa.application.billing.command.CreateTopUpCommand;
 import com.nexa.application.billing.CreateTopUpOrderUseCase;
-import com.nexa.application.billing.CreateTopUpResult;
+import com.nexa.application.billing.result.CreateTopUpResult;
 import com.nexa.interfaces.api.billing.dto.TopUpRequest;
 import com.nexa.interfaces.api.billing.dto.TopUpUserVO;
 import com.nexa.domain.security.rbac.AuthLevel;

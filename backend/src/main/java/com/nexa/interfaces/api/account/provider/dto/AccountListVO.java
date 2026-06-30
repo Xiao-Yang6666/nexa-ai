@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.account.provider.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nexa.application.account.provider.AccountPage;
+import com.nexa.application.account.provider.result.AccountPage;
 
 import java.util.List;
 

@@ -42,6 +42,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import com.nexa.application.relay.result.RelayAuthContext;
+import com.nexa.application.relay.result.RelayForwardResult;
 
 /**
  * Relay 中继转发用例（RL-1/RL-7 端到端编排：协议识别→两层映射→选渠→协议转换→调上游→计费→落 Log）。

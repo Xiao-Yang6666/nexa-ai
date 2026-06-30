@@ -1,9 +1,9 @@
 package com.nexa.interfaces.api.account;
 
-import com.nexa.application.account.GenerateOAuthStateCommand;
+import com.nexa.application.account.command.GenerateOAuthStateCommand;
 import com.nexa.application.account.GenerateOAuthStateUseCase;
-import com.nexa.application.account.OAuthLoginCommand;
-import com.nexa.application.account.OAuthLoginResult;
+import com.nexa.application.account.command.OAuthLoginCommand;
+import com.nexa.application.account.result.OAuthLoginResult;
 import com.nexa.application.account.OAuthLoginUseCase;
 import com.nexa.domain.account.vo.OAuthProvider;
 import com.nexa.interfaces.web.ApiResponse;

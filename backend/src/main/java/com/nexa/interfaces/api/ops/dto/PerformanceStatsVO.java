@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.ops.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nexa.application.ops.performance.PerformanceStats;
+import com.nexa.application.ops.performance.result.PerformanceStats;
 import com.nexa.application.ops.port.CacheStatsProvider;
 import com.nexa.application.ops.port.DiskCacheManager;
 import com.nexa.application.ops.port.SystemRuntimeProbe;

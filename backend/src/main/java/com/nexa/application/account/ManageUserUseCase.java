@@ -7,6 +7,7 @@ import com.nexa.domain.account.repository.UserRepository;
 import com.nexa.domain.account.vo.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.account.command.ManageUserCommand;
 
 /**
  * 管理端用户状态管理用例（应用服务，F-1010）。

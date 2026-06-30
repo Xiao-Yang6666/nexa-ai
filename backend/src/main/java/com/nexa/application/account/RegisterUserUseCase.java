@@ -17,6 +17,7 @@ import com.nexa.domain.account.vo.Username;
 import com.nexa.domain.account.vo.VerificationCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.account.command.RegisterUserCommand;
 
 /**
  * 注册用户用例（应用服务）。

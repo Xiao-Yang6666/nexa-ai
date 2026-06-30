@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.model.dto;
 
-import com.nexa.application.model.CreateModelMetaCommand;
+import com.nexa.application.model.command.CreateModelMetaCommand;
 
 /**
  * 创建模型元数据请求体（接口层入参，F-3015）。对齐 openapi {@code ModelMetaCreateRequest}。

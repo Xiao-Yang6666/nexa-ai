@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import com.nexa.application.oauthprovider.command.SaveCustomOAuthProviderCommand;
 
 /**
  * 自定义 OAuth provider 管理用例（应用服务，F-1024 CRUD，RootAuth）。

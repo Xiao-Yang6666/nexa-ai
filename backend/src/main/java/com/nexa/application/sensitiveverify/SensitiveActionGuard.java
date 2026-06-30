@@ -1,6 +1,7 @@
 package com.nexa.application.sensitiveverify;
 
 import org.springframework.stereotype.Component;
+import com.nexa.application.sensitiveverify.command.VerifySensitiveActionCommand;
 
 /**
  * 可复用的二次验证检查点（F-1038，供改密/解绑等敏感操作前置守卫）。

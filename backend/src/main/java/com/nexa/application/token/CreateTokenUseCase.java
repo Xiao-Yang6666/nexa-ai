@@ -5,6 +5,7 @@ import com.nexa.domain.token.exception.InvalidTokenParameterException;
 import com.nexa.domain.token.model.Token;
 import com.nexa.domain.token.repository.TokenRepository;
 import org.springframework.stereotype.Service;
+import com.nexa.application.token.command.CreateTokenCommand;
 
 /**
  * 创建令牌用例（应用层，F-3001 POST /api/token/）。

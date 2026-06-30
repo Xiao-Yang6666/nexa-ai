@@ -1,13 +1,13 @@
 package com.nexa.interfaces.api.account;
 
-import com.nexa.application.account.CreateUserByAdminCommand;
+import com.nexa.application.account.command.CreateUserByAdminCommand;
 import com.nexa.application.account.CreateUserByAdminUseCase;
-import com.nexa.application.account.ManageUserCommand;
+import com.nexa.application.account.command.ManageUserCommand;
 import com.nexa.application.account.ManageUserUseCase;
-import com.nexa.application.account.SearchUsersCommand;
-import com.nexa.application.account.SearchUsersResult;
+import com.nexa.application.account.command.SearchUsersCommand;
+import com.nexa.application.account.result.SearchUsersResult;
 import com.nexa.application.account.SearchUsersUseCase;
-import com.nexa.application.account.UpdateUserProfileCommand;
+import com.nexa.application.account.command.UpdateUserProfileCommand;
 import com.nexa.application.account.UpdateUserProfileUseCase;
 import com.nexa.domain.account.vo.Role;
 import com.nexa.interfaces.api.account.dto.AdminBalanceAdjustRequest;

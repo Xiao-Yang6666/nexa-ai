@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.model.dto;
 
-import com.nexa.application.model.UpdateModelMetaCommand;
+import com.nexa.application.model.command.UpdateModelMetaCommand;
 
 /**
  * 更新模型元数据请求体（接口层入参，F-3016）。对齐 openapi {@code ModelMetaUpdateRequest}。

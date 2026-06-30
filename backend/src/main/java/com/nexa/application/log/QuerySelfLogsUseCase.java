@@ -4,6 +4,7 @@ import com.nexa.domain.log.repository.LogRepository;
 import com.nexa.domain.log.vo.LogQuery;
 import com.nexa.domain.log.vo.Pagination;
 import org.springframework.stereotype.Service;
+import com.nexa.application.log.result.LogPage;
 
 /**
  * 用户自助日志查询用例（应用层，F-4002 GET /api/log/self）。

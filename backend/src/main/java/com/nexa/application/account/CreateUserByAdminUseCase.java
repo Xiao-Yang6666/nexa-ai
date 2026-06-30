@@ -11,6 +11,7 @@ import com.nexa.domain.account.vo.Role;
 import com.nexa.domain.account.vo.Username;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.account.command.CreateUserByAdminCommand;
 
 /**
  * 管理端创建用户用例（应用服务，F-1009）。

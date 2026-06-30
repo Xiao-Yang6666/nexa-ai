@@ -4,6 +4,7 @@ import com.nexa.application.ops.port.CacheStatsProvider;
 import com.nexa.application.ops.port.DiskCacheManager;
 import com.nexa.application.ops.port.SystemRuntimeProbe;
 import org.springframework.stereotype.Service;
+import com.nexa.application.ops.performance.result.PerformanceStats;
 
 /**
  * 性能统计查询用例（应用层，F-4019 GET /api/performance/stats）。

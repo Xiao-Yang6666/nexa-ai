@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import com.nexa.application.account.command.WeChatLoginCommand;
+import com.nexa.application.account.result.OAuthLoginResult;
 
 /**
  * WeChat 扫码授权登录/绑定用例（应用服务，F-1022）。

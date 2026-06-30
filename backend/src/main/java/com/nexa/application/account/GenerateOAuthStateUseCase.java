@@ -3,6 +3,7 @@ package com.nexa.application.account;
 import com.nexa.application.account.port.OAuthStateStore;
 import com.nexa.domain.account.vo.OAuthState;
 import org.springframework.stereotype.Service;
+import com.nexa.application.account.command.GenerateOAuthStateCommand;
 
 /**
  * 生成 OAuth state 用例（应用服务，F-1015）。

@@ -6,6 +6,7 @@ import com.nexa.domain.model.model.ModelMeta;
 import com.nexa.domain.model.repository.ModelMetaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.model.command.CreateModelMetaCommand;
 
 /**
  * 创建模型元数据用例（应用层，F-3015）。

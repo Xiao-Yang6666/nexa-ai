@@ -3,6 +3,7 @@ package com.nexa.application.account.provider;
 import com.nexa.domain.account.provider.repository.AccountRepository;
 import com.nexa.domain.account.provider.vo.Pagination;
 import org.springframework.stereotype.Service;
+import com.nexa.application.account.provider.result.AccountPage;
 
 /**
  * 供应商账号列表查询用例（应用层，GET /api/admin/accounts）。

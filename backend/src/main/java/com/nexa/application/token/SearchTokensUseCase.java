@@ -3,6 +3,7 @@ package com.nexa.application.token;
 import com.nexa.domain.token.repository.TokenRepository;
 import com.nexa.domain.token.vo.Pagination;
 import org.springframework.stereotype.Service;
+import com.nexa.application.token.result.TokenPage;
 
 /**
  * 令牌搜索用例（应用层，F-3003 GET /api/token/search）。

@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.account.provider.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nexa.application.account.provider.CreateAccountCommand;
+import com.nexa.application.account.provider.command.CreateAccountCommand;
 
 import java.math.BigDecimal;
 import java.util.List;

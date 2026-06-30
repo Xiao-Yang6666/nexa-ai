@@ -22,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import com.nexa.application.telegram.command.TelegramLoginCommand;
+import com.nexa.application.telegram.result.TelegramLoginResult;
 
 /**
  * Telegram 登录/建号用例（应用服务，F-1051/F-1053）。

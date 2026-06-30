@@ -23,7 +23,7 @@ public record ModelMetaListVO(List<ModelMetaAdminVO> items, long total, Map<Stri
      * @param page 模型分页结果
      * @return 列表视图
      */
-    public static ModelMetaListVO from(com.nexa.application.model.ModelMetaPage page) {
+    public static ModelMetaListVO from(com.nexa.application.model.result.ModelMetaPage page) {
         List<ModelMetaAdminVO> views = page.items().stream().map(ModelMetaAdminVO::from).toList();
         return new ModelMetaListVO(views, page.total(), page.vendorCounts());
     }

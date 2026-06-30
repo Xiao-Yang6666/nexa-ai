@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.token.dto;
 
-import com.nexa.application.token.CreateTokenCommand;
+import com.nexa.application.token.command.CreateTokenCommand;
 
 /**
  * 创建令牌请求 DTO（接口层入参，对齐 openapi TokenCreateRequest，F-3001）。

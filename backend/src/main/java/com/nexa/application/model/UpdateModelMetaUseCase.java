@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import com.nexa.application.model.command.UpdateModelMetaCommand;
 
 /**
  * 更新模型元数据用例（应用层，F-3016）。

@@ -6,6 +6,7 @@ import com.nexa.domain.account.repository.UserRepository;
 import com.nexa.application.compliance.port.AccountDeactivationCascade;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.compliance.command.DeactivateAccountCommand;
 
 /**
  * 账号注销用例（应用服务，F-5020 账号注销级联删除，DC-003/DC-011）。

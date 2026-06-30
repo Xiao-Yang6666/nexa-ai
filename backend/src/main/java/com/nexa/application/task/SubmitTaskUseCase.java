@@ -7,6 +7,7 @@ import com.nexa.domain.task.vo.TaskPlatform;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import com.nexa.application.task.command.SubmitTaskCommand;
 
 /**
  * 任务提交用例（应用层，F-2001/F-2005/F-2007/F-2008 视频/音乐/MJ 提交 → InitTask）。

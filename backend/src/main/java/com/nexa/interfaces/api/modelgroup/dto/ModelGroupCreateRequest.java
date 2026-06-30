@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.modelgroup.dto;
 
-import com.nexa.application.modelgroup.CreateModelGroupCommand;
+import com.nexa.application.modelgroup.command.CreateModelGroupCommand;
 
 import java.math.BigDecimal;
 import java.util.List;

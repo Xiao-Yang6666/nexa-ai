@@ -1,7 +1,7 @@
 package com.nexa.interfaces.api.relay;
 
 import com.nexa.application.model.ListPublicModelsUseCase;
-import com.nexa.application.relay.RelayForwardResult;
+import com.nexa.application.relay.result.RelayForwardResult;
 import com.nexa.application.relay.RelayForwardUseCase;
 import com.nexa.application.relay.VideoProxyUseCase;
 import com.nexa.domain.security.rbac.ActorRole;

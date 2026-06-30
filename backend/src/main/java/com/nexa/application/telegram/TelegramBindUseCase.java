@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import com.nexa.application.telegram.command.TelegramBindCommand;
 
 /**
  * Telegram 绑定到现有账号用例（应用服务，F-1052 + F-1054）。

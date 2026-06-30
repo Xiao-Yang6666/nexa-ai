@@ -3,7 +3,7 @@ package com.nexa.interfaces.api.sensitiveverify;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexa.interfaces.web.ApiResponse;
-import com.nexa.application.sensitiveverify.VerifySensitiveActionCommand;
+import com.nexa.application.sensitiveverify.command.VerifySensitiveActionCommand;
 import com.nexa.application.sensitiveverify.VerifySensitiveActionUseCase;
 import com.nexa.domain.sensitiveverify.exception.InvalidVerificationRequestException;
 import org.springframework.web.bind.annotation.PostMapping;

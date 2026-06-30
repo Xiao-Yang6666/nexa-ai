@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.nexa.application.relay.result.RelayAuthContext;
 
 /**
  * RelayForwardUseCase 流式转发端到端单元测试（REQ-08 RL-8 SSE 1→N + 末尾计费）。

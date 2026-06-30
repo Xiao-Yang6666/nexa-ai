@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.token.dto;
 
-import com.nexa.application.token.UpdateTokenCommand;
+import com.nexa.application.token.command.UpdateTokenCommand;
 
 /**
  * 更新令牌请求 DTO（接口层入参，对齐 openapi PUT /api/token/ body，F-3006 含 status_only）。

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import com.nexa.application.billing.command.GenerateRedemptionsCommand;
 
 /**
  * 兑换码生成用例（管理端单个/批量，prd-billing BL-4 §5 生成侧，F-2045）。

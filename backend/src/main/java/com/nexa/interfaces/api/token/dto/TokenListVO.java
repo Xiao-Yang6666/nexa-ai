@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.token.dto;
 
-import com.nexa.application.token.TokenPage;
+import com.nexa.application.token.result.TokenPage;
 import com.nexa.domain.token.model.Token;
 
 import java.util.List;

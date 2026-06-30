@@ -5,6 +5,7 @@ import com.nexa.domain.account.provider.model.Account;
 import com.nexa.domain.account.provider.repository.AccountRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.account.provider.command.UpdateAccountCommand;
 
 /**
  * 编辑供应商账号用例（应用层，PUT /api/admin/accounts，覆盖式）。

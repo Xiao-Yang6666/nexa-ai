@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
+import com.nexa.application.account.command.LoginCommand;
+import com.nexa.application.account.result.LoginResult;
 
 /**
  * 登录用例（应用服务）。

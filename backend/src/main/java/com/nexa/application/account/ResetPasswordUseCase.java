@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import com.nexa.application.account.command.ResetPasswordCommand;
 
 /**
  * 提交重置新密码用例（应用服务，F-1007）。

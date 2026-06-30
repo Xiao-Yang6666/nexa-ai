@@ -1,6 +1,6 @@
 package com.nexa.interfaces.api.log.dto;
 
-import com.nexa.application.log.LogPage;
+import com.nexa.application.log.result.LogPage;
 import com.nexa.domain.log.model.LogEntry;
 
 import java.util.List;

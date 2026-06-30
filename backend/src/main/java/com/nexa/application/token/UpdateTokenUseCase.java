@@ -6,6 +6,7 @@ import com.nexa.domain.token.model.Token;
 import com.nexa.domain.token.repository.TokenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.nexa.application.token.command.UpdateTokenCommand;
 
 /**
  * 更新令牌用例（应用层，F-3006 PUT /api/token/，含 status_only 分支）。

@@ -27,6 +27,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.nexa.application.account.command.LoginCommand;
+import com.nexa.application.account.result.LoginResult;
 
 /**
  * {@link LoginUseCase} 应用层单测（Mockito mock 仓储/端口，不起 Spring/DB）。

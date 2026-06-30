@@ -6,6 +6,7 @@ import com.nexa.domain.task.vo.TaskQuery;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import com.nexa.application.task.result.TaskPage;
 
 /**
  * 任务查询用例（应用层，F-2003 用户列表 / F-2004 管理列表 / F-2006/F-2007 单任务拉取）。
