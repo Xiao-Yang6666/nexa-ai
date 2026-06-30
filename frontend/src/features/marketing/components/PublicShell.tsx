@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { FacadeAccountNav } from '@/features/account';
 import styles from './PublicShell.module.css';
@@ -45,12 +45,22 @@ export function PublicShell({
   children,
 }: PublicShellProps) {
   const [navOpen, setNavOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  /* 滚动越过阈值后给顶栏加 .scrolled：玻璃由"近全透"收紧为"半透+分隔线"，
+     顶部时与 hero 极光一体、滚动后才与内容区拉出层次。passive 监听不阻塞滚动。 */
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const keyOf = (href: string) => href.replace('/', '');
 
   return (
     <div className={navOpen ? styles.open : undefined}>
-      <header className={styles.bar}>
+      <header className={scrolled ? `${styles.bar} ${styles.scrolled}` : styles.bar}>
         <div className="wrap">
           <div className={styles.in}>
             <Link className={styles.brand} href="/">

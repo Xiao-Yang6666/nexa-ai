@@ -2,9 +2,25 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  background: color-mix(in oklch, var(--hd-bg) 72%, transparent);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--hd-line);
+  /* 顶部时：完全透明、无板、无模糊——logo/导航直接浮在 hero 极光之上，
+     不存在"一块板"与下面分层，从根上消除接缝（Linear/Vercel 暗色 LP 同款）。
+     底色/模糊/分隔线只在滚动后（.scrolled）淡入。 */
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background var(--dur-3) var(--ease-out),
+    backdrop-filter var(--dur-3) var(--ease-out),
+    border-color var(--dur-3) var(--ease-out),
+    box-shadow var(--dur-3) var(--ease-out);
+}
+/* 滚动后：与 hero 同色系的"暗色"玻璃（hd-bg 而非白），模糊透出下方极光，
+     底缘一道分隔线 + 柔投影与内容区分层。深底+亮字，绝不发灰板。 */
+.scrolled {
+  background: color-mix(in oklch, var(--hd-bg) 62%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border-bottom-color: var(--hd-line);
+  box-shadow: 0 8px 30px -22px rgb(0 0 0 / 80%);
 }
 .in {
   display: flex;
