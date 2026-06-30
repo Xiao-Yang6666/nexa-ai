@@ -3,7 +3,7 @@ package com.nexa.application.model;
 import com.nexa.application.model.port.ModelGroupCatalogPort;
 import com.nexa.domain.model.model.PublicModel;
 import com.nexa.domain.model.repository.PublicModelRepository;
-import com.nexa.interfaces.model.api.dto.PricingPublicVO;
+import com.nexa.interfaces.api.model.dto.PricingPublicVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

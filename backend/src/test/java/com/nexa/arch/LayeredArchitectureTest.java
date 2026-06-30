@@ -25,7 +25,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * <ul>
  *   <li>{@code application.growth.*UseCase} → {@code infrastructure.growth.config.GrowthProperties}
  *       （@ConfigurationProperties 错放 infra，应下沉为 application port）</li>
- *   <li>{@code application.model.QueryPublicPricingUseCase} → {@code interfaces.model.api.dto.PricingPublicVO}
+ *   <li>{@code application.model.QueryPublicPricingUseCase} → {@code interfaces.api.model.dto.PricingPublicVO}
  *       （用例直接产出 interfaces 层 VO，应在 interfaces 层组装）</li>
  * </ul>
  * 这些用 {@code .ignoreDependency} 显式豁免——护栏对新代码立即生效，旧债显式可见。</p>
@@ -60,7 +60,7 @@ class LayeredArchitectureTest {
                 .that().resideInAPackage("com.nexa.application..")
                 // 已知历史债（结构翻转暴露），待单独整改，先从规则范围排除以让护栏对其余代码即时生效：
                 //  - application.growth.{CreditInviterReward,TransferAffQuota}UseCase -> infrastructure.growth.config.GrowthProperties
-                //  - application.model.QueryPublicPricingUseCase -> interfaces.model.api.dto.PricingPublicVO
+                //  - application.model.QueryPublicPricingUseCase -> interfaces.api.model.dto.PricingPublicVO
                 .and().areNotAssignableTo(com.nexa.application.growth.CreditInviterRewardUseCase.class)
                 .and().areNotAssignableTo(com.nexa.application.growth.TransferAffQuotaUseCase.class)
                 .and().areNotAssignableTo(com.nexa.application.model.QueryPublicPricingUseCase.class)
@@ -75,10 +75,10 @@ class LayeredArchitectureTest {
         ArchRule rule = noClasses()
                 .that().resideInAPackage("com.nexa.interfaces..")
                 // 已知历史债（结构翻转暴露），待单独整改：
-                //  - interfaces.observability.api.MetricsController -> infrastructure.observability.metrics.PrometheusTextRenderer
-                //  - interfaces.relay.api.RelayController -> infrastructure.relay.auth.RelayApiKeyAuthentication
-                .and().areNotAssignableTo(com.nexa.interfaces.observability.api.MetricsController.class)
-                .and().areNotAssignableTo(com.nexa.interfaces.relay.api.RelayController.class)
+                //  - interfaces.api.observability.MetricsController -> infrastructure.observability.metrics.PrometheusTextRenderer
+                //  - interfaces.api.relay.RelayController -> infrastructure.relay.auth.RelayApiKeyAuthentication
+                .and().areNotAssignableTo(com.nexa.interfaces.api.observability.MetricsController.class)
+                .and().areNotAssignableTo(com.nexa.interfaces.api.relay.RelayController.class)
                 .should().dependOnClassesThat()
                 .resideInAPackage("com.nexa.infrastructure..");
         rule.check(classes);
